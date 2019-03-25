@@ -28,21 +28,19 @@ class ECRad_Scenario:
                 self.reset()
         else:
             self.reset()
-                
+
 
     def reset(self):
         self.used_diags_dict = od()
         self.avail_diags_dict = DefaultDiagDict
         self.plasma_dict = {}
-        self.gy_dict = {}  # dictionary 1-8 as keys
         self.plasma_dict["time"] = []
         self.plasma_dict["rhop_prof"] = []
         self.plasma_dict["Te"] = []
         self.plasma_dict["ne"] = []
         self.plasma_dict["eq_data"] = []
-        self.ECI_dict = {}
-        self.profile_dimension = 1
         self.ray_launch = []
+        self.profile_dimension = 1
         self.diags_set = False
         self.plasma_set = False
         self.IDA_exp = "SDENK"

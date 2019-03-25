@@ -167,8 +167,8 @@ class ECRadResults:
             Tradfilename = "TRadM_RELAX.dat"
         elif(self.Config.dstf == "Ge" or self.Config.dstf == "GB"):
             Tradfilename = "TRadM_GENE.dat"
-        Trad_file = np.loadtxt(os.path.join(self.Config.working_dir, "ecfm_data", Tradfilename))
-        sres_file = np.loadtxt(os.path.join(self.Config.working_dir, "ecfm_data", "sres.dat"))
+        Trad_file = np.loadtxt(os.path.join(self.Config.working_dir, "ECRad_data", Tradfilename))
+        sres_file = np.loadtxt(os.path.join(self.Config.working_dir, "ECRad_data", "sres.dat"))
         self.Trad.append(Trad_file.T[1])
         self.tau.append(Trad_file.T[2])
         if(not self.Config.extra_output):
@@ -178,14 +178,14 @@ class ECRadResults:
             self.resonance["rhop_cold"].append(sres_file.T[3])
             return
         if(self.Config.considered_modes == 3):
-            XTrad_file = np.loadtxt(os.path.join(self.Config.working_dir, "ecfm_data", "X_" + Tradfilename))
-            OTrad_file = np.loadtxt(os.path.join(self.Config.working_dir, "ecfm_data", "O_" + Tradfilename))
+            XTrad_file = np.loadtxt(os.path.join(self.Config.working_dir, "ECRad_data", "X_" + Tradfilename))
+            OTrad_file = np.loadtxt(os.path.join(self.Config.working_dir, "ECRad_data", "O_" + Tradfilename))
             self.XTrad.append(XTrad_file.T[1])
             self.OTrad.append(OTrad_file.T[1])
             self.Xtau.append(XTrad_file.T[2])
             self.Otau.append(OTrad_file.T[2])
             self.X_mode_frac.append(XTrad_file.T[3])
-        sres_rel_file = np.loadtxt(os.path.join(self.Config.working_dir, "ecfm_data", "sres_rel.dat"))
+        sres_rel_file = np.loadtxt(os.path.join(self.Config.working_dir, "ECRad_data", "sres_rel.dat"))
         self.resonance["rhop_warm_secondary"].append(sres_rel_file.T[7])
         if(self.Config.dstf == "Th"):
             Ich_folder = "Ich" + self.Config.dstf
@@ -207,9 +207,9 @@ class ECRadResults:
             print("Supported dstf are: \"Th\" and \"TB\":")
             print("Chosen dstf:", self.Config.dstf)
             return
-        Trad_comp_file = np.loadtxt(os.path.join(self.Config.working_dir, "ecfm_data", Trad_old_name))
-        Ich_folder = os.path.join(self.Config.working_dir, "ecfm_data", Ich_folder)
-        # Ray_folder = os.path.join(self.Config.working_dir, "ecfm_data", "ray")
+        Trad_comp_file = np.loadtxt(os.path.join(self.Config.working_dir, "ECRad_data", Trad_old_name))
+        Ich_folder = os.path.join(self.Config.working_dir, "ECRad_data", Ich_folder)
+        # Ray_folder = os.path.join(self.Config.working_dir, "ECRad_data", "ray")
         # Append new empty list for this time point
         if("X" in self.modes):
             for key in self.resonance.keys():
@@ -363,8 +363,8 @@ class ECRadResults:
         self.Trad_comp.append(Trad_comp_file.T[1])
         self.tau_comp.append(Trad_comp_file.T[2])
         if(self.Config.considered_modes == 3):
-            XTrad_comp_file = np.loadtxt(os.path.join(self.Config.working_dir, "ecfm_data", "X_" + Trad_old_name))
-            OTrad_comp_file = np.loadtxt(os.path.join(self.Config.working_dir, "ecfm_data", "O_" + Trad_old_name))
+            XTrad_comp_file = np.loadtxt(os.path.join(self.Config.working_dir, "ECRad_data", "X_" + Trad_old_name))
+            OTrad_comp_file = np.loadtxt(os.path.join(self.Config.working_dir, "ECRad_data", "O_" + Trad_old_name))
             self.XTrad_comp.append(XTrad_comp_file.T[1])
             self.OTrad_comp.append(OTrad_comp_file.T[1])
             self.Xtau_comp.append(XTrad_comp_file.T[2])
