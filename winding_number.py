@@ -22,7 +22,7 @@ def wn_PnPoly(x, poly):
 def test_wn_PnPoly():
     # Check whether point inside or outside polynome using the winding number test
     # Algorithm taken from http://geomalgorithms.com/a03-_inclusion.html
-    wall = np.loadtxt("../ECFM_lib/ASDEX_Upgrade_vessel.txt")
+    wall = np.loadtxt("../ECRad_Pylib/ASDEX_Upgrade_vessel.txt")
     poly = []
     for i in range(len(wall.T[0])):
         poly.append([wall.T[0, i], wall.T[1, i]])

@@ -38,7 +38,7 @@ from em_Albajar import em_abs_Alb, distribution_interpolator, \
 from plotting_configuration import *
 import glob
 from scipy.io import loadmat
-from ECFM_Results import ECFMResults
+from ECRad_Results import ECRadResults
 from Fitting import make_fit
 from scipy.stats import linregress
 from scipy import odr
@@ -151,7 +151,7 @@ def get_files_and_labels(dstf, simpl=None):
         elif(dstf == "Ta"):
             dist = "Analytical Integration"
         elif(dstf == "Mx"):
-            dist = r"ECFM"
+            dist = r"ECRad"
         dist = r"\left[" + dist + r"\right]"
         if(dstf == "Mx"):
             dist_simpl = r"\mathrm{Maxwellian}"  # "f_\mathrm{M}"
@@ -555,7 +555,7 @@ class resonance:
 def test_resonance():
 #    reso = resonance("/ptmp1/work/sdenk/nssf/33697/4.80/OERT/ed_39/", 33697, 4.80, 43, "Re", 1, 0.05, False, [0.0], \
 #                                    eq_exp="AUGD", eq_diag="IDE", eq_ed=0, bt_vac_correction=1.005)nssf/33585/3.00/OERT/ed_4/
-    reso = resonance("/tokp/work/sdenk/ECFMw/", 34663, 3.60, 4, "Th", 1, 0.25, False, [0.0], \
+    reso = resonance("/tokp/work/sdenk/ECRadw/", 34663, 3.60, 4, "Th", 1, 0.25, False, [0.0], \
                                     eq_exp="AUGD", eq_diag="EQH", eq_ed=0, bt_vac_correction=1.005)
 #    Te_perp = np.zeros(len(reso.u_par))
 #    for i in range(len(Te_perp)):
@@ -1668,12 +1668,12 @@ def compare_Trad_difs_mat(filename_list, gene_directory, labels):
     shot = -1
     result_list = []
     for filename in filename_list:
-        result_list.append(ECFMResults())
+        result_list.append(ECRadResults())
         result_list[-1].from_mat_file(filename)
     if(shot == -1):
-        shot = result_list[0].Config.shot
-        time = result_list[0].Config.time[0]
-    for it in range(len(result_list[0].Config.time)):
+        shot = result_list[0].Scenario.shot
+        time = result_list[0].time[0]
+    for it in range(len(result_list[0].time)):
         for result, label, marker in zip(result_list, labels, markers):
             plt.plot(result.resonance["rhop_warm"][it], (result.Trad[it] - result.Trad_comp[it]) * 1.e3, \
                      marker, label=label + " {0:d}".format(it), markersize=20)
@@ -1684,12 +1684,12 @@ def compare_Trad_difs_mat(filename_list, gene_directory, labels):
         plt.show()
 
 def dif_vs_difs(filename_gene, filename_bimax):
-    gene_result = ECFMResults()
-    bimax_result = ECFMResults()
+    gene_result = ECRadResults()
+    bimax_result = ECRadResults()
     gene_result.from_mat_file(filename_gene)
     bimax_result.from_mat_file(filename_bimax)
     filename_bimax
-    for it in range(len(gene_result.Config.time)):
+    for it in range(len(gene_result.time)):
         plt.plot((bimax_result.Trad[it] - bimax_result.Trad_comp[it]) * 1.e3, \
                  (gene_result.Trad[it] - gene_result.Trad_comp[it]) * 1.e3, \
                      "+", label="time {0:d}".format(it), markersize=20)
@@ -1746,22 +1746,22 @@ def correlate(filenames, labels):
     ax3.set_xlabel(r"$\rho_\mathrm{pol}$")
     ax3.set_ylabel(r"Normalized radial cross cor.")
     for filename, label in zip(filenames, labels):
-        ECFM_res = ECFMResults()
-        ECFM_res.from_mat_file(filename)
-        Trads = (ECFM_res.Trad - ECFM_res.Trad_comp) / ECFM_res.Trad_comp
+        ECRad_res = ECRadResults()
+        ECRad_res.from_mat_file(filename)
+        Trads = (ECRad_res.Trad - ECRad_res.Trad_comp) / ECRad_res.Trad_comp
         sets = []
         std_devs = []
         for ich in range(len(Trads.T) / 2):
-            sets.append(np.zeros(len(ECFM_res.Config.time)))
-            for it in range(len(ECFM_res.Config.time)):
+            sets.append(np.zeros(len(ECRad_res.time)))
+            for it in range(len(ECRad_res.time)):
                 sets[ich][it] = Trads[it][ich] * Trads[it][ich + 1]
             std_devs.append(np.std(Trads.T[ich]) * np.std(Trads.T[ich + 1]))
-                # sets[ich][it] = ECFM_res.Trad_comp[it][ich] * ECFM_res.Trad_comp[it][ich + 1]
+                # sets[ich][it] = ECRad_res.Trad_comp[it][ich] * ECRad_res.Trad_comp[it][ich + 1]
         sets = np.array(sets)
         std_devs = np.array(std_devs)
-        ax1.plot(ECFM_res.resonance["rhop_warm"][0][::2], np.mean(sets, axis=1), "+", label=label)
-        ax2.plot(ECFM_res.resonance["rhop_warm"][0][::2], np.sqrt(np.abs(np.mean(sets, axis=1))) * 100.0, "+", label=label)
-        ax3.plot(ECFM_res.resonance["rhop_warm"][0][::2], np.mean(sets, axis=1) / std_devs, "+", label=label)
+        ax1.plot(ECRad_res.resonance["rhop_warm"][0][::2], np.mean(sets, axis=1), "+", label=label)
+        ax2.plot(ECRad_res.resonance["rhop_warm"][0][::2], np.sqrt(np.abs(np.mean(sets, axis=1))) * 100.0, "+", label=label)
+        ax3.plot(ECRad_res.resonance["rhop_warm"][0][::2], np.mean(sets, axis=1) / std_devs, "+", label=label)
     ax1.legend(loc=0)
     ax2.legend(loc=0)
     ax3.legend(loc=0)
@@ -1781,23 +1781,23 @@ def correlate_with_one(filenames, labels):
     ax3.set_xlabel(r"$\rho_\mathrm{pol}$")
     ax3.set_ylabel(r"Normalized radial cross cor.")
     for filename, label in zip(filenames, labels):
-        ECFM_res = ECFMResults()
-        ECFM_res.from_mat_file(filename)
-        Ch_max = len(ECFM_res.resonance["rhop_warm"][0])
-        Trads = (ECFM_res.Trad - ECFM_res.Trad_comp) / ECFM_res.Trad_comp
+        ECRad_res = ECRadResults()
+        ECRad_res.from_mat_file(filename)
+        Ch_max = len(ECRad_res.resonance["rhop_warm"][0])
+        Trads = (ECRad_res.Trad - ECRad_res.Trad_comp) / ECRad_res.Trad_comp
         sets = []
         std_devs = []
         for ich in range(1, len(Trads.T)):
-            sets.append(np.zeros(len(ECFM_res.Config.time)))
-            for it in range(len(ECFM_res.Config.time)):
+            sets.append(np.zeros(len(ECRad_res.time)))
+            for it in range(len(ECRad_res.time)):
                 sets[ich - 1][it] = Trads[it][0] * Trads[it][ich]
             std_devs.append(np.std(Trads.T[0]) * np.std(Trads.T[ich]))
-                # sets[ich][it] = ECFM_res.Trad_comp[it][ich] * ECFM_res.Trad_comp[it][ich + 1]
+                # sets[ich][it] = ECRad_res.Trad_comp[it][ich] * ECRad_res.Trad_comp[it][ich + 1]
         sets = np.array(sets)
         std_devs = np.array(std_devs)
-        ax1.plot(ECFM_res.resonance["rhop_warm"][0][1:Ch_max], np.mean(sets, axis=1), "+", label=label)
-        ax2.plot(ECFM_res.resonance["rhop_warm"][0][1:Ch_max], np.sqrt(np.abs(np.mean(sets, axis=1))) * 100.0, "+", label=label)
-        ax3.plot(ECFM_res.resonance["rhop_warm"][0][1:Ch_max], np.mean(sets, axis=1) / std_devs, "+", label=label)
+        ax1.plot(ECRad_res.resonance["rhop_warm"][0][1:Ch_max], np.mean(sets, axis=1), "+", label=label)
+        ax2.plot(ECRad_res.resonance["rhop_warm"][0][1:Ch_max], np.sqrt(np.abs(np.mean(sets, axis=1))) * 100.0, "+", label=label)
+        ax3.plot(ECRad_res.resonance["rhop_warm"][0][1:Ch_max], np.mean(sets, axis=1) / std_devs, "+", label=label)
     ax1.legend(loc=0)
     ax2.legend(loc=0)
     ax3.legend(loc=0)
@@ -1853,9 +1853,9 @@ def benchmark_absorption(working_dir):
     plt.show()
 
 def plot_BPD_for_all_rays(result_file, time, ch_list, mode="X"):
-    result = ECFMResults()
+    result = ECRadResults()
     result.from_mat_file(result_file)
-    itime = np.argmin(result.Config.time - time)
+    itime = np.argmin(result.time - time)
     for ch in ch_list:
         for ir in range(result.Config.N_ray):
             plt.plot(result.ray["rhop" + mode][itime][ch - 1][ir], result.ray["BPD" + mode][itime][ch - 1][ir])
@@ -2838,8 +2838,8 @@ if __name__ == "__main__":
 #    compare_BPD_to_Teperp(1000)
 #    exampl_reso([120.e9, 120.e9], [70.e9, 70.e9], [0.99 * np.pi / 2.e0, np.pi / 4.e0], 8.e3, 5.e18, n=2)
 #    make_iso_flux("/ptmp1/work/sdenk/nssf/32740/5.96/OERT/ecfm_data/", 32740, 5.964)
-#    check_BPD_norm("/ptmp1/work/sdenk/ECFM7/ecfm_data/IchTB/BPD_ray001ch037_X.dat", n1=5, n2=6)  #  /ptmp1/work/sdenk/nssf/32740/5.07/OERT/ed_2
-#    check_BPD_norm("/ptmp1/work/sdenk/ECFM7/ecfm_data/IchTB/BPDX042.dat")
+#    check_BPD_norm("/ptmp1/work/sdenk/ECRad7/ecfm_data/IchTB/BPD_ray001ch037_X.dat", n1=5, n2=6)  #  /ptmp1/work/sdenk/nssf/32740/5.07/OERT/ed_2
+#    check_BPD_norm("/ptmp1/work/sdenk/ECRad7/ecfm_data/IchTB/BPDX042.dat")
 #    Energy_los(0.4, B=2.5)
 #    fast_ECE_2D_plot(31539, [2.8161, 2.8164])
 #    refr_index_coupling(5.818838678157487E+019, 502654824574.367, 259604452669.565 / np.pi, +1)
@@ -2848,14 +2848,14 @@ if __name__ == "__main__":
 #    polarization_vector_behavior()
 #    test_transmittance()
 #    g0_g2_rad_reac(1.76)
-#    test_IO("/tokp/work/sdenk/ECFM2/ecfm_data/")
+#    test_IO("/tokp/work/sdenk/ECRad2/ecfm_data/")
 #    benchmark_rad_reac_force("/ptmp1/work/sdenk/nssf/31539/2.81/OERT/ed_16/ecfm_data/", 0.2, 31539, 2.814, "AUGD", "EQH", 0, 1.005)
-#    compare_channel_thetas("/tokp/work/sdenk/ECFM/ecfm_data", [42, 70], "TB", [(0.6, 0.0, 0.0), (0.0, 0.0, 0.6)], ["-", "--"], labels=["radial ECE", "oblique ECE"])
+#    compare_channel_thetas("/tokp/work/sdenk/ECRad/ecfm_data", [42, 70], "TB", [(0.6, 0.0, 0.0), (0.0, 0.0, 0.6)], ["-", "--"], labels=["radial ECE", "oblique ECE"])
 #    poject_full_wave_E_to_modes("/afs/ipp/u/sdenk/Documentation/Data/full_wave_output.h5", \
-#                                "/tokp/work/sdenk/ECFM/Ext_data/" , 91.93e9, np.deg2rad(1.455), np.deg2rad(2.18))
-#    theta_dependence_tranmittance_better("/ptmp1/work/sdenk/ECFM/ecfm_data/", 32934, 3.298, "TB", 1, mode_str="X")  # "/ptmp1/work/sdenk/nssf/32934/3.30/OERT/ed_4/ecfm_data/"
+#                                "/tokp/work/sdenk/ECRad/Ext_data/" , 91.93e9, np.deg2rad(1.455), np.deg2rad(2.18))
+#    theta_dependence_tranmittance_better("/ptmp1/work/sdenk/ECRad/ecfm_data/", 32934, 3.298, "TB", 1, mode_str="X")  # "/ptmp1/work/sdenk/nssf/32934/3.30/OERT/ed_4/ecfm_data/"
 #    phi_tor_dependence_tranmittance("/ptmp1/work/sdenk/nssf/32934/3.30/OERT/ed_8/ecfm_data/", 32934, 3.298, "TB", 20, mode_str="X")  #
-#    boundary_dependence_tranmittance("/ptmp1/work/sdenk/ECFM/ecfm_data/", 32934, 3.298, "TB", 1)  # "/ptmp1/work/sdenk/nssf/32934/3.30/OERT/ed_4/ecfm_data/"
+#    boundary_dependence_tranmittance("/ptmp1/work/sdenk/ECRad/ecfm_data/", 32934, 3.298, "TB", 1)  # "/ptmp1/work/sdenk/nssf/32934/3.30/OERT/ed_4/ecfm_data/"
 #    polarizer_angle_dependence_tranmittance("/ptmp1/work/sdenk/nssf/32934/3.30/OERT/ed_8/ecfm_data/", 32934, 3.298, "TB", 20)
 #    Faraday_stuff("/ptmp1/work/sdenk/nssf/32934/3.30/OERT/ed_8/ecfm_data/", 32934, 3.298, "TB", 6)
 #    theta_dependence_tranmittance_better("/ptmp1/work/sdenk/nssf/32934/3.30/OERT/ed_8/ecfm_data/", 32934, 3.298, "TB", 20)
@@ -2865,7 +2865,7 @@ if __name__ == "__main__":
 #    calculate_resonant_fraction("/ptmp1/work/sdenk/nssf/30907/0.73/OERT/ed_1/ecfm_data/", 23, 0.01, Te_scale=1)
 #    calculate_resonant_fraction("/ptmp1/work/sdenk/nssf/30907/0.73/OERT/ed_1/ecfm_data/", 23, 0.01, Te_scale=0.5)
 #    calculate_resonant_fraction("/ptmp1/work/sdenk/nssf/30907/0.73/OERT/ed_1/ecfm_data/", 23, 0.01, Te_scale=3)
-#    plot_BPD_for_all_rays("/ptmp1/work/sdenk/ECFM7/ECFM_33697_EXT_ed4.mat", 4.80, [1, 2])
+#    plot_BPD_for_all_rays("/ptmp1/work/sdenk/ECRad7/ECRad_33697_EXT_ed4.mat", 4.80, [1, 2])
 #    plt.show()
 #    test_resonance()
 #    test_resonance()
@@ -2900,13 +2900,13 @@ if __name__ == "__main__":
 #                      ["ed_25", "ed_27"], \
 #                       [r"$\tilde{T}_\mathrm{rad}$[GENE w. single frequency]", \
 #                        r"$\tilde{T}_\mathrm{rad}$[GENE w. 8 frequencies]"])
-#    dif_vs_difs("/ptmp1/work/sdenk/ECFM7/ECFM_33585_EXT_ed6.mat", \
-#                "/ptmp1/work/sdenk/ECFM6/ECFM_33585_EXT_ed 1.mat")
-#    correlate(["/ptmp1/work/sdenk/ECFM7/ECFM_33585_EXT_ed6.mat", \
-#               "/ptmp1/work/sdenk/ECFM6/ECFM_33585_EXT_ed 1.mat"], \
+#    dif_vs_difs("/ptmp1/work/sdenk/ECRad7/ECRad_33585_EXT_ed6.mat", \
+#                "/ptmp1/work/sdenk/ECRad6/ECRad_33585_EXT_ed 1.mat")
+#    correlate(["/ptmp1/work/sdenk/ECRad7/ECRad_33585_EXT_ed6.mat", \
+#               "/ptmp1/work/sdenk/ECRad6/ECRad_33585_EXT_ed 1.mat"], \
 #               ["GENE", "BiMaxwellian"])
-#    correlate_with_one(["/ptmp1/work/sdenk/ECFM7/ECFM_33585_EXT_ed6.mat", \
-#               "/ptmp1/work/sdenk/ECFM6/ECFM_33585_EXT_ed 1.mat"], \
+#    correlate_with_one(["/ptmp1/work/sdenk/ECRad7/ECRad_33585_EXT_ed6.mat", \
+#               "/ptmp1/work/sdenk/ECRad6/ECRad_33585_EXT_ed 1.mat"], \
 #               ["GENE", "BiMaxwellian"])
 #    compare_Trad_difs("/ptmp1/work/sdenk/nssf/33585/3.00/OERT/", \
 #                      ["ed_25", "ed_28"], \

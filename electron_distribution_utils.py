@@ -258,11 +258,11 @@ def weighted_emissivity(folder, shot, time, ch, dstf, old=False, O_mode=False):
     Ich = "Ich" + dstf
     # folder = os.path.join(shotfolder, "30907","0.75")
     if(O_mode):
-        filename_n = os.path.join(folder, "ecfm_data", Ich , "IrhoOch" + "{0:0>3}.dat".format(ch))
-        filename_transparency = os.path.join(folder, "ecfm_data", Ich, "TrhoOch" + "{0:0>3}.dat".format(ch))
+        filename_n = os.path.join(folder, "ECRad_data", Ich , "IrhoOch" + "{0:0>3}.dat".format(ch))
+        filename_transparency = os.path.join(folder, "ECRad_data", Ich, "TrhoOch" + "{0:0>3}.dat".format(ch))
     else:
-        filename_n = os.path.join(folder, "ecfm_data", Ich , "Irhopch" + "{0:0>3}.dat".format(ch))
-        filename_transparency = os.path.join(folder, "ecfm_data", Ich, "Trhopch" + "{0:0>3}.dat".format(ch))
+        filename_n = os.path.join(folder, "ECRad_data", Ich , "Irhopch" + "{0:0>3}.dat".format(ch))
+        filename_transparency = os.path.join(folder, "ECRad_data", Ich, "Trhopch" + "{0:0>3}.dat".format(ch))
     rhop_Birth = []
     D = []
     if(old):
@@ -275,7 +275,7 @@ def weighted_emissivity(folder, shot, time, ch, dstf, old=False, O_mode=False):
         mode = "O"
     else:
         mode = "X"
-    svec, freq = read_svec_from_file(os.path.join(folder, "ecfm_data"), ch, mode=mode)
+    svec, freq = read_svec_from_file(os.path.join(folder, "ECRad_data"), ch, mode=mode)
     # print(len(T*j), len(svec.T[0]))
     I = simps(T * j, svec.T[0])
     print("Trad", cnst.c ** 2 * I / (cnst.e * freq ** 2))
@@ -308,8 +308,8 @@ def weighted_emissivity(folder, shot, time, ch, dstf, old=False, O_mode=False):
 def weighted_emissivity_along_s(folder, shot, time, ch, dstf, old=False, mode='X'):
     Ich = "Ich" + dstf
     # folder = os.path.join(shotfolder, "30907","0.75")
-    filename_n = os.path.join(folder, "ecfm_data", Ich , "Irhopch" + "{0:0>3}.dat".format(ch))
-    filename_transparency = os.path.join(folder, "ecfm_data", Ich, "Trhopch" + "{0:0>3}.dat".format(ch))
+    filename_n = os.path.join(folder, "ECRad_data", Ich , "Irhopch" + "{0:0>3}.dat".format(ch))
+    filename_transparency = os.path.join(folder, "ECRad_data", Ich, "Trhopch" + "{0:0>3}.dat".format(ch))
     rhop_Birth = []
     D = []
     if(old):
@@ -318,7 +318,7 @@ def weighted_emissivity_along_s(folder, shot, time, ch, dstf, old=False, mode='X
     else:
         R, j = read_file(filename_n, coloumn=3)
         R, T = read_file(filename_transparency, coloumn=1)
-    svec, freq = read_svec_from_file(os.path.join(folder, "ecfm_data"), ch, mode=mode)
+    svec, freq = read_svec_from_file(os.path.join(folder, "ECRad_data"), ch, mode=mode)
     # print(len(T*j), len(svec.T[0]))
     I = simps(T * j, svec.T[0])
     print("Trad", cnst.c ** 2 * I / (cnst.e * freq ** 2))
@@ -364,17 +364,17 @@ def modify_ece_data(scale):
 
 def fix_residue_ece(target_folder):
     X = np.loadtxt(os.path.join(target_folder, "residue_ece.res"))
-    rhop_cor = np.loadtxt(os.path.join(target_folder, "ecfm_data", "rhopres.dat"))
-    diag_filename = os.path.join(target_folder, "ecfm_data", "diag.dat")
+    rhop_cor = np.loadtxt(os.path.join(target_folder, "ECRad_data", "rhopres.dat"))
+    diag_filename = os.path.join(target_folder, "ECRad_data", "diag.dat")
     diag_data = np.genfromtxt(diag_filename, dtype='str')
     for i in range(len(X.T[0])):
         X.T[0][i] = rhop_cor[i % len(rhop_cor[diag_data == "CEC"])]
     np.savetxt(os.path.join(target_folder, "residue_ece.res"), X, "% 1.5e", " ")
 
 def scale_TRAD():
-    t , Ich46 = read_file(os.path.join(base, "ecfm_data", "TRAD_46_47_44"))
-    t , Ich47 = read_file(os.path.join(base, "ecfm_data", "TRAD_46_47_44"), coloumn=2)
-    t , Ich44 = read_file(os.path.join(base, "ecfm_data", "TRAD_46_47_44"), coloumn=3)
+    t , Ich46 = read_file(os.path.join(base, "ECRad_data", "TRAD_46_47_44"))
+    t , Ich47 = read_file(os.path.join(base, "ECRad_data", "TRAD_46_47_44"), coloumn=2)
+    t , Ich44 = read_file(os.path.join(base, "ECRad_data", "TRAD_46_47_44"), coloumn=3)
     t_0 = 0
     while t_0 < len(t):
         if(t[t_0] > 1.0):
@@ -427,7 +427,7 @@ def fit_TRad(args):
     beta = np.copy(args[2])
     fit = args[3]
     dstf = args[4]
-    exec_ecfm_model = args[5]
+    exec_ECRad_model = args[5]
     ECE_data = args[6]
     ECE_y_err = args[7]
     thread_Lock = Lock()
@@ -466,7 +466,7 @@ def fit_TRad(args):
         raise(ValueError)
     parameter_filename = os.path.join(path, parameter_filename)
     fun_args = {}
-    fun_args["exec_ecfm_model"] = exec_ecfm_model
+    fun_args["exec_ECRad_model"] = exec_ECRad_model
     fun_args["parameter_filename"] = parameter_filename
     fun_args["Trad_filename"] = Trad_filename
     os.environ['OMP_NUM_THREADS'] = "24"
@@ -474,7 +474,7 @@ def fit_TRad(args):
     if(fit):
         thread_Lock.acquire()
         res = least_squares(model_func, beta, bounds=beta_bounds, \
-                            args=[exec_ecfm_model, Trad_filename, parameter_filename, ECE_data, ECE_y_err])
+                            args=[exec_ECRad_model, Trad_filename, parameter_filename, ECE_data, ECE_y_err])
         print(res.message)
         thread_Lock.release()
         beta = res.x
@@ -507,14 +507,14 @@ def fit_TRad(args):
     evt_out = ThreadFinishedEvt(Unbound_EVT_FIT_FINISHED, Callee.GetId())
     wx.PostEvent(Callee, evt_out)
 
-def evaluate_bi_max(beta, exec_ecfm_model, trad_filename, bi_max_filename, ECE_data, ECE_y_err):
+def evaluate_bi_max(beta, exec_ECRad_model, trad_filename, bi_max_filename, ECE_data, ECE_y_err):
     if(make_bi_max(beta, bi_max_filename)):
-        ECFM = Popen(exec_ecfm_model)
+        ECRad = Popen(exec_ECRad_model)
         sleep(0.1)
-        os.system("renice -n 10 -p " + "{0:d}".format(ECFM.pid))
+        os.system("renice -n 10 -p " + "{0:d}".format(ECRad.pid))
         stderr_log = []
-        while(ECFM.poll() is None):
-            stdout, stderr = ECFM.communicate(None)
+        while(ECRad.poll() is None):
+            stdout, stderr = ECRad.communicate(None)
             stderr_log.append(stderr)
             print(stdout)
             sleep(0.25)
@@ -567,14 +567,14 @@ def make_drift_m(beta, drift_m_filename):
     drift_m.close()
     return True
 
-def evaluate_multi_slope(beta, exec_ecfm_model, trad_filename, multi_slope_filename, ECE_data, ECE_y_err):
+def evaluate_multi_slope(beta, exec_ECRad_model, trad_filename, multi_slope_filename, ECE_data, ECE_y_err):
     if(make_multi_slope(beta, multi_slope_filename)):
-        ECFM = Popen(exec_ecfm_model)
+        ECRad = Popen(exec_ECRad_model)
         sleep(0.1)
-        os.system("renice -n 10 -p " + "{0:d}".format(ECFM.pid))
+        os.system("renice -n 10 -p " + "{0:d}".format(ECRad.pid))
 #        stderr_log = []
-        while(ECFM.poll() is None):
-#            stdout, stderr = ECFM.communicate(None)
+        while(ECRad.poll() is None):
+#            stdout, stderr = ECRad.communicate(None)
 #            stderr_log.append(stderr)
 #            print(stdout)
             sleep(0.25)
@@ -601,10 +601,10 @@ def make_multi_slope(beta, multi_slope_filename):
     multi_slope_file.close()
     return True
 
-def evaluate_runaway(beta, x, invoke_ecfm, trad_filename, runaway_filename):
+def evaluate_runaway(beta, x, invoke_ECRad, trad_filename, runaway_filename):
     # print("param set", beta)
     if(make_runaway(beta, runaway_filename)):
-        call(invoke_ecfm)
+        call(invoke_ECRad)
     Trad = np.loadtxt(trad_filename)
     return Trad.T[1]
 
@@ -912,7 +912,7 @@ def save_log(f, f_out):
     return f_out
 
 def is_ch_on_hfs(R_ax, rpath, ich, rel_res):
-    rpath_data = os.path.join(rpath, "ecfm_data")
+    rpath_data = os.path.join(rpath, "ECRad_data")
     svec, ece_freq = read_svec_from_file(rpath_data, ich)
     if(not rel_res):
         i_res = np.where(np.min(np.abs(ece_freq - svec.T[-1])) == np.abs(ece_freq - svec.T[-1]))[0][0]
@@ -939,18 +939,18 @@ def identify_LFS_channels(time, rpath, ch_num, EQ_obj, rel_res=False):
     return LFS_channel
 
 def find_rel_rhop_res(rpath, ich, sres):
-    rpath_data = os.path.join(rpath, "ecfm_data")
+    rpath_data = os.path.join(rpath, "ECRad_data")
     svec, ece_freq = read_svec_from_file(rpath_data, ich)
     i_rhop = np.abs(svec.T[0] - sres).argmin()
     return svec.T[3][i_rhop]
 
 def rel_rhop_res_all_ch(rpath):
-    rpath_data = os.path.join(rpath, "ecfm_data")
+    rpath_data = os.path.join(rpath, "ECRad_data")
     res = np.loadtxt(os.path.join(rpath_data, "sres_rel.dat"))
     return res.T[3]
 
 def make_R_res(rpath, ch_num):
-    rpath_data = os.path.join(rpath, "ecfm_data")
+    rpath_data = os.path.join(rpath, "ECRad_data")
     R_res = np.zeros(ch_num, np.double)
     for ich in range(1, ch_num + 1):
         svec, ece_freq = read_svec_from_file(rpath_data, ich)
@@ -961,7 +961,7 @@ def make_R_res(rpath, ch_num):
     return R_res
 
 def remap_rhop_R(rpath, rhop, R_mag, ich=1):
-    rpath_data = os.path.join(rpath, "ecfm_data")
+    rpath_data = os.path.join(rpath, "ECRad_data")
     svec, ece_freq = read_svec_from_file(rpath_data, ich)
     Hfs_rhop_max = svec.T[3][0]
     print(Hfs_rhop_max)
@@ -996,7 +996,7 @@ def remap_rhop_R(rpath, rhop, R_mag, ich=1):
     return R, i_Hfs_rhop_max, i_Lfs_rhop_max
 
 def get_Te_ne_R(rpath, ich=1):
-    rpath_data = os.path.join(rpath, "ecfm_data")
+    rpath_data = os.path.join(rpath, "ECRad_data")
     svec, ece_freq = read_svec_from_file(rpath_data, ich)
     return svec.T[1][::10], svec.T[5][::10] * 1.e-3, svec.T[4][::10] * 1.e-19
 
@@ -1011,7 +1011,7 @@ def find_cold_res(rpath, ich, mode="X", harmonic_number=2):
     res_spl = InterpolatedUnivariateSpline(s, harmonic_number * f_c - ece_freq)
     roots = res_spl.roots()
     if(len(roots) == 0):
-        print("No roots for selected resonance - returning ECFM resonances")
+        print("No roots for selected resonance - returning ECRad resonances")
         s_res = np.loadtxt(os.path.join(rpath, "sres.dat"))
         return False, s_res[ich - 1][0], s_res[ich - 1][1], s_res[ich - 1][2], s_res[ich - 1][3]
     else:
@@ -1139,7 +1139,7 @@ def get_resonance_N(n_omega_bar, N_par):
         return np.array([ull_res, uxx_res])
 
 def plot_B_along_los(fig, fig2, rpath, rhop_in, ich, shot, time, dstf, mode="X"):
-    rpath_data = os.path.join(rpath, "ecfm_data")
+    rpath_data = os.path.join(rpath, "ECRad_data")
     svec, ece_freq = read_svec_from_file(rpath_data, ich, mode="X")
     print("f_ECE", ece_freq)
     # B = svec.T[7] * cnst.m_e / cnst.e / np.pi
@@ -1165,13 +1165,13 @@ def plot_B_along_los(fig, fig2, rpath, rhop_in, ich, shot, time, dstf, mode="X")
     leg = ax1.legend(handles, labels, loc="upper left")
     return fig, fig2
 
-def get_B(ecfm_data, ich):
-    svec, ece_freq = read_svec_from_file(ecfm_data, ich)
+def get_B(ECRad_data, ich):
+    svec, ece_freq = read_svec_from_file(ECRad_data, ich)
     B = svec.T[8] * cnst.m_e / cnst.e * np.pi
     return svec.T[1], B
 
-def get_omega_c_and_cutoff(ecfm_data, ich, mode):
-    svec, ece_freq = read_svec_from_file(ecfm_data, ich, mode)
+def get_omega_c_and_cutoff(ECRad_data, ich, mode):
+    svec, ece_freq = read_svec_from_file(ECRad_data, ich, mode)
     f_c_1X = svec.T[-1][svec.T[3] != -1.0] * 5.e-10
     f_c_2X = svec.T[-1][svec.T[3] != -1.0] * 1.e-9  # * 1.04
     f_c_3X = svec.T[-1][svec.T[3] != -1.0] * 1.e-9 * 1.5  # * 1.04
@@ -1503,8 +1503,8 @@ def Write_ped_data(args):
     rpath = args[0]
     distpath = args[1]
     mode = args[2]
-    wpath = os.path.join(rpath, "ecfm_data")
-    ipsi, psi, x, y, Fe = read_Fe(rpath + "/ecfm_data/")
+    wpath = os.path.join(rpath, "ECRad_data")
+    ipsi, psi, x, y, Fe = read_Fe(rpath + "/ECRad_data/")
     step_ll = 1.0 / len(x)
     step_xx = step_ll / 1.0 * 0.5
     rhop_vec_Te, Te_vec = read_file(rpath + "/te_ida.res")
@@ -1559,7 +1559,7 @@ def Write_ped_data(args):
     print("ECRH-Pedstal data ready")
 
 def prep_data(rpath):
-    ipsi, psi, x, y, Fe = read_Fe(rpath + "/ecfm_data/")
+    ipsi, psi, x, y, Fe = read_Fe(rpath + "/ECRad_data/")
     step_ll = 1.0 / len(x) * 0.5
     step_xx = step_ll / 1.0
     ull = np.arange(-0.2, 0.2, step_ll)
@@ -1601,7 +1601,7 @@ def fix_Te_perp(Te_perp, Te_par, f_zero):
 
 def test_fit(ipsi, psi, x, y, Fe, ull, uxx, ull_spitzer, rhop_vec_Te, Te_vec, beta):
     # overwrite = r"C:\Users\Severin\Documents\IPP-Job\IDA_GUI_Ext\\"
-    # ipsi, psi, x, y, Fe = read_Fe(os.path.join(base ,"ecfm_data" + os.path.sep))
+    # ipsi, psi, x, y, Fe = read_Fe(os.path.join(base ,"ECRad_data" + os.path.sep))
     # rhop_vec_Te, Te_vec = read_file(os.path.join(base, "te_ida.res"))
     middle = np.floor(float(len(ull)) / 2.0)
     f = np.zeros([len(ull), len(uxx)])  # [len(ull),len(uxx)]
@@ -1920,7 +1920,7 @@ def find_vd(args):
     j_vec = args[3]
     rhop_vec_Te, Te_vec = read_file(rpath + "/te_ida.res")
     rhop_vec_ne, ne_vec = read_file(rpath + "/ne_ida.res")
-    ipsi, psi, x, y, Fe = read_Fe(rpath + "/ecfm_data/")
+    ipsi, psi, x, y, Fe = read_Fe(rpath + "/ECRad_data/")
     rhop = np.sqrt(psi)
     # plt.plot(rhop_vec_ne, ne_vec * 1.e20)
     # return
@@ -2566,8 +2566,8 @@ def export_fortran_friendly(args):
     rhopfile.close()
     print("Distribution ready")
 
-# export_fortran_friendly([os.path.join("/ptmp1/work/sdenk/nssf/", "33698", "5.00", "OERT", "ecfm_data"),
-#                         os.path.join("/ptmp1/work/sdenk/nssf/", "33698", "5.00", "OERT", "ecfm_data", "fLu"), True, 1.5])
+# export_fortran_friendly([os.path.join("/ptmp1/work/sdenk/nssf/", "33698", "5.00", "OERT", "ECRad_data"),
+#                         os.path.join("/ptmp1/work/sdenk/nssf/", "33698", "5.00", "OERT", "ECRad_data", "fLu"), True, 1.5])
 
 def eval_R(x):
     return -x[0] ** 3
@@ -2647,9 +2647,9 @@ class f_interpolator:
             return
         else:
             self.thermal = False
-        # ipsi, psi, x, y, Fe = read_Fe(os.path.join(working_dir, "ecfm_data") + os.path.sep)
+        # ipsi, psi, x, y, Fe = read_Fe(os.path.join(working_dir, "ECRad_data") + os.path.sep)
         if(dist == "Lu" or dist == "Re"):
-            f_folder = os.path.join(working_dir, "ecfm_data", "f" + dist)
+            f_folder = os.path.join(working_dir, "ECRad_data", "f" + dist)
             x = np.loadtxt(os.path.join(f_folder, "u.dat"), skiprows=1)
             y = np.loadtxt(os.path.join(f_folder, "pitch.dat"), skiprows=1)
             self.rhop = np.loadtxt(os.path.join(f_folder, "frhop.dat"), skiprows=1)
@@ -2657,10 +2657,10 @@ class f_interpolator:
             for irhop in range(len(self.rhop)):
                 Fe.append(np.loadtxt(os.path.join(f_folder, "fu{0:03d}.dat".format(irhop))))
             Fe = np.array(Fe)
-            rhop_B_min, B_min = get_B_min_from_file(os.path.join(working_dir, "ecfm_data"))
+            rhop_B_min, B_min = get_B_min_from_file(os.path.join(working_dir, "ECRad_data"))
             self.B_min_spline = InterpolatedUnivariateSpline(rhop_B_min, B_min)
         elif(dist == "Ge"):
-            f_folder = os.path.join(working_dir, "ecfm_data", "f" + dist)
+            f_folder = os.path.join(working_dir, "ECRad_data", "f" + dist)
             x = np.loadtxt(os.path.join(f_folder, "vpar.dat"), skiprows=1)
             y = np.loadtxt(os.path.join(f_folder, "mu.dat"), skiprows=1)
             self.rhop = np.loadtxt(os.path.join(f_folder, "grhop.dat"), skiprows=1)
@@ -2670,7 +2670,7 @@ class f_interpolator:
                 Fe.append(np.loadtxt(os.path.join(f_folder, "gvpar{0:03d}.dat".format(irhop))))
             Fe = np.array(Fe)
         elif(dist == "Ge0"):
-            f_folder = os.path.join(working_dir, "ecfm_data", "fGe")
+            f_folder = os.path.join(working_dir, "ECRad_data", "fGe")
             x = np.loadtxt(os.path.join(f_folder, "vpar.dat"), skiprows=1)
             y = np.loadtxt(os.path.join(f_folder, "mu.dat"), skiprows=1)
             self.rhop = np.loadtxt(os.path.join(f_folder, "grhop.dat"), skiprows=1)
@@ -3080,17 +3080,17 @@ def make_f_beta(Te, betaxx, betall):
 def create_test_data():
     ull = np.arange(-1., 1., 1.0 / 128.0)
     uxx = np.arange(0.0, 1., 1.0 / 128.0)
-    temp_file = open(root + "F90/Ecfm_Model/Te_rhop_relax.dat")
+    temp_file = open(root + "F90/ECRad_Model/Te_rhop_relax.dat")
     temps = temp_file.readlines()
     temp_file.close()
     Te = []
     rhop = []
     rhopfile = open(\
-            root + "F90/Ecfm_Model/ecfm_data/frhop.dat", "w")
+            root + "F90/ECRad_Model/ECRad_data/frhop.dat", "w")
     uxxfile = open(\
-            root + "F90/Ecfm_Model/ecfm_data/u_perp.dat", "w")
+            root + "F90/ECRad_Model/ECRad_data/u_perp.dat", "w")
     ullfile = open(\
-            root + "F90/Ecfm_Model/ecfm_data/u_par.dat", "w")
+            root + "F90/ECRad_Model/ECRad_data/u_par.dat", "w")
     for i in range(len(uxx)):
         uxxfile.write("{0: 1.8E}\n".format(uxx[i]))
     for i in range(len(ull)):
@@ -3106,7 +3106,7 @@ def create_test_data():
     for i in range(len(rhop)):
         rhopfile.write("{0: 1.5f}\n".format(rhop[i]))
         thefile = open(\
-            root + "F90/Ecfm_Model/ecfm_data/fu{0:0>2}.dat".format(i), "w")
+            root + "F90/ECRad_Model/ECRad_data/fu{0:0>2}.dat".format(i), "w")
         for j in range(len(ull)):
             for k in range(len(uxx)):
                 f = make_f(Te[i], uxx[k], ull[j])
@@ -3126,7 +3126,7 @@ def read():
     # plt.show()
     #
     # print(len(x),len(y), len(psi))
-    ipsi, psi, x, y, Fe = read_Fe(base + "ecfm_data/")
+    ipsi, psi, x, y, Fe = read_Fe(base + "ECRad_data/")
     ull = np.arange(-1., 1., 0.1 / 128.0)
     uxx = np.arange(0.0, 1., 0.1 / 128.0)
     # ull, uxx = momenta_on_equatorial_plane(x, y)
@@ -3285,7 +3285,7 @@ class Gene:
             print("h5py not loaded - cannot load h5py GENE data")
             return
         h5_fileID = h5py.File(os.path.join(path, "xvsp_electrons_1e.h5"), 'r')['xvsp_electrons']
-        gene_pos = h5py.File("/ptmp1/work/sdenk/ECFM7/xvspelectrons_1c.h5")
+        gene_pos = h5py.File("/ptmp1/work/sdenk/ECRad7/xvspelectrons_1c.h5")
         if(EQSlice is None):
             if(time is None):
                 print("The Gene class has to be initialized with either time or an EQSlice object present")
@@ -3660,19 +3660,19 @@ def make_bimax_from_GENE(path, shot, time, wpath_parent, subdir_list, wrong=Fals
     fig2.suptitle("Maxwell")
     if(write):
         subdir_index = 0
-        wpath = os.path.join(wpath_parent, subdir_list[subdir_index], "ecfm_data", "fGe")
+        wpath = os.path.join(wpath_parent, subdir_list[subdir_index], "ECRad_data", "fGe")
         if(not os.path.isdir(wpath)):
             os.mkdir(wpath)
         args = [wpath, rhop, beta_par, mu_norm, f_perp_low_max, f0, ne, B0]
         export_art_gene_f_fortran_friendly(args)
         subdir_index += 1
-        wpath = os.path.join(wpath_parent, subdir_list[subdir_index], "ecfm_data", "fGe")
+        wpath = os.path.join(wpath_parent, subdir_list[subdir_index], "ECRad_data", "fGe")
         if(not os.path.isdir(wpath)):
             os.mkdir(wpath)
         args = [wpath, rhop, beta_par, mu_norm, f_par_low_max, f0, ne, B0]
         export_art_gene_f_fortran_friendly(args)
         subdir_index += 1
-        wpath = os.path.join(wpath_parent, subdir_list[subdir_index], "ecfm_data", "fGe")
+        wpath = os.path.join(wpath_parent, subdir_list[subdir_index], "ECRad_data", "fGe")
         if(not os.path.isdir(wpath)):
             os.mkdir(wpath)
         args = [wpath, rhop, beta_par, mu_norm, f_perp_par_low_max, f0, ne, B0]
@@ -3725,19 +3725,19 @@ def make_bimax_from_GENE(path, shot, time, wpath_parent, subdir_list, wrong=Fals
     fig4.suptitle("Maxwell")
     plt.show()
     if(write):
-        wpath = os.path.join(wpath_parent, subdir_list[subdir_index], "ecfm_data", "fGe")
+        wpath = os.path.join(wpath_parent, subdir_list[subdir_index], "ECRad_data", "fGe")
         if(not os.path.isdir(wpath)):
             os.mkdir(wpath)
         args = [wpath, rhop, beta_par, mu_norm, f_perp_large_max, f0, ne, B0]
         export_art_gene_f_fortran_friendly(args)
         subdir_index += 1
-        wpath = os.path.join(wpath_parent, subdir_list[subdir_index], "ecfm_data", "fGe")
+        wpath = os.path.join(wpath_parent, subdir_list[subdir_index], "ECRad_data", "fGe")
         if(not os.path.isdir(wpath)):
             os.mkdir(wpath)
         args = [wpath, rhop, beta_par, mu_norm, f_par_large_max, f0, ne, B0]
         export_art_gene_f_fortran_friendly(args)
         subdir_index += 1
-        wpath = os.path.join(wpath_parent, subdir_list[subdir_index], "ecfm_data", "fGe")
+        wpath = os.path.join(wpath_parent, subdir_list[subdir_index], "ECRad_data", "fGe")
         if(not os.path.isdir(wpath)):
             os.mkdir(wpath)
         args = [wpath, rhop, beta_par, mu_norm, f_perp_par_large_max, f0, ne, B0]
@@ -3782,19 +3782,19 @@ def make_bimaxjuett_from_GENE(path, shot, time, wpath_parent, subdir_list):
     ax2.set_ylabel(r"$\tilde{T}_{\mathrm{e},\parallel}$ [keV]")
     ax2.legend()
     subdir_index = 0
-    wpath = os.path.join(wpath_parent, subdir_list[subdir_index], "ecfm_data", "fGe")
+    wpath = os.path.join(wpath_parent, subdir_list[subdir_index], "ECRad_data", "fGe")
     if(not os.path.isdir(wpath)):
         os.mkdir(wpath)
     args = [wpath, rhop, beta_par, mu_norm, f_perp_low_max, f0, ne, B0]
     export_art_gene_f_fortran_friendly(args)
     subdir_index += 1
-    wpath = os.path.join(wpath_parent, subdir_list[subdir_index], "ecfm_data", "fGe")
+    wpath = os.path.join(wpath_parent, subdir_list[subdir_index], "ECRad_data", "fGe")
     if(not os.path.isdir(wpath)):
         os.mkdir(wpath)
     args = [wpath, rhop, beta_par, mu_norm, f_par_low_max, f0, ne, B0]
     export_art_gene_f_fortran_friendly(args)
     subdir_index += 1
-    wpath = os.path.join(wpath_parent, subdir_list[subdir_index], "ecfm_data", "fGe")
+    wpath = os.path.join(wpath_parent, subdir_list[subdir_index], "ECRad_data", "fGe")
     if(not os.path.isdir(wpath)):
         os.mkdir(wpath)
     args = [wpath, rhop, beta_par, mu_norm, f_perp_par_low_max, f0, ne, B0]
@@ -3840,19 +3840,19 @@ def make_bimaxjuett_from_GENE(path, shot, time, wpath_parent, subdir_list):
     ax4.set_ylabel(r"$\tilde{T}_{\mathrm{e},\parallel}$ [keV]")
     ax4.legend()
     plt.show()
-    wpath = os.path.join(wpath_parent, subdir_list[subdir_index], "ecfm_data", "fGe")
+    wpath = os.path.join(wpath_parent, subdir_list[subdir_index], "ECRad_data", "fGe")
     if(not os.path.isdir(wpath)):
         os.mkdir(wpath)
     args = [wpath, rhop, beta_par, mu_norm, f_perp_large_max, f0, ne, B0]
     export_art_gene_f_fortran_friendly(args)
     subdir_index += 1
-    wpath = os.path.join(wpath_parent, subdir_list[subdir_index], "ecfm_data", "fGe")
+    wpath = os.path.join(wpath_parent, subdir_list[subdir_index], "ECRad_data", "fGe")
     if(not os.path.isdir(wpath)):
         os.mkdir(wpath)
     args = [wpath, rhop, beta_par, mu_norm, f_par_large_max, f0, ne, B0]
     export_art_gene_f_fortran_friendly(args)
     subdir_index += 1
-    wpath = os.path.join(wpath_parent, subdir_list[subdir_index], "ecfm_data", "fGe")
+    wpath = os.path.join(wpath_parent, subdir_list[subdir_index], "ECRad_data", "fGe")
     if(not os.path.isdir(wpath)):
         os.mkdir(wpath)
     args = [wpath, rhop, beta_par, mu_norm, f_perp_par_large_max, f0, ne, B0]
@@ -4044,14 +4044,14 @@ def export_art_gene_f_fortran_friendly(args):
 
 if(__name__ == "__main__"):
     pass
-#    rhop, R, z, beta_par, mu_norm, f, f0, g, Te, ne, B0 = make_dist_from_Gene_input("/ptmp1/work/sdenk/nssf/33585/3.00/OERT/ed_4/ecfm_data", 33585, 3.0)
+#    rhop, R, z, beta_par, mu_norm, f, f0, g, Te, ne, B0 = make_dist_from_Gene_input("/ptmp1/work/sdenk/nssf/33585/3.00/OERT/ed_4/ECRad_data", 33585, 3.0)
 #    Te_perp, Te_par, ne_prof = get_dist_moments_non_rel(rhop, beta_par, mu_norm, f, Te, ne, B0, slices=1, ne_out=True)
 #    plt.plot(rhop, ne_prof)
-#    BiMax = Gene_BiMax("/ptmp1/work/sdenk/ECFM7/", 33585, time=3.0)
+#    BiMax = Gene_BiMax("/ptmp1/work/sdenk/ECRad7/", 33585, time=3.0)
 #    plt.plot(BiMax.rhop, BiMax.Te_par)
 #    plt.plot(BiMax.rhop, BiMax.Te_perp)
 #    plt.show()
-#    browse_gene_dists("/ptmp1/work/sdenk/ECFM5/", 33585, time=3.0, it=5)
+#    browse_gene_dists("/ptmp1/work/sdenk/ECRad5/", 33585, time=3.0, it=5)
 #    relax_time(50.e3, 8.e3, 3.e19)
 #    print(dp_dt_rad(1.0, 0.0, 2.5))
 #    print(collision_time(1.0 / np.sqrt(2.0) * cnst.c, 4.5e19))
@@ -4060,9 +4060,9 @@ if(__name__ == "__main__"):
 #    t_wave = 1.0 / 140.e9
 #    print(t, t_wave, t / t_wave)
 #    print(get_thermal_av_cyc_freq(8.e3, 131.6))
-#    dir = "/ptmp1/work/sdenk/nssf/32082/4.25/OERT/ed_1/ecfm_data/"
-# #    dir = "/ptmp1/work/sdenk/nssf/33705/4.90/OERT/ed_17/ecfm_data/"
-#    # "/ptmp1/work/sdenk/nssf/31539/2.81/OERT/ed_12/ecfm_data/"
+#    dir = "/ptmp1/work/sdenk/nssf/32082/4.25/OERT/ed_1/ECRad_data/"
+# #    dir = "/ptmp1/work/sdenk/nssf/33705/4.90/OERT/ed_17/ECRad_data/"
+#    # "/ptmp1/work/sdenk/nssf/31539/2.81/OERT/ed_12/ECRad_data/"
 #    dist_obj = make_synchroton_f(dir, 2.5)  # make_test_f
 # #    dist_obj = apply_synchroton_to_RELAX_f(dir, 2.35)
 #    if not os.path.isdir(os.path.join(dir, "fRe")):
@@ -4090,15 +4090,15 @@ if(__name__ == "__main__"):
 #    plt.plot(u, g2b, "--")
 #    plt.plot(u, g2c, ":")
 #    plt.show()
-#    make_dist_from_Gene_input("/ptmp1/work/sdenk/nssf/33585/3.00/OERT/ecfm_data", 33585, 3.0, debug=True)
-#    make_bimax_from_GENE("/ptmp1/work/sdenk/nssf/33585/3.00/OERT/ed_4/ecfm_data", 33585, 3.0, \
+#    make_dist_from_Gene_input("/ptmp1/work/sdenk/nssf/33585/3.00/OERT/ECRad_data", 33585, 3.0, debug=True)
+#    make_bimax_from_GENE("/ptmp1/work/sdenk/nssf/33585/3.00/OERT/ed_4/ECRad_data", 33585, 3.0, \
 #                         "/ptmp1/work/sdenk/nssf/33585/3.00/OERT/", \
 #                         ["ed_5", "ed_6", "ed_7", "ed_8", "ed_9", "ed_10"], True, False)
-#    make_bimaxjuett_from_GENE("/ptmp1/work/sdenk/nssf/33585/3.00/OERT/ed_4/ecfm_data", 33585, 3.0, \
+#    make_bimaxjuett_from_GENE("/ptmp1/work/sdenk/nssf/33585/3.00/OERT/ed_4/ECRad_data", 33585, 3.0, \
 #                         "/ptmp1/work/sdenk/nssf/33585/3.00/OERT/", \
 #                         ["ed_11", "ed_12", "ed_13", "ed_14", "ed_15", "ed_16"])
-# #    plot_dist_moments("/ptmp1/work/sdenk/nssf/33585/3.00/OERT/ecfm_data", 33585, 3.0)
+# #    plot_dist_moments("/ptmp1/work/sdenk/nssf/33585/3.00/OERT/ECRad_data", 33585, 3.0)
 # test_make_EField()
 # make_iso_flux("/ptmp1/work/sdenk/nssf/30907/0.73/",30907, 0.73)
-# make_f_grid('/ptmp1/work/sdenk/nssf/30907/1.45/ecfm_data',30907, 1.45,16, "Th")
+# make_f_grid('/ptmp1/work/sdenk/nssf/30907/1.45/ECRad_data',30907, 1.45,16, "Th")
 # test_fit()

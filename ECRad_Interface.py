@@ -6,13 +6,13 @@ Created on Dec 9, 2015
 import os
 import numpy as np
 import sys
-sys.path.append("../ECFM_Pylib")
+sys.path.append("../ECRad_Pylib")
 from GlobalSettings import AUG, TCV, itm, ECRadDevPath, ECRadPath, ECRadPathBSUB
 from Diags import Diag
 if(AUG):
-    vessel_file = '../ECFM_Pylib/ASDEX_Upgrade_vessel.txt'
+    vessel_file = '../ECRad_Pylib/ASDEX_Upgrade_vessel.txt'
 if(TCV):
-    vessel_file = '../ECFM_Pylib/TCV_vessel.txt'
+    vessel_file = '../ECRad_Pylib/TCV_vessel.txt'
 from shutil import copy, copyfile, rmtree
 from scipy.io import loadmat
 import scipy.constants as cnst
@@ -24,7 +24,7 @@ from electron_distribution_utils import export_gene_fortran_friendly, \
 from scipy.interpolate import InterpolatedUnivariateSpline
 from Geometry_utils import get_Surface_area_of_torus
 
-def GetECFMExec(Config, Scenario, time):
+def GetECRadExec(Config, Scenario, time):
     # Determine OMP stacksize
     stacksize = 0
     for diag in Scenario.used_diags_dict:
@@ -38,40 +38,40 @@ def GetECFMExec(Config, Scenario, time):
                 if(Config.parallel_cores > 16):
                     print("The maximum amount of cores for tokp submission is 16")
                     return
-                InvokeECFM = "ssh tokp01.itm \"cd " + Config.working_dir + \
+                InvokeECRad = "ssh tokp01.itm \"cd " + Config.working_dir + \
                                   " && setenv ECRad_working_dir_1 " + Config.working_dir + " &&" + \
                                   " setenv OMP_STACKSIZE " + "{0:d}k".format(stacksize) + " && setenv ECRad " + ECRadDevPath + \
                                   " && setenv OMP_NUM_THREADS " + "{0:d}".format(Config.parallel_cores)
-                InvokeECFM += " && qsub" + " -N " + "E{0:5d}{1:1.1f}".format(Config.shot, time) + \
+                InvokeECRad += " && qsub" + " -N " + "E{0:5d}{1:1.1f}".format(Config.shot, time) + \
                                    " -l h_rt={0:02d}:00:00".format(Config.wall_time) + \
                                    " -l h_vmem={0:d}M".format(Config.vmem) + \
                                    " -pe \'impi_hydra.*\' " + "{0:d} ".format(Config.parallel_cores) + ECRadPathBSUB + '"'
-#                                          " /afs/ipp-garching.mpg.de/home/s/sdenk/F90/Ecfm_Model_parallel_dev/batch_submit_ECFM_parallel_new.sge\""
+#                                          " /afs/ipp-garching.mpg.de/home/s/sdenk/F90/Ecfm_Model_parallel_dev/batch_submit_ECRad_parallel_new.sge\""
                 print("Submitting job to tokp queue.")
             else:
-                print("Running ECFM model with {0:d} cores and reduced priority".format(Config.parallel_cores))
+                print("Running ECRad model with {0:d} cores and reduced priority".format(Config.parallel_cores))
                 os.environ['OMP_NUM_THREADS'] = "{0:d}".format(Config.parallel_cores)
                 os.environ['OMP_STACKSIZE'] = "{0:d}k".format(stacksize)
-                InvokeECFM = ECRadDevPath + " " + Config.working_dir
+                InvokeECRad = ECRadDevPath + " " + Config.working_dir
         elif(Config.batch):
-            os.environ['ECFM'] = ECRadDevPath
-            os.environ['ECFM_working_dir_1'] = Config.working_dir
+            os.environ['ECRad'] = ECRadDevPath
+            os.environ['ECRad_working_dir_1'] = Config.working_dir
             os.environ['WALLTIME'] = r"{0:2d}:00:00".format(Config.wall_time)
             os.environ['VMEM'] = r"{0:d}M".format(Config.vmem)
-            # os.environ['ECFM_job_name'] = "E{0:5d}{1:1.1f}".format(Config.shot, time)
-            InvokeECFM = "ssh tokp01.itm  \"cd " + Config.working_dir + \
+            # os.environ['ECRad_job_name'] = "E{0:5d}{1:1.1f}".format(Config.shot, time)
+            InvokeECRad = "ssh tokp01.itm  \"cd " + Config.working_dir + \
                               " && setenv ECRad_working_dir_1 " + Config.working_dir + " &&" + \
                               " setenv ECRad " + ECRadDevPath
-            InvokeECFM += " && qsub" + " -N " + "E{0:5d}{1:1.1f}".format(Config.shot, time) + \
+            InvokeECRad += " && qsub" + " -N " + "E{0:5d}{1:1.1f}".format(Config.shot, time) + \
                                " -l h_rt={0:02d}:00:00".format(Config.wall_time) + \
                                " -l h_vmem={0:d}M".format(Config.vmem) + \
                                " -pe \'openmp.*\' " + "{0:d}".format(1) + ECRadPathBSUB + '"'
             print("Submitting job to tokp queue.")
         else:
-            os.environ['ECFM'] = ECRadDevPath
-            os.environ['ECFM_working_dir_1'] = Config.working_dir
-            # os.environ['ECFM_job_name'] = "E{0:5d}{1:1.1f}".format(Config.shot, time)
-            InvokeECFM = ECRadDevPath + " " + Config.working_dir
+            os.environ['ECRad'] = ECRadDevPath
+            os.environ['ECRad_working_dir_1'] = Config.working_dir
+            # os.environ['ECRad_job_name'] = "E{0:5d}{1:1.1f}".format(Config.shot, time)
+            InvokeECRad = ECRadDevPath + " " + Config.working_dir
             print("Submitting job to toks queue.")
     elif(not Config.debug):
         if(Config.batch):
@@ -79,43 +79,48 @@ def GetECFMExec(Config, Scenario, time):
                 if(Config.parallel_cores > 16):
                     print("The maximum amount of cores for tokp submission is 16")
                     return
-                InvokeECFM = "ssh tokp01.itm \"cd " + Config.working_dir + \
+                InvokeECRad = "ssh tokp01.itm \"cd " + Config.working_dir + \
                                   " && setenv ECRad_working_dir_1 " + Config.working_dir + " &&" + \
                                   " setenv OMP_STACKSIZE " + "{0:d}k".format(stacksize) + " && setenv ECRad " + ECRadPath + \
                                   " && setenv OMP_NUM_THREADS " + "{0:d}".format(Config.parallel_cores)
-                InvokeECFM += " && qsub" + " -N " + "E{0:5d}{1:1.1f}".format(Scenario.shot, time) + \
+                InvokeECRad += " && qsub" + " -N " + "E{0:5d}{1:1.1f}".format(Scenario.shot, time) + \
                                    " -l h_rt={0:02d}:00:00".format(Config.wall_time) + \
                                    " -l h_vmem={0:d}M".format(Config.vmem) + \
                                    " -pe \'impi_hydra.*\' " + "{0:d} ".format(Config.parallel_cores) + ECRadPathBSUB + '"'
                 print("Submitting job to tokp queue.")
             else:
-                InvokeECFM = "ssh tokp01.itm  \"cd " + Config.working_dir + \
+                InvokeECRad = "ssh tokp01.itm  \"cd " + Config.working_dir + \
                                   " && setenv ECRad_working_dir_1 " + Config.working_dir + " &&" + \
                                   " setenv OMP_STACKSIZE " + "{0:d}k".format(stacksize) + " && setenv ECRad " + \
                                   ECRadPath + " && setenv OMP_NUM_THREADS " + "{0:d}".format(1)  # Serial
-                InvokeECFM += " && qsub" + " -N " + "E{0:5d}{1:1.1f}".format(Config.shot, time) + \
+                InvokeECRad += " && qsub" + " -N " + "E{0:5d}{1:1.1f}".format(Config.shot, time) + \
                                    " -l h_rt={0:02d}:00:00 ".format(Config.wall_time) + \
                                    " -l h_vmem={0:d}M".format(Config.vmem) + \
                                    ECRadPathBSUB + '"'
-                os.environ['ECFM'] = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/Ecfm_Model/ecfm_model"
-                os.environ['ECFM_working_dir_1'] = Config.working_dir
+                os.environ['ECRad'] = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/Ecfm_Model/ecfm_model"
+                os.environ['ECRad_working_dir_1'] = Config.working_dir
                 print("Submitting job to tokp queue.")
         else:
-            print("Running ECFM model with {0:d} cores and reduced priority".format(Config.parallel_cores))
+            print("Running ECRad model with {0:d} cores and reduced priority".format(Config.parallel_cores))
             if(Config.parallel):
                 os.environ['OMP_NUM_THREADS'] = "{0:d}".format(Config.parallel_cores)
             else:
                 os.environ['OMP_NUM_THREADS'] = "{0:d}".format(1)  # serial
             os.environ['OMP_STACKSIZE'] = "{0:d}k".format(stacksize)
-            InvokeECFM = ECRadPath + " " + Config.working_dir
-    return InvokeECFM
+            InvokeECRad = ECRadPath + " " + Config.working_dir
+    return InvokeECRad
 
 def prepare_input_files(Config, Scenario, index, copy_dist=True):
     working_dir = Config.working_dir
     # eq_exp = Config.EQ_exp always exp
     ecfm_data_path = os.path.join(working_dir, "ecfm_data", "")
     if(not(os.path.isdir(ecfm_data_path))):
-        os.mkdir(ecfm_data_path)
+        try:
+            os.mkdir(ecfm_data_path)
+        except OSError:
+            print("Failed to create ecfm_data folder in: ", working_dir)
+            print("Please check that this folder exists and you have write permissions")
+            return False
         print("Created folder " + ecfm_data_path)
     if(Config.dstf != "GB"):
         Ich_path = os.path.join(ecfm_data_path, "Ich" + Config.dstf)
@@ -129,7 +134,7 @@ def prepare_input_files(Config, Scenario, index, copy_dist=True):
         os.mkdir(ray_folder)
         print("Created folder " + ray_folder)
     write_diag_launch(ecfm_data_path, Scenario.ray_launch[index])
-    input_file = open(os.path.join(ecfm_data_path, "ECFM.inp"), "w")
+    input_file = open(os.path.join(ecfm_data_path, "ECRad.inp"), "w")
     if(Config.dstf == "GB"):
         input_file.write("Ge" + "\n")  # Model does not distinguish between Ge and GB
     else:
@@ -281,7 +286,7 @@ def get_ECE_launch_info(shot, diag):
     return ECE_launch
 
 def get_diag_launch(shot, time, used_diag_dict, gy_dict=None, ECI_dict=None):
-    print("ECFM data will be written for diags ", used_diag_dict.keys())
+    print("ECRad data will be written for diags ", used_diag_dict.keys())
     launch_array = []
     for diag in used_diag_dict.keys():
         launch = {}
@@ -510,7 +515,7 @@ def get_diag_launch(shot, time, used_diag_dict, gy_dict=None, ECI_dict=None):
     return flat_launch
 
 def write_diag_launch(path, diag_launch):
-    print("ECFM data will be written for diags ", list(set(diag_launch["diag_name"])))
+    print("ECRad data will be written for diags ", list(set(diag_launch["diag_name"])))
     launch_file = open(os.path.join(path, 'ray_launch.dat'), 'w')
     launch_file.write("{0: 5d}\n".format(len(diag_launch["f"])))
     for i in range(len(diag_launch["f"])):
@@ -532,7 +537,7 @@ def make_reflec_launch(working_dir, shot, time, used_diag_dict, gy_dict=None, EC
     # This routine prepares the ECRad calculation of the isotropic background radiation temperature
     # At the moment this considers just the normal LOS, hence the approach is very much simplified
     # TO BE IMPROVED
-    print("ECFM reflec data will be written for diags ", used_diag_dict.keys())
+    print("ECRad reflec data will be written for diags ", used_diag_dict.keys())
     if(len(used_diag_dict.keys()) > 1):
         raise ValueError("Currently only one concurrent diagnostic supported for reflec_model = 1")
     diag_launch_array = get_diag_launch(working_dir, shot, time, used_diag_dict, gy_dict=gy_dict, ECI_dict=ECI_dict)
@@ -675,10 +680,10 @@ def make_reflec_Trad(index, Config, f_reflec, Trad_X_reflec, tau_X_reflec, Trad_
         Trad_O_reflec_file.flush()
         Trad_O_reflec_file.close()
 
-def load_and_validate_external_plasma(ECFMConfig):
+def load_and_validate_external_plasma(ECRadConfig):
     try:
         plasma_dict = {}
-        ext_data_folder = os.path.join(ECFMConfig.working_dir, "Ext_data")
+        ext_data_folder = os.path.join(ECRadConfig.working_dir, "Ext_data")
         time = np.loadtxt(os.path.join(ext_data_folder, "t"), dtype=np.double, ndmin=1)
         plasma_dict["Te"] = []
         plasma_dict["ne"] = []
@@ -691,12 +696,12 @@ def load_and_validate_external_plasma(ECFMConfig):
         # TODO remove this place holder by a routine that does this for external equilibriae
         index = 0
         plasma_dict["ECE_mod"] = []
-        EQ_obj = EQDataExt(ECFMConfig.shot, external_folder=ext_data_folder, bt_vac_correction=ECFMConfig.bt_vac_correction)
+        EQ_obj = EQDataExt(ECRadConfig.shot, external_folder=ext_data_folder, bt_vac_correction=ECRadConfig.bt_vac_correction)
         for t in time:
             plasma_dict["eq_data"].append(EQ_obj.read_EQ_from_Ext_single_slice(t, index))
             Te_data = np.loadtxt(os.path.join(ext_data_folder, "Te{0:d}".format(index)))
             ne_data = np.loadtxt(os.path.join(ext_data_folder, "ne{0:d}".format(index)))
-            if(not ECFMConfig.Ext_Grid):
+            if(not ECRadConfig.Ext_Grid):
                 plasma_dict["Te"].append(Te_data.T[1])
                 plasma_dict["rhop"].append(Te_data.T[0])
                 plasma_dict["ne"].append(ne_data.T[1])
@@ -714,8 +719,8 @@ def load_and_validate_external_plasma(ECFMConfig):
         plasma_dict["eq_data"] = np.array(plasma_dict["eq_data"])
         plasma_dict["rhop"] = np.array(plasma_dict["rhop"])
         plasma_dict["ne"] = np.array(plasma_dict["ne"])
-        plasma_dict["RwallX"] = ECFMConfig.reflec_X  # default in IDA -> make this an input quantity
-        plasma_dict["RwallO"] = ECFMConfig.reflec_O  # default in IDA -> make this an input quantity
+        plasma_dict["RwallX"] = ECRadConfig.reflec_X  # default in IDA -> make this an input quantity
+        plasma_dict["RwallO"] = ECRadConfig.reflec_O  # default in IDA -> make this an input quantity
         try:
             plasma_dict["vessel_bd"] = np.loadtxt(os.path.join(ext_data_folder, "Ext_vessel.bd"), skiprows=1).T
         except IOError:
@@ -727,12 +732,12 @@ def load_and_validate_external_plasma(ECFMConfig):
             z_spl = InterpolatedUnivariateSpline(s, plasma_dict["vessel_bd"][1])
             s_short = np.linspace(0.0, 1.0, 60)
             plasma_dict["vessel_bd"] = np.array([R_spl(s_short), z_spl(s_short)])
-        if(not ECFMConfig.Ext_Grid):
+        if(not ECRadConfig.Ext_Grid):
             plasma_dict["eq_diag"] = "Ext"
-            ECFMConfig.EQ_diag = "Ext"
+            ECRadConfig.EQ_diag = "Ext"
         else:
             plasma_dict["eq_diag"] = "E2D"
-            ECFMConfig.EQ_diag = "E2D"
+            ECRadConfig.EQ_diag = "E2D"
         plasma_dict["eq_ed"] = 0
         return time, plasma_dict
     except IOError as e:
@@ -929,6 +934,7 @@ def make_topfile(working_dir, shot, time, EQ_t):
     return 0
 
 def make_ECRadInputFromPlasmaDict(working_dir, plasma_dict, index):
+    # In the topfile the dimensions of the matrices are z,R unlike in the GUI where it is R,z -> transpose the matrices here
     columns = 5  # number of coloumns
     columns -= 1
     EQ = plasma_dict["eq_data"][index]
@@ -964,9 +970,9 @@ def make_ECRadInputFromPlasmaDict(working_dir, plasma_dict, index):
         topfile.write('\n')
     topfile.write('B_r on grid\n')
     cnt = 0
-    for i in range(len(EQ.Br)):
-        for j in range(len(EQ.Br[i])):
-            topfile.write("  {0: 1.8E}".format(EQ.Br[i][j]))
+    for i in range(len(EQ.Br.T)):
+        for j in range(len(EQ.Br.T[i])):
+            topfile.write("  {0: 1.8E}".format(EQ.Br.T[i][j]))
             if(cnt == columns):
                 topfile.write("\n")
                 cnt = 0
@@ -976,9 +982,9 @@ def make_ECRadInputFromPlasmaDict(working_dir, plasma_dict, index):
         topfile.write('\n')
     topfile.write('B_t on grid\n')
     cnt = 0
-    for i in range(len(EQ.Bt)):
-        for j in range(len(EQ.Bt[i])):
-            topfile.write("  {0: 1.8E}".format(EQ.Bt[i][j]))
+    for i in range(len(EQ.Bt.T)):
+        for j in range(len(EQ.Bt.T[i])):
+            topfile.write("  {0: 1.8E}".format(EQ.Bt.T[i][j]))
             if(cnt == columns):
                 topfile.write("\n")
                 cnt = 0
@@ -988,9 +994,9 @@ def make_ECRadInputFromPlasmaDict(working_dir, plasma_dict, index):
         topfile.write('\n')
     cnt = 0
     topfile.write('B_z on grid\n')
-    for i in range(len(EQ.Bz)):
-        for j in range(len(EQ.Bz[i])):
-            topfile.write("  {0: 1.8E}".format(EQ.Bz[i][j]))
+    for i in range(len(EQ.Bz.T)):
+        for j in range(len(EQ.Bz.T[i])):
+            topfile.write("  {0: 1.8E}".format(EQ.Bz.T[i][j]))
             if(cnt == columns):
                 topfile.write("\n")
                 cnt = 0
@@ -1000,9 +1006,9 @@ def make_ECRadInputFromPlasmaDict(working_dir, plasma_dict, index):
         topfile.write('\n')
     cnt = 0
     topfile.write('Normalised psi on grid\n')
-    for i in range(len(EQ.Psi)):
-        for j in range(len(EQ.Psi[i])):
-            topfile.write("  {0: 1.8E}".format(EQ.Psi[i][j]))
+    for i in range(len(EQ.Psi.T)):
+        for j in range(len(EQ.Psi.T[i])):
+            topfile.write("  {0: 1.8E}".format(EQ.Psi.T[i][j]))
             if(cnt == columns):
                 topfile.write("\n")
                 cnt = 0
@@ -1076,9 +1082,9 @@ def make_ECRadInputFromPlasmaDict(working_dir, plasma_dict, index):
         cnt = 0
         print("EQ.Bz shape", EQ.Bz.shape)
         print("Te shape", Te.shape)
-        for i in range(len(Te)):
-            for j in range(len(Te[i])):
-                Te_ne_matfile.write("  {0: 1.8E}".format(Te[i][j]))
+        for i in range(len(Te.T)):
+            for j in range(len(Te.T[i])):
+                Te_ne_matfile.write("  {0: 1.8E}".format(Te.T[i][j]))
                 if(cnt == columns):
                     Te_ne_matfile.write("\n")
                     cnt = 0
@@ -1088,9 +1094,9 @@ def make_ECRadInputFromPlasmaDict(working_dir, plasma_dict, index):
             Te_ne_matfile.write('\n')
         Te_ne_matfile.write('ne on grid\n')
         cnt = 0
-        for i in range(len(ne)):
-            for j in range(len(ne[i])):
-                Te_ne_matfile.write("  {0: 1.8E}".format(ne[i][j]))
+        for i in range(len(ne.T)):
+            for j in range(len(ne.T[i])):
+                Te_ne_matfile.write("  {0: 1.8E}".format(ne.T[i][j]))
                 if(cnt == columns):
                     Te_ne_matfile.write("\n")
                     cnt = 0
@@ -1269,4 +1275,4 @@ def make_topfile_from_ext_data(working_dir, shot, time, EQ, rhop, Te, ne, grid=F
 
 if(__name__ == "__main__"):
     # print(get_ECE_launch_info(31539, Diag("ECE", "AUGD", "RMD", 0)))
-    make_hedgehog_launch("/tokp/work/sdenk/ECFM2/", 104.e9, 0.2e9, 2.206323000000e+00, 104.e0, 1.531469000000e-01)
+    make_hedgehog_launch("/tokp/work/sdenk/ECRad2/", 104.e9, 0.2e9, 2.206323000000e+00, 104.e0, 1.531469000000e-01)

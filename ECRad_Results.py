@@ -8,14 +8,14 @@ np.set_printoptions(threshold=10)
 import os
 from GlobalSettings import AUG, TCV
 from scipy.io import savemat, loadmat
-from ECFM_GUI_Config import ECFM_Config
-from ECFM_GUI_Scenario import ECFM_Scenario
+from ECRad_Config import ECRad_Config
+from ECRad_Scenario import ECRad_Scenario
 from collections import OrderedDict as od
 
-class ECFMResults:
+class ECRadResults:
     def __init__(self):
-        self.Config = ECFM_Config()
-        self.Scenario = ECFM_Scenario()
+        self.Config = ECRad_Config()
+        self.Scenario = ECRad_Scenario()
         self.reset()
 
     def reset(self):
@@ -25,12 +25,9 @@ class ECFMResults:
         self.init = False
         # Edition of this result
         # Remains zero until the result is saved
-        self.working_dir = None
         # Time of the results, should be identical to self.Scenario.plasma_dict["time"]
         self.time = []
         # This holds the same information as the scenario
-        self.diag = None
-        self.dstf = None
         self.modes = None
         self.Trad = []
         self.XTrad = []
@@ -128,40 +125,50 @@ class ECFMResults:
         self.ray_launch["width"] = []
         self.ray_launch["pol_coeff_X"] = []
 
-    def parse_scenario(self, Scenario):
-        self.Scenario = Scenario
+#    def parse_scenario(self, Scenario):
+#        self.Scenario = Scenario
 
-    def parse_config(self, Config):
-        self.Config = Config
-        self.working_dir = Config.working_dir
-        self.diag = None  # We grab this when we tidy up
-        self.dstf = Config.dstf
-        if(self.Config.considered_modes == 1):
-            self.modes = ["X"]
-        elif(Config.considered_modes == 2):
-            self.modes = ["O"]
-        elif(self.Config.considered_modes == 3):
-            self.modes = ["X", "O"]
-        else:
-            print("Only mode = 1, 2, 3 supported")
-            print("Selected mode: ", Config.considered_modes)
+#    def parse_config(self, Config):
+#        self.Config = Config
+#        self.working_dir = Config.working_dir
+#        self.diag = None  # We grab this when we tidy up
+#        self.Config.dstf = Config.dstf
+#        if(self.Config.considered_modes == 1):
+#            self.modes = ["X"]
+#        elif(Config.considered_modes == 2):
+#            self.modes = ["O"]
+#        elif(self.Config.considered_modes == 3):
+#            self.modes = ["X", "O"]
+#        else:
+#            print("Only mode = 1, 2, 3 supported")
+#            print("Selected mode: ", Config.considered_modes)
 
     def append_new_results(self, time):
         # Open files first to check for any missing files
         too_few_rays = False
+        if(self.modes == None):
+            if(self.Config.considered_modes == 1):
+                self.modes = ["X"]
+            elif(self.Config.considered_modes == 2):
+                self.modes = ["O"]
+            elif(self.Config.considered_modes == 3):
+                self.modes = ["X", "O"]
+            else:
+                print("Only mode = 1, 2, 3 supported")
+                print("Selected mode: ", self.Config.considered_modes)
         if(self.status != 0):
             return
         if(self.Config is None):
             print("Error -  config was not yet parsed into result instance")
             print("First parse config before appending results")
-        if(self.dstf == "Th" or self.dstf == "TB"):
+        if(self.Config.dstf == "Th" or self.Config.dstf == "TB"):
             Tradfilename = "TRadM_therm.dat"
-        elif(self.dstf == "Re"):
+        elif(self.Config.dstf == "Re"):
             Tradfilename = "TRadM_RELAX.dat"
-        elif(self.dstf == "Ge" or self.dstf == "GB"):
+        elif(self.Config.dstf == "Ge" or self.Config.dstf == "GB"):
             Tradfilename = "TRadM_GENE.dat"
-        Trad_file = np.loadtxt(os.path.join(self.working_dir, "ecfm_data", Tradfilename))
-        sres_file = np.loadtxt(os.path.join(self.working_dir, "ecfm_data", "sres.dat"))
+        Trad_file = np.loadtxt(os.path.join(self.Config.working_dir, "ecfm_data", Tradfilename))
+        sres_file = np.loadtxt(os.path.join(self.Config.working_dir, "ecfm_data", "sres.dat"))
         self.Trad.append(Trad_file.T[1])
         self.tau.append(Trad_file.T[2])
         if(not self.Config.extra_output):
@@ -171,38 +178,38 @@ class ECFMResults:
             self.resonance["rhop_cold"].append(sres_file.T[3])
             return
         if(self.Config.considered_modes == 3):
-            XTrad_file = np.loadtxt(os.path.join(self.working_dir, "ecfm_data", "X_" + Tradfilename))
-            OTrad_file = np.loadtxt(os.path.join(self.working_dir, "ecfm_data", "O_" + Tradfilename))
+            XTrad_file = np.loadtxt(os.path.join(self.Config.working_dir, "ecfm_data", "X_" + Tradfilename))
+            OTrad_file = np.loadtxt(os.path.join(self.Config.working_dir, "ecfm_data", "O_" + Tradfilename))
             self.XTrad.append(XTrad_file.T[1])
             self.OTrad.append(OTrad_file.T[1])
             self.Xtau.append(XTrad_file.T[2])
             self.Otau.append(OTrad_file.T[2])
             self.X_mode_frac.append(XTrad_file.T[3])
-        sres_rel_file = np.loadtxt(os.path.join(self.working_dir, "ecfm_data", "sres_rel.dat"))
+        sres_rel_file = np.loadtxt(os.path.join(self.Config.working_dir, "ecfm_data", "sres_rel.dat"))
         self.resonance["rhop_warm_secondary"].append(sres_rel_file.T[7])
-        if(self.dstf == "Th"):
-            Ich_folder = "Ich" + self.dstf
+        if(self.Config.dstf == "Th"):
+            Ich_folder = "Ich" + self.Config.dstf
             Trad_old_name = "TRadM_thrms.dat"
-        elif(self.dstf == "TB"):
-            Ich_folder = "Ich" + self.dstf
+        elif(self.Config.dstf == "TB"):
+            Ich_folder = "Ich" + self.Config.dstf
             Trad_old_name = "TRadM_TBeam.dat"
-        elif(self.dstf == "Re"):
-            Ich_folder = "Ich" + self.dstf
+        elif(self.Config.dstf == "Re"):
+            Ich_folder = "Ich" + self.Config.dstf
             Trad_old_name = "TRadM_therm.dat"
-        elif(self.dstf == "Ge"):
-            Ich_folder = "Ich" + self.dstf
+        elif(self.Config.dstf == "Ge"):
+            Ich_folder = "Ich" + self.Config.dstf
             Trad_old_name = "TRadM_therm.dat"
-        elif(self.dstf == "GB"):
+        elif(self.Config.dstf == "GB"):
             Ich_folder = "Ich" + "Ge"
             Trad_old_name = "TRadM_therm.dat"
         else:
             print("Currently only Alabajar and Gray comparison are supported for saving and loading")
             print("Supported dstf are: \"Th\" and \"TB\":")
-            print("Chosen dstf:", self.dstf)
+            print("Chosen dstf:", self.Config.dstf)
             return
-        Trad_comp_file = np.loadtxt(os.path.join(self.working_dir, "ecfm_data", Trad_old_name))
-        Ich_folder = os.path.join(self.working_dir, "ecfm_data", Ich_folder)
-        # Ray_folder = os.path.join(self.working_dir, "ecfm_data", "ray")
+        Trad_comp_file = np.loadtxt(os.path.join(self.Config.working_dir, "ecfm_data", Trad_old_name))
+        Ich_folder = os.path.join(self.Config.working_dir, "ecfm_data", Ich_folder)
+        # Ray_folder = os.path.join(self.Config.working_dir, "ecfm_data", "ray")
         # Append new empty list for this time point
         if("X" in self.modes):
             for key in self.resonance.keys():
@@ -356,8 +363,8 @@ class ECFMResults:
         self.Trad_comp.append(Trad_comp_file.T[1])
         self.tau_comp.append(Trad_comp_file.T[2])
         if(self.Config.considered_modes == 3):
-            XTrad_comp_file = np.loadtxt(os.path.join(self.working_dir, "ecfm_data", "X_" + Trad_old_name))
-            OTrad_comp_file = np.loadtxt(os.path.join(self.working_dir, "ecfm_data", "O_" + Trad_old_name))
+            XTrad_comp_file = np.loadtxt(os.path.join(self.Config.working_dir, "ecfm_data", "X_" + Trad_old_name))
+            OTrad_comp_file = np.loadtxt(os.path.join(self.Config.working_dir, "ecfm_data", "O_" + Trad_old_name))
             self.XTrad_comp.append(XTrad_comp_file.T[1])
             self.OTrad_comp.append(OTrad_comp_file.T[1])
             self.Xtau_comp.append(XTrad_comp_file.T[2])
@@ -469,7 +476,7 @@ class ECFMResults:
                     print(key)
                     print(e)
         self.edition = mdict["edition"]
-        self.working_dir = mdict["working_dir"]
+        self.Config.working_dir = mdict["working_dir"]
         self.resonance["s_cold"] = mdict["s_cold"]
         self.resonance["R_cold"] = mdict["R_cold"]
         self.resonance["z_cold"] = mdict["z_cold"]
@@ -477,6 +484,7 @@ class ECFMResults:
         if(self.Config.extra_output):
             self.resonance["rhop_warm"] = mdict["rhop_warm"]
         self.Trad = mdict["Trad"]
+        self.time = mdict["time"]
         if(self.Config.extra_output):
             self.Trad_comp = mdict["Trad_comp"]
         if(mdict["considered_modes"] == 1):
@@ -525,7 +533,6 @@ class ECFMResults:
                         self.masked_time_points[mdict["calib_diags"][i]] = np.zeros(self.Config.time.shape, dtype=np.bool8)
                         self.masked_time_points[mdict["calib_diags"][i]][:] = True
         self.init = True
-        return True
 
     def from_mat_file(self, filename):
         try:
@@ -535,13 +542,13 @@ class ECFMResults:
             print("Error: " + filename + " does not exist")
             return False
         # Loading from .mat sometimes adds single entry arrays that we don't want
-        at_least_1d_keys = ["calib_diags"]
+        at_least_1d_keys = ["calib_diags", "time"]
         at_least_2d_keys = ["Trad", "Trad_comp", "tau", "tau_comp", \
                             "XTrad", "OTrad", "Xtau", "Otau", "X_mode_frac", \
                             "XTrad_comp", "OTrad_comp", "Xtau_comp", "Otau_comp", "X_mode_frac_comp", \
                              "ne", "calib", "rel_dev", "Te", "rhop", "masked_time_points", \
                              "ECE_rhop", "ECE_dat", "eq_data", \
-                             "eq_R", "eq_z", "launch_f", "launch_x", "launch_y", \
+                             "eq_R", "eq_z", "diag_name", "launch_f", "launch_df", "launch_R", "launch_phi", \
                              "launch_z", "launch_tor_ang" , "launch_pol_ang", "launch_dist_focus", \
                              "launch_width", "eq_special", "eq_special_complete"  ] + self.resonance.keys()
         at_least_3d_keys = self.BPD.keys()
@@ -555,7 +562,7 @@ class ECFMResults:
         increase_diag_dim = False
         if(np.isscalar(mdict["time"])):
             increase_time_dim = True
-        if(np.isscalar(mdict["diag"])):
+        if(np.isscalar(mdict["diag_name"])):
             increase_diag_dim = True
         for key in mdict.keys():
             if(not key.startswith("_")):  # throw out the .mat specific information
@@ -589,13 +596,14 @@ class ECFMResults:
                     print(key)
                     print(e)
         self.edition = mdict["edition"]
-        self.working_dir = mdict["working_dir"]
+        self.Config.working_dir = mdict["working_dir"]
         if(mdict["considered_modes"] == 1):
             self.modes = ["X"]
         elif(mdict["considered_modes"] == 2):
             self.modes = ["O"]
         elif(mdict["considered_modes"] == 3):
             self.modes = ["X", "O"]
+        self.time = mdict["time"]
         self.Trad = mdict["Trad"]
         self.tau = mdict["tau"]
         self.resonance["s_cold"] = mdict["s_cold"]
@@ -764,27 +772,27 @@ class ECFMResults:
             except KeyError:
                 print("Warning! theta not found in loaded .mat file. Is this an old file?")
         self.init = True
-        return self.Config, self.Scenario
 
     def to_mat_file(self, ext_filename=None):
         ed = 1
         diag_str = ""
-        for key in self.Config.used_diags_dict.keys():
+        for key in self.Scenario.used_diags_dict.keys():
             diag_str += key
         if(ext_filename is not None):
             filename = ext_filename
         elif(len(self.calib.keys()) > 0):
-            filename = os.path.join(self.working_dir, "ECFM_{0:5d}_{1:s}_w_calib_ed{2:d}.mat".format(self.Config.shot, diag_str, ed))
+            filename = os.path.join(self.Config.working_dir, "ECRad_{0:5d}_{1:s}_w_calib_ed{2:d}.mat".format(self.Scenario.shot, diag_str, ed))
         else:
-            filename = os.path.join(self.working_dir, "ECFM_{0:5d}_{1:s}_ed{2:2d}.mat".format(self.Config.shot, diag_str, ed))
+            filename = os.path.join(self.Config.working_dir, "ECRad_{0:5d}_{1:s}_ed{2:2d}.mat".format(self.Scenario.shot, diag_str, ed))
         while(os.path.exists(filename) and ext_filename is None):
             ed += 1
             if(len(self.calib.keys()) > 0):
-                filename = os.path.join(self.working_dir, "ECFM_{0:5d}_{1:s}_w_calib_ed{2:d}.mat".format(self.Config.shot, diag_str, ed))
+                filename = os.path.join(self.Config.working_dir, "ECRad_{0:5d}_{1:s}_w_calib_ed{2:d}.mat".format(self.Scenario.shot, diag_str, ed))
             else:
-                filename = os.path.join(self.working_dir, "ECFM_{0:5d}_{1:s}_ed{2:d}.mat".format(self.Config.shot, diag_str, ed))
+                filename = os.path.join(self.Config.working_dir, "ECRad_{0:5d}_{1:s}_ed{2:d}.mat".format(self.Scenario.shot, diag_str, ed))
         mdict = {}
         mdict["edition"] = ed
+        mdict["time"] = self.time
         mdict["Trad"] = self.Trad
         mdict["tau"] = self.tau
         mdict = self.Config.saveconfig(mdict)
@@ -885,7 +893,10 @@ class ECFMResults:
             for key in mdict.keys():
                 if(mdict[key] is None):
                     print("Entry for " + key + "is None")
-                elif(None in mdict[key]):
-                    print("Entry for " + key + "contains None")
+                try:
+                    if(None in mdict[key]):
+                        print("Entry for " + key + "contains None")
+                except TypeError:
+                    pass
 
 

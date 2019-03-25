@@ -6,7 +6,7 @@ Created on Apr 12, 2016
 working_dir = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/Ecfm_Model/"
 import sys
 sys.path.append("/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib")
-sys.path.append("../ECFM_Pylib")
+sys.path.append("../ECRad_Pylib")
 # from kk_abock import kk as KKeqi
 # from kk_extra import kk_extra
 from GlobalSettings import AUG, TCV
@@ -26,7 +26,7 @@ from electron_distribution_utils import read_svec_dict_from_file, load_f_from_AS
                                         Gauss_not_norm, Juettner2D, Juettner2D_bidrift, multi_slope, \
                                         RunAway2D, make_dist_from_Gene_input, get_dist_moments, get_dist_moments_non_rel
 from em_Albajar import em_abs_Alb, distribution_interpolator, gene_distribution_interpolator, s_vec
-from ECFM_Interface import make_topfile_from_ext_data
+from ECRad_Interface import make_topfile_from_ext_data
 from equilibrium_utils import EQDataExt
 if(AUG):
     from equilibrium_utils_AUG import make_B_min, EQData
@@ -393,7 +393,7 @@ def validate_B_along_los(ida_working_dir, ecfm_file1, ecfm_file2):
     plt.gca().set_xlabel(r"$R$ [m]")
     plt.gca().set_ylabel(r"$B_\mathrm{ida} / B_\mathrm{ecfm, 3D ripple} - 1$")
     plt.legend()
-    plt.suptitle(r"$B_\mathrm{tot,IDA}$ vs. $B_\mathrm{tot,ECFM}$ including magnetic field ripple (3D)")
+    plt.suptitle(r"$B_\mathrm{tot,IDA}$ vs. $B_\mathrm{tot,ECRad}$ including magnetic field ripple (3D)")
     plt.figure()
     plt.show()
 
@@ -409,14 +409,14 @@ def validate_theta_along_los(ida_working_dir, ed, ch):
     fig1 = plt.figure(figsize=(12.0, 8.5))
     ax1 = fig1.add_subplot(111)
     ax1.plot(ida_svec_dict["R"], ida_svec_dict["z"], "-r", label=r"IDA")
-    ax1.plot(ecfm_svec_dict["R"], ecfm_svec_dict["z"], "--b", label=r"New ECFM")
+    ax1.plot(ecfm_svec_dict["R"], ecfm_svec_dict["z"], "--b", label=r"New ECRad")
     ax1.set_xlabel(r"$R\,[\si{\metre}]$")
     ax1.set_ylabel(r"$z\,[\si{\metre}]$")
     ax1.legend()
     fig2 = plt.figure(figsize=(12.0, 8.5))
     ax2 = fig2.add_subplot(111)
     ax2.plot(ida_svec_dict["R"], np.abs(ida_svec_dict["theta"] - np.pi / 2.e0) * 180.e0 / np.pi, "-r", label=r"IDA")
-    ax2.plot(ecfm_svec_dict["R"], np.abs(ecfm_svec_dict["theta"] - np.pi / 2.e0) * 180.e0 / np.pi, "--b", label=r"New ECFM")
+    ax2.plot(ecfm_svec_dict["R"], np.abs(ecfm_svec_dict["theta"] - np.pi / 2.e0) * 180.e0 / np.pi, "--b", label=r"New ECRad")
     ax2.set_xlabel(r"$R\,[\si{\metre}]$")
     ax2.set_ylabel(r"$\vert\theta - \ang{90}\vert\,[^\circ$]")
     ax2.legend()
@@ -451,13 +451,13 @@ def copmare_Rz(working_dir, ida_working_dir):
         R_check[i] = freq_spl.roots()[0]
         z_check[i] = z_spl(R_check[i])
     plt.plot(R_ida, z_ida, "^", label=r"$R_\mathrm{IDA}(z)$")
-    plt.plot(R_ecfm, z_ecfm, "*", label=r"$R_\mathrm{ECFM}(z)$")
+    plt.plot(R_ecfm, z_ecfm, "*", label=r"$R_\mathrm{ECRad}(z)$")
     plt.plot(R_check, z_check, "+", label=r"$R_\mathrm{local}(z)$")
     # plt.gca().set_ylim(-0.01, 0.01)
     plt.gca().set_xlabel(r"$R$ [m]")
     plt.gca().set_ylabel(r"$z$ [m]")
     plt.legend()
-    plt.title(r"Rz IDA vs ECFM 3D w. ripple vs adjusted ECFM w. 3D ripple Rz")
+    plt.title(r"Rz IDA vs ECRad 3D w. ripple vs adjusted ECRad w. 3D ripple Rz")
     plt.show()
 
 def compare_LOS(working_dir, ida_working_dir, chno):
@@ -552,11 +552,11 @@ def double_check_alpha_integration(folder, ch):
 #    plt.show()
 # EFDA_CD_launch_angles(np.deg2rad(25.0), np.deg2rad(19.8))
 
-# calculate_coupling("/ptmp1/work/sdenk/ECFM3/", 1)
-# validate_B_along_los("/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_working/", "/ptmp1/work/sdenk/ECFM4/ecfm_data/chdata001.dat", "/ptmp1/work/sdenk/ECFM4/ecfm_data/chdata001.dat")
-# copmare_Rz("/ptmp1/work/sdenk/ECFM4/ecfm_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_working/")
+# calculate_coupling("/ptmp1/work/sdenk/ECRad3/", 1)
+# validate_B_along_los("/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_working/", "/ptmp1/work/sdenk/ECRad4/ecfm_data/chdata001.dat", "/ptmp1/work/sdenk/ECRad4/ecfm_data/chdata001.dat")
+# copmare_Rz("/ptmp1/work/sdenk/ECRad4/ecfm_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_working/")
 # debug_f_inter(working_dir)
-# check_ray_bundle("/ptmp1/work/sdenk/ECFM2/", 32028, 2.14, 10, tor_view=False, mode="X")
+# check_ray_bundle("/ptmp1/work/sdenk/ECRad2/", 32028, 2.14, 10, tor_view=False, mode="X")
 
 def test_get_diag_data(shot, times, diag):
     if(diag == "CTA"):
@@ -594,8 +594,8 @@ def test_get_diag_data(shot, times, diag):
     plt.show()
 
 def debug_EQ():
-    path = "/afs/ipp-garching.mpg.de/home/s/sdenk/Documentation/TCV_stuff/ECFM/49500_profiles_from_iluke.mat"
-    working_dir = "/tokp/work/sdenk/ECFM2/ecfm_data/"
+    path = "/afs/ipp-garching.mpg.de/home/s/sdenk/Documentation/TCV_stuff/ECRad/49500_profiles_from_iluke.mat"
+    working_dir = "/tokp/work/sdenk/ECRad2/ecfm_data/"
     time = 1.0
     at_least_1d_keys = ["t", "R", "z", "Psi_sep", "Psi_ax"]
     at_least_2d_keys = ["rhop", "Te", "ne"]
@@ -652,7 +652,7 @@ def debug_EQ():
 
 if(__name__ == "__main__"):
 #    debug_EQ()
-    compare_LOS("/tokp/work/sdenk/ECFM2/ecfm_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/", 43)
+    compare_LOS("/tokp/work/sdenk/ECRad2/ecfm_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/", 43)
 
     # validate_theta_along_los("/ptmp1/work/sdenk/nssf/30406/1.38/", 1, 2)
     # debug_f_inter("/afs/ipp-garching.mpg.de/home/s/sdenk/F90/Ecfm_Model_new")

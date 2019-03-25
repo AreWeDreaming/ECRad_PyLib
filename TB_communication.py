@@ -6,8 +6,8 @@ Created on Oct 11, 2016
 import os
 import numpy as np
 import sys
-vessel_file = '/afs/ipp-garching.mpg.de/home/s/sdenk/F90/ECFM_Pylib/ASDEX_Upgrade_vessel.txt'
-sys.path.append("../ECFM_Pylib")
+vessel_file = '/afs/ipp-garching.mpg.de/home/s/sdenk/F90/ECRad_Pylib/ASDEX_Upgrade_vessel.txt'
+sys.path.append("../ECRad_Pylib")
 from GlobalSettings import AUG, TCV
 from subprocess import call
 from scipy.io import savemat
@@ -517,15 +517,15 @@ def make_input_data_for_WKBEAM(folder, index):
     fig2 = plt.figure()
     plt.contourf(data_dict["R_new"] / 100, data_dict["z_new"] / 100, data_dict["Te"].T * 1.e-3, levels=np.linspace(0, 1.5, 30))
     plt.show()
-# make_input_data_for_WKBEAM("/ptmp1/work/sdenk/ECFM4/Ext_data/", 0)
+# make_input_data_for_WKBEAM("/ptmp1/work/sdenk/ECRad4/Ext_data/", 0)
 
 
-# read_EQ_from_ext_data("/ptmp1/work/sdenk/ECFM/Ext_data/", 6.00000048, 0, 1.005)
+# read_EQ_from_ext_data("/ptmp1/work/sdenk/ECRad/Ext_data/", 6.00000048, 0, 1.005)
 
 
 def make_all_TORBEAM_rays_thread(args):
     working_dir = str(args[0])
-    ecfm_data_dir = os.path.join(working_dir, "ecfm_data")
+    ECRad_data_dir = os.path.join(working_dir, "ECRad_data")
     shot = int(args[1])
     time = float(args[2])
     eq_exp = args[3]
@@ -538,14 +538,14 @@ def make_all_TORBEAM_rays_thread(args):
     host = args[10]
     bt_vac_correction = args[11]
     N_ray = args[12]
-    prepare_TB_data(ecfm_data_dir, shot, time, eq_exp, eq_diag, eq_ed, t_index, mode, plasma, copy_Te_ne=False, bt_vac_correction=bt_vac_correction)
-#    copyfile(os.path.join(ecfm_data_dir, "Te.dat"), \
+    prepare_TB_data(ECRad_data_dir, shot, time, eq_exp, eq_diag, eq_ed, t_index, mode, plasma, copy_Te_ne=False, bt_vac_correction=bt_vac_correction)
+#    copyfile(os.path.join(ECRad_data_dir, "Te.dat"), \
 #                 os.path.join(tb_path, "Te.dat"))
-#    copyfile(os.path.join(ecfm_data_dir, "ne.dat"), \
+#    copyfile(os.path.join(ECRad_data_dir, "ne.dat"), \
 #             os.path.join(tb_path, "ne.dat"))
-#    copyfile(os.path.join(ecfm_data_dir, "topfile"), \
+#    copyfile(os.path.join(ECRad_data_dir, "topfile"), \
 #             os.path.join(tb_path, "topfile"))
-    make_all_TORBEAM_rays(ecfm_data_dir, shot, time, eq_exp, eq_diag, ray_launch, t_index, mode, plasma, N_ray)
+    make_all_TORBEAM_rays(ECRad_data_dir, shot, time, eq_exp, eq_diag, ray_launch, t_index, mode, plasma, N_ray)
     evt_out_2 = ThreadFinishedEvt(Unbound_EVT_THREAD_FINISHED, host.GetId())
     wx.PostEvent(host, evt_out_2)
 
@@ -882,8 +882,8 @@ def make_all_TORBEAM_rays(working_dir, shot, time, eq_exp, eq_diag, ray_launch, 
             print("No detailed output from torbeam")
         print("TORBEAM: Channel " + str(ich + 1) + "/" + str(len(ray_launch["f"][t_index][::N_ray])) + " complete")
     os.chdir(org_path)
-# make_ext_data_for_testing_grids("/ptmp1/work/sdenk/ECFM3/Ext_data", 30839, np.array([2.5]), "AUGD", "EQH", 0)
-# make_ext_data_for_testing("/ptmp1/work/sdenk/ECFM2/Ext_data", 33698, np.array([1.06]), "AUGD", "EQH", 0)
+# make_ext_data_for_testing_grids("/ptmp1/work/sdenk/ECRad3/Ext_data", 30839, np.array([2.5]), "AUGD", "EQH", 0)
+# make_ext_data_for_testing("/ptmp1/work/sdenk/ECRad2/Ext_data", 33698, np.array([1.06]), "AUGD", "EQH", 0)
 
 def make_LUKE_input_mat(working_dir, shot, times, IDA_exp="AUGD", IDA_ed=0, EQ_exp="AUGD", EQ_diag="EQH", EQ_ed=0, bt_vac_correction=1.005):
     index = 0
@@ -1151,4 +1151,4 @@ class launch:
         self.gy_launch = True
 
 if(__name__ == "__main__"):
-    make_Ext_data_from_TB_files("/tokp/work/sdenk/ECFM2/ecfm_data/topfile", "/tokp/work/sdenk/ECFM2/Ext_data/", False)
+    make_Ext_data_from_TB_files("/tokp/work/sdenk/ECRad2/ECRad_data/topfile", "/tokp/work/sdenk/ECRad2/Ext_data/", False)

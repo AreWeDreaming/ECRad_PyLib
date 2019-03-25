@@ -13,14 +13,14 @@ import numpy as np
 from equilibrium_utils import EQDataSlice, special_points
 from Diags import Diag, ECRH_diag, ECI_diag, EXT_diag, TCV_diag
 if(AUG):
-    from ECFM_GUI_DIAG_AUG import DefaultDiagDict
+    from ECRad_DIAG_AUG import DefaultDiagDict
 elif(TCV):
-    from ECFM_GUI_DIAG_TCV import DefaultDiagDict
+    from ECRad_DIAG_TCV import DefaultDiagDict
 # THis class holds all the input data provided to ECRad with the exception of the ECRad configuration
 
-class ECFM_Scenario:
+class ECRad_Scenario:
     def __init__(self):
-        self.scenario_file = os.path.join(os.path.expanduser("~"), ".ECFM_GUI_last_scenario.mat")
+        self.scenario_file = os.path.join(os.path.expanduser("~"), ".ECRad_GUI_last_scenario.mat")
         try:
             self.from_mat(self, path_in=self.scenario_file)
         except IOError:
@@ -53,7 +53,7 @@ class ECFM_Scenario:
         self.reset()
         if(mdict is not None):
             if(path_in is None):
-                filename = os.path.join(os.path.expanduser("~"), ".ECFM_GUI_last_scenario.mat")
+                filename = os.path.join(os.path.expanduser("~"), ".ECRad_GUI_last_scenario.mat")
             else:
                 filename = path_in
             try:
@@ -66,7 +66,7 @@ class ECFM_Scenario:
         # Loading from .mat sometimes adds single entry arrays that we don't want
         at_least_1d_keys = ["diag", "time", "Diags_exp", "Diags_diag", "Diags_ed", "Extra_arg_1", "Extra_arg_2", "Extra_arg_3", \
                             "used_diags"]
-        at_least_2d_keys = ["eq_R", "eq_z", "launch_f", "launch_df", "launch_R", "launch_phi", \
+        at_least_2d_keys = ["eq_R", "eq_z", "diag_name", "launch_f", "launch_df", "launch_R", "launch_phi", \
                              "launch_z", "launch_tor_ang" , "launch_pol_ang", "launch_dist_focus", \
                              "launch_width", "launch_pol_coeff_X", "eq_special", "eq_special_complete"  ]
         at_least_3d_keys = ["eq_Psi", "eq_rhop", "eq_Br", "eq_Bt", "eq_Bz"]
@@ -164,7 +164,7 @@ class ECFM_Scenario:
                                                                   mdict["eq_R"][i], mdict["eq_z"][i], \
                                                                   mdict["eq_Psi"][i], mdict["eq_Br"][i], \
                                                                   mdict["eq_Bt"][i], mdict["eq_Bz"][i], \
-                                                                  spcl, mdict["eq_rhop"][i]))
+                                                                  spcl, rhop=mdict["eq_rhop"][i]))
         self.plasma_dict["eq_data"] = np.array(self.plasma_dict["eq_data"])
         self.plasma_dict["vessel_bd"] = mdict["vessel_bd"]
         for diag_key in self.avail_diags_dict:

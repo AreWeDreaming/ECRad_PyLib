@@ -30,7 +30,7 @@ from electron_distribution_utils import make_f_1D, Maxwell1D_beta, MJ_approx, re
 from electron_distribution_utils import ratio_B, weighted_emissivity_along_s, Juettner2D, Juettner1D_beta, multi_slope, multi_slope_cyl_beta
 import scipy.constants as cnst
 from scipy.integrate import simps
-from ECFM_utils import get_files_and_labels
+from ECRad_utils import get_files_and_labels
 # import matplotlib.pyplot as plt
 from plotting_configuration import *
 from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline, SmoothBivariateSpline
@@ -312,13 +312,13 @@ class plotting_core:
         m_abs_filename = os.path.join(folder, mfilename)
         te_abs_filename = os.path.join(folder, tfilename)
         ne_abs_filename = os.path.join(folder, nfilename)
-        # n_mod_filename = os.path.join(folder,"ecfm_data/par_n_mod.dat")
-        # t_mod_filename = os.path.join(folder,"ecfm_data/par_t_mod.dat")
+        # n_mod_filename = os.path.join(folder,"ECRad_data/par_n_mod.dat")
+        # t_mod_filename = os.path.join(folder,"ECRad_data/par_t_mod.dat")
         th_abs_filename = os.path.join(folder, "residue_ece.res")
         th_mod_filename = os.path.join(folder, "residue_ece_old.res")  # _unmod
         te_mod_filename = os.path.join(folder, "Te.dat")
         ne_mod_filename = os.path.join(folder, "ne_ida_old.res")
-        # r_mod_filename = os.path.join(folder,"ecfm_data/TRadM_Relax.dat")
+        # r_mod_filename = os.path.join(folder,"ECRad_data/TRadM_Relax.dat")
         d_backup_filename = os.path.join(folder, "residue_ece.res")
         try:
             self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], filename=d_abs_filename, \
@@ -357,10 +357,10 @@ class plotting_core:
         print(data_name)
         print(simplfile)
         print(tertiary_model)
-        data_name_X_frac = os.path.join(folder, "ecfm_data", "X_" + data_name)
-        simplfile_X_frac = os.path.join(folder, "ecfm_data", "X_" + simplfile)
+        data_name_X_frac = os.path.join(folder, "ECRad_data", "X_" + data_name)
+        simplfile_X_frac = os.path.join(folder, "ECRad_data", "X_" + simplfile)
         if(tertiary_model is not None):
-            tertiary_model_X_frac = os.path.join(folder, "ecfm_data", "X_" + tertiary_model)
+            tertiary_model_X_frac = os.path.join(folder, "ECRad_data", "X_" + tertiary_model)
             if(mode == "X"):
                 tertiary_model = "X_" + tertiary_model
             if(mode == "O"):
@@ -384,8 +384,8 @@ class plotting_core:
                 fall_back_diag = "RMD"
         d_abs_filename = os.path.join(folder, dfilename)
         # d_backup_filename = os.path.join(folder, "residue_ece.res")
-        diag_filename = os.path.join(folder, "ecfm_data", "diag.dat")
-        m_abs_filename = os.path.join(folder, "ecfm_data", data_name)
+        diag_filename = os.path.join(folder, "ECRad_data", "diag.dat")
+        m_abs_filename = os.path.join(folder, "ECRad_data", data_name)
         if(not os.path.isfile(m_abs_filename)):
             if(data_name.startswith("X_")):
                 data_name = data_name.split("X_")[1]
@@ -393,15 +393,15 @@ class plotting_core:
                 data_name = data_name.split("O_")[1]
             print("Could not find " + mode + " specific file: " + m_abs_filename)
             print("Trying file with X O  mode super position")
-            m_abs_filename = os.path.join(folder, "ecfm_data", data_name)
+            m_abs_filename = os.path.join(folder, "ECRad_data", data_name)
         if("OERT" in folder):
-            m_abs_comp_filename = os.path.join(folder.replace("/OERT", ""), "ecfm_data", data_name)
-            diag_comp_filename = os.path.join(folder.replace("/OERT", ""), "ecfm_data", "diag.dat")
+            m_abs_comp_filename = os.path.join(folder.replace("/OERT", ""), "ECRad_data", data_name)
+            diag_comp_filename = os.path.join(folder.replace("/OERT", ""), "ECRad_data", "diag.dat")
         else:
-            m_abs_comp_filename = os.path.join(folder, "OERT", "ecfm_data", data_name)
-            diag_comp_filename = os.path.join(folder, "OERT", "ecfm_data", "diag.dat")
+            m_abs_comp_filename = os.path.join(folder, "OERT", "ECRad_data", data_name)
+            diag_comp_filename = os.path.join(folder, "OERT", "ECRad_data", "diag.dat")
         if(simpl is not None):
-            m_simpl_filename = os.path.join(folder, "ecfm_data", simpl)
+            m_simpl_filename = os.path.join(folder, "ECRad_data", simpl)
             if(not os.path.isfile(m_simpl_filename)):
                 if(simpl.startswith("X_")):
                     simpl = simpl.split("X_")[1]
@@ -409,37 +409,37 @@ class plotting_core:
                     simpl = simpl.split("O_")[1]
                 print("Could not find " + mode + " specific file for secondary model: " + m_simpl_filename)
                 print("Trying file with X O  mode super position")
-                m_simpl_filename = os.path.join(folder, "ecfm_data", simpl)
+                m_simpl_filename = os.path.join(folder, "ECRad_data", simpl)
         if(backup_name is not None):
-            backup_name = os.path.join(folder, "ecfm_data", backup_name)
+            backup_name = os.path.join(folder, "ECRad_data", backup_name)
 #            if("OERT" in folder):
-#                m_simpl_comp_filename = os.path.join(folder.replace("\OERT", ""), "ecfm_data", simpl)
+#                m_simpl_comp_filename = os.path.join(folder.replace("\OERT", ""), "ECRad_data", simpl)
 #            else:
-#                m_simpl_comp_filename = os.path.join(folder, "OERT", "ecfm_data", simpl)
+#                m_simpl_comp_filename = os.path.join(folder, "OERT", "ECRad_data", simpl)
         te_reduced_filename = os.path.join(folder, "te_ida.res")
-        freq = np.loadtxt(os.path.join(folder, "ecfm_data", "f_ECE.dat"))
+        freq = np.loadtxt(os.path.join(folder, "ECRad_data", "f_ECE.dat"))
         ch_cnt = len(freq)
         t_abs_filename = os.path.join(folder, "te_ida.res")
         n_abs_filename = os.path.join(folder, "ne_ida.res")
         if("OERT" in folder):
             try:
                 try:
-                    Te_data = np.loadtxt(os.path.join(folder, "ecfm_data", "Te_file.dat"), skiprows=1)
+                    Te_data = np.loadtxt(os.path.join(folder, "ECRad_data", "Te_file.dat"), skiprows=1)
                     rhop_te_vec = Te_data.T[0]
                     te_vec = Te_data.T[1] / 1.e3
                 except IOError:
-                    print("No te_dat.file at", os.path.join(folder, "ecfm_data", "Te_file.dat"))
+                    print("No te_dat.file at", os.path.join(folder, "ECRad_data", "Te_file.dat"))
                     rhop_te_vec, te_vec = self.read_file(t_abs_filename)
             except IOError:
                 print("No ida Te data -> Te turned off")
                 Te = False
             try:
                 try:
-                    ne_data = np.loadtxt(os.path.join(folder, "ecfm_data", "ne_file.dat"), skiprows=1)
+                    ne_data = np.loadtxt(os.path.join(folder, "ECRad_data", "ne_file.dat"), skiprows=1)
                     rhop_ne_vec = ne_data.T[0]
                     ne_vec = ne_data.T[1] / 1.e20
                 except IOError:
-                    print("No ne_dat.file at", os.path.join(folder, "ecfm_data", "ne_file.dat"))
+                    print("No ne_dat.file at", os.path.join(folder, "ECRad_data", "ne_file.dat"))
                     rhop_ne_vec, ne_vec = self.read_file(n_abs_filename)
             except IOError:
                 print("No ida ne data -> ne turned off")
@@ -476,9 +476,9 @@ class plotting_core:
             rhop = model_data.T[0]
             if(harmonic_number != 2):
                 for i in range(1, len(rhop) + 1):
-                    success, dummy, dummy_2, dummy_3, rhop[i - 1] = find_cold_res(os.path.join(folder, "ecfm_data"), i, mode, harmonic_number)
+                    success, dummy, dummy_2, dummy_3, rhop[i - 1] = find_cold_res(os.path.join(folder, "ECRad_data"), i, mode, harmonic_number)
                     if(rhop[i - 1] > 1.3 or success == False):
-                        success, dummy, dummy_2, dummy_3, rhop[i - 1] = find_cold_res(os.path.join(folder, "ecfm_data"), i, mode, 2)
+                        success, dummy, dummy_2, dummy_3, rhop[i - 1] = find_cold_res(os.path.join(folder, "ECRad_data"), i, mode, 2)
         rhop[Channel_list == 0] *= -1.0
         tau = model_data.T[2]
         try:
@@ -499,9 +499,9 @@ class plotting_core:
         # dist_simple = "MJ"
         # if(dstf == "Mx"):
         #    dist_simple = "well"
-        # n_mod_filename = os.path.join(folder,"ecfm_data/par_n_mod.dat")
-        # t_mod_filename = os.path.join(folder,"ecfm_data/par_t_mod.dat")
-        # th_abs_filename = os.path.join(folder,"ecfm_data/TRadM_therm.dat")
+        # n_mod_filename = os.path.join(folder,"ECRad_data/par_n_mod.dat")
+        # t_mod_filename = os.path.join(folder,"ECRad_data/par_t_mod.dat")
+        # th_abs_filename = os.path.join(folder,"ECRad_data/TRadM_therm.dat")
         cur_filelist = glob(folder + os.path.sep + "*")
         if(Te and not(model or len(diags.keys()) > 0 or simpl or IDA_model)):
             ax_flag = "Te"
@@ -912,7 +912,7 @@ class plotting_core:
         # try:
         #    #pass
         #    self.axlist[0],  self.y_range_list[0] = self.add_plot(self.axlist[0], filename = m_abs_filename, \
-        #        name = r"$T_\mathrm{rad}$ New ECFM using Rk4", marker = "D",color=(1.0,0.25,0.0), y_range_in = self.y_range_list[0])
+        #        name = r"$T_\mathrm{rad}$ New ECRad using Rk4", marker = "D",color=(1.0,0.25,0.0), y_range_in = self.y_range_list[0])
         # except:
         #    pass
         # try:
@@ -934,7 +934,7 @@ class plotting_core:
                         diag_masks[diag_key] = np.logical_and(rhop[ECE_diag_mask] < rho_max, model_tau[ECE_diag_mask] > lower_tau_boundary)
                     elif(diag_key not in diag_masks.keys()):
                         diag_masks[diag_key] = np.logical_and(rhop[diag_key == diag_data] < rho_max, model_tau[diag_key == diag_data] > lower_tau_boundary)
-                    if(dist != "f_\mathrm{MJ}" and dist != "ECFM" and diag_key == "ECE"):
+                    if(dist != "f_\mathrm{MJ}" and dist != "ECRad" and diag_key == "ECE"):
                         self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                                                                              data=[rhop[ECE_diag_mask][diag_masks[diag_key]],
                                                                                    model_TRad[ECE_diag_mask][diag_masks[diag_key]]], \
@@ -1026,7 +1026,7 @@ class plotting_core:
                     diag_masks[diag_key] = np.logical_and(rhop[ECE_diag_mask] < rho_max, model_tau[ECE_diag_mask] > lower_tau_boundary)
                 elif(diag_key not in diag_masks.keys()):
                     diag_masks[diag_key] = np.logical_and(rhop[diag_key == diag_data] < rho_max, model_tau[diag_key == diag_data] > lower_tau_boundary)
-                if((dist == "f_\mathrm{MJ}" or dist == "ECFM") and diag_key == "ECE"):
+                if((dist == "f_\mathrm{MJ}" or dist == "ECRad") and diag_key == "ECE"):
                     self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                         data=[simpl_rhop[ECE_diag_mask][diag_masks[diag_key]], \
                         simpl_model_TRad[ECE_diag_mask][diag_masks[diag_key]]], \
@@ -1088,7 +1088,7 @@ class plotting_core:
                     self.model_color_index_2[0] += 1
                 if(dstf == "TB" and diag_key == "ECE"):
                     try:
-                        model_data_TO = np.loadtxt(os.path.join(folder, "ecfm_data", "TRadM_thrms.dat"))
+                        model_data_TO = np.loadtxt(os.path.join(folder, "ECRad_data", "TRadM_thrms.dat"))
                         rhop_TO = model_data.T[0]
                         rhop_TO[Channel_list == 0] *= -1.0
                         model_TRad_TO = model_data_TO.T[1]
@@ -1113,7 +1113,7 @@ class plotting_core:
             self.model_marker_index[0] += 1
         if(use_tertiary_model):
             try:
-                tertiary_model = os.path.join(folder, "ecfm_data", tertiary_model)
+                tertiary_model = os.path.join(folder, "ECRad_data", tertiary_model)
                 tertiary_model_data = np.loadtxt(tertiary_model)
                 tertiary_rhop = tertiary_model_data.T[0]
                 tertiary_model_TRad = tertiary_model_data.T[1]
@@ -1127,7 +1127,7 @@ class plotting_core:
                             diag_masks[diag_key] = np.logical_and(rhop[ECE_diag_mask] < rho_max, model_tau[ECE_diag_mask] > lower_tau_boundary)
                         elif(diag_key not in diag_masks.keys()):
                             diag_masks[diag_key] = np.logical_and(rhop[diag_key == diag_data] < rho_max, model_tau[diag_key == diag_data] > lower_tau_boundary)
-                        if(tertiary_dist != "f_\mathrm{MJ}" and tertiary_dist != "ECFM" and diag_key == "ECE"):
+                        if(tertiary_dist != "f_\mathrm{MJ}" and tertiary_dist != "ECRad" and diag_key == "ECE"):
                             self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                                 data=[tertiary_rhop[ECE_diag_mask][diag_masks[diag_key]], \
                                       tertiary_model_TRad[ECE_diag_mask][diag_masks[diag_key]]], \
@@ -1193,7 +1193,7 @@ class plotting_core:
                 print("Filename: " + tertiary_model)
         if(rel_diff or rel_diff_comp):
             if(rel_diff_comp):
-                comp_data = np.loadtxt(os.path.join(rel_diff_folder, "ecfm_data", data_name))
+                comp_data = np.loadtxt(os.path.join(rel_diff_folder, "ECRad_data", data_name))
                 comp_Trad = comp_data.T[1]
                 if(comp_Trad.shape != model_TRad.shape):
                     print("Cannot calculate relative deviation size not same amount of channels")
@@ -1206,7 +1206,7 @@ class plotting_core:
 #                print(rhop[i], model_TRad[i], simpl_model_TRad[i], rel_diff_data[i])
             ax_flag = "rel_diff_Trad"
             for diag_key in diags.keys():
-                if((dist == "f_\mathrm{MJ}" or dist == "ECFM") and diag_key == "ECE"):
+                if((dist == "f_\mathrm{MJ}" or dist == "ECRad") and diag_key == "ECE"):
                     self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], \
                         data=[rhop[(diag_data == diags[diag_key].diags["ECE"].diag) | (diag_data == fall_back_diag)][rhop < rho_max], \
                         rel_diff_data[(diag_data == diags[diag_key].diag) | (diag_data == fall_back_diag)][rhop < rho_max]], \
@@ -1568,14 +1568,14 @@ class plotting_core:
         else:
             self.plot_sep(shotno, time, self.axlist[0])
             self.plot_sep(shotno, time, self.axlist_2[0])
-        diag_filename = os.path.join(folder, "ecfm_data", "diag.dat")
-        m_abs_filename = os.path.join(folder, "ecfm_data", data_name)
-        freq = np.loadtxt(os.path.join(folder, "ecfm_data", "f_ECE.dat"))
+        diag_filename = os.path.join(folder, "ECRad_data", "diag.dat")
+        m_abs_filename = os.path.join(folder, "ECRad_data", data_name)
+        freq = np.loadtxt(os.path.join(folder, "ECRad_data", "f_ECE.dat"))
         ch_cnt = len(freq)
         Channel_list = np.zeros(ch_cnt)
         Channel_list[:] = 1
         if(simpl):
-            model_data = np.loadtxt(os.path.join(folder, "ecfm_data", simplfile))
+            model_data = np.loadtxt(os.path.join(folder, "ECRad_data", simplfile))
         else:
             model_data = np.loadtxt(m_abs_filename)
         if(rel_res):
@@ -1626,9 +1626,9 @@ class plotting_core:
                 # return self.fig, self.fig_2
         model_TRad = model_data.T[1][diag_data == Img_diag]
         if(rel_res):
-            res = np.loadtxt(os.path.join(folder, "ecfm_data", "sres_rel.dat"))
+            res = np.loadtxt(os.path.join(folder, "ECRad_data", "sres_rel.dat"))
         else:
-            res = np.loadtxt(os.path.join(folder, "ecfm_data", "sres.dat"))
+            res = np.loadtxt(os.path.join(folder, "ECRad_data", "sres.dat"))
         if(Img_diag == "ECN"):
             shape = (20, 8)
         else:
@@ -1736,7 +1736,7 @@ class plotting_core:
         if(plot_rays):
             for i in range(len(diag_data)):
                 if(diag_data[i] == Img_diag and skip_channels > 20):
-                    svec, freq = read_svec_from_file(os.path.join(folder, 'ecfm_data'), i + 1)
+                    svec, freq = read_svec_from_file(os.path.join(folder, 'ECRad_data'), i + 1)
                     self.plot_los(self.axlist[0], self.y_range_list[0], shotno, time, svec.T[1][R < svec.T[1]], \
                                   svec.T[2][R < svec.T[1]], None, None, no_names=True, eq_diag=eq_diag)
                 if(diag_data[i] == Img_diag):
@@ -1797,11 +1797,11 @@ class plotting_core:
 
 
     def B_plot(self, folder, shotno, time, comp_folder, ich, r_axis, N_filename, mode, OERT, comp=False, eq_diag=None):
-        ecfm_data_folder = os.path.join(folder, "ecfm_data")
-        f_R, omega_p, arr = get_omega_c_and_cutoff(ecfm_data_folder, ich, mode)
-        svec, freq = read_svec_from_file(ecfm_data_folder, ich, mode)
-        # svec, freq = read_svec_from_file(ecfm_data_folder, ich)
-        # R,B = get_B(ecfm_data_folder,ich)
+        ECRad_data_folder = os.path.join(folder, "ECRad_data")
+        f_R, omega_p, arr = get_omega_c_and_cutoff(ECRad_data_folder, ich, mode)
+        svec, freq = read_svec_from_file(ECRad_data_folder, ich, mode)
+        # svec, freq = read_svec_from_file(ECRad_data_folder, ich)
+        # R,B = get_B(ECRad_data_folder,ich)
         self.setup_axes("double", "Cyclotron frequencies and measuring frequency", "Cold vs. Warm refractive Index")
         self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[arr[0], arr[1]], \
                     name=r"$f_\mathrm{c}$", marker="--", color=(0.4, 0.4, 0.0), \
@@ -1809,8 +1809,8 @@ class plotting_core:
 #        if(comp and "OERT" in folder):
 #            comp_folder = folder.replace("/OERT", "")
 #            print("Comparison folder", comp_folder)
-#            ecfm_data_comp_folder = os.path.join(comp_folder, "ecfm_data")
-#            svec_IDA, freq = read_svec_from_file(ecfm_data_comp_folder, ich, mode)
+#            ECRad_data_comp_folder = os.path.join(comp_folder, "ECRad_data")
+#            svec_IDA, freq = read_svec_from_file(ECRad_data_comp_folder, ich, mode)
 #            r = ratio_B(svec.T[1], svec_IDA.T[1], svec.T[8], svec_IDA.T[8])
 #            self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], data=[svec_IDA.T[1], r - 1.0], \
 #                    name=r"$f_\mathrm{c,2,IDA}$", marker="--", color=(0.2, 0.2, 0.2), \
@@ -1836,7 +1836,7 @@ class plotting_core:
                          y_range_in=self.y_range_list[0], ax_flag="f")
         self.model_color_index = 0
         for n in range(1, 4):
-                success, s_res, R_res, z_res, rhop_res = find_cold_res(ecfm_data_folder, ich, mode, harmonic_number=n)
+                success, s_res, R_res, z_res, rhop_res = find_cold_res(ECRad_data_folder, ich, mode, harmonic_number=n)
                 if(success):
                     self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], data=[R_res, z_res], \
                                                                      name=r"", marker="o", color=self.model_colors[self.model_color_index], \
@@ -1846,10 +1846,10 @@ class plotting_core:
         self.plot_los(self.axlist[1], self.y_range_list[1], shotno, time, svec.T[1][svec.T[3] != -1.0], svec.T[2][svec.T[3] != -1.0], None, None, eq_diag=eq_diag)
         if(comp):
             self.model_color_index = 0
-            ecfm_data_comp_folder = os.path.join(comp_folder, "ecfm_data")
-            svec_c, freq_c = read_svec_from_file(ecfm_data_comp_folder, ich, mode)
+            ECRad_data_comp_folder = os.path.join(comp_folder, "ECRad_data")
+            svec_c, freq_c = read_svec_from_file(ECRad_data_comp_folder, ich, mode)
             for n in range(1, 4):
-                success, s_res_c, R_res_c, z_res_c, rhop_res_c = find_cold_res(ecfm_data_comp_folder, ich, mode, harmonic_number=n)
+                success, s_res_c, R_res_c, z_res_c, rhop_res_c = find_cold_res(ECRad_data_comp_folder, ich, mode, harmonic_number=n)
                 self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], data=[R_res_c, z_res_c], \
                                                                      name=r"", marker="+", color=self.model_colors[self.model_color_index], \
                                                                      y_range_in=self.y_range_list[1], ax_flag="Rz")
@@ -2007,16 +2007,16 @@ class plotting_core:
         return self.fig, self.fig_2
 
 
-    def calib_evolution(self, diag, ch, ECFM_result_list):
+    def calib_evolution(self, diag, ch, ECRad_result_list):
         self.title = False
         self.setup_axes("twinx", "\"+\" = $c$, \"-\" = $T_\mathrm{rad,mod}$  " + diag, r"Rel. mean scatter for diagn. " + diag)
         # \"--\" $= T_\mathrm{e}$
         i = 0
-        for result in ECFM_result_list:
-            if(len(ECFM_result_list) - 1 == 0):
+        for result in ECRad_result_list:
+            if(len(ECRad_result_list) - 1 == 0):
                 color = (0.0, 0.0, 1.0)
             else:
-                color = self.diag_cmap.to_rgba(float(i) / float(len(ECFM_result_list) - 1))
+                color = self.diag_cmap.to_rgba(float(i) / float(len(ECRad_result_list) - 1))
 #            self.axlist[0].plot([], [], color=color, label=r"$T_\mathrm{rad, mod}$" + r" \# {0:d} ed {1:d} ch {2:d}".format(result.Config.shot, result.edition, ch + 1))
             self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                 data=[result.Config.time[result.masked_time_points[diag]], np.abs(result.calib_mat[diag].T[ch])], \
@@ -2051,14 +2051,14 @@ class plotting_core:
         self.axlist[0].legend(loc="best")
         return self.fig
 
-    def calib_evolution_Trad(self, diag, ch, ECFM_result_list, diag_data, std_dev_data, popt_list, pol_angle_list=None):
+    def calib_evolution_Trad(self, diag, ch, ECRad_result_list, diag_data, std_dev_data, popt_list, pol_angle_list=None):
         self.title = False
         if(pol_angle_list is None):
             self.setup_axes("single", "\"+\" = $c$, \"-\" = $T_\mathrm{rad,mod}$  " + diag, r"Rel. mean scatter for diagn. " + diag)
         else:
             self.setup_axes("twinx", "\"+\" = $c$, \"-\" = $T_\mathrm{rad,mod}$  " + diag, r"Rel. mean scatter for diagn. " + diag)
         if(diag == "TDI"):
-            if(len(ECFM_result_list[0].Trad.T[ECFM_result_list[0].diag == "ECN"]) > 0):
+            if(len(ECRad_result_list[0].Trad.T[ECRad_result_list[0].diag == "ECN"]) > 0):
                 actual_diag = "ECN"
             else:
                 actual_diag = "ECO"
@@ -2066,11 +2066,11 @@ class plotting_core:
             actual_diag = diag
         # \"--\" $= T_\mathrm{e}$
         i = 0
-        for result in ECFM_result_list:
-            if(len(ECFM_result_list) - 1 == 0):
+        for result in ECRad_result_list:
+            if(len(ECRad_result_list) - 1 == 0):
                 color = (0.0, 0.0, 1.0)
             else:
-                color = self.diag_cmap.to_rgba(float(i) / float(len(ECFM_result_list) - 1))
+                color = self.diag_cmap.to_rgba(float(i) / float(len(ECRad_result_list) - 1))
             self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                     data=[result.Trad[result.masked_time_points[actual_diag]].T[result.diag == actual_diag][ch], \
                           diag_data[i]], \
@@ -2115,12 +2115,12 @@ class plotting_core:
             self.create_legends("errorbar")
         return self.fig
 
-    def calib_vs_launch(self, diag, ch, ECFM_result_list, pol_ang_list):
+    def calib_vs_launch(self, diag, ch, ECRad_result_list, pol_ang_list):
         self.title = False
         self.setup_axes("single", "\"+\" = $c$, \"-\" = $T_\mathrm{rad,mod}$  " + diag, r"Rel. mean scatter for diagn. " + diag)
         # \"--\" $= T_\mathrm{e}$
         i = 0
-        for result in ECFM_result_list:
+        for result in ECRad_result_list:
             self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                 data=[pol_ang_list[i][result.masked_time_points[diag]], result.calib_mat[diag][result.masked_time_points[diag]].T[ch]], \
                 y_error=result.std_dev_mat[diag].T[ch], \
@@ -2164,12 +2164,12 @@ class plotting_core:
         else:
             x_coloumn = 1  # R
         data_name, simplfile, use_tertiary_model, tertiary_model, dist, dist_simpl, backup_name, backup_dist, tertiary_dist = get_files_and_labels(dstf)
-        Trad = np.loadtxt(os.path.join(folder, "ecfm_data", data_name)).T[1]
-        Trad_simpl = np.loadtxt(os.path.join(folder, "ecfm_data", simplfile)).T[1]
+        Trad = np.loadtxt(os.path.join(folder, "ECRad_data", data_name)).T[1]
+        Trad_simpl = np.loadtxt(os.path.join(folder, "ECRad_data", simplfile)).T[1]
 #        print(Trad)
         # folder = os.path.join(folder,shotno,time)
-        # rhop, Trad = self.read_file(os.path.join(folder,"ecfm_data",data_name))
-        sres = np.loadtxt(os.path.join(folder, "ecfm_data", "sres.dat"))
+        # rhop, Trad = self.read_file(os.path.join(folder,"ECRad_data",data_name))
+        sres = np.loadtxt(os.path.join(folder, "ECRad_data", "sres.dat"))
         rhop = sres.T[3]
         if(dstf == "ON"):
             Ich1 = "Ich" + "TB"
@@ -2186,47 +2186,47 @@ class plotting_core:
         else:
             ch_Hf_str_2 = "LFS"
         shotstr = "\#" + str(shotno) + " t = " + "{0:1.4f}".format(float(time)) + " s  "
-        filelist = glob(os.path.join(folder, "ecfm_data", Ich1, "*.dat"))
+        filelist = glob(os.path.join(folder, "ECRad_data", Ich1, "*.dat"))
         if(O_mode):
-            svec_1, ece_freq = read_svec_from_file(os.path.join(folder, "ecfm_data"), ch, mode='O')
+            svec_1, ece_freq = read_svec_from_file(os.path.join(folder, "ECRad_data"), ch, mode='O')
         else:
-            svec_1, ece_freq = read_svec_from_file(os.path.join(folder, "ecfm_data"), ch)
+            svec_1, ece_freq = read_svec_from_file(os.path.join(folder, "ECRad_data"), ch)
         # omega_bar_1 = svec_1.T[7]/ ece_freq
         if(O_mode):
             print("Intensity plot for 'O' mode")
-            filename_n = os.path.join(folder, "ecfm_data", Ich1, "IrhoOch" + "{0:0>3}.dat".format(ch))
-            filename_n_2 = os.path.join(folder_2, "ecfm_data", Ich2, "IrhoOch" + "{0:0>3}.dat".format(ch2))
-            filename_transparency = os.path.join(folder, "ecfm_data", Ich1, "TrhoOch" + "{0:0>3}.dat".format(ch))
-            filename_transparency_2 = os.path.join(folder_2, "ecfm_data", Ich2, "TrhoOch" + "{0:0>3}.dat".format(ch2))
-            filename_BPD = os.path.join(folder, "ecfm_data", Ich1, "BPDO" + "{0:0>3}.dat".format(ch))
-            filename_BPD_2 = os.path.join(folder_2, "ecfm_data", Ich2, "BPDO" + "{0:0>3}.dat".format(ch2))
+            filename_n = os.path.join(folder, "ECRad_data", Ich1, "IrhoOch" + "{0:0>3}.dat".format(ch))
+            filename_n_2 = os.path.join(folder_2, "ECRad_data", Ich2, "IrhoOch" + "{0:0>3}.dat".format(ch2))
+            filename_transparency = os.path.join(folder, "ECRad_data", Ich1, "TrhoOch" + "{0:0>3}.dat".format(ch))
+            filename_transparency_2 = os.path.join(folder_2, "ECRad_data", Ich2, "TrhoOch" + "{0:0>3}.dat".format(ch2))
+            filename_BPD = os.path.join(folder, "ECRad_data", Ich1, "BPDO" + "{0:0>3}.dat".format(ch))
+            filename_BPD_2 = os.path.join(folder_2, "ECRad_data", Ich2, "BPDO" + "{0:0>3}.dat".format(ch2))
         else:
             print("Intensity plot for 'X' mode")
-            filename_n = os.path.join(folder, "ecfm_data", Ich1, "Irhopch" + "{0:0>3}.dat".format(ch))
-            filename_n_2 = os.path.join(folder_2, "ecfm_data", Ich2, "Irhopch" + "{0:0>3}.dat".format(ch2))
-            filename_transparency = os.path.join(folder, "ecfm_data", Ich1, "Trhopch" + "{0:0>3}.dat".format(ch))
-            filename_transparency_2 = os.path.join(folder_2, "ecfm_data", Ich2, "Trhopch" + "{0:0>3}.dat".format(ch2))
-            filename_BPD = os.path.join(folder, "ecfm_data", Ich1, "BPDX" + "{0:0>3}.dat".format(ch))
-            filename_BPD_2 = os.path.join(folder_2, "ecfm_data", Ich2, "BPDX" + "{0:0>3}.dat".format(ch2))
-        filelist_2 = glob(os.path.join(folder_2, "ecfm_data", Ich2, "*.dat"))
+            filename_n = os.path.join(folder, "ECRad_data", Ich1, "Irhopch" + "{0:0>3}.dat".format(ch))
+            filename_n_2 = os.path.join(folder_2, "ECRad_data", Ich2, "Irhopch" + "{0:0>3}.dat".format(ch2))
+            filename_transparency = os.path.join(folder, "ECRad_data", Ich1, "Trhopch" + "{0:0>3}.dat".format(ch))
+            filename_transparency_2 = os.path.join(folder_2, "ECRad_data", Ich2, "Trhopch" + "{0:0>3}.dat".format(ch2))
+            filename_BPD = os.path.join(folder, "ECRad_data", Ich1, "BPDX" + "{0:0>3}.dat".format(ch))
+            filename_BPD_2 = os.path.join(folder_2, "ECRad_data", Ich2, "BPDX" + "{0:0>3}.dat".format(ch2))
+        filelist_2 = glob(os.path.join(folder_2, "ECRad_data", Ich2, "*.dat"))
         if(O_mode):
-            svec_2, ece_freq_2 = read_svec_from_file(os.path.join(folder_2, "ecfm_data"), ch2, mode="O")
+            svec_2, ece_freq_2 = read_svec_from_file(os.path.join(folder_2, "ECRad_data"), ch2, mode="O")
         else:
-            svec_2, ece_freq_2 = read_svec_from_file(os.path.join(folder_2, "ecfm_data"), ch2)
-        # filename_n_3 = os.path.join(folder,"ecfm_data",Ich,"Irhopchs" + "{0:0>3}.dat".format(ch))
-        # filename_th = os.path.join(folder,"ecfm_data","IchTh","Irhopch" + "{0:0>3}.dat".format(ch))
-        # filename_IDA_backw = os.path.join(folder,"ecfm_data",Ich,"IRad_backwIDAch{0:0>3}.dat".format(ch))
-        # filename_IDA_backw_2 = os.path.join(folder,"ecfm_data",Ich,"IRad_backwIDAch{0:0>3}.dat".format(ch2))
-        # filename_ECFM_backw = os.path.join(folder,"ecfm_data",Ich,"IRad_backwch{0:0>3}.dat".format(ch))
-        # filename_ECFM_backw_2 = os.path.join(folder,"ecfm_data",Ich,"IRad_backwch{0:0>3}.dat".format(ch2))
+            svec_2, ece_freq_2 = read_svec_from_file(os.path.join(folder_2, "ECRad_data"), ch2)
+        # filename_n_3 = os.path.join(folder,"ECRad_data",Ich,"Irhopchs" + "{0:0>3}.dat".format(ch))
+        # filename_th = os.path.join(folder,"ECRad_data","IchTh","Irhopch" + "{0:0>3}.dat".format(ch))
+        # filename_IDA_backw = os.path.join(folder,"ECRad_data",Ich,"IRad_backwIDAch{0:0>3}.dat".format(ch))
+        # filename_IDA_backw_2 = os.path.join(folder,"ECRad_data",Ich,"IRad_backwIDAch{0:0>3}.dat".format(ch2))
+        # filename_ECRad_backw = os.path.join(folder,"ECRad_data",Ich,"IRad_backwch{0:0>3}.dat".format(ch))
+        # filename_ECRad_backw_2 = os.path.join(folder,"ECRad_data",Ich,"IRad_backwch{0:0>3}.dat".format(ch2))
         # print(rhop_final_arr)
-        # filename_transparency_th = os.path.join(folder,"ecfm_data","IchTh","Trhopch" + "{0:0>3}.dat".format(ch))
+        # filename_transparency_th = os.path.join(folder,"ECRad_data","IchTh","Trhopch" + "{0:0>3}.dat".format(ch))
         # filename_ne = os.path.join(folder,"ne_ida.res")
         filename_te = os.path.join(folder, "te_ida.res")
         BDP_plot = True
         try:
             if(not os.path.exists(filename_te) and OERT):
-                Te_data = np.loadtxt(os.path.join(folder, "ecfm_data", "Te_file.dat"), skiprows=1)
+                Te_data = np.loadtxt(os.path.join(folder, "ECRad_data", "Te_file.dat"), skiprows=1)
                 rhop_te = Te_data.T[0]
                 te = Te_data.T[1] / 1.e3
             else:
@@ -2238,14 +2238,14 @@ class plotting_core:
         # rhop_ne, ne = self.read_file(filename_ne)
         # rhop_te, te = self.read_file(filename_te)
         # optical_thickness = 3.9*10**-19 * te * ne *1.e3
-        # r_res_ch,z_res_ch = cold_res(os.path.join(folder,"ecfm_data"), ch)
-        # r_res_ch_2,z_res_ch_2 = cold_res(os.path.join(folder,"ecfm_data"), ch2)
+        # r_res_ch,z_res_ch = cold_res(os.path.join(folder,"ECRad_data"), ch)
+        # r_res_ch_2,z_res_ch_2 = cold_res(os.path.join(folder,"ECRad_data"), ch2)
         if(rel_res):
-            x_temp = np.loadtxt(os.path.join(folder, "ecfm_data", "sres_rel.dat"))
-            x_temp_2 = np.loadtxt(os.path.join(folder_2, "ecfm_data", "sres_rel.dat"))
+            x_temp = np.loadtxt(os.path.join(folder, "ECRad_data", "sres_rel.dat"))
+            x_temp_2 = np.loadtxt(os.path.join(folder_2, "ECRad_data", "sres_rel.dat"))
         else:
-            x_temp = np.loadtxt(os.path.join(folder, "ecfm_data", "sres.dat"))
-            x_temp_2 = np.loadtxt(os.path.join(folder_2, "ecfm_data", "sres.dat"))
+            x_temp = np.loadtxt(os.path.join(folder, "ECRad_data", "sres.dat"))
+            x_temp_2 = np.loadtxt(os.path.join(folder_2, "ECRad_data", "sres.dat"))
         x_res_ch = x_temp.T[x_coloumn][ch - 1]
         x_res_ch_2 = x_temp_2.T[x_coloumn][ch2 - 1]
         if(x_axis == "rhop"):
@@ -2610,13 +2610,13 @@ class plotting_core:
                 mode = "O"
             else:
                 mode = "X"
-            success, s_res, R_res, z_res, rhop_res = find_cold_res(os.path.join(folder, "ecfm_data"), ch, mode, 2)
+            success, s_res, R_res, z_res, rhop_res = find_cold_res(os.path.join(folder, "ECRad_data"), ch, mode, 2)
             if(success):
                 if(R_res < R_ax):
                     rhop_res *= -1.0
                 self.axlist_2[0].vlines(rhop_res, self.y_range_list_2[0][0], self.y_range_list_2[0][1], linestyle='dotted', colors=(0.6, 0.0, 0.0))
             if(ch != ch2):
-                success, s_res, R_res, z_res, rhop_res = find_cold_res(os.path.join(folder, "ecfm_data"), ch2, mode, 2)
+                success, s_res, R_res, z_res, rhop_res = find_cold_res(os.path.join(folder, "ECRad_data"), ch2, mode, 2)
                 if(success):
                     if(R_res < R_ax):
                         rhop_res *= -1.0
@@ -2674,8 +2674,8 @@ class plotting_core:
 
     def ManyBirthplaces(self, folder, shotno, time, OERT, ch, dstf, rel_res, chHf, R_ax, O_mode=False):
         data_name, simplfile, use_tertiary_model, tertiary_model, dist, dist_simpl, backup_name, backup_dist, tertiary_dist = get_files_and_labels(dstf)
-        Trad = np.loadtxt(os.path.join(folder, "ecfm_data", data_name)).T[1]
-        Te_data = np.loadtxt(os.path.join(folder, "ecfm_data", "Te_file.dat"), skiprows=1)
+        Trad = np.loadtxt(os.path.join(folder, "ECRad_data", data_name)).T[1]
+        Te_data = np.loadtxt(os.path.join(folder, "ECRad_data", "Te_file.dat"), skiprows=1)
         ax_coloumn = 3
         Ich = "Ich" + dstf
         if(chHf):
@@ -2685,22 +2685,22 @@ class plotting_core:
         shotstr = "\#" + str(shotno) + " t = " + "{0:1.4f}".format(float(time)) + " s  "
         if(O_mode):
             print("Birthplace plot for 'O' mode")
-            svec_1, ece_freq = read_svec_from_file(os.path.join(folder, "ecfm_data"), ch, mode="O")
-            filename_n = os.path.join(folder, "ecfm_data", Ich, "IrhoOch" + "{0:0>3}.dat".format(ch))
-            filename_transparency = os.path.join(folder, "ecfm_data", Ich, "TrhoOch" + "{0:0>3}.dat".format(ch))
-            filename_BPD = os.path.join(folder, "ecfm_data", Ich, "BPDO" + "{0:0>3}.dat".format(ch))
+            svec_1, ece_freq = read_svec_from_file(os.path.join(folder, "ECRad_data"), ch, mode="O")
+            filename_n = os.path.join(folder, "ECRad_data", Ich, "IrhoOch" + "{0:0>3}.dat".format(ch))
+            filename_transparency = os.path.join(folder, "ECRad_data", Ich, "TrhoOch" + "{0:0>3}.dat".format(ch))
+            filename_BPD = os.path.join(folder, "ECRad_data", Ich, "BPDO" + "{0:0>3}.dat".format(ch))
             mode = "O"
         else:
             print("Birthplace plot for 'X' mode")
-            svec_1, ece_freq = read_svec_from_file(os.path.join(folder, "ecfm_data"), ch)
-            filename_n = os.path.join(folder, "ecfm_data", Ich, "Irhopch" + "{0:0>3}.dat".format(ch))
-            filename_transparency = os.path.join(folder, "ecfm_data", Ich, "Trhopch" + "{0:0>3}.dat".format(ch))
-            filename_BPD = os.path.join(folder, "ecfm_data", Ich, "BPDX" + "{0:0>3}.dat".format(ch))
+            svec_1, ece_freq = read_svec_from_file(os.path.join(folder, "ECRad_data"), ch)
+            filename_n = os.path.join(folder, "ECRad_data", Ich, "Irhopch" + "{0:0>3}.dat".format(ch))
+            filename_transparency = os.path.join(folder, "ECRad_data", Ich, "Trhopch" + "{0:0>3}.dat".format(ch))
+            filename_BPD = os.path.join(folder, "ECRad_data", Ich, "BPDX" + "{0:0>3}.dat".format(ch))
             mode = "X"
         if(rel_res):
-            x_temp = np.loadtxt(os.path.join(folder, "ecfm_data", "sres_rel.dat"))
+            x_temp = np.loadtxt(os.path.join(folder, "ECRad_data", "sres_rel.dat"))
         else:
-            x_temp = np.loadtxt(os.path.join(folder, "ecfm_data", "sres.dat"))
+            x_temp = np.loadtxt(os.path.join(folder, "ECRad_data", "sres.dat"))
         scale_w_Trad = False
         ich_data = np.loadtxt(filename_n)
         T_data = np.loadtxt(filename_transparency)
@@ -2738,7 +2738,7 @@ class plotting_core:
         self.line_color_index_2[0] += 1
         self.create_legends("BPD_twix")
         self.finishing_touches()
-        success, s_res, R_res, z_res, rhop_res = find_cold_res(os.path.join(folder, "ecfm_data"), ch, mode, 3)
+        success, s_res, R_res, z_res, rhop_res = find_cold_res(os.path.join(folder, "ECRad_data"), ch, mode, 3)
         if(success):
             if(R_res < R_ax):
                 rhop_res *= -1.0
@@ -2747,8 +2747,8 @@ class plotting_core:
 
     def Birthplace_plot(self, folder, shotno, time, OERT, ch, dstf, rel_res, chHf, R_ax, O_mode=False):
         data_name, simplfile, use_tertiary_model, tertiary_model, dist, dist_simpl, backup_name, backup_dist, tertiary_dist = get_files_and_labels(dstf)
-        Trad = np.loadtxt(os.path.join(folder, "ecfm_data", data_name)).T[1]
-        Te_data = np.loadtxt(os.path.join(folder, "ecfm_data", "Te_file.dat"), skiprows=1)
+        Trad = np.loadtxt(os.path.join(folder, "ECRad_data", data_name)).T[1]
+        Te_data = np.loadtxt(os.path.join(folder, "ECRad_data", "Te_file.dat"), skiprows=1)
         ax_coloumn = 3
         Ich = "Ich" + dstf
         if(chHf):
@@ -2759,21 +2759,21 @@ class plotting_core:
         if(O_mode):
             print("Birthplace plot for 'O' mode")
             mode = "O"
-            svec_1, ece_freq = read_svec_from_file(os.path.join(folder, "ecfm_data"), ch, mode="O")
-            filename_n = os.path.join(folder, "ecfm_data", Ich, "IrhoOch" + "{0:0>3}.dat".format(ch))
-            filename_transparency = os.path.join(folder, "ecfm_data", Ich, "TrhoOch" + "{0:0>3}.dat".format(ch))
-            filename_BPD = os.path.join(folder, "ecfm_data", Ich, "BPDO" + "{0:0>3}.dat".format(ch))
+            svec_1, ece_freq = read_svec_from_file(os.path.join(folder, "ECRad_data"), ch, mode="O")
+            filename_n = os.path.join(folder, "ECRad_data", Ich, "IrhoOch" + "{0:0>3}.dat".format(ch))
+            filename_transparency = os.path.join(folder, "ECRad_data", Ich, "TrhoOch" + "{0:0>3}.dat".format(ch))
+            filename_BPD = os.path.join(folder, "ECRad_data", Ich, "BPDO" + "{0:0>3}.dat".format(ch))
         else:
             print("Birthplace plot for 'X' mode")
             mode = "X"
-            svec_1, ece_freq = read_svec_from_file(os.path.join(folder, "ecfm_data"), ch)
-            filename_n = os.path.join(folder, "ecfm_data", Ich, "Irhopch" + "{0:0>3}.dat".format(ch))
-            filename_transparency = os.path.join(folder, "ecfm_data", Ich, "Trhopch" + "{0:0>3}.dat".format(ch))
-            filename_BPD = os.path.join(folder, "ecfm_data", Ich, "BPDX" + "{0:0>3}.dat".format(ch))
+            svec_1, ece_freq = read_svec_from_file(os.path.join(folder, "ECRad_data"), ch)
+            filename_n = os.path.join(folder, "ECRad_data", Ich, "Irhopch" + "{0:0>3}.dat".format(ch))
+            filename_transparency = os.path.join(folder, "ECRad_data", Ich, "Trhopch" + "{0:0>3}.dat".format(ch))
+            filename_BPD = os.path.join(folder, "ECRad_data", Ich, "BPDX" + "{0:0>3}.dat".format(ch))
         if(rel_res):
-            x_temp = np.loadtxt(os.path.join(folder, "ecfm_data", "sres_rel.dat"))
+            x_temp = np.loadtxt(os.path.join(folder, "ECRad_data", "sres_rel.dat"))
         else:
-            x_temp = np.loadtxt(os.path.join(folder, "ecfm_data", "sres.dat"))
+            x_temp = np.loadtxt(os.path.join(folder, "ECRad_data", "sres.dat"))
         scale_w_Trad = False
         ich_data = np.loadtxt(filename_n)
         T_data = np.loadtxt(filename_transparency)
@@ -2843,7 +2843,7 @@ class plotting_core:
         self.axlist_2[1], self.y_range_list_2[1] = self.add_plot(self.axlist_2[1], \
                 self.y_range_list_2[1] , data=[rhop_Te, Te], marker=":", color="black", \
                 name=r"$T_\mathrm{e}$", ax_flag="Te", y_scale=1.e-3)
-        success, s_res, R_res, z_res, rhop_res = find_cold_res(os.path.join(folder, "ecfm_data"), ch, mode, 3)
+        success, s_res, R_res, z_res, rhop_res = find_cold_res(os.path.join(folder, "ECRad_data"), ch, mode, 3)
         if(success):
             if(R_res < R_ax):
                 rhop_res *= -1.0
@@ -2857,7 +2857,7 @@ class plotting_core:
         return self.fig, self.fig_2, x_temp.T[3][ch - 1]
 
     def PlotECESens(self, folder, shotno, time, dstf, Ch_list, O_mode):
-        Te_data = np.loadtxt(os.path.join(folder, "ecfm_data", "Te_file.dat"), skiprows=1)
+        Te_data = np.loadtxt(os.path.join(folder, "ECRad_data", "Te_file.dat"), skiprows=1)
         Ich = "Ich" + dstf
         shotstr = "\#" + str(shotno) + " t = " + "{0:1.4f}".format(float(time)) + " s  "
         rhop_map = np.linspace(-1.2, 1.2, 1000)
@@ -2865,10 +2865,10 @@ class plotting_core:
         for ch in Ch_list:
             if(O_mode):
                 print("Birthplace plot for 'O' mode")
-                filename_BPD = os.path.join(folder, "ecfm_data", Ich, "BPDO" + "{0:0>3}.dat".format(ch))
+                filename_BPD = os.path.join(folder, "ECRad_data", Ich, "BPDO" + "{0:0>3}.dat".format(ch))
             else:
                 print("Birthplace plot for 'X' mode")
-                filename_BPD = os.path.join(folder, "ecfm_data", Ich, "BPDX" + "{0:0>3}.dat".format(ch))
+                filename_BPD = os.path.join(folder, "ECRad_data", Ich, "BPDX" + "{0:0>3}.dat".format(ch))
             BPD_data = np.loadtxt(filename_BPD)
             BPD_spl = InterpolatedUnivariateSpline(BPD_data.T[0], BPD_data.T[1], ext=1)
             BPD[:] += BPD_spl(rhop_map)
@@ -2887,17 +2887,17 @@ class plotting_core:
         return self.fig, self.fig_2
 
     def BenchmarkingPlot(self, folder, shotno, time, OERT, ch):
-        # prof_file = np.loadtxt("/afs/ipp-garching.mpg.de/home/s/sdenk/F90/Ecfm_Model/high_ne_abs_prof.dat")
-        # prof_file = np.loadtxt("/afs/ipp-garching.mpg.de/home/s/sdenk/F90/Ecfm_Model/low_ne_abs_prof.dat")
-        filename_n_TB = os.path.join(folder, "ecfm_data", "IchTB", "Irhopch" + "{0:0>3}.dat".format(ch))
+        # prof_file = np.loadtxt("/afs/ipp-garching.mpg.de/home/s/sdenk/F90/ECRad_Model/high_ne_abs_prof.dat")
+        # prof_file = np.loadtxt("/afs/ipp-garching.mpg.de/home/s/sdenk/F90/ECRad_Model/low_ne_abs_prof.dat")
+        filename_n_TB = os.path.join(folder, "ECRad_data", "IchTB", "Irhopch" + "{0:0>3}.dat".format(ch))
         TB_data = np.loadtxt(filename_n_TB)
-        filename_n_Th = os.path.join(folder, "ecfm_data", "IchTh", "Irhopch" + "{0:0>3}.dat".format(ch))
+        filename_n_Th = os.path.join(folder, "ECRad_data", "IchTh", "Irhopch" + "{0:0>3}.dat".format(ch))
         Th_data = np.loadtxt(filename_n_Th)
-        filename_N = os.path.join(folder, "ecfm_data", "IchTB", "Nch{0:03n}.dat".format(ch))
+        filename_N = os.path.join(folder, "ECRad_data", "IchTB", "Nch{0:03n}.dat".format(ch))
         N_data = np.loadtxt(filename_N)
         # irhop_min = np.where(np.min(N_data.T[0]) == N_data.T[0])[0][0]
         irhop_min = len(N_data.T[0])
-        svec, freq = read_svec_from_file(os.path.join(folder, "ecfm_data"), ch)
+        svec, freq = read_svec_from_file(os.path.join(folder, "ECRad_data"), ch)
         # TODO - this is broken for raytracing
         rhop_1 = svec.T[-1][0:irhop_min] / 2.e0 / freq  # -N_data.T[0][0:irhop_min]
         # rhop_2 = svec.T[-1][0:len(N_data.T[0])] / 2.e0 / freq #N_data.T[0][irhop_min:len(N_data.T[0])]
@@ -3240,7 +3240,7 @@ class plotting_core:
 
     def plot_los(self, ax, y_range, shot, time, R_ray, z_ray, R_res, z_res, no_names=False, eq_diag=None, marker=r"-"):
         if(not no_names):
-            base_str = "ECFM"
+            base_str = "ECRad"
             if(AUG and eq_diag is not None):
                 self.plot_EQ_vessel(shot, time, ax, eq_diag)
             ax, y_range = self.add_plot(ax, \
@@ -3300,16 +3300,16 @@ class plotting_core:
     def show_ECE_Res(self, folder, alt_folder, shot, time, diag_ch, N_ch, ch, rel_res, mode, OERT, Comp, eq_diag=None):
         shotstr = "\#" + str(shot) + " t = " + "{0:1.3f}".format(time) + " s  "
 #        eqi = eqi_map()
-        ECFM_folder = os.path.join(folder, "ecfm_data")
+        ECRad_folder = os.path.join(folder, "ECRad_data")
 #        coords, NPFM = eqi.norm_PFM(int(shot),float(time),np.linspace(0.1,1.2,12), diag = "EQI")
         alt_str = "straight"
         self.setup_axes("single", r"ECE cold res. and ray " + shotstr, "Toroidal angle")
         tb = False
         try:
-            tb_data = np.loadtxt(os.path.join(ECFM_folder, "ray", "ray_ch_R{0:04d}tb.dat".format(int(ch))))
+            tb_data = np.loadtxt(os.path.join(ECRad_folder, "ray", "ray_ch_R{0:04d}tb.dat".format(int(ch))))
             tb = True
         except:
-            print("No tb data at", os.path.join(ECFM_folder, "ray", "ray_ch_R{0:04d}tb.dat".format(int(ch))))
+            print("No tb data at", os.path.join(ECRad_folder, "ray", "ray_ch_R{0:04d}tb.dat".format(int(ch))))
         # print(len(contours))
         channel_index = int(np.argmin(np.abs(int(ch) - diag_ch)))
         R_res = np.zeros(len(diag_ch))
@@ -3321,40 +3321,40 @@ class plotting_core:
             for ich in range(len(diag_ch)):
                 ich_diag = diag_ch[ich]
                 if(rel_res):
-                    sucess, dummy, R_res[ich], z_res[ich ], dummy_2 = find_cold_res(ECFM_folder, ich_diag)
-                    R_res_warm[ich], z_res_warm[ich] = find_rel_res(ECFM_folder, ich_diag)
+                    sucess, dummy, R_res[ich], z_res[ich ], dummy_2 = find_cold_res(ECRad_folder, ich_diag)
+                    R_res_warm[ich], z_res_warm[ich] = find_rel_res(ECRad_folder, ich_diag)
                 else:
-                    sucess, dummy, R_res[ich], z_res[ich], dummy_2 = find_cold_res(ECFM_folder, ich_diag)
+                    sucess, dummy, R_res[ich], z_res[ich], dummy_2 = find_cold_res(ECRad_folder, ich_diag)
         except IndexError:
             print("Index error occured when reading svec for channel " + str(ich_diag))
-        svec, freq = read_svec_from_file(ECFM_folder, int(ch), mode=mode)
+        svec, freq = read_svec_from_file(ECRad_folder, int(ch), mode=mode)
         base_str = ""
         if(Comp):
             R_res_2 = np.zeros(len(diag_ch))
             z_res_2 = np.zeros(len(diag_ch))
-            ECFM_alt_folder = os.path.join(alt_folder, "ecfm_data")
+            ECRad_alt_folder = os.path.join(alt_folder, "ECRad_data")
 #            if(OERT):
-#                ECFM_alt_folder = ECFM_folder.replace("OERT/", "")
+#                ECRad_alt_folder = ECRad_folder.replace("OERT/", "")
 #                alt_str = "Org"
 #                base_str = "OERT"
 #            else:
-#                ECFM_alt_folder = os.path.join(folder, "OERT", "ecfm_data")
+#                ECRad_alt_folder = os.path.join(folder, "OERT", "ECRad_data")
 #                alt_str = "OERT"
 #                base_str = "Org"
-            svec_2, freq = read_svec_from_file(ECFM_alt_folder, int(ch), mode)
+            svec_2, freq = read_svec_from_file(ECRad_alt_folder, int(ch), mode)
             try:
                 for ich in range(len(diag_ch)):
                     ich_diag = diag_ch[ich]
                     if(rel_res):
-                        R_res_2[ich], z_res_2[ich] = find_rel_res(ECFM_alt_folder, ich_diag)
+                        R_res_2[ich], z_res_2[ich] = find_rel_res(ECRad_alt_folder, ich_diag)
                     else:
-                        sucess, s_res, R_res_2[ich], z_res_2[ich], dummy = find_cold_res(ECFM_alt_folder, ich_diag)
+                        sucess, s_res, R_res_2[ich], z_res_2[ich], dummy = find_cold_res(ECRad_alt_folder, ich_diag)
             except IndexError:
                 print("Index error occured when reading svec for channel " + diag_ch)
         # Central los
         self.plot_los(self.axlist[0], self.y_range_list[0], shot, time, svec.T[1][svec.T[3] != -1], svec.T[2][svec.T[3] != -1], \
                       R_res[channel_index], z_res[channel_index], eq_diag=eq_diag)
-        ray_list = glob(os.path.join(ECFM_folder, "ray", "Ray*ch{0:03d}_{1:s}.dat".format(int(ch), mode)))
+        ray_list = glob(os.path.join(ECRad_folder, "ray", "Ray*ch{0:03d}_{1:s}.dat".format(int(ch), mode)))
         if(not Comp):
             for ray_file in ray_list:
                 if(not "Ray001" in ray_file):
@@ -3843,7 +3843,7 @@ class plotting_core:
                             break
                 self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                       self.y_range_list[0], data=[ Rays[0][0][:i_axis] , Rays[0][1][:i_axis] ], marker="-", color="blue", \
-                      name=r"Rays according to ECFM", ax_flag="Rz")
+                      name=r"Rays according to ECRad", ax_flag="Rz")
             else:
                 i_axis = len(Rays[0][1])
                 if(stop_at_axis):
@@ -3953,7 +3953,7 @@ class plotting_core:
 #                    ax.plot(struct[0], struct[1], 'k', lw=0.5)
         # cmap = plt.cm.get_cmap("autumn")
 
-    def time_trace_for_calib(self, fig, shot, time, diag_time, IDA, IDA_labels, ECE, ECE_labels, ECFM, ECFM_labels, diag=None, diag_labels=None, divertor_cur=None):
+    def time_trace_for_calib(self, fig, shot, time, diag_time, IDA, IDA_labels, ECE, ECE_labels, ECRad, ECRad_labels, diag=None, diag_labels=None, divertor_cur=None):
         if(divertor_cur is not None and diag is not None):
             self.setup_axes("stacked_large", r"Timetraces for \#" + str(shot))
         elif(diag is not None or divertor_cur is not None):
@@ -3977,11 +3977,11 @@ class plotting_core:
             self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], \
                     self.y_range_list[1] , data=[time, ECE[i]], marker="+", \
                     name=ECE_labels[i], coloumn=1, ax_flag="Trad_trace")  # \
-        for i in range(len(ECFM)):
+        for i in range(len(ECRad)):
             self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], \
-                    self.y_range_list[1] , data=[time, ECFM[i]], \
+                    self.y_range_list[1] , data=[time, ECRad[i]], \
                      marker="-", \
-                    coloumn=1, ax_flag="Trad_trace")  # name = ECFM_labels[i],
+                    coloumn=1, ax_flag="Trad_trace")  # name = ECRad_labels[i],
         if(diag is not None):
             for i in range(len(diag)):
                 self.axlist[2], self.y_range_list[2] = self.add_plot(self.axlist[2], \
@@ -4131,7 +4131,7 @@ class plotting_core:
             fconf.plt_vessel(self.axlist[1], pol=False)
         if(np.iterable(ray)):
             self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[ray[0].R, ray[0].z], \
-                name=r"ECFM ray", marker="-", color=(0.e0, 126.0 / 255, 0.e0), \
+                name=r"ECRad ray", marker="-", color=(0.e0, 126.0 / 255, 0.e0), \
                      y_range_in=self.y_range_list[0], ax_flag="Rz")
             if(s_cold is not None):
                 x_spl = InterpolatedUnivariateSpline(ray[0].s, ray[0].x)
@@ -4140,7 +4140,7 @@ class plotting_core:
                             name=r"Cold resonance", marker="+", color=(0.e0, 126.0 / 255, 0.e0), \
                                  y_range_in=self.y_range_list[1], ax_flag="xy")
             self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], data=[ray[0].x, ray[0].y], \
-                        name=r"ECFM ray", marker="-", color=(0.e0, 126.0 / 255, 0.e0), \
+                        name=r"ECRad ray", marker="-", color=(0.e0, 126.0 / 255, 0.e0), \
                              y_range_in=self.y_range_list[1], ax_flag="xy")
             if(H):
                 self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], data=[ray[0].s, ray[0].H], \
@@ -4200,7 +4200,7 @@ class plotting_core:
                             name=r"Cold resonance", marker="+", color=(0.e0, 126.0 / 255, 0.e0), \
                                  y_range_in=self.y_range_list[1], ax_flag="xy")
             self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[ray.R, ray.z], \
-                    name=r"ECFM ray", marker="-", color=(0.e0, 126.0 / 255, 0.e0), \
+                    name=r"ECRad ray", marker="-", color=(0.e0, 126.0 / 255, 0.e0), \
                          y_range_in=self.y_range_list[0], ax_flag="Rz")
             if(H):
                 self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], data=[ray.s, ray.H], \
@@ -4224,7 +4224,7 @@ class plotting_core:
                         name=ray_label + r" peripheral ray", marker=":", color=(126.0 / 255, 0.e0, 126.0 / 255), \
                              y_range_in=self.y_range_list[0], ax_flag="Rz")
             self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], data=[ray.x, ray.y], \
-                        name=r"ECFM ray", marker="-", color=(0.e0, 126.0 / 255, 0.e0), \
+                        name=r"ECRad ray", marker="-", color=(0.e0, 126.0 / 255, 0.e0), \
                              y_range_in=self.y_range_list[1], ax_flag="xy")
             if(type(ray.x_tb) != int):
                 self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], data=[ray.x_tb, ray.y_tb], \
@@ -4619,14 +4619,14 @@ class plotting_core:
         self.axlist[0].clabel(CS2, fontsize=12, inline=1)
         fconf.plt_vessel(self.axlist[0])
         self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[ray.R, ray.z], \
-                    name=r"ECFM ray", marker="-", color=(0.e0, 126.0 / 255, 0.e0), \
+                    name=r"ECRad ray", marker="-", color=(0.e0, 126.0 / 255, 0.e0), \
                          y_range_in=self.y_range_list[0], ax_flag="Rz")
         if(ray.R_tb is not None):
             self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[ray.R_tb, ray.z_tb], \
                     name=r"TORBEAM ray", marker="--", color=(126.0 / 255, 0.e0, 126.0 / 255), \
                          y_range_in=self.y_range_list[0], ax_flag="Rz")
         self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], data=[ray.x, ray.y], \
-                    name=r"ECFM ray", marker="-", color=(0.e0, 126.0 / 255, 0.e0), \
+                    name=r"ECRad ray", marker="-", color=(0.e0, 126.0 / 255, 0.e0), \
                          y_range_in=self.y_range_list[1], ax_flag="xy")
         if(ray.x_tb is not None):
             self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], data=[ray.x_tb, ray.y_tb], \
@@ -4653,7 +4653,7 @@ class plotting_core:
         self.axlist_2[0].set_ylim(0, 1)
         return self.fig, self.fig_2
 
-    def tb_check_plot(self, tb_ray, ECFM_ray, R_mat, z_mat, rhop, N_tb, N_ECFM):
+    def tb_check_plot(self, tb_ray, ECRad_ray, R_mat, z_mat, rhop, N_tb, N_ECRad):
         self.setup_axes("single", "Ray", "rhop")
         CS = self.axlist[0].contour(R_mat, z_mat, rhop, \
              levels=np.linspace(0.1, 1.2, 12), linewidths=1, colors="k", linestyles="--")
@@ -4664,35 +4664,35 @@ class plotting_core:
         self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[np.sqrt((tb_ray.T[0] / 100.0) ** 2 + (tb_ray.T[1] / 100.0) ** 2), tb_ray.T[2] / 100.0], \
                     name=r"TORBEAM ray", marker="--", color=(126.0 / 255, 0.e0, 126.0 / 255), \
                          y_range_in=self.y_range_list[0], ax_flag="Rz")
-        self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[np.sqrt(ECFM_ray.T[0] ** 2 + ECFM_ray.T[1] ** 2), ECFM_ray.T[2]], \
-                    name=r"ECFM ray", marker="--", color=(0.e0, 126.0 / 255, 126.0 / 255), \
+        self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[np.sqrt(ECRad_ray.T[0] ** 2 + ECRad_ray.T[1] ** 2), ECRad_ray.T[2]], \
+                    name=r"ECRad ray", marker="--", color=(0.e0, 126.0 / 255, 126.0 / 255), \
                          y_range_in=self.y_range_list[0], ax_flag="Rz")
 #        rhop_spl = RectBivariateSpline(R_mat, z_mat, rhop.T)
 #        rhop_new = rhop_spl(np.sqrt((tb_ray.T[0] / 100.0) ** 2 + (tb_ray.T[1] / 100.0) ** 2), tb_ray.T[2] / 100.0, grid=False)
 #        self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], data=[np.sqrt((tb_ray.T[0] / 100.0) ** 2 + (tb_ray.T[1] / 100.0) ** 2), rhop_new], \
-#                    name=r"$\rho_\mathrm{pol}$ ECFM along TORBEAM ray", marker="-", color=(0.e0, 120.0 / 255, 0.e0), \
+#                    name=r"$\rho_\mathrm{pol}$ ECRad along TORBEAM ray", marker="-", color=(0.e0, 120.0 / 255, 0.e0), \
 #                         y_range_in=self.y_range_list_2[0], ax_flag="H")
-#        self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], data=[np.sqrt(ECFM_ray.T[0] ** 2 + ECFM_ray.T[1] ** 2), ECFM_ray.T[6]], \
-#                    name=r"Ray $\rho_\mathrm{pol}$ ECFM", marker="*", color=(0.e0, 180.0 / 255, 180.0 / 255), \
+#        self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], data=[np.sqrt(ECRad_ray.T[0] ** 2 + ECRad_ray.T[1] ** 2), ECRad_ray.T[6]], \
+#                    name=r"Ray $\rho_\mathrm{pol}$ ECRad", marker="*", color=(0.e0, 180.0 / 255, 180.0 / 255), \
 #                         y_range_in=self.y_range_list_2[0], ax_flag="H")
 #        self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], data=[np.sqrt((tb_ray.T[0] / 100.0) ** 2 + (tb_ray.T[1] / 100.0) ** 2), tb_ray.T[6]], \
 #                    name=r"Ray $\rho_\mathrm{pol}$ TORBEAM", marker="+", color=(0.e0, 0.e0, 120.0 / 255), \
 #                         y_range_in=self.y_range_list_2[0], ax_flag="H")
-#        rhop_ECFM = rhop_spl(np.sqrt(ECFM_ray.T[0] ** 2 + ECFM_ray.T[1] ** 2), ECFM_ray.T[2], grid=False)
-#        self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], data=[np.sqrt(ECFM_ray.T[0] ** 2 + ECFM_ray.T[1] ** 2), rhop_ECFM], \
-#                    name=r"$\rho_\mathrm{pol}$ ECFM along ECFM ray", marker=":", color=(120.0 / 255, 120.0 / 255, 120.0 / 255), \
+#        rhop_ECRad = rhop_spl(np.sqrt(ECRad_ray.T[0] ** 2 + ECRad_ray.T[1] ** 2), ECRad_ray.T[2], grid=False)
+#        self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], data=[np.sqrt(ECRad_ray.T[0] ** 2 + ECRad_ray.T[1] ** 2), rhop_ECRad], \
+#                    name=r"$\rho_\mathrm{pol}$ ECRad along ECRad ray", marker=":", color=(120.0 / 255, 120.0 / 255, 120.0 / 255), \
 #                         y_range_in=self.y_range_list_2[0], ax_flag="H")
 #        self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], data=[np.sqrt((tb_ray.T[0] / 100.0) ** 2 + (tb_ray.T[1] / 100.0) ** 2), \
 #                                                                                         np.sqrt((tb_ray.T[3]) ** 2 + (tb_ray.T[4]) ** 2 + (tb_ray.T[5]) ** 2)], \
 #                    name=r" $N_\mathrm{Ray}$ TORBEAM", marker="+", color=(0.e0, 0.e0, 120.0 / 255), \
 #                         y_range_in=self.y_range_list_2[0], ax_flag="H")
-#        self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], data=[np.sqrt((ECFM_ray.T[0]) ** 2 + (ECFM_ray.T[1]) ** 2), \
-#                                                                                         np.sqrt((ECFM_ray.T[3]) ** 2 + (ECFM_ray.T[4]) ** 2 + (ECFM_ray.T[5]) ** 2)], \
-#                    name=r" $N_\mathrm{Ray}$ ECFM", marker="*", color=(120.0 / 255, 0.e0, 0.e0), \
+#        self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], data=[np.sqrt((ECRad_ray.T[0]) ** 2 + (ECRad_ray.T[1]) ** 2), \
+#                                                                                         np.sqrt((ECRad_ray.T[3]) ** 2 + (ECRad_ray.T[4]) ** 2 + (ECRad_ray.T[5]) ** 2)], \
+#                    name=r" $N_\mathrm{Ray}$ ECRad", marker="*", color=(120.0 / 255, 0.e0, 0.e0), \
 #                         y_range_in=self.y_range_list_2[0], ax_flag="H")
-#        self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], data=[np.sqrt((ECFM_ray.T[0]) ** 2 + (ECFM_ray.T[1]) ** 2), \
-#                                                                                         N_ECFM], \
-#                    name=r" $N_\mathrm{Cold}$ ECFM", marker="-", color=(0.e0, 120.0 / 255, 120.0 / 255), \
+#        self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], data=[np.sqrt((ECRad_ray.T[0]) ** 2 + (ECRad_ray.T[1]) ** 2), \
+#                                                                                         N_ECRad], \
+#                    name=r" $N_\mathrm{Cold}$ ECRad", marker="-", color=(0.e0, 120.0 / 255, 120.0 / 255), \
 #                         y_range_in=self.y_range_list_2[0], ax_flag="H")
 #        self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], data=[svec.T[1], svec.T[3]], \
 #                    name=r"$\rho_\mathrm{pol}$ svec", marker="-.", color=(200.0 / 255, 120.0 / 255, 0.e0, 120.0 / 255), \
@@ -4701,13 +4701,13 @@ class plotting_core:
 #                                                                                         N_tb], \
 #                    name=r" $N_\mathrm{Cold}$ TB", marker="--", color=(0.e0, 120.0 / 255, 120.0 / 255), \
 #                         y_range_in=self.y_range_list_2[0], ax_flag="H")
-        self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], data=[ECFM_ray.T[6], \
-                                                                                         ECFM_ray.T[7]], \
-                    name=r" $X$ ECFM", marker="-", color=(0.e0, 120.0 / 255, 120.0 / 255), \
+        self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], data=[ECRad_ray.T[6], \
+                                                                                         ECRad_ray.T[7]], \
+                    name=r" $X$ ECRad", marker="-", color=(0.e0, 120.0 / 255, 120.0 / 255), \
                          y_range_in=self.y_range_list_2[0], ax_flag="H")
-        self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], data=[ECFM_ray.T[6], \
-                                                                                         ECFM_ray.T[8]], \
-                    name=r" $Y$ ECFM", marker="-", color=(120.0 / 255, 0.e0, 120.0 / 255), \
+        self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], data=[ECRad_ray.T[6], \
+                                                                                         ECRad_ray.T[8]], \
+                    name=r" $Y$ ECRad", marker="-", color=(120.0 / 255, 0.e0, 120.0 / 255), \
                          y_range_in=self.y_range_list_2[0], ax_flag="H")
         self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], data=[tb_ray.T[6], \
                                                                                          tb_ray.T[7]], \
@@ -4717,9 +4717,9 @@ class plotting_core:
                                                                                          tb_ray.T[8]], \
                     name=r" $Y$ TB", marker="-", color=(240.0 / 255, 0.e0, 120.0 / 255), \
                          y_range_in=self.y_range_list_2[0], ax_flag="H")
-        self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], data=[ECFM_ray.T[6], \
-                                                                                         1.0 - np.sqrt(ECFM_ray.T[3] ** 2 + ECFM_ray.T[4] ** 2 + ECFM_ray.T[5] ** 2)], \
-                    name=r" $1 - N$ ECFM", marker="-", color=(240.0 / 255, 0.e0, 120.0 / 255), \
+        self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], data=[ECRad_ray.T[6], \
+                                                                                         1.0 - np.sqrt(ECRad_ray.T[3] ** 2 + ECRad_ray.T[4] ** 2 + ECRad_ray.T[5] ** 2)], \
+                    name=r" $1 - N$ ECRad", marker="-", color=(240.0 / 255, 0.e0, 120.0 / 255), \
                          y_range_in=self.y_range_list_2[0], ax_flag="H")
         self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], data=[tb_ray.T[6], \
                                                                                          1.0 - np.sqrt(tb_ray.T[3] ** 2 + tb_ray.T[4] ** 2 + tb_ray.T[5] ** 2)], \

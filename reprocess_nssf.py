@@ -8,12 +8,12 @@ shot_out_folder = '/tokp/work/sdenk/nssf/'
 import os
 from get_ECRH_config import get_ECRH_viewing_angles
 from shotfile_handling_AUG import get_ECI_launch
-from ECFM_Interface import prepare_input_file
+from ECRad_Interface import prepare_input_file
 import numpy as np
 import subprocess
 import shlex
-from ECFM_GUI_Config import ECFM_Config
-from ECFM_GUI_DIAG_AUG import DefaultDiagDict
+from ECRad_Config import ECRad_Config
+from ECRad_DIAG_AUG import DefaultDiagDict
 from shotfile_handling_AUG import load_IDA_data
 from shutil import copytree, rmtree, copyfile
 from time import clock
@@ -56,19 +56,19 @@ def reprocess(shot, time, ed_list, Config, ssh=True, Overwrite=False):
                 ed_out += 1
             Config.working_dir = os.path.join(out_dir, "ed_" + str(ed_out)) + os.path.sep
             ed_in_dir = os.path.join(in_dir, "ed_" + str(ed)) + os.path.sep
-            ecfm_in_dir = os.path.join(ed_in_dir, "ecfm_data")
-            if(not (os.path.isfile(os.path.join(ecfm_in_dir, "comment")) and os.path.isfile(os.path.join(ed_in_dir, "ida.log")))):
+            ECRad_in_dir = os.path.join(ed_in_dir, "ECRad_data")
+            if(not (os.path.isfile(os.path.join(ECRad_in_dir, "comment")) and os.path.isfile(os.path.join(ed_in_dir, "ida.log")))):
                 print("Skipping empty edition")
                 continue
             if(not os.path.isdir(Config.working_dir)):
                 os.mkdir((Config.working_dir))
             copyfile(os.path.join(ed_in_dir, "ida.log"), os.path.join(Config.working_dir, "ida.log"))
-            ecfm_out_dir = os.path.join(Config.working_dir, "ecfm_data")
-            if(not os.path.isdir(ecfm_out_dir)):
-                os.mkdir(ecfm_out_dir)
-            copyfile(os.path.join(ecfm_in_dir, "comment"), os.path.join(ecfm_out_dir, "comment"))
-            fRe_in_dir = os.path.join(ecfm_in_dir, "fRe")
-            fRe_out_dir = os.path.join(ecfm_out_dir, "fRe")
+            ECRad_out_dir = os.path.join(Config.working_dir, "ECRad_data")
+            if(not os.path.isdir(ECRad_out_dir)):
+                os.mkdir(ECRad_out_dir)
+            copyfile(os.path.join(ECRad_in_dir, "comment"), os.path.join(ECRad_out_dir, "comment"))
+            fRe_in_dir = os.path.join(ECRad_in_dir, "fRe")
+            fRe_out_dir = os.path.join(ECRad_out_dir, "fRe")
             if(os.path.isdir(fRe_out_dir)):
                 rmtree(fRe_out_dir)
             copytree(fRe_in_dir, fRe_out_dir)
@@ -88,14 +88,14 @@ def reprocess(shot, time, ed_list, Config, ssh=True, Overwrite=False):
             invoke.append(Config.working_dir)
             invoke.append("&&")
             invoke.append("setenv")
-            invoke.append("ECFM_working_dir_1")
+            invoke.append("ECRad_working_dir_1")
             invoke.append(Config.working_dir)
             invoke.append("&&")
             invoke.append("setenv OMP_STACKSIZE")
             invoke.append("{0:d}k".format(stacksize))
             invoke.append("&&")
-            invoke.append("setenv ECFM")
-            invoke.append("/afs/ipp-garching.mpg.de/home/s/sdenk/F90/Ecfm_Model_parallel_dev_light/ecfm_model")
+            invoke.append("setenv ECRad")
+            invoke.append("/afs/ipp-garching.mpg.de/home/s/sdenk/F90/ECRad_Model_parallel_dev_light/ECRad_model")
             invoke.append("&&")
             invoke.append("setenv")
             invoke.append("OMP_NUM_THREADS")
@@ -115,16 +115,16 @@ def reprocess(shot, time, ed_list, Config, ssh=True, Overwrite=False):
             invoke.append("openmp")
             invoke.append("{0:d}".format(Config.parallel_cores))
         if(ssh):
-            invoke.append("/afs/ipp-garching.mpg.de/home/s/sdenk/F90/Ecfm_Model_parallel_dev_light/batch_submit_ECFM_parallel_nosync.sge\"")
+            invoke.append("/afs/ipp-garching.mpg.de/home/s/sdenk/F90/ECRad_Model_parallel_dev_light/batch_submit_ECRad_parallel_nosync.sge\"")
         else:
-            invoke.append("/afs/ipp-garching.mpg.de/home/s/sdenk/F90/Ecfm_Model_parallel_dev_light/batch_submit_ECFM_parallel_toks.sge")
-        os.environ['ECFM'] = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/Ecfm_Model_parallel_dev_light/ecfm_model"
-        os.environ['ECFM_working_dir_1'] = Config.working_dir
+            invoke.append("/afs/ipp-garching.mpg.de/home/s/sdenk/F90/ECRad_Model_parallel_dev_light/batch_submit_ECRad_parallel_toks.sge")
+        os.environ['ECRad'] = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/ECRad_Model_parallel_dev_light/ECRad_model"
+        os.environ['ECRad_working_dir_1'] = Config.working_dir
         os.environ['WALLTIME'] = r"{0:2d}:00:00".format(Config.wall_time)
         os.environ['OMP_STACKSIZE'] = r"{0:d}k".format(stacksize)
         os.environ['OMP_NUM_THREADS'] = "{0:d}".format(Config.parallel_cores)
-        print("setenv ECFM /afs/ipp-garching.mpg.de/home/s/sdenk/F90/Ecfm_Model_parallel_dev_light/ecfm_model")
-        print("setenv ECFM_working_dir_1 " + Config.working_dir)
+        print("setenv ECRad /afs/ipp-garching.mpg.de/home/s/sdenk/F90/ECRad_Model_parallel_dev_light/ECRad_model")
+        print("setenv ECRad_working_dir_1 " + Config.working_dir)
         print("setenv WALLTIME "  r"{0:2d}:00:00".format(Config.wall_time))
         print("setenv OMP_STACKSIZE " + r"{0:d}k".format(stacksize))
         print("setenv OMP_NUM_THREADS " + r"{0:d}".format(Config.parallel_cores))
@@ -133,8 +133,8 @@ def reprocess(shot, time, ed_list, Config, ssh=True, Overwrite=False):
             call += " " + arg
         print(call)
         print(shlex.split(call))
-        ECFM_process = subprocess.Popen(shlex.split(call))
-        ECFM_process.wait()
+        ECRad_process = subprocess.Popen(shlex.split(call))
+        ECRad_process.wait()
         if(ssh):
             print("Submitted job to tokp queue.")
         else:
@@ -145,7 +145,7 @@ def reprocess(shot, time, ed_list, Config, ssh=True, Overwrite=False):
 def reprocess_34663():
     shot = 34663
     time = np.array([3.60])
-    Config = ECFM_Config()
+    Config = ECRad_Config()
     ECE_diag = DefaultDiagDict["ECE"]
     Config.used_diags_dict.update({"ECE" : ECE_diag})
     CTA_diag = DefaultDiagDict["CTA"]
@@ -171,7 +171,7 @@ def reprocess_34663():
 def reprocess_33697():
     shot = 33697
     time = np.array([4.80])
-    Config = ECFM_Config()
+    Config = ECRad_Config()
     ECE_diag = DefaultDiagDict["ECE"]
     Config.used_diags_dict.update({"ECE" : ECE_diag})
     CTA_diag = DefaultDiagDict["CTA"]
@@ -197,7 +197,7 @@ def reprocess_33697():
 def reprocess_33705():
     shot = 33705
     time = np.array([4.90])
-    Config = ECFM_Config()
+    Config = ECRad_Config()
     ECE_diag = DefaultDiagDict["ECE"]
     Config.used_diags_dict.update({"ECE" : ECE_diag})
     CTA_diag = DefaultDiagDict["CTA"]

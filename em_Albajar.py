@@ -17,7 +17,7 @@ try:
     from scipy.special import loggamma as log_gm_fun, wofz
 except ImportError:
     print("Failed to import loggamma, log_gm_fun and woft some absorption routines might not work")
-    print("If you are an ECFM_GUI user this error should not cause any issues!")
+    print("If you are an ECRad_GUI user this error should not cause any issues!")
 if(not stand_alone):
     from plotting_configuration import *
 mass_e = cnst.m_e

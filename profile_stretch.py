@@ -18,8 +18,8 @@ def stretch_profiles(rhop, rhop_center, width, factor):
     return rhop_out
 
 if __name__ == "__main__":
-    # make_iso_flux("/ptmp1/work/sdenk/nssf/32740/5.96/OERT/ecfm_data/", 32740, 5.964)
-    Tefile = np.loadtxt("/ptmp1/work/sdenk/ECFM4/ecfm_data/Te_file.dat", skiprows=1)
+    # make_iso_flux("/ptmp1/work/sdenk/nssf/32740/5.96/OERT/ECRad_data/", 32740, 5.964)
+    Tefile = np.loadtxt("/ptmp1/work/sdenk/ECRad4/ECRad_data/Te_file.dat", skiprows=1)
     rhop = Tefile.T[0]
     Te = Tefile.T[1]
     plt.plot(rhop, Te * 1.e-3)

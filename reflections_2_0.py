@@ -14,7 +14,7 @@ from electron_distribution_utils import find_cold_res
 from shotfile_handling_AUG import get_data_calib, Diag
 
 def I_0(shot, time, folder, ch, mode, eq_slice):
-    x_w, y_w = np.loadtxt(os.path.join("/afs/ipp-garching.mpg.de/home/s/sdenk/F90/ECFM_Pylib", "ASDEX_Upgrade_vessel.txt"), skiprows=1, unpack=True)
+    x_w, y_w = np.loadtxt(os.path.join("/afs/ipp-garching.mpg.de/home/s/sdenk/F90/ECRad_Pylib", "ASDEX_Upgrade_vessel.txt"), skiprows=1, unpack=True)
     circ_nume = 0.0
     R_torus = 1.65
     for i in range(1, len(x_w)):
@@ -35,8 +35,8 @@ def compare_reflections(shot, time, folder, mode, eq_exp, eq_diag, eq_ed):
     eq_obj = EQData(shot, EQ_exp=eq_exp, EQ_diag=eq_diag, EQ_ed=eq_ed)
     eq_slice = eq_obj.read_EQ_from_shotfile(time)
     Tradfile = np.loadtxt(os.path.join(folder, "O_TRadM_therm.dat"))
-    ecfm_inp = np.loadtxt(os.path.join(folder, "ECFM.inp"), dtype=np.str)
-    R_wall = float(ecfm_inp[14])
+    ECRad_inp = np.loadtxt(os.path.join(folder, "ECRad.inp"), dtype=np.str)
+    R_wall = float(ECRad_inp[14])
     print("R_wall", R_wall)
     f_ECE = np.loadtxt(os.path.join(folder, "f_ECE.dat"))
     f_upper = 100.e9
@@ -65,8 +65,8 @@ def Mode_conversion_contributions_simple(mode_conversion_ratio, shot, time, fold
     Tradfile = np.loadtxt(os.path.join(folder, "TRadM_therm.dat"))
     Tradfile_X = np.loadtxt(os.path.join(folder, "X_TRadM_therm.dat"))
     X_frac = Tradfile_X.T[3]
-    ecfm_inp = np.loadtxt(os.path.join(folder, "ECFM.inp"), dtype=np.str)
-    R_wall = float(ecfm_inp[14])
+    ECRad_inp = np.loadtxt(os.path.join(folder, "ECRad.inp"), dtype=np.str)
+    R_wall = float(ECRad_inp[14])
     print("R_wall", R_wall)
     f_ECE = np.loadtxt(os.path.join(folder, "f_ECE.dat"))
     f_upper = 100.e9
@@ -106,7 +106,7 @@ def Trad_cord(shot, time, folder, ch, mode, eq_slice):
     return z_eval, Te_spl(rhop_eval), Te_spl(rho_res)
 
 def ContourArea():
-    x_w, y_w = np.loadtxt(os.path.join("/afs/ipp-garching.mpg.de/home/s/sdenk/F90/ECFM_Pylib", "ASDEX_Upgrade_vessel.txt"), skiprows=1, unpack=True)
+    x_w, y_w = np.loadtxt(os.path.join("/afs/ipp-garching.mpg.de/home/s/sdenk/F90/ECRad_Pylib", "ASDEX_Upgrade_vessel.txt"), skiprows=1, unpack=True)
     s = np.linspace(0, 1, len(x_w))
     x_w_spl = InterpolatedUnivariateSpline(s, x_w)
     a_spl = InterpolatedUnivariateSpline(s, y_w * x_w_spl(s, nu=1))
@@ -131,5 +131,5 @@ def ContourArea():
     print(Area_monte)
 
 if __name__ == "__main__":
-    Mode_conversion_contributions_simple(1.0 / 5.0, 32934, 3.30, "/ptmp1/work/sdenk/nssf/32934/3.30/OERT/ed_8/ecfm_data/", "O", "AUGD", "EQH", 0)
-#    compare_reflections(32934, 3.30, "/ptmp1/work/sdenk/nssf/32934/3.30/OERT/ed_8/ecfm_data/", "O", "AUGD", "EQH", 0)
+    Mode_conversion_contributions_simple(1.0 / 5.0, 32934, 3.30, "/ptmp1/work/sdenk/nssf/32934/3.30/OERT/ed_8/ECRad_data/", "O", "AUGD", "EQH", 0)
+#    compare_reflections(32934, 3.30, "/ptmp1/work/sdenk/nssf/32934/3.30/OERT/ed_8/ECRad_data/", "O", "AUGD", "EQH", 0)

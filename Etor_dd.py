@@ -10,7 +10,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import os
 import sys
 sys.path.append("/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib")
-sys.path.append("../ECFM_Pylib")
+sys.path.append("../ECRad_Pylib")
 # sys.path.append('../../../misc/')
 # import myplotlib as my
 # plt.ion()

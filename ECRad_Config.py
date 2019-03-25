@@ -7,9 +7,9 @@ import sys
 from GlobalSettings import AUG, TCV
 import numpy as np
 
-class ECFM_Config:
+class ECRad_Config:
     def __init__(self):
-        self.default_config_file = os.path.join(os.path.expanduser("~"), ".ECFM_GUI_Default.mat")
+        self.default_config_file = os.path.join(os.path.expanduser("~"), ".ECRad_GUI_Default.mat")
         try:
             self.from_mat_file(path=self.default_config_file)
         except IOError:
@@ -127,7 +127,7 @@ class ECFM_Config:
         return
 
     def autosave(self):
-        config_file = os.path.join(os.path.expanduser("~"), ".ECFM_GUI_Default.mat")
+        config_file = os.path.join(os.path.expanduser("~"), ".ECRad_GUI_Default.mat")
         self.saveconfig(path=config_file)
 
     def saveconfig(self, mdict=None, path=None):
@@ -224,5 +224,5 @@ def provide_default_mdict():
     mdict["Relax_dir"] = "/afs/ipp-garching.mpg.de/home/s/sdenk/Documentation/Data/fRelax"
     return mdict
 
-# InvokeECFM = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/Ecfm_Model_new/ecfm_model"
-# test_config = ECFM_Config()
+# InvokeECRad = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/Ecfm_Model_new/ecfm_model"
+# test_config = ECRad_Config()

@@ -17,18 +17,18 @@ else:
     print('Neither AUG nor TCV selected')
     raise(ValueError('No system selected!'))
 from scipy.io import loadmat
-from ECFM_Results import ECFMResults
+from ECRad_Results import ECRadResults
 from plotting_configuration import *
 from plotting_core import plotting_core
 
-def overlap_pw_deposition(path, shot, time, waves_mat_file, dist_mat_file, ECFM_save_file, \
+def overlap_pw_deposition(path, shot, time, waves_mat_file, dist_mat_file, ECRad_save_file, \
                           diag, channel_list=None, mode="X", EQ_exp="AUGD", EQ_diag="EQH", \
                           EQ_ed=0, bt_vac_correction=1.005, noTB=False, ray_depo_plot=True):
-    result = ECFMResults()
+    result = ECRadResults()
     waves_mat = loadmat(os.path.join(path, waves_mat_file), squeeze_me=True)
     dist_mat = loadmat(os.path.join(path, dist_mat_file), squeeze_me=True)
-    if(ECFM_save_file is not None):
-        result.Config = result.from_mat_file(ECFM_save_file)
+    if(ECRad_save_file is not None):
+        result.Config = result.from_mat_file(ECRad_save_file)
         itime = np.argmin(result.Config.time - time)
     BPD = []
     BPD_rhop = []
@@ -103,12 +103,12 @@ def overlap_pw_deposition(path, shot, time, waves_mat_file, dist_mat_file, ECFM_
                               quasi_linear_beam, noTB, ray_depo_plot)
     plt.show()
 
-def ECRH_and_LOS_config(path, shot, time, waves_mat_file, ECFM_save_file, \
+def ECRH_and_LOS_config(path, shot, time, waves_mat_file, ECRad_save_file, \
                           channel_list=None, mode="X", EQ_exp="AUGD", EQ_diag="EQH", \
                           EQ_ed=0, bt_vac_correction=1.005, plot_label=None, plot_label2=None):
-    result = ECFMResults()
-    if(ECFM_save_file is not None):
-        result.Config = result.from_mat_file(ECFM_save_file)
+    result = ECRadResults()
+    if(ECRad_save_file is not None):
+        result.Config = result.from_mat_file(ECRad_save_file)
         itime = np.argmin(result.Config.time - time)
     EQObj = EQData(shot, EQ_exp=EQ_exp, EQ_diag=EQ_diag, EQ_ed=EQ_ed, bt_vac_correction=bt_vac_correction)
     EQSlice = EQObj.read_EQ_from_shotfile(time)
@@ -148,22 +148,22 @@ def ECRH_and_LOS_config(path, shot, time, waves_mat_file, ECFM_save_file, \
 
 # overlap_pw_deposition("/afs/ipp/u/sdenk/Documentation/Data/DistData/", 33697, 4.80, \
 #                          "GRAY_rays_33697_4.80.mat", "Dist_33697_4.80.mat", \
-#                          "/tokp/work/sdenk/ECFM/ECFM_33697_CTA_ed11.mat", \
+#                          "/tokp/work/sdenk/ECRad/ECRad_33697_CTA_ed11.mat", \
 #                          "CTA", [3, 48], mode="X", EQ_exp="AUGD", EQ_diag="IDE", \
 #                          EQ_ed=0, bt_vac_correction=1.005)
 # overlap_pw_deposition("/afs/ipp/u/sdenk/Documentation/Data/DistData/", 33697, 4.80, \
 #                          "GRAY_rays_33697_4.80.mat", "Dist_33697_4.80.mat", \
-#                          "/tokp/work/sdenk/ECFM2/ECFM_33697_ECECTA_ed 1.mat", \
+#                          "/tokp/work/sdenk/ECRad2/ECRad_33697_ECECTA_ed 1.mat", \
 #                          "CTA", [3, 48], mode="X", EQ_exp="AUGD", EQ_diag="IDE", \
 #                          EQ_ed=0, bt_vac_correction=1.005)
 # overlap_pw_deposition("/afs/ipp/u/sdenk/Documentation/Data/DistData/", 33705, 4.90, \
 #                          "GRAY_rays_33705_4.90.mat", "Dist_33705_4.90.mat", \
-#                          "/tokp/work/sdenk/ECFM2/ECFM_33705_CTA_ed 1.mat", \
+#                          "/tokp/work/sdenk/ECRad2/ECRad_33705_CTA_ed 1.mat", \
 #                          "CTA", [3, 48], mode="X", EQ_exp="AUGD", EQ_diag="IDE", \
 #                          EQ_ed=0, bt_vac_correction=1.005)
 # overlap_pw_deposition("/afs/ipp/u/sdenk/Documentation/Data/DistData/", 34663, 3.60, \
 #                          "GRAY_rays_34663_3.60.mat", "Dist_34663_3.60.mat", \
-#                          "/tokp/work/sdenk/ECFM2/ECFM_34663_ECECTA_ed3.mat", \
+#                          "/tokp/work/sdenk/ECRad2/ECRad_34663_ECECTA_ed3.mat", \
 #                          "CTA", [], mode="X", EQ_exp="AUGD", EQ_diag="IDE", \
 #                          EQ_ed=0, bt_vac_correction=1.005, ray_depo_plot=False)
 # overlap_pw_deposition("/afs/ipp/u/sdenk/Documentation/Data/fRelax/", 31594, 1.30, \
@@ -173,36 +173,36 @@ def ECRH_and_LOS_config(path, shot, time, waves_mat_file, ECFM_save_file, \
 #                          EQ_ed=0, bt_vac_correction=1.005)
 overlap_pw_deposition("/afs/ipp/u/sdenk/Documentation/Data/DistData/", 33705, 4.90, \
                           "GRAY_rays_33705_4.90.mat", "Dist_33705_4.90.mat", \
-                          "/tokp/work/sdenk/ECFM2/ECFM_33705_ECECTA_ed2.mat", \
+                          "/tokp/work/sdenk/ECRad2/ECRad_33705_ECECTA_ed2.mat", \
                           "CTA", [3, 48], mode="X", EQ_exp="AUGD", EQ_diag="IDE", \
                           EQ_ed=0, bt_vac_correction=1.005, ray_depo_plot=False)
 # ECRH_and_LOS_config("/afs/ipp/u/sdenk/Documentation/Data/DistData/", 33697, 4.80, \
 #                          "GRAY_rays_33697_4.80.mat", \
-#                          "/tokp/work/sdenk/ECFM2/ECFM_33697_ECECTA_ed3.mat", \
+#                          "/tokp/work/sdenk/ECRad2/ECRad_33697_ECECTA_ed3.mat", \
 #                          [3, 70], mode="X", EQ_exp="AUGD", EQ_diag="IDE", \
 #                          EQ_ed=0, bt_vac_correction=1.005, plot_label="a")
 # ECRH_and_LOS_config("/afs/ipp/u/sdenk/Documentation/Data/DistData/", 35140, 2.31, \
 #                          "GRAY_rays_35140_2.31.mat", \
-#                          "/tokp/work/sdenk/ECFM2/ECFM_35140_ECECTCCTA_ed4.mat", \
+#                          "/tokp/work/sdenk/ECRad2/ECRad_35140_ECECTCCTA_ed4.mat", \
 #                          [3, 70, 105], mode="X", EQ_exp="AUGD", EQ_diag="IDE", \
 #                          EQ_ed=0, bt_vac_correction=1.005, plot_label="a")
 # ECRH_and_LOS_config("/afs/ipp/u/sdenk/Documentation/Data/DistData/", 35140, 6.42, \
 #                          "GRAY_rays_35140_5.43.mat", \
-#                          "/tokp/work/sdenk/ECFM2/ECFM_35140_ECECTCCTA_ed4.mat", \
+#                          "/tokp/work/sdenk/ECRad2/ECRad_35140_ECECTCCTA_ed4.mat", \
 #                          [3, 70, 105], mode="X", EQ_exp="AUGD", EQ_diag="IDE", \
 #                          EQ_ed=0, bt_vac_correction=1.005, plot_label="a")
 # ECRH_and_LOS_config("/afs/ipp/u/sdenk/Documentation/Data/DistData/", 33705, 4.90, \
 #                          "GRAY_rays_33705_4.90.mat", \
-#                          "/tokp/work/sdenk/ECFM2/ECFM_33705_ECECTA_ed5.mat", \
+#                          "/tokp/work/sdenk/ECRad2/ECRad_33705_ECECTA_ed5.mat", \
 #                          [3, 70], mode="X", EQ_exp="AUGD", EQ_diag="IDE", \
 #                          EQ_ed=0, bt_vac_correction=1.005, plot_label="b", plot_label2="a")
 # ECRH_and_LOS_config("/afs/ipp/u/sdenk/Documentation/Data/DistData/", 34663, 3.60, \
 #                          "GRAY_rays_34663_3.60.mat", \
-#                          "/tokp/work/sdenk/ECFM2//ECFM_34663_ECECTA_ed4.mat", \
+#                          "/tokp/work/sdenk/ECRad2//ECRad_34663_ECECTA_ed4.mat", \
 #                          [3, 70], mode="X", EQ_exp="AUGD", EQ_diag="IDE", \
 #                          EQ_ed=0, bt_vac_correction=1.005, plot_label="c", plot_label2="b")
 # overlap_pw_deposition("/afs/ipp/u/sdenk/Documentation/Data/DistData/", 34663, 3.60, \
 #                          "GRAY_rays_34663_3.60.mat", "Dist_34663_3.60.mat", \
-#                          "/tokp/work/sdenk/ECFM2/ECFM_34663_CTA_ed 1.mat", \
+#                          "/tokp/work/sdenk/ECRad2/ECRad_34663_CTA_ed 1.mat", \
 #                          "CTA", [3, 48], mode="X", EQ_exp="AUGD", EQ_diag="IDE", \
 #                          EQ_ed=0, bt_vac_correction=1.005)

@@ -1302,7 +1302,7 @@ def make_ext_data_for_testing(ext_data_folder, shot, times, eq_exp="AUGD", eq_di
         np.savetxt(os.path.join(ext_data_folder, "Te{0:d}".format(index)), Te_data)
         np.savetxt(os.path.join(ext_data_folder, "ne{0:d}".format(index)), ne_data)
         index += 1
-    copyfile('../ECFM_Pylib/ASDEX_Upgrade_vessel.txt', os.path.join(ext_data_folder, "Ext_vessel.bd"))
+    copyfile('../ECRad_Pylib/ASDEX_Upgrade_vessel.txt', os.path.join(ext_data_folder, "Ext_vessel.bd"))
     print('External data ready!')
 
 def make_ext_data_for_testing_from_data(ext_data_folder, shot, times, R, z, Br, Bt, Bz, Psi, R_ax, z_ax, Psi_ax, Psi_sep, rhop, ne, Te):
@@ -1654,8 +1654,8 @@ if(__name__ == '__main__'):
 #    print("#33697 {0:1.3e} {1:1.3e}".format(vloop1, uloop1))
 #    print("#33705 {0:1.3e} {1:1.3e}".format(vloop2, uloop2))
 #    print("#34663 {0:1.3e} {1:1.3e}".format(vloop3, uloop3))
-    # make_ext_data_for_testing("/ptmp1/work/sdenk/ECFM_standalone/Ext_data/", 33697, [4.80], "AUGD", "IDE", 0, bt_vac_correction=1.005, IDA_exp="SDENK")
-#    make_ext_data_for_testing("/ptmp1/work/sdenk/ECFM7/Ext_data/", 33000, [7.00])
+    # make_ext_data_for_testing("/ptmp1/work/sdenk/ECRad_standalone/Ext_data/", 33697, [4.80], "AUGD", "IDE", 0, bt_vac_correction=1.005, IDA_exp="SDENK")
+#    make_ext_data_for_testing("/ptmp1/work/sdenk/ECRad7/Ext_data/", 33000, [7.00])
 #    export_ASDEX_Upgrade_grid("/afs/ipp/home/s/sdenk/Documentation/Data/32934_eq_ne/", 32934, [3.298], "AUGD", "IDE", 0, bt_vac_correction=1.005, IDA_exp="SDENK")
-#    export_ASDEX_Upgrade_grid("/tokp/work/sdenk/ECFM/Ext_data/", 32934, [3.298], "AUGD", "IDE", 0, bt_vac_correction=1.005, IDA_exp="SDENK", offset=True)
+#    export_ASDEX_Upgrade_grid("/tokp/work/sdenk/ECRad/Ext_data/", 32934, [3.298], "AUGD", "IDE", 0, bt_vac_correction=1.005, IDA_exp="SDENK", offset=True)
 #    print(get_ECE_launch_params(31539, Diag("ECE", "AUGD", "RMD", 0)))

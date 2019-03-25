@@ -6,30 +6,30 @@ Created on Mar 30, 2017
 
 import sys
 from shotfile_handling_AUG import get_ECI_launch
-sys.path.append("../ECFM_Pylib")
-from ECFM_GUI_Config import ECFM_Config
+sys.path.append("../ECRad_Pylib")
+from ECRad_Config import ECRad_Config
 from GlobalSettings import AUG, TCV, itm
 from Diags import  Diag, ECRH_diag, ECI_diag, EXT_diag, TCV_diag, TCV_CCE_diag
-from ECFM_Interface import load_plasma_from_mat, prepare_input_file
+from ECRad_Interface import load_plasma_from_mat, prepare_input_file
 if(AUG):
     from equilibrium_utils_AUG import EQData
     from shotfile_handling_AUG import load_IDA_data, get_diag_data_no_calib, get_freqs, get_divertor_currents, filter_CTA, get_data_calib, get_ECI_launch
-    from ECFM_GUI_DIAG_AUG import DefaultDiagDict
+    from ECRad_DIAG_AUG import DefaultDiagDict
     from get_ECRH_config import get_ECRH_viewing_angles
 elif(TCV):
     from equilibrium_utils_TCV import EQData
     from shotfile_handling_TCV import load_IDA_data, get_diag_data_no_calib, get_freqs, get_divertor_currents, filter_CTA, get_data_calib, make_CCE_diag_launch
-    from ECFM_GUI_DIAG_TCV import DefaultDiagDict
+    from ECRad_DIAG_TCV import DefaultDiagDict
 else:
     print('Neither AUG nor TCV selected')
     raise(ValueError('No system selected!'))
 import numpy as np
-from ECFM_Results import ECFMResults
+from ECRad_Results import ECRadResults
 import os
 import shutil
 import subprocess
 
-def run_ECFM():
+def run_ECRad():
     args = sys.argv
     working_dir = args[1]
     shot = int(args[2])
@@ -48,7 +48,7 @@ def run_ECFM():
     except Exception as e:
         print("Initialization failed.")
         print("Error:", e)
-        print("Usage: python run_ECFM_no_GUI.py <shotno> <diag id>")
+        print("Usage: python run_ECRad_no_GUI.py <shotno> <diag id>")
         if(TCV):
             print("Possible diag ids: UCE, LCE, VCE, CCE")
         elif(AUG):
@@ -58,7 +58,7 @@ def run_ECFM():
         print("Got the following args", args)
         return -1
     try:
-        Config = ECFM_Config()
+        Config = ECRad_Config()
         Config.from_mat_file(path=os.path.join(working_dir, "UserConfig.mat"))
     except IOError:
         print("Failed to load user config at : ")
@@ -120,7 +120,7 @@ def run_ECFM():
                     print("Error when reading viewing angles")
                     print("Launch aborted")
                     return
-    Results = ECFMResults()
+    Results = ECRadResults()
     Results.parse_config(Config, Config.time)
     if(not times_to_analyze is None):
         it_ext = 0
@@ -136,24 +136,24 @@ def run_ECFM():
         if(Config.plasma_dict["eq_data"] is not None):
             Config.plasma_dict["eq_data"] = Config.plasma_dict["eq_data"][actual_times]
     if(Config.debug and AUG and not itm):
-        InvokeECFM = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/Ecfm_Model_new/ecfm_model"
+        InvokeECRad = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/ECRad_Model_new/ECRad_model"
     elif(not Config.debug and AUG and not itm):
-        InvokeECFM = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/Ecfm_Model/ecfm_model"
+        InvokeECRad = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/ECRad_Model/ECRad_model"
     elif(AUG and itm):
-        InvokeECFM = "/marconi_work/eufus_gw/work/g2sdenk/Ecfm_Model_parallel/ecfm_model"
+        InvokeECRad = "/marconi_work/eufus_gw/work/g2sdenk/ECRad_Model_parallel/ECRad_model"
     elif(TCV and Config.debug):
-        InvokeECFM = "../Ecfm_Model_TCV/ecfm_model"
+        InvokeECRad = "../ECRad_Model_TCV/ECRad_model"
     elif(TCV):
-        InvokeECFM = "../Ecfm_Model_TCV_no_debug/ecfm_model"
+        InvokeECRad = "../ECRad_Model_TCV_no_debug/ECRad_model"
     else:
         print('Neither AUG nor TCV selected - no Machine!!')
         raise IOError
-    Results = run_ECFM_from_script(working_dir, shot, Config, InvokeECFM, working_dir)
+    Results = run_ECRad_from_script(working_dir, shot, Config, InvokeECRad, working_dir)
     Results.to_mat_file()
     print("Finished successfully")
 
-def run_ECFM_from_script(working_dir, shot, Config, InvokeECFM, args):
-    Results = ECFMResults()
+def run_ECRad_from_script(working_dir, shot, Config, InvokeECRad, args):
+    Results = ECRadResults()
     Results.parse_config(Config, Config.time)
     next_time_index_to_analyze = 0
     print("Analyzing {0:d} time points".format(len(Config.time)))
@@ -161,8 +161,8 @@ def run_ECFM_from_script(working_dir, shot, Config, InvokeECFM, args):
         if(next_time_index_to_analyze >= len(Config.time)):
             break
         print("Working on t = {0:1.4f}".format(Config.time[next_time_index_to_analyze]))
-        if(os.path.isdir(os.path.join(Config.working_dir, "ecfm_data"))):
-            shutil.rmtree(os.path.join(Config.working_dir, "ecfm_data"))
+        if(os.path.isdir(os.path.join(Config.working_dir, "ECRad_data"))):
+            shutil.rmtree(os.path.join(Config.working_dir, "ECRad_data"))
         for diag_key in Config.used_diags_dict.keys():
             if("CT" in diag_key or "IEC" == diag_key):
                 if(str(Config.used_diags_dict[diag_key].beamline) not in Config.gy_dict.keys()):
@@ -177,23 +177,23 @@ def run_ECFM_from_script(working_dir, shot, Config, InvokeECFM, args):
         if(not prepare_input_file(Config.time, next_time_index_to_analyze, Config)):
             print("Error!! Launch aborted")
             return None
-        print("-------- Launching ECFM -----------\n")
+        print("-------- Launching ECRad -----------\n")
         print("-------- INVOKE COMMAND------------\n")
-        print(InvokeECFM + " " + Config.working_dir)
-        ECFM_process = subprocess.Popen([InvokeECFM, args])
+        print(InvokeECRad + " " + Config.working_dir)
+        ECRad_process = subprocess.Popen([InvokeECRad, args])
         print("-----------------------------------\n")
-        ECFM_process = subprocess.Popen([InvokeECFM, Config.working_dir])
-        ECFM_process.wait()
+        ECRad_process = subprocess.Popen([InvokeECRad, Config.working_dir])
+        ECRad_process.wait()
         next_time_index_to_analyze += 1
         try:
             Results.append_new_results()
         except (IOError, IndexError) as e:
-            print("Error: Results of ECFM cannot be found")
-            print("Most likely cause is an error that occurred within the ECFM")
-            print("Please run the ECFM with current input parameters in a separate shell.")
-            print("The command to launch the ECFM can be found above.")
+            print("Error: Results of ECRad cannot be found")
+            print("Most likely cause is an error that occurred within the ECRad")
+            print("Please run the ECRad with current input parameters in a separate shell.")
+            print("The command to launch the ECRad can be found above.")
             print("Afterwards please send any error messages that appear at sdenk|at|ipp.mpg.de")
-            print("If no errors occur make sure that you don't have another instance of ECFM GUI working in the same working directory")
+            print("If no errors occur make sure that you don't have another instance of ECRad GUI working in the same working directory")
             print(e)
             return None
 
@@ -202,7 +202,7 @@ def run_ECFM_from_script(working_dir, shot, Config, InvokeECFM, args):
     return Results
 
 if(__name__ == "__main__"):
-    val = run_ECFM()
+    val = run_ECRad()
     exit(val)
 
 

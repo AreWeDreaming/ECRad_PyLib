@@ -72,8 +72,8 @@ class UpdateDataEvt(wx.PyCommandEvent):
     def __init__(self, evtType, id):
         wx.PyCommandEvent.__init__(self, evtType, id)
 
-    def SetData(self, data):
-        self.data = data
+    def SetResults(self, Results):
+        self.Results = Results
 
     def SetConfig(self, Config):
         self.Config = Config
