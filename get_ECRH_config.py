@@ -4,9 +4,11 @@ Created on Dec 10, 2015
 @author: sdenk
 '''
 import sys
-itm = True
+from GlobalSettings import itm
 if(not itm):
     sys.path.append('/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib')
+else:
+    sys.path.append('../lib')
 import dd
 import os
 import ctypes as ct
