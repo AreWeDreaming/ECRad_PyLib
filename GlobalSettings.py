@@ -9,7 +9,7 @@ import wx
 AUG = True  # True  #
 TCV = False  # False  #
 root = os.path.expanduser("~/")
-itm = False
+itm = True
 import platform
 SLES12 = False
 if("SuSE-12" in platform.platform()):

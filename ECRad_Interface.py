@@ -16,7 +16,10 @@ if(TCV):
 from shutil import copy, copyfile, rmtree
 from scipy.io import loadmat
 import scipy.constants as cnst
-tb_path = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/torbeam"
+if(itm):
+    tb_path = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/torbeam"
+else:
+    tb_path = "/marconi_work/eufus_gw/work/g2sdenk/torbeam/lib-OUT" 
 from equilibrium_utils import EQDataExt
 from electron_distribution_utils import export_gene_fortran_friendly, \
                                         export_gene_bimax_fortran_friendly, \
@@ -113,28 +116,28 @@ def GetECRadExec(Config, Scenario, time):
 def prepare_input_files(Config, Scenario, index, copy_dist=True):
     working_dir = Config.working_dir
     # eq_exp = Config.EQ_exp always exp
-    ecfm_data_path = os.path.join(working_dir, "ecfm_data", "")
-    if(not(os.path.isdir(ecfm_data_path))):
+    ECRad_data_path = os.path.join(working_dir, "ECRad_data", "")
+    if(not(os.path.isdir(ECRad_data_path))):
         try:
-            os.mkdir(ecfm_data_path)
+            os.mkdir(ECRad_data_path)
         except OSError:
-            print("Failed to create ecfm_data folder in: ", working_dir)
+            print("Failed to create ECRad_data folder in: ", working_dir)
             print("Please check that this folder exists and you have write permissions")
             return False
-        print("Created folder " + ecfm_data_path)
+        print("Created folder " + ECRad_data_path)
     if(Config.dstf != "GB"):
-        Ich_path = os.path.join(ecfm_data_path, "Ich" + Config.dstf)
+        Ich_path = os.path.join(ECRad_data_path, "Ich" + Config.dstf)
     else:
-        Ich_path = os.path.join(ecfm_data_path, "IchGe")
+        Ich_path = os.path.join(ECRad_data_path, "IchGe")
     if(not os.path.isdir(Ich_path)):
         os.mkdir(Ich_path)
         print("Created folder " + Ich_path)
-    ray_folder = os.path.join(ecfm_data_path, "ray")
+    ray_folder = os.path.join(ECRad_data_path, "ray")
     if(not os.path.isdir(ray_folder)):
         os.mkdir(ray_folder)
         print("Created folder " + ray_folder)
-    write_diag_launch(ecfm_data_path, Scenario.ray_launch[index])
-    input_file = open(os.path.join(ecfm_data_path, "ECRad.inp"), "w")
+    write_diag_launch(ECRad_data_path, Scenario.ray_launch[index])
+    input_file = open(os.path.join(ECRad_data_path, "ECRad.inp"), "w")
     if(Config.dstf == "GB"):
         input_file.write("Ge" + "\n")  # Model does not distinguish between Ge and GB
     else:
@@ -148,7 +151,7 @@ def prepare_input_files(Config, Scenario, index, copy_dist=True):
     if(Config.ne_scale != 1.0):
         print("ne scale != 1 -> scaling ne for model")
     if((Config.dstf != "Ge" and Config.dstf != "GB")):
-        success = make_ECRadInputFromPlasmaDict(ecfm_data_path, Scenario.plasma_dict, index)
+        success = make_ECRadInputFromPlasmaDict(ECRad_data_path, Scenario.plasma_dict, index)
     if(Config.raytracing):
         input_file.write("F\n")
     else:
@@ -179,7 +182,7 @@ def prepare_input_files(Config, Scenario, index, copy_dist=True):
     input_file.write("{0:10d}".format(Config.max_points_svec) + "\n")
     input_file.flush()
     input_file.close()
-    fvessel = open(os.path.join(ecfm_data_path, "vessel_bd.txt"), "w")
+    fvessel = open(os.path.join(ECRad_data_path, "vessel_bd.txt"), "w")
     fvessel.write("{0: 7d}".format(len(Scenario.plasma_dict["vessel_bd"][0])) + "\n")
     for i in range(len(Scenario.plasma_dict["vessel_bd"][0])):
         fvessel.write("{0: 1.12E} {1: 1.12E}".format(Scenario.plasma_dict["vessel_bd"][0][i], Scenario.plasma_dict["vessel_bd"][1][i]) + "\n")
@@ -189,14 +192,14 @@ def prepare_input_files(Config, Scenario, index, copy_dist=True):
         dist_filename = os.path.join(Config.Relax_dir, "Dist_{0:d}_{1:1.2f}.mat".format(Scenario.shot, Scenario.plasma_dict["time"][index]))
         if(os.path.isfile(dist_filename)):
             dist_obj = load_f_from_mat(dist_filename)
-            fRe_dir = os.path.join(ecfm_data_path, "fRe")
+            fRe_dir = os.path.join(ECRad_data_path, "fRe")
             os.mkdir(fRe_dir)
             export_fortran_friendly([dist_obj, fRe_dir])
         else:
             print(dist_filename + " does not exist!")
             return False
     if(Config.dstf == "Ge" and copy_dist):
-        wpath = os.path.join(os.path.join(Config.working_dir, "ecfm_data", "fGe"))
+        wpath = os.path.join(os.path.join(Config.working_dir, "ECRad_data", "fGe"))
         if os.path.exists(wpath):
             rmtree(wpath)  # Removing the old files first is faster than overwriting them
         os.mkdir(wpath)
@@ -205,7 +208,7 @@ def prepare_input_files(Config, Scenario, index, copy_dist=True):
                                      Config.gene_obj[index].f, Config.gene_obj[index].f0, \
                                      Config.gene_obj[index].B0)
     if(Config.dstf == "GB" and copy_dist):
-        wpath = os.path.join(os.path.join(Config.working_dir, "ecfm_data", "fGe"))
+        wpath = os.path.join(os.path.join(Config.working_dir, "ECRad_data", "fGe"))
         if os.path.exists(wpath):
             rmtree(wpath)  # Removing the old files first is faster than overwriting them
         os.mkdir(wpath)
@@ -642,11 +645,11 @@ def make_vessel_plasma_ratio(index, Config):
 def make_reflec_Trad(index, Config, f_reflec, Trad_X_reflec, tau_X_reflec, Trad_O_reflec, tau_O_reflec):
     # Currently broken  DO NOT USE !!!
     # Simplified improved wall reflection model - no mode conversion (adapted from W. H. M. Clark, 1983, Plasma Phys. 23 1501
-    ecfm_data_path = os.path.join(Config.working_dir, "ecfm_data", "")
+    ECRad_data_path = os.path.join(Config.working_dir, "ECRad_data", "")
     vessel_plasma_ratio = make_vessel_plasma_ratio(index, Config)
     if(Config.considered_modes == 1):
         Trad_X_reflected = Trad_X_reflec / (vessel_plasma_ratio * (1.e0 - Config.reflec_X) + (1.0 - np.exp(-tau_X_reflec)))
-        Trad_X_reflec_file = open(os.path.join(ecfm_data_path, "X_reflec_Trad.dat"), "w")
+        Trad_X_reflec_file = open(os.path.join(ECRad_data_path, "X_reflec_Trad.dat"), "w")
         Trad_X_reflec_file.write("{0: 5d}\n".format(len(Trad_X_reflected)))
         for i in range(len(Trad_X_reflec)):
             print("tau_reflect - T_rad X reflected / Trad_X {0:1.3f} - {1:1.3f}".format(tau_X_reflec[i], Trad_X_reflected[i] / Trad_X_reflec[i]))
@@ -655,7 +658,7 @@ def make_reflec_Trad(index, Config, f_reflec, Trad_X_reflec, tau_X_reflec, Trad_
         Trad_X_reflec_file.close()
     elif(Config.considered_modes == 2):
         Trad_O_reflected = Trad_O_reflec / (vessel_plasma_ratio * (1.e0 - Config.reflec_O) + (1.0 - np.exp(-tau_O_reflec)))
-        Trad_O_reflec_file = open(os.path.join(ecfm_data_path, "O_reflec_Trad.dat"), "w")
+        Trad_O_reflec_file = open(os.path.join(ECRad_data_path, "O_reflec_Trad.dat"), "w")
         Trad_O_reflec_file.write("{0: 5d}\n".format(len(Trad_O_reflected)))
         for i in range(len(Trad_O_reflec)):
             Trad_O_reflec_file.write("{0: 1.10E} {1: 1.10E}\n".format(f_reflec[i], Trad_O_reflected[i] * 1.e3))  # keV -> eV
@@ -666,14 +669,14 @@ def make_reflec_Trad(index, Config, f_reflec, Trad_X_reflec, tau_X_reflec, Trad_
         Trad_O_reflected = Trad_O_reflec / (vessel_plasma_ratio * (1.e0 - Config.reflec_O) + (1.0 - np.exp(-tau_O_reflec)))
         Trad_X_mix = (1.0 - Config.mode_conv) * Trad_X_reflected + Config.mode_conv * Trad_O_reflected
         Trad_O_mix = (1.0 - Config.mode_conv) * Trad_O_reflected + Config.mode_conv * Trad_X_reflected
-        Trad_X_reflec_file = open(os.path.join(ecfm_data_path, "X_reflec_Trad.dat"), "w")
+        Trad_X_reflec_file = open(os.path.join(ECRad_data_path, "X_reflec_Trad.dat"), "w")
         Trad_X_reflec_file.write("{0: 5d}\n".format(len(Trad_X_mix)))
         for i in range(len(Trad_X_mix)):
             print("tau_reflect - T_rad X reflected / Trad_X {0:1.3f} - {1:1.3f}".format(tau_X_reflec[i], Trad_X_mix[i] / Trad_X_reflec[i]))
             Trad_X_reflec_file.write("{0: 1.10E} {1: 1.10E}\n".format(f_reflec[i], Trad_X_mix[i] * 1.e3))  # keV -> eV
         Trad_X_reflec_file.flush()
         Trad_X_reflec_file.close()
-        Trad_O_reflec_file = open(os.path.join(ecfm_data_path, "O_reflec_Trad.dat"), "w")
+        Trad_O_reflec_file = open(os.path.join(ECRad_data_path, "O_reflec_Trad.dat"), "w")
         Trad_O_reflec_file.write("{0: 5d}\n".format(len(Trad_O_mix)))
         for i in range(len(Trad_O_mix)):
             Trad_O_reflec_file.write("{0: 1.10E} {1: 1.10E}\n".format(f_reflec[i], Trad_O_mix[i] * 1.e3))  # keV -> eV

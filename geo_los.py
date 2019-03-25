@@ -6,7 +6,11 @@ Created on Apr 13, 2018
 import os
 import numpy as np
 import ctypes as ct
-geo_los_path = "/afs/ipp-garching.mpg.de/home/e/eced/CEC/libece/" + os.environ["SYS"]
+from GlobalSettings import itm
+if(itm):
+    geo_los_path = "/afs/ipp-garching.mpg.de/home/e/eced/CEC/libece/amd64_sles11/"
+else:
+    geo_los_path = "/afs/ipp-garching.mpg.de/home/e/eced/CEC/libece/" + os.environ["SYS"]
 lib_geo_los = ct.cdll.LoadLibrary(os.path.join(geo_los_path, "libece.so"))
 from numpy.ctypeslib import ndpointer
 geo_fun = lib_geo_los.geo_los

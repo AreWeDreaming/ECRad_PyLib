@@ -19,12 +19,16 @@ elif(TCV):
 # THis class holds all the input data provided to ECRad with the exception of the ECRad configuration
 
 class ECRad_Scenario:
-    def __init__(self):
-        self.scenario_file = os.path.join(os.path.expanduser("~"), ".ECRad_GUI_last_scenario.mat")
-        try:
-            self.from_mat(self, path_in=self.scenario_file)
-        except IOError:
+    def __init__(self, noLoad=False):
+        if(not noLoad):
+            self.scenario_file = os.path.join(os.path.expanduser("~"), ".ECRad_GUI_last_scenario.mat")
+            try:
+                self.from_mat(path_in=self.scenario_file)
+            except IOError:
+                self.reset()
+        else:
             self.reset()
+                
 
     def reset(self):
         self.used_diags_dict = od()
@@ -51,7 +55,7 @@ class ECRad_Scenario:
 
     def from_mat(self, mdict=None, path_in=None, load_plasma_dict=True):
         self.reset()
-        if(mdict is not None):
+        if(mdict is None):
             if(path_in is None):
                 filename = os.path.join(os.path.expanduser("~"), ".ECRad_GUI_last_scenario.mat")
             else:

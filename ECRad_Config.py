@@ -8,12 +8,15 @@ from GlobalSettings import AUG, TCV
 import numpy as np
 
 class ECRad_Config:
-    def __init__(self):
+    def __init__(self, noLoad =False):
         self.default_config_file = os.path.join(os.path.expanduser("~"), ".ECRad_GUI_Default.mat")
-        try:
-            self.from_mat_file(path=self.default_config_file)
-        except IOError:
+        if(noLoad):
             self.from_mat_file()
+        else:
+            try:
+                self.from_mat_file(path=self.default_config_file)
+            except IOError:
+                self.from_mat_file()
 
     def from_mat_file(self, mdict=None, path=None):
         ext_mdict = False
