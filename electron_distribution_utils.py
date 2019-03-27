@@ -1186,7 +1186,7 @@ def get_omega_c_and_cutoff(ECRad_data, ich, mode):
 def load_f_from_mat(filename, use_dist_prefix=False):
     dist_prefix = ""
     if(use_dist_prefix):
-        dist_prefix = "_dist"
+        dist_prefix = "dist_"
     mdict = loadmat(filename, squeeze_me=True)
     return distribution(mdict[dist_prefix + "rhot_prof"], mdict[dist_prefix + "rhop_prof"], mdict[dist_prefix + "u"], mdict[dist_prefix + "pitch"], mdict[dist_prefix + "f"], mdict[dist_prefix + "rhot_1D_profs"], mdict[dist_prefix + "rhop_1D_profs"], mdict[dist_prefix + "Te_init"], mdict[dist_prefix + "ne_init"])
 
@@ -2483,7 +2483,7 @@ def read_waves_mat_to_beam(waves_mat, EQSlice, use_wave_prefix=False):
         waves_mat[wave_prefix + key] = np.atleast_3d(waves_mat[wave_prefix + key])
         if(waves_mat[wave_prefix + key].shape[-1] == 1):
             waves_mat[wave_prefix + key] = np.swapaxes(waves_mat[wave_prefix + key].T, 1, 2)
-    for key in [wave_prefix + "PW_beam", wave_prefix + "j_beam"]:
+    for key in ["PW_beam", "j_beam"]:
         waves_mat[wave_prefix + key] = np.atleast_2d(waves_mat[wave_prefix + key])
         if(waves_mat[wave_prefix + key].shape[-1] == 1):
             waves_mat[wave_prefix + key] = waves_mat[wave_prefix + key].T
@@ -2502,7 +2502,7 @@ def read_waves_mat_to_beam(waves_mat, EQSlice, use_wave_prefix=False):
             rays[-1][-1]["rhop"] = waves_mat[wave_prefix + "rhop"][ibeam][iray]
             rays[-1][-1]["PW"] = waves_mat[wave_prefix + "PW"][ibeam][iray]
             rays[-1][-1]["Npar"] = waves_mat[wave_prefix + "Npar"][ibeam][iray]
-            rays[-1][-1]["omega_c"] = cnst.e * B_tot_spl(rays[-1][-1][wave_prefix + "R"], rays[-1][-1][wave_prefix + "z"], grid=False) / cnst.m_e
+            rays[-1][-1]["omega_c"] = cnst.e * B_tot_spl(rays[-1][-1]["R"], rays[-1][-1]["z"], grid=False) / cnst.m_e
     PW_beam = np.array(PW_beam)
     j_beam = np.array(j_beam)
     return beam(waves_mat[wave_prefix + "rhot_prof"], rho_prof, PW, j, PW_tot, j_tot, PW_beam, j_beam, rays)
@@ -2706,9 +2706,9 @@ class f_interpolator:
         else:
             # Spline to interpolate rho
             self.spline_mat = []
-            for i in range(len(x)):
+            for i in range(len(self.x)):
                 self.spline_mat.append([])
-                for j in range(len(y)):
+                for j in range(len(self.y)):
                     self.spline_mat[-1].append(InterpolatedUnivariateSpline(self.rhop, self.Fe.T[j][i], k=1))
 
     def get_spline(self, rhop, Te):

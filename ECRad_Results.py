@@ -591,13 +591,17 @@ class ECRadResults:
         at_least_3d_keys = self.BPD.keys()
         at_least_3d_keys[at_least_3d_keys.index("rhopX")] = "BPDrhopX"
         at_least_3d_keys[at_least_3d_keys.index("rhopO")] = "BPDrhopO"
-        at_least_3d_keys += self.ray.keys() + ["ray_BPDX", "ray_BPDO", "ray_BPD_secondX", "ray_BPD_secondO"]
+        at_least_3d_keys += self.ray.keys() + ["ray_BPDX", "ray_BPDO", "ray_BPD_secondX", "ray_BPD_secondO", "ray_emX", "ray_emO", \
+                                               "ray_abX", "ray_abO", "ray_TX", "ray_TO", "ray_em_secondX", "ray_em_secondO", \
+                                               "ray_absecondX", "ray_absecondO", "ray_TsecondX", "ray_TsecondO"]
         at_least_3d_keys += ["std_dev_mat", "calib_mat"]
         self.Config.from_mat_file(mdict=mdict)
         self.Scenario.from_mat(mdict=mdict, load_plasma_dict=True)
         increase_time_dim = False
         increase_diag_dim = False
         if(np.isscalar(mdict["time"])):
+            increase_time_dim = True
+        elif(len(mdict["time"]) == 1):
             increase_time_dim = True
         if(np.isscalar(mdict["diag_name"])):
             increase_diag_dim = True
@@ -762,7 +766,12 @@ class ECRadResults:
                     self.ray["BPDX"] = mdict["ray_BPDX"]
                     self.ray["BPD_secondX"] = mdict["ray_BPD_secondX"]
                 except KeyError:
-                    print("Warning! No BPD Ray information in loaded .mat file. Is this an old file?")
+                    print("Warning! Some BPD Ray information mssing in loaded .mat file. Is this an old file?")
+                try:
+                    self.ray["XX"] = mdict["XX"]
+                    self.ray["YX"] = mdict["YX"]
+                except KeyError:
+                    print("Warning! Some BPD Ray information mssing in loaded .mat file. Is this an old file?")
                 try:
                     self.ray["emX"] = mdict["ray_emX"]
                     self.ray["em_secondX"] = mdict["ray_em_secondX"]
@@ -772,7 +781,7 @@ class ECRadResults:
                     self.ray["T_secondX"] = mdict["ray_T_secondX"]
                     self.ray["TeX"] = mdict["TeX"]
                 except KeyError:
-                    print("Warning! No BPD Ray information in loaded .mat file. Is this an old file?")
+                    print("Warning! Some BPD Ray information mssing in loaded .mat file. Is this an old file?")
             except KeyError:
                 print("Warning! No Ray information in loaded .mat file. Is this an old file?")
             try:
@@ -811,7 +820,12 @@ class ECRadResults:
                     self.ray["BPDO"] = mdict["ray_BPDO"]
                     self.ray["BPD_secondO"] = mdict["ray_BPD_secondO"]
                 except KeyError:
-                    print("Warning! No BPD Ray information in loaded .mat file. Is this an old file?")
+                    print("Warning! Some BPD Ray information mssing in loaded .mat file. Is this an old file?")
+                try:
+                    self.ray["XO"] = mdict["XO"]
+                    self.ray["YO"] = mdict["YO"]
+                except KeyError:
+                    print("Warning! Some BPD Ray information mssing in loaded .mat file. Is this an old file?")
                 try:
                     self.ray["emO"] = mdict["ray_emO"]
                     self.ray["em_secondO"] = mdict["ray_em_secondO"]
@@ -820,7 +834,7 @@ class ECRadResults:
                     self.ray["TO"] = mdict["ray_TO"]
                     self.ray["T_secondO"] = mdict["ray_T_secondO"]
                 except KeyError:
-                    print("Warning! No BPD Ray information in loaded .mat file. Is this an old file?")
+                    print("Warning! Some BPD Ray information mssing in loaded .mat file. Is this an old file?")
             except KeyError:
                 print("Warning! No Ray information in loaded .mat file. Is this an old file?")
             try:
@@ -902,6 +916,8 @@ class ECRadResults:
             mdict["NX"] = self.ray["NX"]
             mdict["NcX"] = self.ray["NcX"]
             mdict["thetaX"] = self.ray["thetaX"]
+            mdict["XX"] = self.ray["XX"]
+            mdict["YX"] = self.ray["YX"]
             mdict["TeX"] = self.ray["TeX"]
             mdict["ray_BPDX"] = self.ray["BPDX"]
             mdict["ray_BPD_secondX"] = self.ray["BPD_secondX"]
@@ -929,6 +945,8 @@ class ECRadResults:
             mdict["NO"] = self.ray["NO"]
             mdict["NcO"] = self.ray["NcO"]
             mdict["thetaO"] = self.ray["thetaO"]
+            mdict["XO"] = self.ray["XO"]
+            mdict["YO"] = self.ray["YO"]
             mdict["TeO"] = self.ray["TeO"]
             mdict["ray_BPDO"] = self.ray["BPDO"]
             mdict["ray_BPD_secondO"] = self.ray["BPD_secondO"]

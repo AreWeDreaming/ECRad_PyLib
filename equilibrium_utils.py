@@ -34,7 +34,8 @@ def eval_rhop(x, spl, rhop_target):
     else:
         return (spl(x[0], x[1], grid=False) - rhop_target) ** 2
 
-def eval_Btot(x, spl):
+def eval_Btot(x, args):
+    spl = args[0]
     if(scivers == '0.12.0'):
         return spl.ev(x[0], x[1])
     else:
@@ -301,7 +302,7 @@ class EQDataExt:
         if(append_B_ax):
             if(0.0 in rhop_in):
                 return np.copy(rhop_in), B_min
-            B_ax = Btot_spl(R_ax, z_ax)
+            B_ax = Btot_spl(R_ax, z_ax, grid=False)
             return np.concatenate([[0], rhop_in]), np.concatenate([[B_ax], B_min])
         else:
             return B_min

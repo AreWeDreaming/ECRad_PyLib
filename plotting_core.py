@@ -5576,9 +5576,9 @@ class plotting_core:
                         if(not ("_"  in lns[l].get_label() and "$" not in lns[l].get_label())):
                             labs.append(lns[l].get_label())
                             lns_short.append(lns[l])
-                leg = self.axlist_2[1].legend(lns_short, labs)
-                leg.get_frame().set_alpha(0.5)
-                leg.draggable()
+                leg2 = self.axlist_2[1].legend(lns_short, labs)
+                leg2.get_frame().set_alpha(0.5)
+                leg2.draggable()
         elif(mode == "BDP"):
             labs = []
             lns_short = []
@@ -5609,33 +5609,35 @@ class plotting_core:
             leg = self.axlist[0].legend(lns, labs)
             leg.get_frame().set_alpha(0.5)
             leg.draggable()
-            lns = self.axlist_2[0].get_lines() + self.axlist_2[1].get_lines()
-            labs = [l.get_label() for l in lns]
-            leg = self.axlist_2[0].legend(lns, labs)
-            leg.get_frame().set_alpha(0.5)
-            leg.draggable()
+            if(len(self.axlist_2) > 0):
+                lns = self.axlist_2[0].get_lines() + self.axlist_2[1].get_lines()
+                labs = [l.get_label() for l in lns]
+                leg2 = self.axlist_2[0].legend(lns, labs)
+                leg2.get_frame().set_alpha(0.5)
+                leg2.draggable()
         elif(mode == "Te" or mode == "Te_no_ne"):
             for i in range(len(self.axlist)):
                 leg = self.axlist[i].legend(loc="best")
                 if(leg is not None):
                     leg.draggable()
-            try:
-                lns = self.axlist_2[0].get_lines() + self.axlist_2[1].get_lines()
-                labs = []
-                lns_filtered = []
-                for l in lns:
-                    if(not (l.get_label().startswith("_") or l.get_label().startswith("\\"))):
-                        labs.append(l.get_label())
-                        lns_filtered.append(l)
-                leg2 = self.axlist_2[0].legend(lns_filtered, labs)
-                if(leg2 is not None):
-                    leg2.get_frame().set_alpha(1)
-                    leg2.draggable()
-            except IndexError:
-                leg2 = self.axlist_2[0].legend()
-                if(leg2 is not None):
-                    leg2.get_frame().set_alpha(1)
-                    leg2.draggable()
+            if(len(self.axlist_2) > 0):
+                try:
+                    lns = self.axlist_2[0].get_lines() + self.axlist_2[1].get_lines()
+                    labs = []
+                    lns_filtered = []
+                    for l in lns:
+                        if(not (l.get_label().startswith("_") or l.get_label().startswith("\\"))):
+                            labs.append(l.get_label())
+                            lns_filtered.append(l)
+                    leg2 = self.axlist_2[0].legend(lns_filtered, labs)
+                    if(leg2 is not None):
+                        leg2.get_frame().set_alpha(1)
+                        leg2.draggable()
+                except IndexError:
+                    leg2 = self.axlist_2[0].legend()
+                    if(leg2 is not None):
+                        leg2.get_frame().set_alpha(1)
+                        leg2.draggable()
         elif(mode == "Te_twinx" or mode == "Te_no_ne_twinx"):
             lines, labels = self.axlist[0].get_legend_handles_labels()
             lines2, labels2 = self.axlist[1].get_legend_handles_labels()
@@ -5645,23 +5647,24 @@ class plotting_core:
                 leg = self.axlist[2].legend(loc="best")
                 if(leg is not None):
                     leg.draggable()
-            try:
-                lns = self.axlist_2[0].get_lines() + self.axlist_2[1].get_lines()
-                labs = []
-                lns_filtered = []
-                for l in lns:
-                    if(not (l.get_label().startswith("_") or l.get_label().startswith("\\"))):
-                        labs.append(l.get_label())
-                        lns_filtered.append(l)
-                leg2 = self.axlist_2[0].legend(lns_filtered, labs)
-                if(leg2 is not None):
-                    leg2.get_frame().set_alpha(1)
-                    leg2.draggable()
-            except IndexError:
-                leg2 = self.axlist_2[0].legend()
-                if(leg2 is not None):
-                    leg2.get_frame().set_alpha(1)
-                    leg2.draggable()
+            if(len(self.axlist_2) > 0):
+                try:
+                    lns = self.axlist_2[0].get_lines() + self.axlist_2[1].get_lines()
+                    labs = []
+                    lns_filtered = []
+                    for l in lns:
+                        if(not (l.get_label().startswith("_") or l.get_label().startswith("\\"))):
+                            labs.append(l.get_label())
+                            lns_filtered.append(l)
+                    leg2 = self.axlist_2[0].legend(lns_filtered, labs)
+                    if(leg2 is not None):
+                        leg2.get_frame().set_alpha(1)
+                        leg2.draggable()
+                except IndexError:
+                    leg2 = self.axlist_2[0].legend()
+                    if(leg2 is not None):
+                        leg2.get_frame().set_alpha(1)
+                        leg2.draggable()
         elif(mode == "stacked_2_twinx"):
             lns = self.axlist[0].get_lines()
             labs = [l.get_label() for l in lns]
@@ -5817,19 +5820,20 @@ class plotting_core:
                 leg = self.axlist[i].legend(lns_short, labs)
                 leg.draggable()
                 leg.get_frame().set_alpha(1.0)
-            for i in range(len(self.axlist_2)):
-                lns = self.axlist_2[i].get_lines()
-                labs = []
-                lns_short = []
-                for l in range(len(lns)):
-                    if(not ("_"  in lns[l].get_label() and "$" not in lns[l].get_label())):
-                        labs.append(lns[l].get_label())
-                        lns_short.append(lns[l])
-                    # else:
-                    #    print("Label " + lns[l].get_label() + " ignored")
-                leg = self.axlist_2[i].legend(lns_short, labs)
-                leg.get_frame().set_alpha(0.5)
-                leg.draggable()
+            if(len(self.axlist_2) > 9):
+                for i in range(len(self.axlist_2)):
+                    lns = self.axlist_2[i].get_lines()
+                    labs = []
+                    lns_short = []
+                    for l in range(len(lns)):
+                        if(not ("_"  in lns[l].get_label() and "$" not in lns[l].get_label())):
+                            labs.append(lns[l].get_label())
+                            lns_short.append(lns[l])
+                        # else:
+                        #    print("Label " + lns[l].get_label() + " ignored")
+                    leg = self.axlist_2[i].legend(lns_short, labs)
+                    leg.get_frame().set_alpha(0.5)
+                    leg.draggable()
         # self.finishing_touches()
 
     # Once all information about a plot is known apply some finishing touches
