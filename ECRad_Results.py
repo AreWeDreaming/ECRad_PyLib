@@ -887,7 +887,7 @@ class ECRadResults:
                 mdict["calib_diags"].append(diag)
         if(quasi_linear_beam is not None):
             mdict["dist_rhot_prof"] = quasi_linear_beam.rhot
-            mdict["rhop_prof"] = quasi_linear_beam.rhop
+            mdict["dist_rhop_prof"] = quasi_linear_beam.rhop
             mdict["dist_PW_prof"] = quasi_linear_beam.PW * 1.e6
             mdict["dist_j_prof"] = quasi_linear_beam.j * 1.e6
             mdict["dist_PW_tot"] = quasi_linear_beam.PW_tot * 1.e6
