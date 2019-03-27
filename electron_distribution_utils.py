@@ -1183,9 +1183,12 @@ def get_omega_c_and_cutoff(ECRad_data, ich, mode):
     return f_R, omega_p, arr
 
 
-def load_f_from_mat(filename):
+def load_f_from_mat(filename, use_dist_prefix=False):
+    dist_prefix = ""
+    if(use_dist_prefix):
+        dist_prefix = "_dist"
     mdict = loadmat(filename, squeeze_me=True)
-    return distribution(mdict["rhot_prof"], mdict["rhop_prof"], mdict["u"], mdict["pitch"], mdict["f"], mdict["rhot_1D_profs"], mdict["rhop_1D_profs"], mdict["Te_init"], mdict["ne_init"])
+    return distribution(mdict[dist_prefix + "rhot_prof"], mdict[dist_prefix + "rhop_prof"], mdict[dist_prefix + "u"], mdict[dist_prefix + "pitch"], mdict[dist_prefix + "f"], mdict[dist_prefix + "rhot_1D_profs"], mdict[dist_prefix + "rhop_1D_profs"], mdict[dist_prefix + "Te_init"], mdict[dist_prefix + "ne_init"])
 
 def load_f_from_ASCII(path, rhop_in=None, Gene=False):
     if(not Gene):
@@ -2462,52 +2465,58 @@ def dp_dt_rad(u_perp, u_par, B):
 def collision_time(v, ne, Z_eff=1.5, ln_lambda=21):
     return 1.0 / (4.0 * np.pi * ne * Z_eff * cnst.e ** 4 * ln_lambda / ((4.0 * np.pi * cnst.epsilon_0) ** 2 * cnst.m_e ** 2 * v ** 3))
 
-def read_waves_mat_to_beam(waves_mat, EQSlice):
-    rho_prof = waves_mat["rhop_prof"]
-    j = waves_mat["j_prof"]
-    PW = waves_mat["PW_prof"]
-    PW_tot = waves_mat["PW_tot"]
-    j_tot = waves_mat["j_tot"]
+def read_waves_mat_to_beam(waves_mat, EQSlice, use_wave_prefix=False):
+    wave_prefix = ""
+    if(use_wave_prefix):
+        wave_prefix = "wave_"
+    rho_prof = waves_mat[wave_prefix + "rhop_prof"]
+    j = waves_mat[wave_prefix + "j_prof"]
+    PW = waves_mat[wave_prefix + "PW_prof"]
+    PW_tot = waves_mat[wave_prefix + "PW_tot"]
+    j_tot = waves_mat[wave_prefix + "j_tot"]
     rays = []
     B_tot = np.sqrt(EQSlice.Br ** 2 + EQSlice.Bt ** 2 + EQSlice.Bz ** 2)
     B_tot_spl = RectBivariateSpline(EQSlice.R, EQSlice.z, B_tot)
     PW_beam = []
     j_beam = []
     for key in ["s", "R", "phi", "z", "rhop", "PW", "Npar"]:
-        waves_mat[key] = np.atleast_3d(waves_mat[key])
-        if(waves_mat[key].shape[-1] == 1):
-            waves_mat[key] = np.swapaxes(waves_mat[key].T, 1, 2)
-    for key in ["PW_beam", "j_beam"]:
-        waves_mat[key] = np.atleast_2d(waves_mat[key])
-        if(waves_mat[key].shape[-1] == 1):
-            waves_mat[key] = waves_mat[key].T
-    for ibeam in range(len(waves_mat["R"])):
+        waves_mat[wave_prefix + key] = np.atleast_3d(waves_mat[wave_prefix + key])
+        if(waves_mat[wave_prefix + key].shape[-1] == 1):
+            waves_mat[wave_prefix + key] = np.swapaxes(waves_mat[wave_prefix + key].T, 1, 2)
+    for key in [wave_prefix + "PW_beam", wave_prefix + "j_beam"]:
+        waves_mat[wave_prefix + key] = np.atleast_2d(waves_mat[wave_prefix + key])
+        if(waves_mat[wave_prefix + key].shape[-1] == 1):
+            waves_mat[wave_prefix + key] = waves_mat[wave_prefix + key].T
+    for ibeam in range(len(waves_mat[wave_prefix + "R"])):
         print("Processing beam: " + str(ibeam + 1))
-        PW_beam.append(waves_mat["PW_beam"][ibeam])
-        j_beam.append(waves_mat["j_beam"][ibeam])
+        PW_beam.append(waves_mat[wave_prefix + "PW_beam"][ibeam])
+        j_beam.append(waves_mat[wave_prefix + "j_beam"][ibeam])
         rays.append([])
-        for iray in range(len(waves_mat["R"][ibeam])):
+        for iray in range(len(waves_mat[wave_prefix + "R"][ibeam])):
             print("Processing ray: " + str(iray + 1))
             rays[-1].append({})
-            rays[-1][-1]["s"] = waves_mat["s"][ibeam][iray]
-            rays[-1][-1]["R"] = waves_mat["R"][ibeam][iray]
-            rays[-1][-1]["phi"] = waves_mat["phi"][ibeam][iray]
-            rays[-1][-1]["z"] = waves_mat["z"][ibeam][iray]
-            rays[-1][-1]["rhop"] = waves_mat["rhop"][ibeam][iray]
-            rays[-1][-1]["PW"] = waves_mat["PW"][ibeam][iray]
-            rays[-1][-1]["Npar"] = waves_mat["Npar"][ibeam][iray]
-            rays[-1][-1]["omega_c"] = cnst.e * B_tot_spl(rays[-1][-1]["R"], rays[-1][-1]["z"], grid=False) / cnst.m_e
+            rays[-1][-1]["s"] = waves_mat[wave_prefix + "s"][ibeam][iray]
+            rays[-1][-1]["R"] = waves_mat[wave_prefix + "R"][ibeam][iray]
+            rays[-1][-1]["phi"] = waves_mat[wave_prefix + "phi"][ibeam][iray]
+            rays[-1][-1]["z"] = waves_mat[wave_prefix + "z"][ibeam][iray]
+            rays[-1][-1]["rhop"] = waves_mat[wave_prefix + "rhop"][ibeam][iray]
+            rays[-1][-1]["PW"] = waves_mat[wave_prefix + "PW"][ibeam][iray]
+            rays[-1][-1]["Npar"] = waves_mat[wave_prefix + "Npar"][ibeam][iray]
+            rays[-1][-1]["omega_c"] = cnst.e * B_tot_spl(rays[-1][-1][wave_prefix + "R"], rays[-1][-1][wave_prefix + "z"], grid=False) / cnst.m_e
     PW_beam = np.array(PW_beam)
     j_beam = np.array(j_beam)
-    return beam(waves_mat["rhot_prof"], rho_prof, PW, j, PW_tot, j_tot, PW_beam, j_beam, rays)
+    return beam(waves_mat[wave_prefix + "rhot_prof"], rho_prof, PW, j, PW_tot, j_tot, PW_beam, j_beam, rays)
 
-def read_dist_mat_to_beam(dist_mat):
-    rho_prof = dist_mat["rhop_prof"]
-    j = dist_mat["j_prof"]
-    PW = dist_mat["PW_prof"]
-    PW_tot = dist_mat["PW_tot"]
-    j_tot = dist_mat["j_tot"]
-    return beam(dist_mat["rhot_prof"], rho_prof, PW, j, PW_tot, j_tot, None, None, None)
+def read_dist_mat_to_beam(dist_mat, use_dist_prefix=True):
+    dist_prefix = ""
+    if(use_dist_prefix):
+        dist_prefix = "dist_"
+    rho_prof = dist_mat[dist_prefix + "rhop_prof"]
+    j = dist_mat[dist_prefix + "j_prof"]
+    PW = dist_mat[dist_prefix + "PW_prof"]
+    PW_tot = dist_mat[dist_prefix + "PW_tot"]
+    j_tot = dist_mat[dist_prefix + "j_tot"]
+    return beam(dist_mat[dist_prefix + "rhot_prof"], rho_prof, PW, j, PW_tot, j_tot, None, None, None)
 
 def export_fortran_friendly(args):
     # print(uxx, ull)
@@ -2634,7 +2643,7 @@ def make_RDiff(Psi, scale, rho_width):
     return psi_out, Rdiff
 
 class f_interpolator:
-    def __init__(self, working_dir, dist="Re", order=3):
+    def __init__(self, working_dir=None, dist_obj=None, rhop_Bmin=None, Bmin=None, dist="Re", order=3):
         self.static_dist = False
         self.spl = None
         self.B0 = None
@@ -2648,43 +2657,50 @@ class f_interpolator:
         else:
             self.thermal = False
         # ipsi, psi, x, y, Fe = read_Fe(os.path.join(working_dir, "ECRad_data") + os.path.sep)
-        if(dist == "Lu" or dist == "Re"):
-            f_folder = os.path.join(working_dir, "ECRad_data", "f" + dist)
-            x = np.loadtxt(os.path.join(f_folder, "u.dat"), skiprows=1)
-            y = np.loadtxt(os.path.join(f_folder, "pitch.dat"), skiprows=1)
-            self.rhop = np.loadtxt(os.path.join(f_folder, "frhop.dat"), skiprows=1)
-            Fe = []
-            for irhop in range(len(self.rhop)):
-                Fe.append(np.loadtxt(os.path.join(f_folder, "fu{0:03d}.dat".format(irhop))))
-            Fe = np.array(Fe)
-            rhop_B_min, B_min = get_B_min_from_file(os.path.join(working_dir, "ECRad_data"))
-            self.B_min_spline = InterpolatedUnivariateSpline(rhop_B_min, B_min)
-        elif(dist == "Ge"):
-            f_folder = os.path.join(working_dir, "ECRad_data", "f" + dist)
-            x = np.loadtxt(os.path.join(f_folder, "vpar.dat"), skiprows=1)
-            y = np.loadtxt(os.path.join(f_folder, "mu.dat"), skiprows=1)
-            self.rhop = np.loadtxt(os.path.join(f_folder, "grhop.dat"), skiprows=1)
-            self.B0 = np.loadtxt(os.path.join(f_folder, "B0.dat"))
-            Fe = []
-            for irhop in range(len(self.rhop)):
-                Fe.append(np.loadtxt(os.path.join(f_folder, "gvpar{0:03d}.dat".format(irhop))))
-            Fe = np.array(Fe)
-        elif(dist == "Ge0"):
-            f_folder = os.path.join(working_dir, "ECRad_data", "fGe")
-            x = np.loadtxt(os.path.join(f_folder, "vpar.dat"), skiprows=1)
-            y = np.loadtxt(os.path.join(f_folder, "mu.dat"), skiprows=1)
-            self.rhop = np.loadtxt(os.path.join(f_folder, "grhop.dat"), skiprows=1)
-            Fe = np.loadtxt(os.path.join(f_folder, "f0.dat"))
-            self.B0 = np.loadtxt(os.path.join(f_folder, "B0.dat"))
-            self.static_dist = True
+        if(dist_obj is not None):
+            self.rhop = dist_obj.rhop
+            self.x = dist_obj.u
+            self.y = dist_obj.pitch
+            self.Fe = dist_obj.f_log
+            self.B_min_spline = InterpolatedUnivariateSpline(rhop_Bmin, Bmin)
         else:
-            print("Invalid distribution flag", dist)
-            raise ValueError
+            if(dist == "Lu" or dist == "Re"):
+                f_folder = os.path.join(working_dir, "ECRad_data", "f" + dist)
+                x = np.loadtxt(os.path.join(f_folder, "u.dat"), skiprows=1)
+                y = np.loadtxt(os.path.join(f_folder, "pitch.dat"), skiprows=1)
+                self.rhop = np.loadtxt(os.path.join(f_folder, "frhop.dat"), skiprows=1)
+                Fe = []
+                for irhop in range(len(self.rhop)):
+                    Fe.append(np.loadtxt(os.path.join(f_folder, "fu{0:03d}.dat".format(irhop))))
+                Fe = np.array(Fe)
+                rhop_B_min, B_min = get_B_min_from_file(os.path.join(working_dir, "ECRad_data"))
+                self.B_min_spline = InterpolatedUnivariateSpline(rhop_B_min, B_min)
+            elif(dist == "Ge"):
+                f_folder = os.path.join(working_dir, "ECRad_data", "f" + dist)
+                x = np.loadtxt(os.path.join(f_folder, "vpar.dat"), skiprows=1)
+                y = np.loadtxt(os.path.join(f_folder, "mu.dat"), skiprows=1)
+                self.rhop = np.loadtxt(os.path.join(f_folder, "grhop.dat"), skiprows=1)
+                self.B0 = np.loadtxt(os.path.join(f_folder, "B0.dat"))
+                Fe = []
+                for irhop in range(len(self.rhop)):
+                    Fe.append(np.loadtxt(os.path.join(f_folder, "gvpar{0:03d}.dat".format(irhop))))
+                Fe = np.array(Fe)
+            elif(dist == "Ge0"):
+                f_folder = os.path.join(working_dir, "ECRad_data", "fGe")
+                x = np.loadtxt(os.path.join(f_folder, "vpar.dat"), skiprows=1)
+                y = np.loadtxt(os.path.join(f_folder, "mu.dat"), skiprows=1)
+                self.rhop = np.loadtxt(os.path.join(f_folder, "grhop.dat"), skiprows=1)
+                Fe = np.loadtxt(os.path.join(f_folder, "f0.dat"))
+                self.B0 = np.loadtxt(os.path.join(f_folder, "B0.dat"))
+                self.static_dist = True
+            else:
+                print("Invalid distribution flag", dist)
+                raise ValueError
         # dFe_du = []
         # dFe_dpitch = []
-        self.x = x
-        self.y = y
-        self.Fe = Fe
+            self.x = x
+            self.y = y
+            self.Fe = Fe
         if(self.static_dist):
             self.spline_mat = None
         else:
@@ -3230,7 +3246,7 @@ def make_dist_from_Gene_input(path, shot, time, EQObj, debug=False):
     print(f0.shape, beta_par.shape, mu_norm.shape)
     Te = float(h5_fileID['general information']["Tref,eV"].value.replace(",", "."))
     ne = float(h5_fileID['general information']["nref,m^-3"].value.replace(",", "."))
-    EQSlice = EQObj.read_EQ_from_shotfile(time)
+    EQSlice = EQObj.GetSlice(time)
     rhop_spl = RectBivariateSpline(EQSlice.R, EQSlice.z, EQSlice.rhop)
     rhop = rhop_spl(R, z, grid=False)
     # f /= cnst.c ** 3 * cnst.m_e / (2.0 * np.pi)
@@ -3291,7 +3307,7 @@ class Gene:
                 print("The Gene class has to be initialized with either time or an EQSlice object present")
             if(EQData is None):
                 print("Either EQSlice or EQData must be present when GENE class is initialized")
-            EQSlice = EQObj.read_EQ_from_shotfile(time)
+            EQSlice = EQObj.GetSlice(time)
         beta_max = 0.5
         self.R = np.array(gene_pos["axes"]["Rpos_m"]).flatten()
         self.z = np.array(gene_pos["axes"]["Zpos_m"]).flatten()

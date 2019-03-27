@@ -75,7 +75,7 @@ def make_topfile(working_dir, shot, time, eq_exp, eq_diag, eq_ed, bt_vac_correct
     columns = 8  # number of coloumns
     columns -= 1
     EQ_obj = EQData(shot, EQ_exp=eq_exp, EQ_diag=eq_diag, EQ_ed=eq_ed, bt_vac_correction=bt_vac_correction)
-    EQ_t = EQ_obj.read_EQ_from_shotfile(time)
+    EQ_t = EQ_obj.GetSlice(time)
     print("Magnetic axis position: ", "{0:1.3f}".format(EQ_t.R_ax))
     topfile = open(os.path.join(working_dir, "topfile"), "w")
     topfile.write('Number of radial and vertical grid points in AUGD:EQH:{0:5n}: {1:1.4f}\n'.format(shot, time))
@@ -926,7 +926,7 @@ def make_LUKE_input_mat(working_dir, shot, times, IDA_exp="AUGD", IDA_ed=0, EQ_e
         mdict["width_z_gy{0:d}".format(i_gy + 1)] = []
         mdict["PW_gy{0:d}".format(i_gy + 1)] = []
     for time in plasma_data["time"]:
-        EQ_t = EQ_obj.read_EQ_from_shotfile(time)
+        EQ_t = EQ_obj.GetSlice(time)
         mdict["t"].append(time)
         mdict["Psi_sep"].append(EQ_t.Psi_sep)
         mdict["Psi_ax"].append(EQ_t.Psi_ax)

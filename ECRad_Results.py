@@ -98,6 +98,12 @@ class ECRadResults:
         self.ray["thetaX"] = []
         self.ray["BPDX"] = []
         self.ray["BPD_secondX"] = []
+        self.ray["emX"] = []
+        self.ray["em_secondX"] = []
+        self.ray["abX"] = []
+        self.ray["ab_secondX"] = []
+        self.ray["TX"] = []
+        self.ray["T_secondX"] = []
         self.ray["TeX"] = []
         self.ray["sO"] = []
         self.ray["xO"] = []
@@ -112,7 +118,14 @@ class ECRadResults:
         self.ray["thetaO"] = []
         self.ray["BPDO"] = []
         self.ray["BPD_secondO"] = []
+        self.ray["emO"] = []
+        self.ray["em_secondO"] = []
+        self.ray["abO"] = []
+        self.ray["ab_secondO"] = []
+        self.ray["TO"] = []
+        self.ray["T_secondO"] = []
         self.ray["TeO"] = []
+        self.ray["weight"] = []  # -> To be implemented!
         self.ray_launch = {}
         self.ray_launch["x"] = []
         self.ray_launch["y"] = []
@@ -157,7 +170,7 @@ class ECRadResults:
                 print("Only mode = 1, 2, 3 supported")
                 print("Selected mode: ", self.Config.considered_modes)
         if(self.status != 0):
-            return
+            return False
         if(self.Config is None):
             print("Error -  config was not yet parsed into result instance")
             print("First parse config before appending results")
@@ -271,11 +284,17 @@ class ECRadResults:
                                 self.ray["rhopX"][-1][-1].append(Ray_file.T[4])
                                 self.ray["BPDX"][-1][-1].append(Ray_file.T[5])
                                 self.ray["BPD_secondX"][-1][-1].append(Ray_file.T[6])
-                                self.ray["TeX"][-1][-1].append(Ray_file.T[7])
-                                self.ray["HX"][-1][-1].append(Ray_file.T[8])
-                                self.ray["NX"][-1][-1].append(Ray_file.T[9])
-                                self.ray["NcX"][-1][-1].append(Ray_file.T[10])
-                                self.ray["thetaX"][-1][-1].append(Ray_file.T[11])
+                                self.ray["emX"][-1][-1].append(Ray_file.T[7])
+                                self.ray["em_secondX"][-1][-1].append(Ray_file.T[8])
+                                self.ray["abX"][-1][-1].append(Ray_file.T[9])
+                                self.ray["ab_secondX"][-1][-1].append(Ray_file.T[10])
+                                self.ray["TX"][-1][-1].append(Ray_file.T[11])
+                                self.ray["T_secondX"][-1][-1].append(Ray_file.T[12])
+                                self.ray["TeX"][-1][-1].append(Ray_file.T[13])
+                                self.ray["HX"][-1][-1].append(Ray_file.T[14])
+                                self.ray["NX"][-1][-1].append(Ray_file.T[15])
+                                self.ray["NcX"][-1][-1].append(Ray_file.T[16])
+                                self.ray["thetaX"][-1][-1].append(Ray_file.T[17])
                     else:
                         try:
                             Ray_file = np.loadtxt(os.path.join(Ich_folder, "BPD_ray{0:03d}ch{1:03d}_X.dat".format(1, i + 1)))
@@ -289,11 +308,17 @@ class ECRadResults:
                             self.ray["rhopX"][-1].append(Ray_file.T[4])
                             self.ray["BPDX"][-1].append(Ray_file.T[5])
                             self.ray["BPD_secondX"][-1].append(Ray_file.T[6])
-                            self.ray["TeX"][-1].append(Ray_file.T[7])
-                            self.ray["HX"][-1].append(Ray_file.T[8])
-                            self.ray["NX"][-1].append(Ray_file.T[9])
-                            self.ray["NcX"][-1].append(Ray_file.T[10])
-                            self.ray["thetaX"][-1].append(Ray_file.T[11])
+                            self.ray["emX"][-1].append(Ray_file.T[7])
+                            self.ray["em_secondX"][-1].append(Ray_file.T[8])
+                            self.ray["abX"][-1].append(Ray_file.T[9])
+                            self.ray["ab_secondX"][-1].append(Ray_file.T[10])
+                            self.ray["TX"][-1].append(Ray_file.T[11])
+                            self.ray["T_secondX"][-1].append(Ray_file.T[12])
+                            self.ray["TeX"][-1].append(Ray_file.T[13])
+                            self.ray["HX"][-1].append(Ray_file.T[14])
+                            self.ray["NX"][-1].append(Ray_file.T[15])
+                            self.ray["NcX"][-1].append(Ray_file.T[16])
+                            self.ray["thetaX"][-1].append(Ray_file.T[17])
             if("O" in self.modes):
                 try:
                     BDOP_O = np.loadtxt(os.path.join(Ich_folder, "BPDO{0:03d}.dat".format(i + 1)))
@@ -326,6 +351,12 @@ class ECRadResults:
                             self.ray["rhopO"][-1][-1].append(Ray_file.T[4])
                             self.ray["BPDO"][-1][-1].append(Ray_file.T[5])
                             self.ray["BPD_secondO"][-1][-1].append(Ray_file.T[6])
+                            self.ray["emO"][-1][-1].append(Ray_file.T[7])
+                            self.ray["em_secondO"][-1][-1].append(Ray_file.T[8])
+                            self.ray["abO"][-1][-1].append(Ray_file.T[9])
+                            self.ray["ab_secondO"][-1][-1].append(Ray_file.T[10])
+                            self.ray["TO"][-1][-1].append(Ray_file.T[11])
+                            self.ray["T_secondO"][-1][-1].append(Ray_file.T[12])
                             self.ray["TeO"][-1][-1].append(Ray_file.T[7])
                             self.ray["HO"][-1][-1].append(Ray_file.T[8])
                             self.ray["NO"][-1][-1].append(Ray_file.T[9])
@@ -344,11 +375,17 @@ class ECRadResults:
                         self.ray["rhopO"][-1].append(Ray_file.T[4])
                         self.ray["BPDO"][-1].append(Ray_file.T[5])
                         self.ray["BPD_secondO"][-1].append(Ray_file.T[6])
-                        self.ray["TeO"][-1].append(Ray_file.T[7])
-                        self.ray["HO"][-1].append(Ray_file.T[8])
-                        self.ray["NO"][-1].append(Ray_file.T[9])
-                        self.ray["NcO"][-1].append(Ray_file.T[10])
-                        self.ray["thetaO"][-1].append(Ray_file.T[11])
+                        self.ray["emO"][-1].append(Ray_file.T[7])
+                        self.ray["em_secondO"][-1].append(Ray_file.T[8])
+                        self.ray["abO"][-1].append(Ray_file.T[9])
+                        self.ray["ab_secondO"][-1].append(Ray_file.T[10])
+                        self.ray["TO"][-1].append(Ray_file.T[11])
+                        self.ray["T_secondO"][-1].append(Ray_file.T[12])
+                        self.ray["TeO"][-1].append(Ray_file.T[13])
+                        self.ray["HO"][-1].append(Ray_file.T[14])
+                        self.ray["NO"][-1].append(Ray_file.T[15])
+                        self.ray["NcO"][-1].append(Ray_file.T[16])
+                        self.ray["thetaO"][-1].append(Ray_file.T[17])
         self.resonance["s_cold"].append(sres_file.T[0])
         self.resonance["R_cold"].append(sres_file.T[1])
         self.resonance["z_cold"].append(sres_file.T[2])
@@ -376,7 +413,7 @@ class ECRadResults:
             print("Even though Trad and BDOP account for multiple rays, only central ray geometry is available for the plots!")
         self.time.append(time)
 
-    def tidy_up(self, autosave=True, comment= None):
+    def tidy_up(self, autosave=True, comment=None):
         if(self.status != 0):
             return
         # Put everything into numpy arrays
@@ -409,7 +446,7 @@ class ECRadResults:
         self.time = np.array(self.time)
         # Autosave results
         if(autosave):
-            self.to_mat_file(comment = comment)
+            self.to_mat_file(comment=comment)
 
     def UpdateCalib(self, diag, calib, calib_mat, std_dev_mat, rel_dev, sys_dev, masked_time_points):
         self.calib[diag.name] = calib
@@ -676,7 +713,7 @@ class ECRadResults:
             print("Error loading calibration factors - please recalculate")
         if(not self.Config.extra_output):
             self.init = True
-            return self.Config
+            return False
         self.Trad_comp = mdict["Trad_comp"]
         self.tau_comp = mdict["tau_comp"]
         if(self.Config.considered_modes == 3):
@@ -726,6 +763,16 @@ class ECRadResults:
                     self.ray["BPD_secondX"] = mdict["ray_BPD_secondX"]
                 except KeyError:
                     print("Warning! No BPD Ray information in loaded .mat file. Is this an old file?")
+                try:
+                    self.ray["emX"] = mdict["ray_emX"]
+                    self.ray["em_secondX"] = mdict["ray_em_secondX"]
+                    self.ray["abX"] = mdict["ray_abX"]
+                    self.ray["ab_secondX"] = mdict["ray_ab_secondX"]
+                    self.ray["TX"] = mdict["ray_TX"]
+                    self.ray["T_secondX"] = mdict["ray_T_secondX"]
+                    self.ray["TeX"] = mdict["TeX"]
+                except KeyError:
+                    print("Warning! No BPD Ray information in loaded .mat file. Is this an old file?")
             except KeyError:
                 print("Warning! No Ray information in loaded .mat file. Is this an old file?")
             try:
@@ -765,6 +812,15 @@ class ECRadResults:
                     self.ray["BPD_secondO"] = mdict["ray_BPD_secondO"]
                 except KeyError:
                     print("Warning! No BPD Ray information in loaded .mat file. Is this an old file?")
+                try:
+                    self.ray["emO"] = mdict["ray_emO"]
+                    self.ray["em_secondO"] = mdict["ray_em_secondO"]
+                    self.ray["abO"] = mdict["ray_abO"]
+                    self.ray["ab_secondO"] = mdict["ray_ab_secondO"]
+                    self.ray["TO"] = mdict["ray_TO"]
+                    self.ray["T_secondO"] = mdict["ray_T_secondO"]
+                except KeyError:
+                    print("Warning! No BPD Ray information in loaded .mat file. Is this an old file?")
             except KeyError:
                 print("Warning! No Ray information in loaded .mat file. Is this an old file?")
             try:
@@ -772,8 +828,9 @@ class ECRadResults:
             except KeyError:
                 print("Warning! theta not found in loaded .mat file. Is this an old file?")
         self.init = True
-    
-    def to_mat_file(self, ext_filename=None, comment=None,quasi_linear_beam=None, dist_obj=None, linear_beam=None):
+        return True
+
+    def to_mat_file(self, ext_filename=None, comment=None, quasi_linear_beam=None, dist_obj=None, linear_beam=None):
         ed = 1
         diag_str = ""
         for key in self.Scenario.used_diags_dict.keys():
@@ -848,6 +905,12 @@ class ECRadResults:
             mdict["TeX"] = self.ray["TeX"]
             mdict["ray_BPDX"] = self.ray["BPDX"]
             mdict["ray_BPD_secondX"] = self.ray["BPD_secondX"]
+            mdict["ray_emX"] = self.ray["emX"]
+            mdict["ray_em_secondX"] = self.ray["em_secondX"]
+            mdict["ray_abX"] = self.ray["abX"]
+            mdict["ray_ab_secondX"] = self.ray["ab_secondX"]
+            mdict["ray_TX"] = self.ray["TX"]
+            mdict["ray_T_secondX"] = self.ray["T_secondX"]
         if("O" in self.modes and self.Config.extra_output):
             mdict["BPDO"] = self.BPD["BPDO"]
             mdict["BPD_secondO"] = self.BPD["BPD_secondO"]
@@ -868,7 +931,13 @@ class ECRadResults:
             mdict["thetaO"] = self.ray["thetaO"]
             mdict["TeO"] = self.ray["TeO"]
             mdict["ray_BPDO"] = self.ray["BPDO"]
-            mdict["ray_BPD_secondO"] = self.ray["BPD_secondX"]
+            mdict["ray_BPD_secondO"] = self.ray["BPD_secondO"]
+            mdict["ray_emO"] = self.ray["emO"]
+            mdict["ray_em_secondO"] = self.ray["em_secondO"]
+            mdict["ray_abO"] = self.ray["abO"]
+            mdict["ray_ab_secondO"] = self.ray["ab_secondO"]
+            mdict["ray_TO"] = self.ray["TO"]
+            mdict["ray_T_secondO"] = self.ray["T_secondO"]
         if(len(self.calib.keys()) > 0):
             mdict["calib"] = []
             mdict["calib_mat"] = []

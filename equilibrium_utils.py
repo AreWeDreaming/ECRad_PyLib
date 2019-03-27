@@ -34,6 +34,12 @@ def eval_rhop(x, spl, rhop_target):
     else:
         return (spl(x[0], x[1], grid=False) - rhop_target) ** 2
 
+def eval_Btot(x, spl):
+    if(scivers == '0.12.0'):
+        return spl.ev(x[0], x[1])
+    else:
+        return spl(x[0], x[1], grid=False)
+
 class special_points:
     def __init__(self, R_ax, z_ax, psi_ax, R_sep, z_sep, psi_sep):
         self.Raxis = R_ax
@@ -125,8 +131,8 @@ class EQDataExt:
         self.slices = []
         self.Ext_data = True
         for it in range(len(time)):
-            self.slices.append(EQDataSlice(self.times[it], mdict["R"], mdict["z"], mdict["Psi"][it].T, mdict["Br"][it].T, \
-                                           mdict["Bt"][it].T, mdict["Bz"][it].T, R_ax=0.0, \
+            self.slices.append(EQDataSlice(self.times[it], mdict["R"], mdict["z"], mdict["Psi"][it], mdict["Br"][it], \
+                                           mdict["Bt"][it], mdict["Bz"][it], R_ax=0.0, \
                                            Psi_sep=mdict["Psi_sep"][it]))
             R_ax, z_ax, Psi_ax = self.get_axis(self.times[it], get_Psi=True, force_no_load=True)
             self.slices[-1].R_ax = R_ax
@@ -172,50 +178,47 @@ class EQDataExt:
         rhop = np.sqrt((Psi - psi_ax) / (special[1] - psi_ax))
         print("WARNING!: R_sep and z_sep hard coded")
         special_pnts = special_points(opt.x[0], opt.x[1], psi_ax, 2.17, 0.0, special[1])
-        return EQDataSlice(time, R, z, Psi.T, B_r.T, B_t.T, B_z.T, special_pnts, rhop=rhop.T)
+        return EQDataSlice(time, R, z, Psi, B_r, B_t, B_z, special_pnts, rhop=rhop)
 
-    def init_read_from_shotfile(self):
-        print("Parent class EQData does not support shotfile handling - use AUG child instead")
-
-    def read_EQ_from_shotfile(self, time):
-        print("Parent class EQData does not support shotfile handling - use AUG child instead")
-
-    def get_axis(self, time, get_Psi=False, force_no_load=False):
-        if(self.external_folder != '' or self.Ext_data):
-            if(not self.loaded and not force_no_load):
-                self.read_EQ_from_Ext()
-            index = np.argmin(self.times - time)
-            R = self.slices[index].R
-            z = self.slices[index].z
-            Psi = np.copy(self.slices[index].Psi).T
-            if(Psi.shape[0] != len(R)):
-                Psi = Psi.T
-            special = self.slices[index].special
-            if(Psi[len(R) / 2][len(z) / 2] > special[1]):
-            # We want a minimum in the flux at the magn. axis
-                Psi *= -1.0
-                special[1] *= -1.0
-            psi_spl = RectBivariateSpline(R, z, Psi)
-            indicies = np.unravel_index(np.argmin(Psi), Psi.shape)
-            R_init = np.array([R[indicies[0]], z[indicies[1]]])
-            print(R_init)
-            opt = minimize(eval_spline, R_init, args=[psi_spl], \
-                     bounds=[[np.min(R), np.max(R)], [np.min(z), np.max(z)]])
-            print("Magnetic axis position: ", opt.x[0], opt.x[1])
-            if(get_Psi):
-                return opt.x[0], opt.x[1], psi_spl(opt.x[0], opt.x[1])
-            else:
-                return opt.x[0], opt.x[1]
+    def GetSlice(self, time):
+        if(not self.loaded):
+            print("EQObj is empty")
+            raise ValueError
         else:
-            print("Parent class EQData does not support shotfile handling - use AUG child instead")
+            itime = np.argmin(np.abs(self.times - time))
+            return self.slices[itime]
+
+    def get_axis(self, time, get_Psi=False):
+        cur_slice = self.GetSlice(time)
+        R = cur_slice.R
+        z = cur_slice.z
+        Psi = np.copy(cur_slice.Psi)
+        if(Psi.shape[0] != len(R)):
+            Psi = Psi
+        special = cur_slice.special
+        if(Psi[len(R) / 2][len(z) / 2] > special[1]):
+        # We want a minimum in the flux at the magn. axis
+            Psi *= -1.0
+            special[1] *= -1.0
+        psi_spl = RectBivariateSpline(R, z, Psi)
+        indicies = np.unravel_index(np.argmin(Psi), Psi.shape)
+        R_init = np.array([R[indicies[0]], z[indicies[1]]])
+        print(R_init)
+        opt = minimize(eval_spline, R_init, args=[psi_spl], \
+                 bounds=[[np.min(R), np.max(R)], [np.min(z), np.max(z)]])
+        print("Magnetic axis position: ", opt.x[0], opt.x[1])
+        if(get_Psi):
+            return opt.x[0], opt.x[1], psi_spl(opt.x[0], opt.x[1])
+        else:
+            return opt.x[0], opt.x[1]
 
     def get_B_on_axis(self, time):
         R_ax, z_ax = self.get_axis(time)
         if(self.external_folder != '' or self.Ext_data):
-            index = np.argmin(self.times - time)
-            R = self.slices[index].R
-            z = self.slices[index].z
-            B_tot = np.sqrt(self.slices[index].Br.T ** 2 + self.slices[index].Bt.T ** 2 + self.slices[index].Bz.T ** 2)
+            cur_slice = self.GetSlice(time)
+            R = cur_slice.R
+            z = cur_slice.z
+            B_tot = np.sqrt(cur_slice.Br ** 2 + cur_slice.Bt ** 2 + cur_slice.Bz ** 2)
             B_tot_spl = RectBivariateSpline(R, z, B_tot)
             return B_tot_spl(R_ax, z_ax)
         else:
@@ -226,28 +229,28 @@ class EQDataExt:
             print("Plasma surface area not defined for open flux surfaces!")
             raise ValueError
         R, z = self.get_Rz_contour(time, rho)
-#        plt.plot(cont[closed][0].T[0], cont[closed][0].T[1])
+#        plt.plot(cont[closed][0][0], cont[closed][0][1])
 #        plt.show()
         A = get_Surface_area_of_torus(R, z)  # makes sure only closed contours enters
         return A
 
     def get_Rz_contour(self, time, rhop_in):
-        index = np.argmin(self.times - time)
-        R = self.slices[index].R
-        z = self.slices[index].z
-        rhop = self.slices[index].rhop.T
-        s, cont, closed = get_contour(R, z, rhop, rhop_in)
+        cur_slice = self.GetSlice(time)
+        R = cur_slice.R
+        z = cur_slice.z
+        rhop = cur_slice.rhop
+        info, cont = get_contour(R, z, rhop, rhop_in)
         return cont.flatten()
 
     def get_mean_r(self, time, rhop):
         rhop_ar = np.atleast_1d(rhop)
         R_av = []
         R_ax, z_ax = self.get_axis(time)
-        closed_info, sorted_conts = self.get_Rz_contour(time, rhop, only_single_closed=True)
+        cont = self.get_Rz_contour(time, rhop, only_single_closed=True)
 #        for cont in sorted_conts:
 #            plt.plot(cont.T[0], cont.T[1], "-")
 #        plt.show()
-        for R_cont, z_cont, rho in zip(R_conts, z_conts, rhop_ar):
+        for R_cont, z_cont, rho in zip(cont.T[0], cont.T[1], rhop_ar):
 #            plt.plot(R_cont, z_cont)
             S = get_arclength(R_cont, z_cont)
             R_av.append(get_av_radius(R_cont, z_cont, S, R_ax, z_ax))
@@ -258,11 +261,56 @@ class EQDataExt:
             R_av = np.array(R_av)
         return R_av
 
+    def get_B_min(self, time, rhop_in, append_B_ax=False):
+        cur_slice = self.GetSlice(time)
+        R = cur_slice.R
+        z = cur_slice.z
+        Br = cur_slice.Br
+        Bt = cur_slice.Bt
+        Bz = cur_slice.Bz
+        rhop = cur_slice.rhop
+        Btot_spl = RectBivariateSpline(R, z, np.sqrt(Br ** 2 + Bt ** 2 + Bz ** 2))
+        unwrap = False
+        if(np.isscalar(rhop_in)):
+            unwrap = True
+            B_min = np.zeros(1)
+        else:
+            B_min = np.zeros(len(rhop_in))
+        constraints = {}
+        constraints["type"] = "eq"
+        constraints["fun"] = eval_rhop
+        rhop_spl = RectBivariateSpline(R, z, rhop)
+        constraints["args"] = [rhop_spl, rhop_in[0]]
+        options = {}
+        options['maxiter'] = 100
+        options['disp'] = False
+        R_ax, z_ax = self.get_axis(time)
+        x0 = np.array([R_ax, z_ax])
+        for i in range(len(rhop_in)):
+            constraints["args"][1] = rhop_in[i]
+            res = scopt.minimize(eval_Btot, x0, method='SLSQP', bounds=[[1.2, 2.3], [-1.0, 1.0]], \
+                                 constraints=constraints, options=options, args=[Btot_spl])
+            if(not res.success):
+                print("Error could not find Bmin for ", rhop_in[i])
+                print("Cause: ", res.message)
+                raise ValueError
+            else:
+                B_min[i] = Btot_spl(res.x[0], res.x[1])
+        if(unwrap):
+            return B_min[0]
+        if(append_B_ax):
+            if(0.0 in rhop_in):
+                return np.copy(rhop_in), B_min
+            B_ax = Btot_spl(R_ax, z_ax)
+            return np.concatenate([[0], rhop_in]), np.concatenate([[B_ax], B_min])
+        else:
+            return B_min
+
     def get_R_aus(self, time, rhop_in):
-        index = np.argmin(self.times - time)
-        R = self.slices[index].R
-        z = self.slices[index].z
-        rhop = self.slices[index].rhop.T
+        cur_slice = self.GetSlice(time)
+        R = cur_slice.R
+        z = cur_slice.z
+        rhop = cur_slice.rhop
         unwrap = False
         if(np.isscalar(rhop_in)):
             unwrap = True
@@ -304,30 +352,25 @@ class EQDataExt:
         return R_LFS, z_LFS
 
     def map_Rz_to_rhop(self, time, R, z):
-        if(self.external_folder != '' or self.Ext_data):
-            if(self.loaded == False):
-                self.read_EQ_from_Ext()
-            index = np.argmin(self.times - time)
-            R = self.slices[index].R
-            z = self.slices[index].z
-            Psi = self.slices[index].Psi
-            special = self.slices[index].special
-            if(Psi[len(R) / 2][len(z) / 2] > special[1]):
-            # We want a minimum in the flux at the magn. axis
-                Psi *= -1.0
-                special[1] *= -1.0
-            psi_spl = RectBivariateSpline(R, z, Psi)
-            indicies = np.unravel_index(np.argmin(Psi), Psi.shape)
-            R_init = np.array([R[indicies[0]], z[indicies[1]]])
-            print(R_init)
-            opt = minimize(eval_spline, R_init, args=[psi_spl], \
-                     bounds=[[np.min(R), np.max(R)], [np.min(z), np.max(z)]])
-            print("Magnetic axis position: ", opt.x[0], opt.x[1])
-            psi_ax = psi_spl(opt.x[0], opt.x[1])
-            rhop = np.sqrt((Psi - psi_ax) / (special[1] - psi_ax))
-            rhop_spl = RectBivariateSpline(R, z, rhop)
-            return rhop_spl(R, z, grid=False)
-        else:
-            print("Parent class EQData does not support shotfile handling - use AUG child instead")
+        cur_slice = self.GetSlice(time)
+        R = cur_slice.R
+        z = cur_slice.z
+        Psi = cur_slice.Psi
+        special = cur_slice.special
+        if(Psi[len(R) / 2][len(z) / 2] > special[1]):
+        # We want a minimum in the flux at the magn. axis
+            Psi *= -1.0
+            special[1] *= -1.0
+        psi_spl = RectBivariateSpline(R, z, Psi)
+        indicies = np.unravel_index(np.argmin(Psi), Psi.shape)
+        R_init = np.array([R[indicies[0]], z[indicies[1]]])
+        print(R_init)
+        opt = minimize(eval_spline, R_init, args=[psi_spl], \
+                 bounds=[[np.min(R), np.max(R)], [np.min(z), np.max(z)]])
+        print("Magnetic axis position: ", opt.x[0], opt.x[1])
+        psi_ax = psi_spl(opt.x[0], opt.x[1])
+        rhop = np.sqrt((Psi - psi_ax) / (special[1] - psi_ax))
+        rhop_spl = RectBivariateSpline(R, z, rhop)
+        return rhop_spl(R, z, grid=False)
 
 

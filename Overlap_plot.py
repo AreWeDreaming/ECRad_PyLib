@@ -12,7 +12,7 @@ from electron_distribution_utils import read_waves_mat_to_beam, read_dist_mat_to
 if(AUG):
     from equilibrium_utils_AUG import EQData
 elif(TCV):
-    from equilibrium_utils_TCV import make_B_min, EQData
+    from equilibrium_utils_TCV import EQData
 else:
     print('Neither AUG nor TCV selected')
     raise(ValueError('No system selected!'))
@@ -93,7 +93,7 @@ def overlap_pw_deposition(path, shot, time, waves_mat_file, dist_mat_file, ECRad
                         diag_resonances["z"].append(diag_rays["z"][-1][-1][i_res])
                         diag_resonances["rhop"].append(result.ray["rhopO"][itime][result.diag == diag][ich - 1][ir][i_res])
     EQObj = EQData(shot, EQ_exp=EQ_exp, EQ_diag=EQ_diag, EQ_ed=EQ_ed, bt_vac_correction=bt_vac_correction)
-    EQSlice = EQObj.read_EQ_from_shotfile(time)
+    EQSlice = EQObj.GetSlice(time)
     linear_beam = read_waves_mat_to_beam(waves_mat, EQSlice)
     quasi_linear_beam = read_dist_mat_to_beam(dist_mat)
     fig = plt.figure(figsize=(8.5, 8.0), tight_layout=False)
@@ -111,7 +111,7 @@ def ECRH_and_LOS_config(path, shot, time, waves_mat_file, ECRad_save_file, \
         result.Config = result.from_mat_file(ECRad_save_file)
         itime = np.argmin(result.Config.time - time)
     EQObj = EQData(shot, EQ_exp=EQ_exp, EQ_diag=EQ_diag, EQ_ed=EQ_ed, bt_vac_correction=bt_vac_correction)
-    EQSlice = EQObj.read_EQ_from_shotfile(time)
+    EQSlice = EQObj.GetSlice(time)
     waves_mat = loadmat(os.path.join(path, waves_mat_file), squeeze_me=True)
     linear_beam = read_waves_mat_to_beam(waves_mat, EQSlice)
     fig = plt.figure(figsize=(7.25, 8.0), tight_layout=False)

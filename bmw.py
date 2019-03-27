@@ -49,7 +49,7 @@ class bmw():
         '''
         print("Reading initial Cliste equilibrium")
         EQ_obj = EQData(shot, EQ_exp=eq_exp, EQ_diag=eq_diag, EQ_ed=eq_ed)
-        EQSlice = EQ_obj.read_EQ_from_shotfile(time)
+        EQSlice = EQ_obj.GetSlice(time)
         print('   - Reading BMW output file...')
         self.path_bmw = path_bmw
         self.file_bmw = file_bmw

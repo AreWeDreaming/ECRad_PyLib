@@ -24,10 +24,10 @@ from electron_distribution_utils import read_svec_dict_from_file, load_f_from_AS
                                         g0_approx, g2_approx
 from scipy.optimize import fsolve
 # if(AUG):
-#    from equilibrium_utils_AUG import make_B_min, EQData
+#    from equilibrium_utils_AUG import EQData
 #    from shotfile_handling_AUG import get_freqs, get_RMC_data_calib, get_data_calib
 # elif(TCV):
-#    from equilibrium_utils_TCV import make_B_min, EQData
+#    from equilibrium_utils_TCV import EQData
 # else:
 #    print('Neither AUG nor TCV selected')
 #    raise(ValueError('No system selected!'))
@@ -1465,7 +1465,7 @@ def plot_resonance_line(fig, fig2, rpath, rhop_in, ich, shot, time, dstf, rel_re
 
 def make_iso_flux(folder, shot, time, eq_diag="EQH", eq_experiment="AUGD", eq_ed=0, bt_vac_correction=1.005):
     EQ_obj = EQData(int(shot), EQ_exp=eq_experiment, EQ_diag=eq_diag, EQ_ed=int(eq_ed), bt_vac_correction=bt_vac_correction)
-    EQ_slice = EQ_obj.read_EQ_from_shotfile(float(time))
+    EQ_slice = EQ_obj.GetSlice(float(time))
     rhop_spline = RectBivariateSpline(EQ_slice.R, EQ_slice.z, EQ_slice.rhop)
     beta = np.zeros(2)
     beta[0] = 0.03
@@ -1925,7 +1925,7 @@ def boundary_dependence_tranmittance(folder, shot, time, dist, ich, mode_str="X"
     x_launch[2] = launch_file[ich - 1][4] * 1.e-2
     omega = freq * 2.0 * np.pi
 #    EQ_obj = EQData(int(shot), EQ_exp=eq_exp, EQ_diag=eq_diag, EQ_ed=int(eq_ed), bt_vac_correction=bt_vac_correction)
-#    EQ_slice = EQ_obj.read_EQ_from_shotfile(float(time))
+#    EQ_slice = EQ_obj.GetSlice(float(time))
 #    EQ_obj.add_ripple_to_slice(time, EQ_slice)
     if(mode_str == "O"):
         mode = -1
@@ -2008,7 +2008,7 @@ def polarizer_angle_dependence_tranmittance(folder, shot, time, dist, ich, mode_
     x_launch[2] = launch_file[ich - 1][4] * 1.e-2
     omega = freq * 2.0 * np.pi
 #    EQ_obj = EQData(int(shot), EQ_exp=eq_exp, EQ_diag=eq_diag, EQ_ed=int(eq_ed), bt_vac_correction=bt_vac_correction)
-#    EQ_slice = EQ_obj.read_EQ_from_shotfile(float(time))
+#    EQ_slice = EQ_obj.GetSlice(float(time))
 #    EQ_obj.add_ripple_to_slice(time, EQ_slice)
     if(mode_str == "O"):
         mode = -1
@@ -2072,7 +2072,7 @@ def phi_tor_dependence_tranmittance(folder, shot, time, dist, ich, mode_str="X",
     theta_pol = launch_file[ich - 1][6]
     omega = freq * 2.0 * np.pi
 #    EQ_obj = EQData(int(shot), EQ_exp=eq_exp, EQ_diag=eq_diag, EQ_ed=int(eq_ed), bt_vac_correction=bt_vac_correction)
-#    EQ_slice = EQ_obj.read_EQ_from_shotfile(float(time))
+#    EQ_slice = EQ_obj.GetSlice(float(time))
 #    EQ_obj.add_ripple_to_slice(time, EQ_slice)
     if(mode_str == "O"):
         mode = -1
@@ -2152,7 +2152,7 @@ def theta_dependence_tranmittance(folder, shot, time, dist, ich, mode_str="X", e
     x_launch[2] = launch_file[ich - 1][4] * 1.e-2
     omega = freq * 2.0 * np.pi
 #    EQ_obj = EQData(int(shot), EQ_exp=eq_exp, EQ_diag=eq_diag, EQ_ed=int(eq_ed), bt_vac_correction=bt_vac_correction)
-#    EQ_slice = EQ_obj.read_EQ_from_shotfile(float(time))
+#    EQ_slice = EQ_obj.GetSlice(float(time))
 #    EQ_obj.add_ripple_to_slice(time, EQ_slice)
     if(mode_str == "O"):
         mode = -1
@@ -2283,7 +2283,7 @@ def theta_dependence_tranmittance_better(folder, shot, time, dist, ich, mode_str
     x_launch[2] = launch_file[ich - 1][4] * 1.e-2
     omega = freq * 2.0 * np.pi
 #    EQ_obj = EQData(int(shot), EQ_exp=eq_exp, EQ_diag=eq_diag, EQ_ed=int(eq_ed), bt_vac_correction=bt_vac_correction)
-#    EQ_slice = EQ_obj.read_EQ_from_shotfile(float(time))
+#    EQ_slice = EQ_obj.GetSlice(float(time))
 #    EQ_obj.add_ripple_to_slice(time, EQ_slice)
     if(mode_str == "O"):
         mode = -1
@@ -2416,7 +2416,7 @@ def plot_delta_f(folder, rhop_in):
 
 def benchmark_rad_reac_force(folder, rhop_in, shot, time, EQ_Exp, EQ_diag, EQ_ed, bt_vac_correction):
     EQ_obj = EQData(int(shot), EQ_exp=EQ_Exp, EQ_diag=EQ_diag, EQ_ed=int(EQ_ed), bt_vac_correction=bt_vac_correction)
-    EQ_slice = EQ_obj.read_EQ_from_shotfile(float(time))
+    EQ_slice = EQ_obj.GetSlice(float(time))
     B_tot_spl = RectBivariateSpline(EQ_slice.R, EQ_slice.z, np.sqrt(EQ_slice.Br ** 2 + EQ_slice.Bt ** 2 + EQ_slice.Bz ** 2))
     s, cont = EQ_obj.get_Rz_contour(time, rhop_in)
     B_tot_spl = InterpolatedUnivariateSpline(s, B_tot_spl(cont.T[0], cont.T[1], grid=False))
@@ -2484,7 +2484,7 @@ def g0_g2_rad_reac(alpha, Te=8000):
 def compare_thetas(folder, shot, time, dist, ich, mode_str="X", eq_exp="AUGD", eq_diag="EQH", eq_ed=0, bt_vac_correction=1.005):
     ray_dict = read_ray_dict_from_file(folder, dist, ich, mode=mode_str)
     EQ_obj = EQData(int(shot), EQ_exp=eq_exp, EQ_diag=eq_diag, EQ_ed=int(eq_ed), bt_vac_correction=bt_vac_correction)
-    EQ_slice = EQ_obj.read_EQ_from_shotfile(float(time))
+    EQ_slice = EQ_obj.GetSlice(float(time))
     EQ_obj.add_ripple_to_slice(time, EQ_slice)
     B_r_spl = RectBivariateSpline(EQ_slice.R, EQ_slice.z, EQ_slice.Br)
     B_t_spl = RectBivariateSpline(EQ_slice.R, EQ_slice.z, EQ_slice.Bt)
@@ -2570,7 +2570,7 @@ def Faraday_stuff(folder, shot, time, dist, ich, eq_exp="AUGD", eq_diag="EQH", e
     x_launch[2] = launch_file[ich - 1][4] * 1.e-2
     omega = freq * 2.0 * np.pi
 #    EQ_obj = EQData(int(shot), EQ_exp=eq_exp, EQ_diag=eq_diag, EQ_ed=int(eq_ed), bt_vac_correction=bt_vac_correction)
-#    EQ_slice = EQ_obj.read_EQ_from_shotfile(float(time))
+#    EQ_slice = EQ_obj.GetSlice(float(time))
 #    EQ_obj.add_ripple_to_slice(time, EQ_slice)
 #    print(em_abs_obj.test_filter_transmittance(svec_dict, ray_dict, EQ_slice, omega, mode))
     N_abs_X = np.zeros(Npts)

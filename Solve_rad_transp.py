@@ -13,7 +13,6 @@ from scipy import constants as cnst
 import matplotlib.pyplot as plt
 from electron_distribution_utils import f_interpolator, \
                                         get_dist_moments_non_rel, load_f_from_ASCII
-from equilibrium_utils_AUG import  make_B_min
 
 class rad_transp_data:
     def __init__(self, rhop_spl, ne_spl, Te_spl, theta_spl, omega_c_spl, omega, dist="thermal", store_results=False, f_interpolator=None, B0=None, B_min_spline=None):

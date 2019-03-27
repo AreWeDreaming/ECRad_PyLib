@@ -64,7 +64,7 @@ class EQData(EQDataExt):
         raise(ValueError('Loading equilibrium data from shot file not possible for TCV'))
         self.shotfile_ready = True
 
-    def read_EQ_from_shotfile(self, time):
+    def GetSlice(self, time):
         raise(ValueError('Loading equilibrium data from shot file not possible for TCV'))
         if(not self.shotfile_ready):
             self.init_read_from_shotfile(self, self.EQ_exp, self.EQ_diag, self.EQ_ed)
