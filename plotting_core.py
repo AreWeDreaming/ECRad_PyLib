@@ -4,6 +4,7 @@ Created on Thu May 01 20:53:35 2014
 
 @author: Severin Denk
 """
+from plotting_configuration import *
 import numpy as np
 from subprocess import call
 from scipy.integrate import quad
@@ -32,7 +33,6 @@ import scipy.constants as cnst
 from scipy.integrate import simps
 from ECRad_utils import get_files_and_labels
 # import matplotlib.pyplot as plt
-from plotting_configuration import *
 from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline, SmoothBivariateSpline
 from scipy import stats
 from wxEvents import ThreadFinishedEvt, Unbound_EVT_DONE_PLOTTING
@@ -44,10 +44,7 @@ home = '/afs/ipp-garching.mpg.de/home/s/sdenk/'
 class plotting_core:
     def __init__(self, fig, fig_2=None, title=True):
         self.fig = fig
-        if(fig_2 is None):
-            self.fig_2 = plt.Figure()
-        else:
-            self.fig_2 = fig_2
+        self.fig_2 = fig_2
         self.reset(title)
         self.diag_markers = ["o", "s", "*", "o", "s", "*", "o", "s", "*"]
         self.model_markers = ["^", "v", "+", "d", "^", "v", "+", "d", "^", "v", "+", "d"]
@@ -86,7 +83,8 @@ class plotting_core:
     def reset(self, title=True):
         self.setup = False
         self.fig.clf()
-        self.fig_2.clf()
+        if(self.fig_2 is not None):
+            self.fig_2.clf()
         self.gridspec = None
         self.gridsec_2 = None
         self.axlist = []
@@ -5371,6 +5369,9 @@ class plotting_core:
                 verticalalignment='bottom', horizontalalignment='left',
                 transform=self.axlist[0].transAxes,
                 color='black', fontsize=plt.rcParams['axes.titlesize'])
+        if(self.fig_2 is None):
+            self.axlist_2 = []
+            return
         for i in range(self.layout_2[0]):
             grid_loc = self.gridspec_2[self.grid_locations_2[i][0], self.grid_locations_2[i][1]]
             if(self.x_share_list_2[i] is None and \
@@ -6048,7 +6049,10 @@ class plotting_core:
 #                print("plot y range", plotyrange)
 #                print("Plot scale: ",y_scale)
 #                print("y-length: ",(y_length / steps).astype(int))
-        return self.fig, self.fig_2
+        if(self.fig_2 is None):
+            return self.fig
+        else:
+            return self.fig, self.fig_2
 
 
     def add_plot(self, ax, y_range_in, filename=None, data=None, x_error=None, y_error=None, maxlines=0, name=None, first_invoke=None, \

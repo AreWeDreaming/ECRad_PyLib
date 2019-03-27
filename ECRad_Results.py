@@ -376,7 +376,7 @@ class ECRadResults:
             print("Even though Trad and BDOP account for multiple rays, only central ray geometry is available for the plots!")
         self.time.append(time)
 
-    def tidy_up(self, autosave=True):
+    def tidy_up(self, autosave=True, comment= None):
         if(self.status != 0):
             return
         # Put everything into numpy arrays
@@ -409,7 +409,7 @@ class ECRadResults:
         self.time = np.array(self.time)
         # Autosave results
         if(autosave):
-            self.to_mat_file()
+            self.to_mat_file(comment = comment)
 
     def UpdateCalib(self, diag, calib, calib_mat, std_dev_mat, rel_dev, sys_dev, masked_time_points):
         self.calib[diag.name] = calib
@@ -772,8 +772,8 @@ class ECRadResults:
             except KeyError:
                 print("Warning! theta not found in loaded .mat file. Is this an old file?")
         self.init = True
-
-    def to_mat_file(self, ext_filename=None):
+    
+    def to_mat_file(self, ext_filename=None, comment=None,quasi_linear_beam=None, dist_obj=None, linear_beam=None):
         ed = 1
         diag_str = ""
         for key in self.Scenario.used_diags_dict.keys():
@@ -783,7 +783,7 @@ class ECRadResults:
         elif(len(self.calib.keys()) > 0):
             filename = os.path.join(self.Config.working_dir, "ECRad_{0:5d}_{1:s}_w_calib_ed{2:d}.mat".format(self.Scenario.shot, diag_str, ed))
         else:
-            filename = os.path.join(self.Config.working_dir, "ECRad_{0:5d}_{1:s}_ed{2:2d}.mat".format(self.Scenario.shot, diag_str, ed))
+            filename = os.path.join(self.Config.working_dir, "ECRad_{0:5d}_{1:s}_ed{2:d}.mat".format(self.Scenario.shot, diag_str, ed))
         while(os.path.exists(filename) and ext_filename is None):
             ed += 1
             if(len(self.calib.keys()) > 0):
@@ -792,6 +792,8 @@ class ECRadResults:
                 filename = os.path.join(self.Config.working_dir, "ECRad_{0:5d}_{1:s}_ed{2:d}.mat".format(self.Scenario.shot, diag_str, ed))
         mdict = {}
         mdict["edition"] = ed
+        if(comment is not None):
+            mdict["comment"] = comment
         mdict["time"] = self.time
         mdict["Trad"] = self.Trad
         mdict["tau"] = self.tau
@@ -883,6 +885,40 @@ class ECRadResults:
                 mdict["sys_dev"].append(self.sys_dev[diag])
                 mdict["masked_time_points"].append(self.masked_time_points[diag])
                 mdict["calib_diags"].append(diag)
+        if(quasi_linear_beam is not None):
+            mdict["dist_rhot_prof"] = quasi_linear_beam.rhot
+            mdict["rhop_prof"] = quasi_linear_beam.rhop
+            mdict["dist_PW_prof"] = quasi_linear_beam.PW * 1.e6
+            mdict["dist_j_prof"] = quasi_linear_beam.j * 1.e6
+            mdict["dist_PW_tot"] = quasi_linear_beam.PW_tot * 1.e6
+            mdict["dist_j_tot"] = quasi_linear_beam.j_tot * 1.e6
+            mdict["dist_rhot_1D_profs"] = dist_obj.rhot_1D_profs
+            mdict["dist_rhop_1D_profs"] = dist_obj.rhop_1D_profs
+            mdict["dist_Te_init"] = dist_obj.Te_init
+            mdict["dist_ne_init"] = dist_obj.ne_init
+            f = dist_obj.f
+            pitch = np.arccos(dist_obj.pitch)
+            if(pitch[-1] < pitch[0]):
+                pitch = pitch[::-1]
+                f = f[:, :, ::-1]
+            mdict["dist_u"] = dist_obj.u
+            mdict["dist_pitch"] = dist_obj.pitch
+            mdict["dist_f"] = f
+        if(linear_beam is not None):
+            mdict["wave_rhot_prof"] = linear_beam.rhot
+            mdict["wave_rhop_prof"] = linear_beam.rhop
+            mdict["wave_PW_prof"] = linear_beam.PW * 1.e6
+            mdict["wave_j_prof"] = linear_beam.j * 1.e6
+            mdict["wave_PW_tot"] = linear_beam.PW_tot * 1.e6
+            mdict["wave_j_tot"] = linear_beam.j_tot * 1.e6
+            mdict["wave_PW_beam"] = linear_beam.PW_beam
+            mdict["wave_j_beam"] = linear_beam.j_beam
+            for key in linear_beam.rays[0][0].keys():
+                mdict["wave_" + key] = []
+                for ibeam in range(len(linear_beam.rays)):
+                    mdict["wave_" + key].append([])
+                    for iray in range(len(linear_beam.rays[ibeam])):
+                        mdict["wave_" + key][-1].append(linear_beam.rays[ibeam][iray][key])
         try:
             savemat(filename, mdict, appendmat=False)
             print("Successfully created: ", filename)
@@ -898,5 +934,3 @@ class ECRadResults:
                         print("Entry for " + key + "contains None")
                 except TypeError:
                     pass
-
-

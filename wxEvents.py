@@ -64,6 +64,9 @@ EVT_AUG_DATA_READ = wx.PyEventBinder(Unbound_EVT_AUG_DATA_READ, 1)
 Unbound_EVT_CPO_DATA_WRITTEN = wx.NewEventType()  # Call This
 EVT_CPO_DATA_WRITTEN = wx.PyEventBinder(Unbound_EVT_CPO_DATA_WRITTEN, 1)
 
+Unbound_EVT_UNLOCK = wx.NewEventType()  # Call This
+EVT_UNLOCK = wx.PyEventBinder(Unbound_EVT_UNLOCK, 1)
+
 class UpdateConfigEvt(wx.PyCommandEvent):
     def __init__(self, evtType, id):
         wx.PyCommandEvent.__init__(self, evtType, id)
@@ -109,6 +112,9 @@ class LockExportEvt(wx.PyCommandEvent):
     def __init__(self, evtType, id):
         wx.PyCommandEvent.__init__(self, evtType, id)
 
+class UnlockEvt(wx.PyCommandEvent):
+    def __init__(self, evtType, id):
+        wx.PyCommandEvent.__init__(self, evtType, id)
 
 class LoadMatEvt(wx.PyCommandEvent):
     def __init(self, evtType, id):
