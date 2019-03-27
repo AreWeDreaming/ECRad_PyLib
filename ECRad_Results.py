@@ -1003,3 +1003,4 @@ class ECRadResults:
                         print("Entry for " + key + "contains None")
                 except TypeError:
                     pass
+                
