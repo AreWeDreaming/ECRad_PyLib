@@ -37,7 +37,7 @@ def make_f_inter(dist, working_dir=None, dist_obj=None, EQObj=None, time=None):
         f_inter = f_interpolator(dist_obj=dist_obj, dist=res_dist, rhop_Bmin=rhop_Bmin, Bmin=Bmin)
     return f_inter
 
-def load_data_for_3DBDOP(time, dist, ch, working_dir=None, Results=None):
+def load_data_for_3DBDOP(time, dist, ch, working_dir=None, Results=None, B_tot_spl=None):
     if(working_dir is not None):
         svec, freq = read_svec_dict_from_file(os.path.join(working_dir, "ecfm_data"), ch)
         if(dist in ["Re", "ReComp"]):
@@ -63,9 +63,10 @@ def load_data_for_3DBDOP(time, dist, ch, working_dir=None, Results=None):
             T = T_data.T[1]
     else:
         ich = ch - 1
-        itime_Scenario = np.argmin(np.abs(Results.Scearnio.plasma_dict["time"] - time))
-        freq = Results.Scearnio.raylaunch[itime_Scenario][ich]["f"]
+        itime_Scenario = np.argmin(np.abs(Results.Scenario.plasma_dict["time"] - time))
+        freq = Results.Scenario.ray_launch[itime_Scenario]["f"][ich]
         itime = np.argmin(np.abs(Results.time - time))
+        svec = {}
         svec["rhop"] = Results.ray["rhopX"][itime][ich][0]
         svec["s"] = Results.ray["sX"][itime][ich][0][svec["rhop"] != -1.0]
         svec["R"] = np.sqrt(Results.ray["xX"][itime][ich][0][svec["rhop"] != -1.0] ** 2 + \
@@ -73,11 +74,12 @@ def load_data_for_3DBDOP(time, dist, ch, working_dir=None, Results=None):
         svec["z"] = Results.ray["zX"][itime][ich][0][svec["rhop"] != -1.0]
         svec["Te"] = Results.ray["TeX"][itime][ich][0][svec["rhop"] != -1.0]
         svec["theta"] = Results.ray["thetaX"][itime][ich][0][svec["rhop"] != -1.0]
-        svec["freq_2X"] = Results.ray["YX"][itime][ich][0][svec["rhop"] != -1.0] * freq * 2.e0
+
+        svec["freq_2X"] = cnst.e / cnst.m_e * B_tot_spl(svec["R"], svec["z"], grid=False) / np.pi
         svec["N_abs"] = Results.ray["NcX"][itime][ich][0][svec["rhop"] != -1.0]
         svec["rhop"] = svec["rhop"][svec["rhop"] != -1.0]
-        ne_spl = InterpolatedUnivariateSpline(Results.Scearnio.plasma_dict["rhop_prof"][itime_Scenario], Results.Scearnio.plasma_dict["ne"][itime_Scenario])
-        svec["ne"] = ne_spl(svec["rhop"])
+        ne_spl = InterpolatedUnivariateSpline(Results.Scenario.plasma_dict["rhop_prof"][itime_Scenario], np.log(Results.Scenario.plasma_dict["ne"][itime_Scenario]))
+        svec["ne"] = np.exp(ne_spl(svec["rhop"]))
         if(dist != "ReTh"):
             Trad = Results.Trad[itime][ich]
             if(len(Results.ray["TX"]) == 0):
@@ -89,6 +91,8 @@ def load_data_for_3DBDOP(time, dist, ch, working_dir=None, Results=None):
                 T = Results.ray["TX"][itime][ich][0]
         else:
             T = Results.ray["T_secondX"][itime][ich][0]
+    svec["ne"][svec["ne"] < 1.e15] = 1.e15
+    svec["Te"][svec["Te"] < 2.e-2] = 2.e-2
     return svec, freq, Trad, T
 
 class BDOP_3D:
@@ -106,18 +110,26 @@ class BDOP_3D:
         # svec.T[5] Te
         em_abs_Alb_obj = em_abs_Alb()
         em_abs_Alb_obj.dist_mode = dist_mode
+        self.f_inter = f_inter
         if(dist == "Ge"):
             B0 = self.f_inter.B0
         stride = 1
         if(only_contribution):
-            svec = svec[np.logical_and(T > np.min(T) + (np.max(T) - np.min(T)) * 1.e-6, \
-                                      T < np.max(T) - (np.max(T) - np.min(T)) * 1.e-6)]
-            T = T[np.logical_and(T > np.min(T) + (np.max(T) - np.min(T)) * 1.e-6, \
-                                      T < np.max(T) - (np.max(T) - np.min(T)) * 1.e-6)]
-        T = T[svec.T[3] != -1.0]
-        svec = svec[svec.T[3] != -1.0]  # remove all parts of LOS that do not lie in domain
-        T = T[svec.T[3] < rhop_max]
-        svec = svec[svec.T[3] < rhop_max]  # Do not want any SOL stuff here
+            for key in svec.keys():
+                svec[key] = svec[key][np.logical_and(T >= np.min(T) + (np.max(T) - np.min(T)) * 1.e-6, \
+                                           T <= np.max(T) - (np.max(T) - np.min(T)) * 1.e-6)]
+            T = T[np.logical_and(T >= np.min(T) + (np.max(T) - np.min(T)) * 1.e-6, \
+                                      T <= np.max(T) - (np.max(T) - np.min(T)) * 1.e-6)]
+        T = T[svec["rhop"] != -1.0]
+        for key in svec.keys():
+            if(key != "rhop"):
+                svec[key] = svec[key][svec["rhop"] != -1.0]
+        svec["rhop"] = svec["rhop"][svec["rhop"] != -1.0]
+        T = T[svec["rhop"] < rhop_max]
+        for key in svec.keys():
+            if(key != "rhop"):
+                svec[key] = svec[key][svec["rhop"] < rhop_max]
+        svec["rhop"] = svec["rhop"][svec["rhop"] < rhop_max]
         self.s = []
         self.R = []
         self.rho = []
@@ -135,25 +147,25 @@ class BDOP_3D:
         if(dist == "Ge"):
             f_inter_scnd = f_interpolator(working_dir, dist="Ge0")
         else:
-            f_inter_scnd = f_interpolator(working_dir, dist="thermal")
+            f_inter_scnd = f_interpolator(None, dist="thermal")
         self.u_par_max = -np.inf
         self.u_perp_max = -np.inf
-        R_spl = InterpolatedUnivariateSpline(svec.T[0], svec.T[1])
-        rhop_spl = InterpolatedUnivariateSpline(svec.T[0], svec.T[3])
-        Te_spl = InterpolatedUnivariateSpline(svec.T[0], svec.T[5])
-        ne_spl = InterpolatedUnivariateSpline(svec.T[0], svec.T[4])
-        freq_2X_spl = InterpolatedUnivariateSpline(svec.T[0], svec.T[-1])
-        theta_spl = InterpolatedUnivariateSpline(svec.T[0], svec.T[6])
-        T_spl = InterpolatedUnivariateSpline(svec.T[0], T)
-        s_initial = np.linspace(np.min(svec.T[0]), np.max(svec.T[0]), steps)
+        R_spl = InterpolatedUnivariateSpline(svec["s"], svec["R"])
+        rhop_spl = InterpolatedUnivariateSpline(svec["s"], svec["rhop"])
+        Te_spl = InterpolatedUnivariateSpline(svec["s"], np.log(svec["Te"]))
+        ne_spl = InterpolatedUnivariateSpline(svec["s"], np.log(svec["ne"]))
+        freq_2X_spl = InterpolatedUnivariateSpline(svec["s"], svec["freq_2X"])
+        theta_spl = InterpolatedUnivariateSpline(svec["s"], svec["theta"])
+        T_spl = InterpolatedUnivariateSpline(svec["s"], T)
+        s_initial = np.linspace(np.min(svec["s"]), np.max(svec["s"]), steps)
         s = np.copy(s_initial)
         s = np.concatenate([s, s_important])
         s = np.sort(s)
         for i in range(len(s)):
             R = R_spl(s[i])
             rhop = rhop_spl(s[i])
-            Te = Te_spl(s[i])
-            ne = ne_spl(s[i])
+            Te = np.exp(Te_spl(s[i]))
+            ne = np.exp(ne_spl(s[i]))
             freq_2X = freq_2X_spl(s[i])
             theta = theta_spl(s[i])
             T_cur = T_spl(s[i])
@@ -169,13 +181,13 @@ class BDOP_3D:
             if(em_abs_Alb_obj.is_resonant(rhop, Te, ne, \
                                      freq_2X, theta, freq, m)):
                 x, y, spline = self.f_inter.get_spline(rhop, Te)
-                dist_obj = distribution_interpolator(x, y, spline)
+                dist_inter_slice = distribution_interpolator(x, y, spline)
                 if(dist == "Ge"):
                     em_abs_Alb_obj.j_abs_Alb(rhop, Te, ne, \
-                                         freq_2X, theta, freq, dist_obj, B0, m=m)
+                                         freq_2X, theta, freq, dist_inter_slice, B0, m=m)
                 elif("Re" == dist or "Lu" == dist):
                     em_abs_Alb_obj.j_abs_Alb(rhop, Te, ne, \
-                                         freq_2X, theta, freq, dist_obj, \
+                                         freq_2X, theta, freq, dist_inter_slice, \
                                          self.f_inter.B_min_spline(rhop).item(), m=m)
                 else:
                     em_abs_Alb_obj.j_abs_Alb(rhop, Te, ne, \
@@ -229,10 +241,10 @@ class BDOP_3D:
                     mu = cnst.c ** 2 * cnst.m_e / (Te * cnst.e)
                     self.f.append(em_abs_Alb_obj.dist(self.u_par[-1], self.u_perp[-1], mu, cur_svec))
                     u, pitch, spline = f_inter_scnd.get_spline(rhop, Te)
-                    dist_obj = distribution_interpolator(u, pitch, spline)
+                    dist_inter_slice = distribution_interpolator(u, pitch, spline)
                     if(dist == "Ge"):
                         em_abs_Alb_obj.j_abs_Alb(rhop, Te, ne, \
-                                             freq_2X, theta, freq, dist_obj, B0)
+                                             freq_2X, theta, freq, dist_inter_slice, B0)
                     else:
                         em_abs_Alb_obj.j_abs_Alb(rhop, Te, ne, \
                                              freq_2X, theta, freq)
@@ -253,13 +265,14 @@ class BDOP_3D:
         self.log10_f = self.f
         self.log10_f[self.log10_f < 1.e-20] = 1.e-20
         self.log10_f = np.log10(self.log10_f)
+        I_norm = Trad / (cnst.c ** 2 / (freq ** 2 * cnst.e)) * 1.e3
         self.val /= I_norm
         self.j = np.array(self.j)
         self.val_back = np.array(self.val_back) / I_norm
         self.f_back = np.array(self.f_back)
 
 class PowerDepo_3D:
-    def __init__(self, freq, ray, working_dir, shot, time, dist, B_ax, EqSlice, m=2, only_contribution=False, steps=2000, s_important=[]):
+    def __init__(self, freq, ray, f_inter, shot, time, dist, B_ax, EqSlice, Te_spl, ne_spl, m=2, only_contribution=False, steps=2000, s_important=[]):
         if(dist in ["Re", "ReComp"]):
             dist_mode = "ext"
             res_dist = dist.replace("Comp", "")
@@ -276,12 +289,10 @@ class PowerDepo_3D:
             print("dist not supported", dist)
         self.m = m
         self.only_contribution = only_contribution
-        self.f_inter = f_interpolator(working_dir, dist=res_dist)
+        self.f_inter = f_inter
         self.u_par_limit = 2.0
         self.freq = freq
         self.B_ax = B_ax
-        rhop_ne, ne = np.loadtxt(os.path.join(working_dir, "ecfm_data", "ne_file.dat"), skiprows=1, unpack=True)
-        rhop_Te, Te = np.loadtxt(os.path.join(working_dir, "ecfm_data", "Te_file.dat"), skiprows=1, unpack=True)
         # svec.T[8] freq_2X
         # svec.T[4] ne
         # svec.T[5] Te
@@ -308,7 +319,7 @@ class PowerDepo_3D:
         if(dist == "Ge"):
             self.f_inter_scnd = f_interpolator(working_dir, dist="Ge0")
         else:
-            self.f_inter_scnd = f_interpolator(working_dir, dist="thermal")
+            self.f_inter_scnd = f_interpolator(None, dist="thermal")
         self.u_par_min = np.Inf
         self.u_par_max = -np.inf
         self.u_perp_max = -np.inf
@@ -316,8 +327,8 @@ class PowerDepo_3D:
         self.phi_spl = InterpolatedUnivariateSpline(ray["s"], ray["phi"])
         self.z_spl = InterpolatedUnivariateSpline(ray["s"], ray["z"])
         self.rhop_spl = InterpolatedUnivariateSpline(ray["s"], ray["rhop"])
-        self.ne_spl = InterpolatedUnivariateSpline(rhop_ne, ne)
-        self.Te_spl = InterpolatedUnivariateSpline(rhop_Te, Te)
+        self.ne_spl = ne_spl
+        self.Te_spl = Te_spl
         self.freq_2X_spl = InterpolatedUnivariateSpline(ray["s"], ray["omega_c"] / np.pi)
         self.N_par_spl = InterpolatedUnivariateSpline(ray["s"], ray["Npar"])
         self.s_init = np.linspace(np.min(ray["s"]), np.max(ray["s"]), steps)
@@ -359,8 +370,8 @@ class PowerDepo_3D:
             self.B[:] /= np.linalg.norm(self.B)
             theta = np.arccos(np.dot(self.k, self.B))
             rhop = self.rhop_spl(s[i])
-            Te = self.Te_spl(rhop)
-            ne = self.ne_spl(rhop)
+            Te = np.exp(self.Te_spl(rhop))
+            ne = np.exp(self.ne_spl(rhop))
             freq_2X = self.freq_2X_spl(s[i])
             omega_p = cnst.e * np.sqrt(ne / (cnst.epsilon_0 * cnst.m_e))
             X = omega_p ** 2 / (2.0 * np.pi * self.freq) ** 2
@@ -370,7 +381,7 @@ class PowerDepo_3D:
             if(self.em_abs_Alb_obj.is_resonant(rhop, Te, ne, \
                                      freq_2X, theta, self.freq, self.m)):
                 x, y, spline = self.f_inter.get_spline(rhop, Te)
-                dist_obj = distribution_interpolator(x, y, spline)
+                dist_inter_slice = distribution_interpolator(x, y, spline)
                 if(self.f_inter.B_min_spline(rhop).item() == 0.0):
                     self.zeta.append(1.0)
                 else:
@@ -379,10 +390,10 @@ class PowerDepo_3D:
                         self.zeta[-1] = 1.0
                 if(self.dist == "Ge"):
                     self.em_abs_Alb_obj.j_abs_Alb(rhop, Te, ne, \
-                                         freq_2X, theta, self.freq, dist_obj, self.B0, m=self.m)
+                                         freq_2X, theta, self.freq, dist_inter_slice, self.B0, m=self.m)
                 elif("Re" == self.dist or "Lu" == self.dist):
                     self.em_abs_Alb_obj.j_abs_Alb(rhop, Te, ne, \
-                                         freq_2X, theta, self.freq, dist_obj, \
+                                         freq_2X, theta, self.freq, dist_inter_slice, \
                                          self.f_inter.B_min_spline(rhop).item(), m=self.m)
                 else:
                     self.em_abs_Alb_obj.j_abs_Alb(rhop, Te, ne, \
@@ -440,7 +451,7 @@ class PowerDepo_3D:
                     self.P -= c_abs * ds * self.P
                     self.f.append(self.em_abs_Alb_obj.dist(self.u_par[-1], self.u_perp[-1], mu, cur_svec))
                     u, pitch, spline = self.f_inter_scnd.get_spline(rhop, Te)
-                    dist_obj = distribution_interpolator(u, pitch, spline)
+                    dist_inter_slice = distribution_interpolator(u, pitch, spline)
                     print("P", self.P, "c_abs", c_abs)
             else:
                 print("Channel not resonant at rhop = ", rhop)
@@ -792,25 +803,32 @@ def make_3DBDOP_cut(matfilename, shot, time, ch_list, m_list, dist, diag="EQH", 
             return
         itime = np.argmin(np.abs(Results.Scenario.plasma_dict["time"] - time))
         rhop_Te = Results.Scenario.plasma_dict["rhop_prof"][itime]
-        Te = Results.Scenario.plasma_dict["Te"][itime]
-        EqSlice = Results.Scenario.plasma_dict["eq_data"]
+        Te = np.log(Results.Scenario.plasma_dict["Te"][itime])  # from IDA always positive definite
+        rhop_ne = Results.Scenario.plasma_dict["rhop_prof"][itime]
+        ne = np.log(Results.Scenario.plasma_dict["Te"][itime])  # from IDA always positive definite
+        EqSlice = Results.Scenario.plasma_dict["eq_data"][itime]
         EQObj = EQDataExt(shot, bt_vac_correction=1.0, Ext_data=True)
         EQObj.insert_slices_from_ext(Results.Scenario.plasma_dict["time"], Results.Scenario.plasma_dict["eq_data"])
         B_ax = EQObj.get_B_on_axis(time)
         R_ax, z_ax = EQObj.get_axis(time)
+        B_tot_spl = RectBivariateSpline(EqSlice.R, EqSlice.z, np.sqrt(EqSlice.Br ** 2 + EqSlice.Bt ** 2 + EqSlice.Bz ** 2))
     else:
         rhop_Te, Te = np.loadtxt(os.path.join(working_dir, "ecfm_data", "Te_file.dat"), skiprows=1, unpack=True)
+        Te[Te < 1.e-2] = 1.e-2
+        rhop_ne, ne = np.loadtxt(os.path.join(working_dir, "ecfm_data", "Te_file.dat"), skiprows=1, unpack=True)
+        ne[ne < 1.e6] = 1.e6
         EQObj = EQData(shot, EQ_diag=diag)
         B_ax = EQObj.get_B_on_axis(time)
         R_ax, z_ax = EQObj.get_axis(time)
+        B_tot_spl = None  # Not needed information on f_c on ray available
     Te_spline = InterpolatedUnivariateSpline(rhop_Te, Te)
+    ne_spline = InterpolatedUnivariateSpline(rhop_ne, ne)
     print("Position of magn. axus", R_ax, z_ax)
     if(include_ECRH):
         if(usemat):
-            waves_mat = loadmat(matfilename, squeeze_me=True)
-            dist_mat = loadmat(matfilename, squeeze_me=True)
-            linear_beam = read_waves_mat_to_beam(matfilename, EqSlice, use_beam_prefix=True)
-            quasi_linear_beam = read_dist_mat_to_beam(matfilename, use_dist_prefix=True)
+            mat = loadmat(matfilename, squeeze_me=True)
+            linear_beam = read_waves_mat_to_beam(mat, EqSlice, use_wave_prefix=True)
+            quasi_linear_beam = read_dist_mat_to_beam(mat, use_dist_prefix=True)
             dist_obj = load_f_from_mat(matfilename, use_dist_prefix=True)
         else:
             waves_mat = loadmat(os.path.join("/afs/ipp-garching.mpg.de/home/s/sdenk/Documentation/Data/DistData", "GRAY_rays_{0:d}_{1:1.2f}.mat".format(shot, time)), squeeze_me=True)
@@ -894,7 +912,7 @@ def make_3DBDOP_cut(matfilename, shot, time, ch_list, m_list, dist, diag="EQH", 
             BPD_ch_data = np.loadtxt(os.path.join(working_dir, "ecfm_data", "Ich" + dist, "BPDX{0:03d}.dat".format(ich)))
             BPD_ch_rhop = np.abs(BPD_ch_data.T[0])
             BPD_ch = BPD_ch_data.T[1]
-        s_helper = np.linspace(0.0, 1.0, len(BPD_ch_data.T[0]))
+        s_helper = np.linspace(0.0, 1.0, len(BPD_ch_rhop))
         BPD_ch_spl = InterpolatedUnivariateSpline(s_helper, BPD_ch)
         BPD_ray_dict = ray_list[0]  # Central ray
         rhop_BPD_ray = BPD_ray_dict["rhop"]
@@ -975,7 +993,10 @@ def make_3DBDOP_cut(matfilename, shot, time, ch_list, m_list, dist, diag="EQH", 
     else:
         f_inter = make_f_inter(dist, working_dir=working_dir)
     for ich, m_ch, s_important in zip(ch_list, m_list, s_BPD_list):
-        svec, freq, Trad, T, = load_data_for_3DBDOP(time, dist, ich, working_dir=working_dir)
+        if(usemat):
+            svec, freq, Trad, T, = load_data_for_3DBDOP(time, dist, ich, Results=Results, B_tot_spl=B_tot_spl)
+        else:
+            svec, freq, Trad, T, = load_data_for_3DBDOP(time, dist, ich, working_dir=working_dir)
         BDOP_list.append(BDOP_3D(svec, freq, Trad, T, f_inter, dist, B_ax, m=m_ch, only_contribution=only_contribution, steps=500, s_important=s_important))
         m = cm.ScalarMappable(cmap=plt.cm.get_cmap("winter"))
         m.set_array(np.linspace(0.0, 1.0, 20))
@@ -1025,7 +1046,7 @@ def make_3DBDOP_cut(matfilename, shot, time, ch_list, m_list, dist, diag="EQH", 
             s_BPD_dict["ECRH" + "_" + str(ibeam)] = s_important
             ibeam += 1
             for m_ECRH in m_ECRH_list:
-                BDOP_list.append(PowerDepo_3D(freq, beam[0], working_dir, shot, time, dist, B_ax, EqSlice, m=m_ECRH, only_contribution=only_contribution, steps=500, s_important=s_important))
+                BDOP_list.append(PowerDepo_3D(freq, beam[0], f_inter, shot, time, dist, B_ax, EqSlice, Te_spline, ne_spline, m=m_ECRH, only_contribution=only_contribution, steps=500, s_important=s_important))
                 m = cm.ScalarMappable(cmap=plt.cm.get_cmap("spring"))
                 m.set_array(np.linspace(0.0, 1.0, 20))
                 cmaps.append(m)
@@ -1053,7 +1074,7 @@ def make_3DBDOP_cut(matfilename, shot, time, ch_list, m_list, dist, diag="EQH", 
         leg.draggable()
     if(use_rhop):
         te_ax = ax_depo.twinx()
-        te_ax.plot(rhop_Te, Te * 1.e-3, "--", label="$T_\mathrm{e}$")
+        te_ax.plot(rhop_Te, np.exp(Te) * 1.e-3, "--", label="$T_\mathrm{e}$")
         te_ax.set_ylabel(r"$T_\mathrm{e}$ [\si{\kilo\electronvolt}]")
         ax_depo.set_xlabel(r"$\rho_\mathrm{pol}$")
 
@@ -1125,7 +1146,7 @@ def make_3DBDOP_cut(matfilename, shot, time, ch_list, m_list, dist, diag="EQH", 
                 ax_reso.plot(u_perp[i_start:i_end], u_par[i_start:i_end], linestyle="solid", color=linecolor[i_start])
                 i_start = i_end - 2
             if(not got_f):
-                x, y, spline = BDOP.f_inter.get_spline(distribution_rhop, Te_spline(distribution_rhop))
+                x, y, spline = BDOP.f_inter.get_spline(distribution_rhop, np.exp(Te_spline(distribution_rhop)))
                 dist_inter = distribution_interpolator(x, y, spline)
                 zeta = BDOP.zeta[i_s]
                 got_f = True
@@ -1139,7 +1160,7 @@ def make_3DBDOP_cut(matfilename, shot, time, ch_list, m_list, dist, diag="EQH", 
         if(dist not in ["Ge", "GeComp"]):
             f[i] = dist_inter.eval_dist(u_perp_dist[i], u_par_dist, Te, "spline", zeta)
         else:
-            f[i] = Juettner2D(u_perp_dist[i], u_par_dist, Te_spline(distribution_rhop))
+            f[i] = Juettner2D(u_perp_dist[i], u_par_dist, np.exp(Te_spline(distribution_rhop)))
     if(Teweight):
         for i in range(len(u_perp_dist)):
             f[i] *= u_perp_dist[i] ** 2 / np.sqrt(1.0 + u_perp_dist[i] ** 2 * u_par_dist ** 2)
@@ -1149,17 +1170,21 @@ def make_3DBDOP_cut(matfilename, shot, time, ch_list, m_list, dist, diag="EQH", 
         cont2 = ax_reso.contourf(u_perp_dist, u_par_dist, f.T, levels=levels,
                                  hold='on', cmap=cm.get_cmap("plasma"))
     else:
-        f[f < 1.e-20] = 1.e-20
         f = np.log10(f)
         levels = np.linspace(-13.0, 5.0, 20)
         cont2 = ax_reso.contour(u_perp_dist, u_par_dist, f.T, levels=levels, colors='k',
-                            hold='on', alpha=0.15, linewidths=1)
+                                hold='on', alpha=1.0, linewidths=1)
+#        cont2 = ax_reso.contourf(u_perp_dist, u_par_dist, f.T, levels=levels, \
+#                                hold='on', cmap=cm.get_cmap("plasma"))
     if(include_ECRH):
         cb_ECRH = fig.colorbar(cmaps[-1], pad=0.15, ticks=[0.0, 0.5, 1.0])
         cb_ECRH.set_label(r"$\mathrm{d}P_\mathrm{ECRH}/d\mathrm{s} [\si{{a.u.}}]$")
     if(Teweight):
         cb_dist = fig.colorbar(cont2, pad=0.15, ticks=[0.0, 0.5, 1.0])
         cb_dist.set_label(r"$f_\mathrm{MJ} u_\perp^2 / \gamma f_0$")
+#    else:
+#        cb_dist = fig.colorbar(cont2, pad=0.15, ticks=[0.0, 0.5, 1.0])
+#        cb_dist.set_label(r"$\mathrm{log}_10\left(f\right)$")
     cb = fig.colorbar(cmaps[0], ticks=[0.0, 0.5, 1.0])
     cb.set_label(r"$D_\omega [\si{{a.u.}}]$")
     ax_reso.set_xlim(u_perp_range[0], u_perp_range[1])
