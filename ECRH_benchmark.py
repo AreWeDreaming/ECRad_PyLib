@@ -16,7 +16,7 @@ from equilibrium_utils_AUG import EQData
 def compare_Beam_quantities(shot, time, wave_mat_filename, tb_data_path, EQ_exp, EQ_diag, EQ_ed):
     wave_mat = loadmat(wave_mat_filename, squeeze_me=True)
     EQ_obj = EQData(shot, EQ_exp=EQ_exp, EQ_diag=EQ_diag, EQ_ed=EQ_ed)
-    EQ_slice = EQ_obj.read_EQ_from_shotfile(time)
+    EQ_slice = EQ_obj.GetSlice(time)
     Gray_beam = read_waves_mat_to_beam(wave_mat, EQ_slice)
     TB_data = np.loadtxt(tb_data_path)
     # s [m], R [m], Z[m], phi [deg], rho_p, n_e [10^19 m-3], T_e [keV], B_R, B_phi, B_Z [T], N, N_par, k_im [m-1], Power/P_0, dIds [A/m], (dP/ds)/P
@@ -36,7 +36,7 @@ def compare_PowerDepo(shot, time, EQ_exp, EQ_diag, EQ_ed, tb_data_path, dist_mat
     wave_mat = loadmat(wave_mat_filename, squeeze_me=True)
     dist_mat = loadmat(dist_mat_filename, squeeze_me=True)
     EQ_obj = EQData(shot, EQ_exp=EQ_exp, EQ_diag=EQ_diag, EQ_ed=EQ_ed)
-    EQ_slice = EQ_obj.read_EQ_from_shotfile(time)
+    EQ_slice = EQ_obj.GetSlice(time)
     RELAX_beam = read_dist_mat_to_beam(dist_mat)
     if(RELAX_beam.PW_tot < 10.e4):
         scale = 1.e3

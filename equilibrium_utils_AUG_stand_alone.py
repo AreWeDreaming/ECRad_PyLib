@@ -143,7 +143,7 @@ class EQData:
         self.MBI_shot = dd.shotfile('MBI', int(self.shot))
         self.shotfile_ready = True
 
-    def read_EQ_from_shotfile(self, time):
+    def GetSlice(self, time):
         if(not self.shotfile_ready):
             self.init_read_from_shotfile()
         R = self.EQH.getR(time)
@@ -283,7 +283,7 @@ class EQData:
 
 if(__name__ == "__main__"):
     EQobj = EQData(33896, EQ_exp="AUGD", EQ_diag="EQH", EQ_ed=0, bt_vac_correction=1.005, Ext_data=False)
-    EQ_t = EQobj.read_EQ_from_shotfile(3.0)
+    EQ_t = EQobj.GetSlice(3.0)
     plt.contour(EQ_t.R, EQ_t.z, (EQ_t.Psi.T - EQ_t.Psi_ax) / (EQ_t.Psi_sep - EQ_t.Psi_ax), levels=np.linspace(0.1, 1.2, 12))
     plt.contour(EQ_t.R, EQ_t.z, EQ_t.rhop.T, levels=np.linspace(0.1, 1.2, 12))
     plt.show()

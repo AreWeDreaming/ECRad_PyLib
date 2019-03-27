@@ -10,55 +10,97 @@ from matplotlib.ticker import LinearLocator, FormatStrFormatter
 from plotting_configuration import *
 import numpy as np
 import os
-from electron_distribution_utils import read_svec_from_file, f_interpolator, get_B_min_from_file, \
+from electron_distribution_utils import read_svec_dict_from_file, f_interpolator, get_B_min_from_file, \
                                         read_waves_mat_to_beam, read_dist_mat_to_beam, \
-                                        read_ray_dict_from_file, Juettner2D
+                                        read_ray_dict_from_file, Juettner2D, load_f_from_mat
 from equilibrium_utils_AUG import EQData
+from equilibrium_utils import EQDataExt
 from em_Albajar import em_abs_Alb, distribution_interpolator, s_vec, N_with_pol_vec
 import scipy.constants as cnst
 from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
 from scipy.io import loadmat, savemat
 import scipy.odr as odr
+from ECRad_Results import ECRadResults
 
 def func(beta, x):
     return beta[0] * np.exp(-(x - beta[1]) ** 2 / beta[2] ** 2)
 
-class BDOP_3D:
-    def __init__(self, working_dir, shot, time, ich, dist, B_ax, m=2, only_contribution=False, steps=2000, s_important=[]):
-        rhop_max = 1.02
-        u_par_max = 2.0
-        svec, freq = read_svec_from_file(os.path.join(working_dir, "ecfm_data"), ich)
+def make_f_inter(dist, working_dir=None, dist_obj=None, EQObj=None, time=None):
+    if(dist in ["Re", "ReComp", "Ge", "GeComp"]):
+        res_dist = dist.replace("Comp", "")
+    else:
+        res_dist = "thermal"
+    if(working_dir is not None):
+        f_inter = f_interpolator(working_dir=working_dir, dist=res_dist)
+    else:
+        rhop_Bmin, Bmin = EQObj.get_B_min(time, dist_obj.rhop, append_B_ax=True)
+        f_inter = f_interpolator(dist_obj=dist_obj, dist=res_dist, rhop_Bmin=rhop_Bmin, Bmin=Bmin)
+    return f_inter
+
+def load_data_for_3DBDOP(time, dist, ch, working_dir=None, Results=None):
+    if(working_dir is not None):
+        svec, freq = read_svec_dict_from_file(os.path.join(working_dir, "ecfm_data"), ch)
         if(dist in ["Re", "ReComp"]):
             ich_folder = "IchRe"
-            dist_mode = "ext"
-            res_dist = dist.replace("Comp", "")
             rhop_Trad, Trad, tau = np.loadtxt(os.path.join(working_dir, "ecfm_data", "TRadM_RELAX.dat"), unpack=True)
         elif(dist in ["Ge", "GeComp"]):
             ich_folder = "IchGe"
-            dist_mode = "gene"
-            res_dist = dist.replace("Comp", "")
             rhop_Trad, Trad, tau = np.loadtxt(os.path.join(working_dir, "ecfm_data", "TRadM_GENE.dat"), unpack=True)
         elif(dist == "TB"):
             ich_folder = "IchTB"
-            dist_mode = "thermal"
-            res_dist = "thermal"
             rhop_Trad, Trad, tau = np.loadtxt(os.path.join(working_dir, "ecfm_data", "TRadM_therm.dat"), unpack=True)
         elif(dist == "ReTh"):
             ich_folder = "IchRe"
-            dist_mode = "thermal"
-            res_dist = "thermal"
-            rhop_Trad, Trad, tau = np.loadtxt(os.path.join(working_dir, "ecfm_data", "TRadM_RELAX.dat"), unpack=True)
+            rhop_Trad, Trad, tau = np.loadtxt(os.path.join(working_dir, "ecfm_data", "TRadM_therm.dat"), unpack=True)
         else:
             print("dist not supported", dist)
-        I_norm = Trad[ich - 1] / (cnst.c ** 2 / (freq ** 2 * cnst.e)) * 1.e3
-        filename_transparency = os.path.join(working_dir, "ecfm_data", ich_folder, "Trhopch" + "{0:0>3}.dat".format(ich))
-        filename_transparency = os.path.join(working_dir, "ecfm_data", ich_folder, "Trhopch" + "{0:0>3}.dat".format(ich))
+        filename_transparency = os.path.join(working_dir, "ecfm_data", ich_folder, "Trhopch" + "{0:0>3}.dat".format(ch))
+        filename_transparency = os.path.join(working_dir, "ecfm_data", ich_folder, "Trhopch" + "{0:0>3}.dat".format(ch))
         T_data = np.loadtxt(filename_transparency)
         if(dist == "ReTh"):
             T = T_data.T[2]
         else:
             T = T_data.T[1]
-        self.f_inter = f_interpolator(working_dir, dist=res_dist)
+    else:
+        ich = ch - 1
+        itime_Scenario = np.argmin(np.abs(Results.Scearnio.plasma_dict["time"] - time))
+        freq = Results.Scearnio.raylaunch[itime_Scenario][ich]["f"]
+        itime = np.argmin(np.abs(Results.time - time))
+        svec["rhop"] = Results.ray["rhopX"][itime][ich][0]
+        svec["s"] = Results.ray["sX"][itime][ich][0][svec["rhop"] != -1.0]
+        svec["R"] = np.sqrt(Results.ray["xX"][itime][ich][0][svec["rhop"] != -1.0] ** 2 + \
+                            Results.ray["yX"][itime][ich][0][svec["rhop"] != -1.0] ** 2)
+        svec["z"] = Results.ray["zX"][itime][ich][0][svec["rhop"] != -1.0]
+        svec["Te"] = Results.ray["TeX"][itime][ich][0][svec["rhop"] != -1.0]
+        svec["theta"] = Results.ray["thetaX"][itime][ich][0][svec["rhop"] != -1.0]
+        svec["freq_2X"] = Results.ray["YX"][itime][ich][0][svec["rhop"] != -1.0] * freq * 2.e0
+        svec["N_abs"] = Results.ray["NcX"][itime][ich][0][svec["rhop"] != -1.0]
+        svec["rhop"] = svec["rhop"][svec["rhop"] != -1.0]
+        ne_spl = InterpolatedUnivariateSpline(Results.Scearnio.plasma_dict["rhop_prof"][itime_Scenario], Results.Scearnio.plasma_dict["ne"][itime_Scenario])
+        svec["ne"] = ne_spl(svec["rhop"])
+        if(dist != "ReTh"):
+            Trad = Results.Trad[itime][ich]
+            if(len(Results.ray["TX"]) == 0):
+                T = np.zeros(len(svec["s"]))
+                T[:] = 1.0
+                print("WARNING THERE IS NO TRANSMIVITY DATA AVAILABLE")
+                print("THE PLOTS ARE ONLY USEFUL FOR DEBUGGING!!!!!!!!!")
+            else:
+                T = Results.ray["TX"][itime][ich][0]
+        else:
+            T = Results.ray["T_secondX"][itime][ich][0]
+    return svec, freq, Trad, T
+
+class BDOP_3D:
+    def __init__(self, svec, freq, Trad, T, f_inter, dist, B_ax, m=2, only_contribution=False, steps=2000, s_important=[]):
+        rhop_max = 1.02
+        u_par_max = 2.0
+        if(dist in ["Re", "ReComp"]):
+            dist_mode = "ext"
+        elif(dist in ["Ge", "GeComp"]):
+            dist_mode = "gene"
+        else:
+            dist_mode = "thermal"
         # svec.T[8] freq_2X
         # svec.T[4] ne
         # svec.T[5] Te
@@ -429,7 +471,7 @@ def make_3DBDOP(working_dir, shot, time, ch_list, m_list, dist, diag="EQH", titl
     only_LFS = False
     rho = True
     EQObj = EQData(shot, EQ_diag=diag)
-    EqSlice = EQObj.read_EQ_from_shotfile(time)
+    EqSlice = EQObj.GetSlice(time)
     B_ax = EQObj.get_B_on_axis(time)
     freq = ECRH_freq
     cmaps = []
@@ -438,8 +480,10 @@ def make_3DBDOP(working_dir, shot, time, ch_list, m_list, dist, diag="EQH", titl
     u_perp_range = [0, -np.inf]
     mdict = {}
     is_ecrh_list = []
+    f_inter = make_f_inter(dist, working_dir=working_dir)
     for ich in range(len(ch_list)):
-        BDOP_list.append(BDOP_3D(working_dir, shot, time, ch_list[ich], dist, B_ax, m=m_list[ich], only_contribution=only_contribution))
+        svec, freq, Trad, T, = load_data_for_3DBDOP(time, dist, ich, working_dir=working_dir)
+        BDOP_list.append(BDOP_3D(svec, freq, Trad, T, f_inter, dist, B_ax, m=m_list[ich], only_contribution=only_contribution))
         m = cm.ScalarMappable(cmap=plt.cm.get_cmap("viridis"))
         m.set_array(np.linspace(0.0, 1.0, 20))
         cmaps.append(m)
@@ -728,30 +772,53 @@ def make_3DBDOP(working_dir, shot, time, ch_list, m_list, dist, diag="EQH", titl
 # #    except ValueError:
 #        m = cm.ScalarMappable(cmap=plt.cm.get_cmap("jet"))
 
-def make_3DBDOP_cut(working_dir, shot, time, ch_list, m_list, dist, diag="EQH", include_ECRH=False, \
+def make_3DBDOP_cut(matfilename, shot, time, ch_list, m_list, dist, diag="EQH", include_ECRH=False, \
                     single_Beam=False, m_ECRH_list=[2], only_contribution=False, nocolor=False, \
                     ece_alpha=1.0, save_only=False, use_rhop=True, single_ray_BPD=False, recalc_BPD=False, \
-                    preserve_original_BPD=False, Teweight=False, ECRH_freq=140.e9):
+                    preserve_original_BPD=False, Teweight=False, ECRH_freq=140.e9, usemat=True):
+    if(not usemat):
+        working_dir = matfilename
+    else:
+        working_dir = None
     fig = plt.figure(figsize=(16.5, 8.5))
     fig.text(0.025, 0.95, "a)")
     fig.text(0.55, 0.95, "b)")
     BDOP_list = []
 #    BPD_max = -np.inf
-    EQObj = EQData(shot, EQ_diag=diag)
-    EqSlice = EQObj.read_EQ_from_shotfile(time)
-    B_ax = EQObj.get_B_on_axis(time)
-    R_ax, z_ax = EQObj.get_axis(time)
-    rhop_Te, Te = np.loadtxt(os.path.join(working_dir, "ecfm_data", "Te_file.dat"), skiprows=1, unpack=True)
+    if(usemat):
+        Results = ECRadResults()
+        if(not Results.from_mat_file(matfilename)):
+            print("NO FILE")
+            return
+        itime = np.argmin(np.abs(Results.Scenario.plasma_dict["time"] - time))
+        rhop_Te = Results.Scenario.plasma_dict["rhop_prof"][itime]
+        Te = Results.Scenario.plasma_dict["Te"][itime]
+        EqSlice = Results.Scenario.plasma_dict["eq_data"]
+        EQObj = EQDataExt(shot, bt_vac_correction=1.0, Ext_data=True)
+        EQObj.insert_slices_from_ext(Results.Scenario.plasma_dict["time"], Results.Scenario.plasma_dict["eq_data"])
+        B_ax = EQObj.get_B_on_axis(time)
+        R_ax, z_ax = EQObj.get_axis(time)
+    else:
+        rhop_Te, Te = np.loadtxt(os.path.join(working_dir, "ecfm_data", "Te_file.dat"), skiprows=1, unpack=True)
+        EQObj = EQData(shot, EQ_diag=diag)
+        B_ax = EQObj.get_B_on_axis(time)
+        R_ax, z_ax = EQObj.get_axis(time)
     Te_spline = InterpolatedUnivariateSpline(rhop_Te, Te)
     print("Position of magn. axus", R_ax, z_ax)
     if(include_ECRH):
-        waves_mat = loadmat(os.path.join("/afs/ipp-garching.mpg.de/home/s/sdenk/Documentation/Data/DistData", "GRAY_rays_{0:d}_{1:1.2f}.mat".format(shot, time)), squeeze_me=True)
-        dist_mat = loadmat(os.path.join("/afs/ipp-garching.mpg.de/home/s/sdenk/Documentation/Data/DistData", "Dist_{0:d}_{1:1.2f}.mat".format(shot, time)), squeeze_me=True)
-        linear_beam = read_waves_mat_to_beam(waves_mat, EqSlice)
-        read_dist_mat_to_beam
+        if(usemat):
+            waves_mat = loadmat(matfilename, squeeze_me=True)
+            dist_mat = loadmat(matfilename, squeeze_me=True)
+            linear_beam = read_waves_mat_to_beam(matfilename, EqSlice, use_beam_prefix=True)
+            quasi_linear_beam = read_dist_mat_to_beam(matfilename, use_dist_prefix=True)
+            dist_obj = load_f_from_mat(matfilename, use_dist_prefix=True)
+        else:
+            waves_mat = loadmat(os.path.join("/afs/ipp-garching.mpg.de/home/s/sdenk/Documentation/Data/DistData", "GRAY_rays_{0:d}_{1:1.2f}.mat".format(shot, time)), squeeze_me=True)
+            dist_mat = loadmat(os.path.join("/afs/ipp-garching.mpg.de/home/s/sdenk/Documentation/Data/DistData", "Dist_{0:d}_{1:1.2f}.mat".format(shot, time)), squeeze_me=True)
+            linear_beam = read_waves_mat_to_beam(waves_mat, EqSlice)
+            quasi_linear_beam = read_dist_mat_to_beam(dist_mat)
         if(single_Beam):
-            linear_beam.rays = linear_beam.rays[1:2]
-        quasi_linear_beam = read_dist_mat_to_beam(dist_mat)
+                linear_beam.rays = linear_beam.rays[1:2]
     freq = ECRH_freq
     cmaps = []
     alphas = []
@@ -775,24 +842,61 @@ def make_3DBDOP_cut(working_dir, shot, time, ch_list, m_list, dist, diag="EQH", 
             continue
         else:
             ch_done_list.append(ich)
+        ray_list = []
+        ray_BPD_spl_list = []
+        iray = 2
         if(recalc_BPD):
-            ray_list = []
-            ray_BPD_spl_list = []
-            iray = 2
-            while True:
+            if(usemat):
+                N_max = Results.Config.N_Ray
+            else:
+                N_max = 1000  # Stop only when no files left
+        else:
+            N_max = 1
+        if(usemat):
+            for iray in range(N_max):
+                ray_dict = {}
+                ray_dict["s"] = Results.ray["sX"][itime][ich][iray]
+                ray_dict["x"] = Results.ray["xX"][itime][ich][iray]
+                ray_dict["y"] = Results.ray["yX"][itime][ich][iray]
+                ray_dict["z"] = Results.ray["zX"][itime][ich][iray]
+                ray_dict["rhop"] = Results.ray["rhopX"][itime][ich][iray]
+                ray_dict["BPD"] = Results.ray["BPDX"][itime][ich][iray]
+                ray_dict["BPD_second"] = Results.ray["BPD_secondX"][itime][ich][iray]
+                ray_dict["N_ray"] = Results.ray["NX"][itime][ich][iray]
+                ray_dict["N_cold"] = Results.ray["NcX"][itime][ich][iray]
+                ray_dict["theta"] = Results.ray["thetaX"][itime][ich][iray]
+                spl = InterpolatedUnivariateSpline(ray_dict["s"], ray_dict["x"])
+                ray_dict["Nx"] = spl.derivative(1)(ray_dict["s"])
+                spl = InterpolatedUnivariateSpline(ray_dict["s"], ray_dict["y"])
+                ray_dict["Ny"] = spl.derivative(1)(ray_dict["s"])
+                spl = InterpolatedUnivariateSpline(ray_dict["s"], ray_dict["z"])
+                ray_dict["Nz"] = spl.derivative(1)(ray_dict["s"])
+                norm = ray_dict["N_ray"] / np.sqrt(ray_dict["Nx"] ** 2 + ray_dict["Ny"] ** 2 + ray_dict["Nz"] ** 2)
+                ray_dict["Nx"] *= norm
+                ray_dict["Ny"] *= norm
+                ray_dict["Nz"] *= norm
+                ray_list.append(dict(ray_dict))
+                ray_BPD_spl_list.append(InterpolatedUnivariateSpline(ray_list[-1]["s"], ray_list[-1]["BPD"]))
+        else:
+            iray = 1
+            while True and iray < N_max + 1:
                 try:
                     ray_list.append(read_ray_dict_from_file(os.path.join(working_dir, "ecfm_data"), dist, ich, mode="X", iray=iray))
-                    ray_BPD_spl_list.append(InterpolatedUnivariateSpline(ray_list[-1]["s"], ray_list[-1]["BPD"]))
                     iray += 1
                 except IOError:
                     break
+                ray_BPD_spl_list.append(InterpolatedUnivariateSpline(ray_list[-1]["s"], ray_list[-1]["BPD"]))
+        # recalc_BPD does not seem to be fully implemented. Also the weights of the individual rays is not stored atm
+        if(usemat):
+            BPD_ch_rhop = Results.BPD["BPDX"][itime][ich]
+            BPD_ch = Results.BPD["rhopX"][itime][ich]
         else:
             BPD_ch_data = np.loadtxt(os.path.join(working_dir, "ecfm_data", "Ich" + dist, "BPDX{0:03d}.dat".format(ich)))
-            s_helper = np.linspace(0.0, 1.0, len(BPD_ch_data.T[0]))
             BPD_ch_rhop = np.abs(BPD_ch_data.T[0])
             BPD_ch = BPD_ch_data.T[1]
-            BPD_ch_spl = InterpolatedUnivariateSpline(s_helper, BPD_ch)
-        BPD_ray_dict = read_ray_dict_from_file(os.path.join(working_dir, "ecfm_data"), dist, ich, mode="X", iray=1)
+        s_helper = np.linspace(0.0, 1.0, len(BPD_ch_data.T[0]))
+        BPD_ch_spl = InterpolatedUnivariateSpline(s_helper, BPD_ch)
+        BPD_ray_dict = ray_list[0]  # Central ray
         rhop_BPD_ray = BPD_ray_dict["rhop"]
         BPD_ray = BPD_ray_dict["BPD"]
         s_ray = BPD_ray_dict["s"]
@@ -808,15 +912,15 @@ def make_3DBDOP_cut(working_dir, shot, time, ch_list, m_list, dist, diag="EQH", 
             root_spl = InterpolatedUnivariateSpline(s_ray, rhop_BPD_ray - rhop_binned[i])
             for root in root_spl.roots():
                 BPD_binned[i] += BPD_spl(root)
-            if(recalc_BPD):
-                for ray, ray_BPD_spl in zip(ray_list, ray_BPD_spl_list):
-                    root_spl_ray = InterpolatedUnivariateSpline(ray["s"], ray["rhop"] - rhop_binned[i])
-                    for root in root_spl_ray.roots():
-                        BPD_ch_binned[i] += ray_BPD_spl(root)
-            else:
-                root_spl_ch = InterpolatedUnivariateSpline(s_helper, BPD_ch_rhop - rhop_binned[i])
-                for root in root_spl_ch.roots():
-                    BPD_ch_binned[i] += BPD_ch_spl(root)
+#           #Individual ray weights not included -> This method is faulty!
+#            if(recalc_BPD):
+#                for ray, ray_BPD_spl in zip(ray_list, ray_BPD_spl_list):
+#                    root_spl_ray = InterpolatedUnivariateSpline(ray["s"], ray["rhop"] - rhop_binned[i])
+#                    for root in root_spl_ray.roots():
+#                        BPD_ch_binned[i] += ray_BPD_spl(root)
+            root_spl_ch = InterpolatedUnivariateSpline(s_helper, BPD_ch_rhop - rhop_binned[i])
+            for root in root_spl_ch.roots():
+                BPD_ch_binned[i] += BPD_ch_spl(root)
         s_BPD_max = s_ray[np.argmax(BPD_ray)]
         BPD_ray_spl = InterpolatedUnivariateSpline(s_ray, BPD_ray)
         sigma_BPD_ray_spl = InterpolatedUnivariateSpline(s_ray, BPD_ray * (s_ray - s_BPD_max) ** 2)
@@ -866,8 +970,13 @@ def make_3DBDOP_cut(working_dir, shot, time, ch_list, m_list, dist, diag="EQH", 
 #            ax_depo.plot(rhop_BPD_ray[rhop_BPD_ray < 0], BPD_ray[rhop_BPD_ray < 0], label="BPD for channel {0:d}".format(ich), linestyle="-")
 #        elif(len(rhop_BPD_ray[rhop_BPD_ray < 0]) > 0):
 #            ax_depo.plot(rhop_BPD_ray[rhop_BPD_ray < 0], BPD_ray[rhop_BPD_ray < 0], linestyle="-", color=p[-1].get_color()
+    if(usemat):
+        f_inter = make_f_inter(dist, dist_obj=dist_obj, EQObj=EQObj, time=time)
+    else:
+        f_inter = make_f_inter(dist, working_dir=working_dir)
     for ich, m_ch, s_important in zip(ch_list, m_list, s_BPD_list):
-        BDOP_list.append(BDOP_3D(working_dir, shot, time, ich, dist, B_ax, m=m_ch, only_contribution=only_contribution, steps=500, s_important=s_important))
+        svec, freq, Trad, T, = load_data_for_3DBDOP(time, dist, ich, working_dir=working_dir)
+        BDOP_list.append(BDOP_3D(svec, freq, Trad, T, f_inter, dist, B_ax, m=m_ch, only_contribution=only_contribution, steps=500, s_important=s_important))
         m = cm.ScalarMappable(cmap=plt.cm.get_cmap("winter"))
         m.set_array(np.linspace(0.0, 1.0, 20))
         cmaps.append(m)
@@ -1017,7 +1126,7 @@ def make_3DBDOP_cut(working_dir, shot, time, ch_list, m_list, dist, diag="EQH", 
                 i_start = i_end - 2
             if(not got_f):
                 x, y, spline = BDOP.f_inter.get_spline(distribution_rhop, Te_spline(distribution_rhop))
-                dist_obj = distribution_interpolator(x, y, spline)
+                dist_inter = distribution_interpolator(x, y, spline)
                 zeta = BDOP.zeta[i_s]
                 got_f = True
     N_f = 300
@@ -1028,7 +1137,7 @@ def make_3DBDOP_cut(working_dir, shot, time, ch_list, m_list, dist, diag="EQH", 
     u_perp_dist = np.linspace(u_perp_range[0], u_perp_range[1] * 2.0, N_f)
     for i in range(len(u_perp_dist)):
         if(dist not in ["Ge", "GeComp"]):
-            f[i] = dist_obj.eval_dist(u_perp_dist[i], u_par_dist, Te, "spline", zeta)
+            f[i] = dist_inter.eval_dist(u_perp_dist[i], u_par_dist, Te, "spline", zeta)
         else:
             f[i] = Juettner2D(u_perp_dist[i], u_par_dist, Te_spline(distribution_rhop))
     if(Teweight):
@@ -1064,7 +1173,6 @@ def make_3DBDOP_cut(working_dir, shot, time, ch_list, m_list, dist, diag="EQH", 
     ax_reso.set_aspect("equal")
     plt.tight_layout()
     plt.show()
-
 # make_3DBDOP("/ptmp1/work/sdenk/nssf/33697/4.80/OERT/ed_39/", 33697, 4.80, 43, "Re", diag="IDE")  # RELAX
 if(__name__ == "__main__"):
 #    make_3DBDOP_cut("/tokp/work/sdenk/nssf/33697/4.80/OERT/ed_156/", 33697, 4.80, [38], [2], "Re", diag="IDE", ece_alpha=0.7, include_ECRH=True, single_Beam=True, only_contribution=True, save_only=True)  # RELAX
@@ -1074,7 +1182,7 @@ if(__name__ == "__main__"):
 #    make_3DBDOP_cut("/tokp/work/sdenk/nssf/33697/4.80/OERT/ed_8/", 33697, 4.80, [2], [2], "Re", diag="IDE", m_ECRH_list=[2], include_ECRH=True, single_Beam=False, only_contribution=True, save_only=False, single_ray_BPD=False)  # RELAX
 #    make_3DBDOP_cut("/tokp/work/sdenk/nssf/33705/4.90/OERT/ed_8/", 33705, 4.90, [95], [2], "Re", diag="IDE", ece_alpha=0.7, include_ECRH=True, single_Beam=False, only_contribution=True, save_only=False, single_ray_BPD=False)  # RELAX
 #    make_3DBDOP_cut("/tokp/work/sdenk/nssf/33697/4.80/OERT/ed_11/", 34663, 3.60, [15, 95], [2, 2], "Re", diag="IDE", m_ECRH_list=[2], ece_alpha=0.7, include_ECRH=True, single_Beam=False, only_contribution=True, save_only=False, single_ray_BPD=False)  # RELAX
-    make_3DBDOP_cut("/tokp/work/sdenk/nssf/35662/4.40/OERT/ed_3/", 35662, 4.40, [132], [2], "Re", diag="IDE", m_ECRH_list=[2], ece_alpha=0.7, include_ECRH=True, single_Beam=False, only_contribution=True, save_only=False, \
+    make_3DBDOP_cut("/afs/ipp-garching.mpg.de/home/s/sdenk/Documentation/Data/ECRad_35662_ECECTACTC_run0101.mat", 35662, 4.40, [132], [2], "Re", diag="IDE", m_ECRH_list=[2], ece_alpha=0.7, include_ECRH=True, single_Beam=False, only_contribution=True, save_only=False, \
                     single_ray_BPD=False, preserve_original_BPD=True, ECRH_freq=105.e9)  # RELAX
 #    make_3DBDOP_cut("/ptmp1/work/sdenk/nssf/33585/3.00/OERT/ed_4/", 33585, 3.0, [5], [2], "Ge", diag="EQH", m_ECRH_list=[], ece_alpha=0.7, include_ECRH=False, single_Beam=False, only_contribution=True, save_only=False, single_ray_BPD=True, preserve_original_BPD=True, Teweight=True)  # RELAX
 #    make_3DBDOP("/ptmp1/work/sdenk/nssf/33585/3.00/OERT/ed_4/", 33585, 3.00, [5], [2], "Ge", diag="EQH", title=None, ece_alpha=0.7, include_ECRH=False, only_ECRH=False, only_contribution=True, flat=True, single_Beam=True)  # RELAX

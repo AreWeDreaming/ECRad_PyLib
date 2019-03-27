@@ -1050,7 +1050,7 @@ def test_resonance():
     eq_ed = 0
     bt_vac_correction = 1.005
     EQ_obj = EQData(shot, EQ_exp=eq_exp, EQ_diag=eq_diag, EQ_ed=eq_ed, bt_vac_correction=bt_vac_correction)
-    EQ_t = EQ_obj.read_EQ_from_shotfile(time)
+    EQ_t = EQ_obj.GetSlice(time)
     B_spl = RectBivariateSpline(EQ_t.R, EQ_t.z, np.sqrt(EQ_t.Br ** 2 + EQ_t.Bt ** 2 + EQ_t.Bz ** 2))
     R, z = get_cold_resonances_S_ECE(shot, time, "IEC", np.min(EQ_t.R), np.max(EQ_t.R), np.min(EQ_t.z), np.max(EQ_t.z), B_spl, 4)
     plt.plot(R, z, "+")
@@ -1285,7 +1285,7 @@ def make_ext_data_for_testing(ext_data_folder, shot, times, eq_exp="AUGD", eq_di
                 return
     np.savetxt(os.path.join(ext_data_folder, "t"), plasma_data["time"])
     for time in plasma_data["time"]:
-        EQ_t = EQ_obj.read_EQ_from_shotfile(time)
+        EQ_t = EQ_obj.GetSlice(time)
         np.savetxt(os.path.join(ext_data_folder, "special_points{0:d}".format(index)), np.array([EQ_t.R_ax, EQ_t.Psi_sep]))
         np.savetxt(os.path.join(ext_data_folder, "R{0:d}".format(index)), EQ_t.R)
         np.savetxt(os.path.join(ext_data_folder, "z{0:d}".format(index)), EQ_t.z)
@@ -1355,7 +1355,7 @@ def make_ext_data_equil_for_testing(ext_data_folder, shot, times, eq_exp="AUGD",
                 return
     np.savetxt(os.path.join(ext_data_folder, "t"), times)
     for time in times:
-        EQ_t = EQ_obj.read_EQ_from_shotfile(time)
+        EQ_t = EQ_obj.GetSlice(time)
         np.savetxt(os.path.join(ext_data_folder, "special_points{0:d}".format(index)), np.array([EQ_t.R_ax, EQ_t.Psi_sep]))
         np.savetxt(os.path.join(ext_data_folder, "R{0:d}".format(index)), EQ_t.R)
         np.savetxt(os.path.join(ext_data_folder, "z{0:d}".format(index)), EQ_t.z)
@@ -1377,7 +1377,7 @@ def make_ext_data_for_testing_grids(ext_data_folder, shot, times, eq_exp, eq_dia
     plasma_data = load_IDA_data(shot, timepoints=times, exp="AUGD", ed=0)
     np.savetxt(os.path.join(ext_data_folder, "t"), plasma_data["time"])
     for time in plasma_data["time"]:
-        EQ_t = EQ_obj.read_EQ_from_shotfile(time)
+        EQ_t = EQ_obj.GetSlice(time)
         np.savetxt(os.path.join(ext_data_folder, "special_points{0:d}".format(index)), np.array([EQ_t.R_ax, EQ_t.Psi_sep]))
         np.savetxt(os.path.join(ext_data_folder, "R{0:d}".format(index)), EQ_t.R)
         np.savetxt(os.path.join(ext_data_folder, "z{0:d}".format(index)), EQ_t.z)
@@ -1412,7 +1412,7 @@ def export_ASDEX_Upgrade_grid(ext_data_folder, shot, times, eq_exp, eq_diag, eq_
     plasma_data = load_IDA_data(shot, timepoints=times, exp="AUGD", ed=0)
     np.savetxt(os.path.join(ext_data_folder, "t"), plasma_data["time"])
     for time in plasma_data["time"]:
-        EQ_t = EQ_obj.read_EQ_from_shotfile(time)
+        EQ_t = EQ_obj.GetSlice(time)
         np.savetxt(os.path.join(ext_data_folder, "special_points{0:d}".format(index)), np.array([EQ_t.R_ax, EQ_t.Psi_sep]))
         np.savetxt(os.path.join(ext_data_folder, "R{0:d}".format(index)), EQ_t.R)
         np.savetxt(os.path.join(ext_data_folder, "z{0:d}".format(index)), EQ_t.z)
@@ -1589,7 +1589,7 @@ def get_ECE_spectrum(shotno, time, diag, Te):
 
 def get_CXRS_prof(shot, time, diag):
     Eq = EQData(shot, eq_experiment, eq_diag, 0)
-    EQ_Slice = Eq.read_EQ_from_shotfile(time)
+    EQ_Slice = Eq.GetSlice(time)
     rhot = EQ_Slice.rhot
     R = EQ_Slice.R
     z = EQ_Slice.z
@@ -1600,7 +1600,7 @@ def test_make_EField():
     eq_diag = "IDE"
     time = 1.68
     Eq = EQData(shot, eq_experiment, eq_diag, 0)
-    EQ_Slice = Eq.read_EQ_from_shotfile(time)
+    EQ_Slice = Eq.GetSlice(time)
     Psi = EQ_Slice.Psi
     R = EQ_Slice.R
     z = EQ_Slice.z

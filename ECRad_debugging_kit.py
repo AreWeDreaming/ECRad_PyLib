@@ -29,9 +29,9 @@ from em_Albajar import em_abs_Alb, distribution_interpolator, gene_distribution_
 from ECRad_Interface import make_topfile_from_ext_data
 from equilibrium_utils import EQDataExt
 if(AUG):
-    from equilibrium_utils_AUG import make_B_min, EQData
+    from equilibrium_utils_AUG import EQData
 elif(TCV):
-    from equilibrium_utils_TCV import make_B_min, EQData
+    from equilibrium_utils_TCV import EQData
 from shotfile_handling_AUG import get_data_calib
 from scipy.io import loadmat
 

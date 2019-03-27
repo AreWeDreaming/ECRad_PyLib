@@ -33,7 +33,7 @@ def I_0(shot, time, folder, ch, mode, eq_slice):
 
 def compare_reflections(shot, time, folder, mode, eq_exp, eq_diag, eq_ed):
     eq_obj = EQData(shot, EQ_exp=eq_exp, EQ_diag=eq_diag, EQ_ed=eq_ed)
-    eq_slice = eq_obj.read_EQ_from_shotfile(time)
+    eq_slice = eq_obj.GetSlice(time)
     Tradfile = np.loadtxt(os.path.join(folder, "O_TRadM_therm.dat"))
     ECRad_inp = np.loadtxt(os.path.join(folder, "ECRad.inp"), dtype=np.str)
     R_wall = float(ECRad_inp[14])
@@ -61,7 +61,7 @@ def compare_reflections(shot, time, folder, mode, eq_exp, eq_diag, eq_ed):
 
 def Mode_conversion_contributions_simple(mode_conversion_ratio, shot, time, folder, mode, eq_exp, eq_diag, eq_ed):
     eq_obj = EQData(shot, EQ_exp=eq_exp, EQ_diag=eq_diag, EQ_ed=eq_ed)
-    eq_slice = eq_obj.read_EQ_from_shotfile(time)
+    eq_slice = eq_obj.GetSlice(time)
     Tradfile = np.loadtxt(os.path.join(folder, "TRadM_therm.dat"))
     Tradfile_X = np.loadtxt(os.path.join(folder, "X_TRadM_therm.dat"))
     X_frac = Tradfile_X.T[3]

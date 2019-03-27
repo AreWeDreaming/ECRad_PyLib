@@ -177,68 +177,68 @@ def make_rhop_signed_axis(shot, time, R, rhop, f, f2=None, eq_exp='AUGD', eq_dia
     else:
         return rhop_out, f_out, R_ax
 
-def make_B_min(shot, time, rhop_vec, exp="AUGD", diag="EQH", ed=0):
-    error = ct.c_int(0)
-    fpf = 0.0
-    c_exp = ct.c_char_p(exp)
-    c_diag = ct.c_char_p(diag)
-    shot = shot
-    c_ed = ct.c_int(ed)
-    c_time = ct.c_float(time)
-
-    if(np.isscalar(rhop_vec)):
-        npts = 1
-    else:
-        npts = len(rhop_vec)
-    Rn = (ct.c_float * npts)()
-    zn = (ct.c_float * npts)()
-    R_mat = []
-    z_mat = []
-    c_rhop_vec = (ct.c_float * npts)()
-    angle_cnt = 360
-    if(npts == 1):
-        c_rhop_vec[0] = ct.c_float(rhop_vec)
-    else:
-        for i in range(len(rhop_vec)):
-            c_rhop_vec[i] = ct.c_float(rhop_vec[i])
-    for angle in np.linspace(0.0, 360.0, angle_cnt):
-        c_l_rhop = ct.c_int(npts)
-        libkk.kkrhorz(ct.byref(error), c_exp, c_diag, ct.c_int(shot), ct.byref(c_ed), ct.byref(c_time), \
-                          c_rhop_vec, c_l_rhop, 0, ct.c_float(angle), \
-                          ct.byref(Rn), ct.byref(zn))
-        if(npts != c_l_rhop.value):
-            print("Problem with points")
-            print(npts)
-        else:
-            R_mat.append(np.array([Rn[i] for i in range(npts)]))
-            z_mat.append(np.array([zn[i] for i in range(npts)]))
-    R_mat = np.array(R_mat).T
-    z_mat = np.array(z_mat).T
-    c_l_rhop = ct.c_int(npts)
-    b_min_vec = np.zeros(npts)
-    for i in range(npts):
-        Rn = (ct.c_float * angle_cnt)()
-        zn = (ct.c_float * angle_cnt)()
-        bt = (ct.c_float * angle_cnt)()
-        br = (ct.c_float * angle_cnt)()
-        bz = (ct.c_float * angle_cnt)()
-        fpf = (ct.c_float * angle_cnt)()
-        jpol = (ct.c_float * angle_cnt)()
-        for j in range(360):
-            Rn[j] = ct.c_float(R_mat[i][j])
-            zn[j] = ct.c_float(z_mat[i][j])
-        libkk.kkrzbrzt(ct.byref(error), c_exp, c_diag, ct.c_int(shot), ct.byref(c_ed), ct.byref(c_time), \
-               Rn, zn, c_l_rhop, \
-               ct.byref(br), ct.byref(bz), ct.byref(bt), ct.byref(fpf), ct.byref(jpol))
-        b_min = np.inf
-        for j in range(angle_cnt):
-            b_tot = np.sqrt(bt[j] ** 2 + br[j] ** 2 + bz[j] ** 2)
-            if(b_tot < b_min and b_tot > 0):
-                b_min = b_tot
-        if(b_min == np.inf):
-            print("Something wrong with b_min search")
-        b_min_vec[i] = b_min
-    return b_min_vec
+# def make_B_min(shot, time, rhop_vec, exp="AUGD", diag="EQH", ed=0):
+#    error = ct.c_int(0)
+#    fpf = 0.0
+#    c_exp = ct.c_char_p(exp)
+#    c_diag = ct.c_char_p(diag)
+#    shot = shot
+#    c_ed = ct.c_int(ed)
+#    c_time = ct.c_float(time)
+#
+#    if(np.isscalar(rhop_vec)):
+#        npts = 1
+#    else:
+#        npts = len(rhop_vec)
+#    Rn = (ct.c_float * npts)()
+#    zn = (ct.c_float * npts)()
+#    R_mat = []
+#    z_mat = []
+#    c_rhop_vec = (ct.c_float * npts)()
+#    angle_cnt = 360
+#    if(npts == 1):
+#        c_rhop_vec[0] = ct.c_float(rhop_vec)
+#    else:
+#        for i in range(len(rhop_vec)):
+#            c_rhop_vec[i] = ct.c_float(rhop_vec[i])
+#    for angle in np.linspace(0.0, 360.0, angle_cnt):
+#        c_l_rhop = ct.c_int(npts)
+#        libkk.kkrhorz(ct.byref(error), c_exp, c_diag, ct.c_int(shot), ct.byref(c_ed), ct.byref(c_time), \
+#                          c_rhop_vec, c_l_rhop, 0, ct.c_float(angle), \
+#                          ct.byref(Rn), ct.byref(zn))
+#        if(npts != c_l_rhop.value):
+#            print("Problem with points")
+#            print(npts)
+#        else:
+#            R_mat.append(np.array([Rn[i] for i in range(npts)]))
+#            z_mat.append(np.array([zn[i] for i in range(npts)]))
+#    R_mat = np.array(R_mat).T
+#    z_mat = np.array(z_mat).T
+#    c_l_rhop = ct.c_int(npts)
+#    b_min_vec = np.zeros(npts)
+#    for i in range(npts):
+#        Rn = (ct.c_float * angle_cnt)()
+#        zn = (ct.c_float * angle_cnt)()
+#        bt = (ct.c_float * angle_cnt)()
+#        br = (ct.c_float * angle_cnt)()
+#        bz = (ct.c_float * angle_cnt)()
+#        fpf = (ct.c_float * angle_cnt)()
+#        jpol = (ct.c_float * angle_cnt)()
+#        for j in range(360):
+#            Rn[j] = ct.c_float(R_mat[i][j])
+#            zn[j] = ct.c_float(z_mat[i][j])
+#        libkk.kkrzbrzt(ct.byref(error), c_exp, c_diag, ct.c_int(shot), ct.byref(c_ed), ct.byref(c_time), \
+#               Rn, zn, c_l_rhop, \
+#               ct.byref(br), ct.byref(bz), ct.byref(bt), ct.byref(fpf), ct.byref(jpol))
+#        b_min = np.inf
+#        for j in range(angle_cnt):
+#            b_tot = np.sqrt(bt[j] ** 2 + br[j] ** 2 + bz[j] ** 2)
+#            if(b_tot < b_min and b_tot > 0):
+#                b_min = b_tot
+#        if(b_min == np.inf):
+#            print("Something wrong with b_min search")
+#        b_min_vec[i] = b_min
+#    return b_min_vec
 
 def show_Volume():
     kk = KKeqi(33698, "AUGD", "EQH")
@@ -254,33 +254,6 @@ def show_Volume():
 class EQData(EQDataExt):
     def __init__(self, shot, external_folder='', EQ_exp="AUGD", EQ_diag="EQH", EQ_ed=0, bt_vac_correction=1.005, Ext_data=False):
         EQDataExt.__init__(self, shot, external_folder, EQ_exp, EQ_diag, EQ_ed, bt_vac_correction, Ext_data)
-
-    def read_EQ_from_Ext_single_slice(self, time, index):
-        R = np.loadtxt(os.path.join(self.external_folder, "R{0:d}".format(index)))
-        z = np.loadtxt(os.path.join(self.external_folder, "z{0:d}".format(index)))
-        # Rows are z, coloumns are R, like R, z in the poloidal crosssection
-        Psi = np.loadtxt(os.path.join(self.external_folder, "Psi{0:d}".format(index)))
-        B_r = np.loadtxt(os.path.join(self.external_folder, "Br{0:d}".format(index)))
-        B_t = np.loadtxt(os.path.join(self.external_folder, "Bt{0:d}".format(index)))
-        B_z = np.loadtxt(os.path.join(self.external_folder, "Bz{0:d}".format(index)))
-        special = np.loadtxt(os.path.join(self.external_folder, "special_points{0:d}".format(index)))
-        if(Psi[len(R) / 2][len(z) / 2] > special[1]):
-            # We want a minimum in the flux at the magn. axis
-            Psi *= -1.0
-            special[1] *= -1.0
-        psi_spl = RectBivariateSpline(R, z, Psi)
-        indicies = np.unravel_index(np.argmin(Psi), Psi.shape)
-        R_init = np.array([R[indicies[0]], z[indicies[1]]])
-        print(R_init)
-        opt = minimize(eval_spline, R_init, args=[psi_spl], \
-                 bounds=[[np.min(R), np.max(R)], [np.min(z), np.max(z)]])
-        print("Magnetic axis position: ", opt.x[0], opt.x[1])
-        psi_ax = psi_spl(opt.x[0], opt.x[1])
-        self.adjust_external_Bt_vac(B_t, R, opt.x[0], self.bt_vac_correction)
-        rhop = np.sqrt((Psi - psi_ax) / (special[1] - psi_ax))
-        print("WARNING!: R_sep and z_sep hard coded")
-        special_pnts = special_points(opt.x[0], opt.x[1], psi_ax, 2.17, 0.0, special[1])
-        return EQDataSlice(time, R, z, Psi.T, B_r.T, B_t.T, B_z.T, special_pnts, rhop.T)
 
     def init_read_from_shotfile(self):
         self.EQH = EQU()
@@ -299,7 +272,7 @@ class EQData(EQDataExt):
         self.MBI_shot = dd.shotfile('MBI', int(self.shot))
         self.shotfile_ready = True
 
-    def read_EQ_from_shotfile(self, time):
+    def GetSlice(self, time):
         if(not self.shotfile_ready):
             self.init_read_from_shotfile()
         R = self.EQH.getR(time)
@@ -360,78 +333,6 @@ class EQData(EQDataExt):
         print("New magnetic field: {0:2.3f}".format(Btf0 * self.bt_vac_correction))
         return EQDataSlice(time, R, z, Psi, B_r, B_t, B_z, special_points=special_points, rhop=rhop)
 
-    def get_axis(self, time):
-        if(self.external_folder != '' or self.Ext_data):
-            if(self.loaded == False):
-                self.read_EQ_from_Ext()
-            index = np.argmin(self.times - time)
-            R = self.slices[index].R
-            z = self.slices[index].z
-            Psi = self.slices[index].Psi
-            special = self.slices[index].special
-            if(Psi[len(R) / 2][len(z) / 2] > special[1]):
-            # We want a minimum in the flux at the magn. axis
-                Psi *= -1.0
-                special[1] *= -1.0
-            psi_spl = RectBivariateSpline(R, z, Psi)
-            indicies = np.unravel_index(np.argmin(Psi), Psi.shape)
-            R_init = np.array([R[indicies[0]], z[indicies[1]]])
-            print(R_init)
-            opt = minimize(eval_spline, R_init, args=[psi_spl], \
-                     bounds=[[np.min(R), np.max(R)], [np.min(z), np.max(z)]])
-            print("Magnetic axis position: ", opt.x[0], opt.x[1])
-            return opt.x[0], opt.x[1]
-        else:
-            if(not self.shotfile_ready):
-                self.init_read_from_shotfile()
-            if(not self.shotfile_ready):
-                return
-            special_points = self.KKobj.kkeqpfx(self.shot, time, exp=self.EQ_exp, diag=self.EQ_diag, ed=self.EQ_ed)
-            return special_points.Raxis, special_points.zaxis
-
-    def get_B_on_axis(self, time):
-        R_ax, z_ax = self.get_axis(time)
-        if(self.external_folder != '' or self.Ext_data):
-            index = np.argmin(self.times - time)
-            R = self.slices[index].R
-            z = self.slices[index].z
-            B_tot = np.sqrt(self.slices[index].Br ** 2 + self.slices[index].Br ** 2 + self.slices[index].Bz ** 2)
-            B_tot_spl = RectBivariateSpline(R, z, B_tot)
-            return B_tot_spl(R_ax, z_ax)
-        else:
-            magn_field = self.KKobj.kkrzBrzt(self.shot, time, np.array([R_ax]), np.array([z_ax]), exp=self.EQ_exp, diag=self.EQ_diag, ed=self.EQ_ed)
-            return np.sqrt(magn_field.br[0] ** 2 + magn_field.bt[0] ** 2 + magn_field.bz[0] ** 2)
-
-    def map_Rz_to_rhop(self, time, R, z):
-        if(self.external_folder != '' or self.Ext_data):
-            if(self.loaded == False):
-                self.read_EQ_from_Ext()
-            index = np.argmin(self.times - time)
-            R = self.slices[index].R
-            z = self.slices[index].z
-            Psi = self.slices[index].Psi
-            special = self.slices[index].special
-            if(Psi[len(R) / 2][len(z) / 2] > special[1]):
-            # We want a minimum in the flux at the magn. axis
-                Psi *= -1.0
-                special[1] *= -1.0
-            psi_spl = RectBivariateSpline(R, z, Psi)
-            indicies = np.unravel_index(np.argmin(Psi), Psi.shape)
-            R_init = np.array([R[indicies[0]], z[indicies[1]]])
-            print(R_init)
-            opt = minimize(eval_spline, R_init, args=[psi_spl], \
-                     bounds=[[np.min(R), np.max(R)], [np.min(z), np.max(z)]])
-            print("Magnetic axis position: ", opt.x[0], opt.x[1])
-            psi_ax = psi_spl(opt.x[0], opt.x[1])
-            rhop = np.sqrt((Psi - psi_ax) / (special[1] - psi_ax))
-            rhop_spl = RectBivariateSpline(R, z, rhop)
-            return rhop_spl(R, z, grid=False)
-        else:
-            if(not self.shotfile_ready):
-                self.init_read_from_shotfile()
-            output = self.KKobj.kkrzptfn(self.shot, time, R, z, exp=self.EQ_exp, diag=self.EQ_diag, ed=self.EQ_ed)
-            return output.rho_p
-
     def map_Rz_to_rhot(self, time, R, z):
         if(self.external_folder != '' or self.Ext_data):
             print("Not yet implemented")
@@ -461,86 +362,6 @@ class EQData(EQDataExt):
                 self.init_read_from_shotfile()
             output = self.KKobj.kkrhopto(self.shot, time, rhop, exp=self.EQ_exp, diag=self.EQ_diag, ed=self.EQ_ed)
             return output.pf
-
-    def get_Rz_contour(self, time, rhop_in, only_single_closed=False):
-        if(np.isscalar(rhop_in)):
-            rhops = [rhop_in]
-        else:
-            rhops = rhop_in
-        EQSlice = self.read_EQ_from_shotfile(time)
-#        special_points = self.KKobj.kkeqpfx(self.shot, time, exp=self.EQ_exp, diag=self.EQ_diag, ed=self.EQ_ed)
-#        z_points = np.array([special_points.zspx, special_points.zspx_2])
-#        point_sort = np.argsort(z_points)
-#        z_lower = z_points[point_sort][0] - 0.001
-#        z_upper = z_points[point_sort][1] + 0.001
-#        rhop_spl = RectBivariateSpline(EQSlice.R, EQSlice.z, EQSlice.rhop)
-#        R_points = np.linspace(np.min(EQSlice.R), np.max(EQSlice.R), 151)
-#        z_points = np.linspace(z_lower, z_upper, 151)
-#        rhop = rhop_spl(R_points, z_points, grid=True)
-        R_conts = []
-        z_conts = []
-        for rhop_cur in rhops:
-            closed_info, conts = get_contour(EQSlice.R, EQSlice.z, EQSlice.rhop, rhop_cur)
-            if(only_single_closed):
-                for closed, cont in zip(closed_info, conts):
-                    # Return first closed -> should be the nested flux surface
-                    if(closed):
-                        R_conts.append(cont.T[0])
-                        z_conts.append(cont.T[1])
-                        break;
-            else:
-                R_conts.append(np.concatenate(cont.T[0]))
-                z_conts.append(np.concatenate(cont.T[1]))
-        if(np.isscalar(rhop_in)):
-            return R_conts[-1], z_conts[-1]
-        else:
-            return R_conts, z_conts
-
-    def get_R_aus(self, time, rhop_in):
-        EQSlice = self.read_EQ_from_shotfile(time)
-        R = EQSlice.R
-        z = EQSlice.z
-        rhop = EQSlice.rhop
-        unwrap = False
-        if(np.isscalar(rhop_in)):
-            unwrap = True
-            R_LFS = np.zeros(1)
-            z_LFS = np.zeros(1)
-            rhop_in = np.array([rhop_in])
-        else:
-            R_LFS = np.zeros(len(rhop_in))
-            z_LFS = np.zeros(len(rhop_in))
-        constraints = {}
-        constraints["type"] = "eq"
-        constraints["fun"] = eval_rhop
-        rhop_spl = RectBivariateSpline(R, z, rhop)
-        constraints["args"] = [rhop_spl, rhop_in[0]]
-        options = {}
-        options['maxiter'] = 100
-        options['disp'] = False
-        R_ax, z_ax = self.get_axis(time)
-        x0 = np.array([R_ax, z_ax])
-        for i in range(len(rhop_in)):
-            constraints["args"][1] = rhop_in[i]
-            res = scopt.minimize(eval_R, x0, method='SLSQP', bounds=[[1.2, 2.3], [-1.0, 1.0]], \
-                                 constraints=constraints, options=options)
-            if(not res.success):
-                print("Error could not find R_aus for ", rhop_in[i])
-                print("Cause: ", res.message)
-                print("Falling back to axis position")
-                R_LFS[i] = R_ax
-                z_LFS[i] = z_ax
-                x0 = np.array([R_ax, z_ax])
-            else:
-                R_LFS[i] = res.x[0]
-                z_LFS[i] = res.x[1]
-                x0 = res.x
-#        plt.plot(R_LFS, z_LFS, "+r")
-#        cont = plt.contour(R, z, rhop.T, levels=np.linspace(0.0, 1.2, 13))
-#        plt.show()
-        if(unwrap):
-            return R_LFS[0], z_LFS[0]
-        return R_LFS, z_LFS
 
     def add_ripple_to_slice(self, time, EQSlice):
         R, z = self.get_axis(time)
@@ -583,7 +404,7 @@ if(__name__ == "__main__"):
     EQ_obj = EQData(33697)
     time = 4.80
 #    rhop = np.linspace(0.025, 0.99, 10)
-#    EQSlice = EQ_obj.read_EQ_from_shotfile(time)
+#    EQSlice = EQ_obj.GetSlice(time)
 #    plt.contour(EQSlice.R, EQSlice.z, EQSlice.rhop.T, levels=[rhop])
 #    print("R_aus", "z_aus", EQ_obj.get_R_aus(time, rhop))
     EQ_obj = EQData(33697, EQ_diag="IDE")

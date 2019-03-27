@@ -468,7 +468,7 @@ def Te_B_plot(shot, time, IDA_exp, IDA_ed, EQ_exp, EQ_diag, EQ_ed):
     time = time[0]
     print("IDA time", time)
     EQ_obj = EQData(shot, EQ_exp=EQ_exp, EQ_diag=EQ_diag, EQ_ed=EQ_ed)
-    EQSlice = EQ_obj.read_EQ_from_shotfile(time)
+    EQSlice = EQ_obj.GetSlice(time)
     Bt_spl = RectBivariateSpline(EQSlice.R, EQSlice.z, np.abs(EQSlice.Bt))
     rhop_spl = RectBivariateSpline(EQSlice.R, EQSlice.z, EQSlice.rhop)
     R = EQSlice.R

@@ -3259,7 +3259,7 @@ class plotting_core:
         if(not AUG):
             raise(ValueError("The routine plot_EQH_vessel is AUG specific and AUG = False"))
         EQ_obj = EQData(shot, EQ_exp='AUGD', EQ_diag='EQH', EQ_ed=0)
-        EQ_Slice = EQ_obj.read_EQ_from_shotfile(time)
+        EQ_Slice = EQ_obj.GetSlice(time)
         fconf.plt_vessel(ax)
         CS = ax.contour(EQ_Slice.R, EQ_Slice.z, EQ_Slice.rhop.T, \
             levels=np.linspace(0.1, 1.2, 12), linewidths=1, colors="k", linestyles="--")
@@ -3274,7 +3274,7 @@ class plotting_core:
         if(not AUG):
             raise(ValueError("The routine plot_EQH_vessel is AUG specific and AUG = False"))
         EQ_obj = EQData(shot, EQ_exp=eq_diag.exp, EQ_diag=eq_diag.diag, EQ_ed=eq_diag.ed)
-        EQ_Slice = EQ_obj.read_EQ_from_shotfile(time)
+        EQ_Slice = EQ_obj.GetSlice(time)
         fconf.plt_vessel(ax)
         CS = ax.contour(EQ_Slice.R, EQ_Slice.z, EQ_Slice.rhop.T, \
             levels=np.linspace(0.1, 1.2, 12), linewidths=1, colors="k", linestyles="--")
@@ -3287,7 +3287,7 @@ class plotting_core:
 
     def plot_sep(self, shot, time, ax):
         EQ_obj = EQData(shot, EQ_exp='AUGD', EQ_diag='EQH', EQ_ed=0)
-        EQ_Slice = EQ_obj.read_EQ_from_shotfile(time)
+        EQ_Slice = EQ_obj.GetSlice(time)
         CS = ax.contour(EQ_Slice.R, EQ_Slice.z, EQ_Slice.rhop.T, \
             levels=[1.0], linewidths=2, colors="k", linestyles="--")
         plt.clabel(CS, inline=1, fontsize=10)
@@ -3905,7 +3905,7 @@ class plotting_core:
                 EQ_obj = EQData(shot, EQ_exp=EQ_exp, EQ_diag=EQ_diag, EQ_ed=EQ_ed)
             else:
                 EQ_obj = EQData(shot, EQ_exp='AUGD', EQ_diag='EQH', EQ_ed=0)
-            EQ_Slice = EQ_obj.read_EQ_from_shotfile(time)
+            EQ_Slice = EQ_obj.GetSlice(time)
             R = EQ_Slice.R
             z = EQ_Slice.z
             rhop = EQ_Slice.rhop
@@ -4093,7 +4093,7 @@ class plotting_core:
                     rhop = EQ_obj.slices[np.argmin(np.abs(EQ_obj.times - time))].rhop
             else:
                 EQ_obj = EQData(shot)
-                EQ_Slice = EQ_obj.read_EQ_from_shotfile(time)
+                EQ_Slice = EQ_obj.GetSlice(time)
                 R = EQ_Slice.R
                 z = EQ_Slice.z
                 rhop = EQ_Slice.rhop
@@ -4309,7 +4309,7 @@ class plotting_core:
 #        xl = x_spl(np.linspace(0.0, 1.0, 4000))
 #        yl = y_spl(np.linspace(0.0, 1.0, 4000))
         EQ_obj = EQData(shot, EQ_exp='AUGD', EQ_diag='EQH', EQ_ed=0)
-        EQ_Slice = EQ_obj.read_EQ_from_shotfile(time)
+        EQ_Slice = EQ_obj.GetSlice(time)
         R = EQ_Slice.R
         z = EQ_Slice.z
         rhop = EQ_Slice.rhop
