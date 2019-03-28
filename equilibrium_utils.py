@@ -51,7 +51,7 @@ class special_points:
         self.psispx = psi_sep
 
 class EQDataSlice:
-    def __init__(self, time, R, z, Psi, Br, Bt, Bz, special_points=None, R_ax=None, Psi_sep=None, rhop=None, ripple=None):
+    def __init__(self, time, R, z, Psi, Br, Bt, Bz, special=None, R_ax=None, Psi_sep=None, rhop=None, ripple=None):
         self.time = time
         self.R = R
         self.z = z
@@ -62,13 +62,13 @@ class EQDataSlice:
         self.Br = Br
         self.Bt = Bt
         self.Bz = Bz
-        if(special_points is not None):
-            self.R_ax = special_points.Raxis
-            self.z_ax = special_points.zaxis
-            self.R_sep = special_points.Rspx
-            self.z_sep = special_points.zspx
-            self.Psi_ax = special_points.psiaxis
-            self.Psi_sep = special_points.psispx
+        if(special is not None):
+            self.R_ax = special.Raxis
+            self.z_ax = special.zaxis
+            self.R_sep = special.Rspx
+            self.z_sep = special.zspx
+            self.Psi_ax = special.psiaxis
+            self.Psi_sep = special.psispx
         elif(R_ax is not None and Psi_sep is not None):
             self.R_ax = R_ax
             self.Psi_sep = Psi_sep
@@ -162,7 +162,7 @@ class EQDataExt:
         B_r = np.loadtxt(os.path.join(self.external_folder, "Br{0:d}".format(index)))
         B_t = np.loadtxt(os.path.join(self.external_folder, "Bt{0:d}".format(index)))
         B_z = np.loadtxt(os.path.join(self.external_folder, "Bz{0:d}".format(index)))
-        special = np.loadtxt(os.path.join(self.external_folder, "special_points{0:d}".format(index)))
+        special = np.loadtxt(os.path.join(self.external_folder, "special{0:d}".format(index)))
         if(Psi[len(R) / 2][len(z) / 2] > special[1]):
             # We want a minimum in the flux at the magn. axis
             Psi *= -1.0
@@ -178,7 +178,7 @@ class EQDataExt:
         self.adjust_external_Bt_vac(B_t, R, opt.x[0], self.bt_vac_correction)
         rhop = np.sqrt((Psi - psi_ax) / (special[1] - psi_ax))
         print("WARNING!: R_sep and z_sep hard coded")
-        special_pnts = special_points(opt.x[0], opt.x[1], psi_ax, 2.17, 0.0, special[1])
+        special_pnts = special(opt.x[0], opt.x[1], psi_ax, 2.17, 0.0, special[1])
         return EQDataSlice(time, R, z, Psi, B_r, B_t, B_z, special_pnts, rhop=rhop)
 
     def GetSlice(self, time):
