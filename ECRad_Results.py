@@ -985,9 +985,6 @@ class ECRadResults:
             mdict["dist_ne_init"] = dist_obj.ne_init
             f = dist_obj.f
             pitch = np.arccos(dist_obj.pitch)
-            if(pitch[-1] < pitch[0]):
-                pitch = pitch[::-1]
-                f = f[:, :, ::-1]
             mdict["dist_u"] = dist_obj.u
             mdict["dist_pitch"] = dist_obj.pitch
             mdict["dist_f"] = f
