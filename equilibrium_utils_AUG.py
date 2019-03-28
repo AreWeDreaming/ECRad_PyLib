@@ -9,7 +9,10 @@ if(not AUG or TCV):
 import sys
 import ctypes as ct
 import os
-sys.path.append("/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib")
+if(not itm):
+    sys.path.append('/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib')
+else:
+    sys.path.append('../lib')
 import dd
 import numpy as np
 from scipy.optimize import minimize
@@ -18,8 +21,9 @@ from equilibrium_utils import EQDataExt, EQDataSlice, eval_spline, special_point
 from Geometry_utils import get_contour, get_Surface_area_of_torus, get_arclength, get_av_radius
 from scipy import __version__ as scivers
 import scipy.optimize as scopt
-from map_equ import equ_mao
+from map_equ import equ_map
 vessel_bd_file = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/ECRad_Pylib/ASDEX_Upgrade_vessel.txt"
+
 
 def eval_R(x):
     return -x[0] ** 3
@@ -82,7 +86,7 @@ class EQData(EQDataExt):
         self.EQ_ed = self.equ.ed
         if(self.EQ_diag == "EQH"):
             self.GQH = dd.shotfile("GQH", int(self.shot), experiment=self.EQ_exp, edition=self.EQ_ed)
-            self.FPC = dd.shotfile("FPC", int(shot))
+            self.FPC = dd.shotfile("FPC", int(self.shot))
         elif(self.EQ_diag == "IDE"):
             self.GQH = dd.shotfile("IDG", int(self.shot), experiment=self.EQ_exp, edition=self.EQ_ed)
             self.IDF = dd.shotfile("IDF", int(self.shot), experiment=self.EQ_exp, edition=self.EQ_ed)
@@ -95,19 +99,20 @@ class EQData(EQDataExt):
     def GetSlice(self, time):
         if(not self.shotfile_ready):
             self.init_read_from_shotfile()
-        R = sekf,equ.Rmesh
-        z = self.equ.zmesh
+        R = self.equ.Rmesh
+        z = self.equ.Zmesh
         self.equ._read_scalars()
         dummy, time_index = self.equ._get_nearest_index(time)
-        special = special_points(equ.psi0[time_index][0], equ.psi0[time_index][1], equ.psi0[time_index][2],\
-                                equ.psi0[time_index][0], equ.psi0[time_index][1], equ.psi0[time_index][2])
+        time_index = time_index[0]
+        special = special_points(self.equ.ssq["Rmag"][time_index], self.equ.ssq["Zmag"][time_index], self.equ.psi0[time_index], \
+                                 self.equ.ssq["Rxpo"][time_index], self.equ.ssq["Zxpo"][time_index], self.equ.psix[time_index])
         self.equ._read_pfm()
-        Psi = self.equ.pfm[index]
+        Psi = self.equ.pfm[:, :, time_index]
         R0 = 1.65  # Point for which BTFABB is defined
         # Adapted from mod_eqi.f90 by R. Fischer
         rv = 2.40
         vz = 0.e0
-        Br_out, Bz_out, Bt_out = self.rz2brzt(np.array([rv]), np.array([vz]), time)
+        Br_out, Bz_out, Bt_out = self.equ.rz2brzt(np.array([rv]), np.array([vz]), time)
         Btf0_eq = Bt_out
         Btf0_eq = Btf0_eq * rv / R0
         rhop = np.sqrt((Psi - special.psiaxis) / (special.psispx - special.psiaxis))
@@ -131,19 +136,19 @@ class EQData(EQDataExt):
                 print("Could not find MBI data")
                 Btok = Btf0_eq * R0 / R
                 Btf0 = Btf0_eq
-        R_temp = np.zeros(len(z))
-        for i in range(len(R)):
-            R_temp[:] = R[i]
-            Br[i], Bz[i], Bt[i] = self.equ.rz2brzt(R,z, time)
+        Br, Bz, Bt = self.equ.rz2brzt(R, z, time)
+        Br = Br[0]
+        Bz = Bz[0]
+        Bt = Bt[0]
         for j in range(len(z)):
             # plt.plot(pfm_dict["Ri"],B_t[j], label = "EQH B")
             Btok_eq = Btf0_eq * R0 / R  # vacuum toroidal field from EQH
-            Bdia = B_t.T[j] - Btok_eq  # subtract vacuum toroidal field from equilibrium to obtain diamagnetic field
-            B_t.T[j] = (Btok * self.bt_vac_correction) + Bdia  # add corrected vacuum toroidal field to be used
+            Bdia = Bt.T[j] - Btok_eq  # subtract vacuum toroidal field from equilibrium to obtain diamagnetic field
+            Bt.T[j] = (Btok * self.bt_vac_correction) + Bdia  # add corrected vacuum toroidal field to be used
         print(Btf0)
         print("Original magnetic field: {0:2.3f}".format(Btf0))
         print("New magnetic field: {0:2.3f}".format(Btf0 * self.bt_vac_correction))
-        return EQDataSlice(time, R, z, Psi, B_r, B_t, B_z, special=special, rhop=rhop)
+        return EQDataSlice(time, R, z, Psi, Br, Bt, Bz, special=special, rhop=rhop)
 
     def map_Rz_to_rhot(self, time, R, z):
         if(self.external_folder != '' or self.Ext_data):
@@ -152,8 +157,8 @@ class EQData(EQDataExt):
         else:
             if(not self.shotfile_ready):
                 self.init_read_from_shotfile()
-            return self.equ.rz2rho(R, z, t_in = time, coord_out = "rho_tor")
-            
+            return self.equ.rz2rho(R, z, t_in=time, coord_out="rho_tor")
+
 
     def rhop_to_rot(self, time, rhop):
         if(self.external_folder != '' or self.Ext_data):
@@ -162,7 +167,7 @@ class EQData(EQDataExt):
         else:
             if(not self.shotfile_ready):
                 self.init_read_from_shotfile()
-            return self.equ.rho2rho(rhop, t_in = time, coord_out = "rho_tor")
+            return self.equ.rho2rho(rhop, t_in=time, coord_out="rho_tor")
 
     def rhop_to_Psi(self, time, rhop):
         if(self.external_folder != '' or self.Ext_data):
@@ -171,7 +176,7 @@ class EQData(EQDataExt):
         else:
             if(not self.shotfile_ready):
                 self.init_read_from_shotfile()
-            return self.equ.rho2rho(rhop, t_in = time, coord_out = "Psi")
+            return self.equ.rho2rho(rhop, t_in=time, coord_out="Psi")
 
     def add_ripple_to_slice(self, time, EQSlice):
         R, z = self.get_axis(time)
@@ -211,14 +216,15 @@ class aug_bt_ripple:
         return B_ripple
 
 if(__name__ == "__main__"):
+    from plotting_configuration import *
     EQ_obj = EQData(33697)
     time = 4.80
-#    rhop = np.linspace(0.025, 0.99, 10)
-#    EQSlice = EQ_obj.GetSlice(time)
-#    plt.contour(EQSlice.R, EQSlice.z, EQSlice.rhop.T, levels=[rhop])
+    rhop = np.linspace(0.025, 0.99, 10)
+    EQSlice = EQ_obj.GetSlice(time)
+    plt.contour(EQSlice.R, EQSlice.z, EQSlice.rhop.T, levels=rhop)
 #    print("R_aus", "z_aus", EQ_obj.get_R_aus(time, rhop))
-    EQ_obj = EQData(33697, EQ_diag="IDE")
-    R_av = EQ_obj.get_mean_r(time, [0.08])
+#    EQ_obj = EQData(33697, EQ_diag="IDE")
+#    R_av = EQ_obj.get_mean_r(time, [0.08])
 #    plt.figure()
 #    plt.plot(rhop, R_av)
-#    plt.show()
+    plt.show()
