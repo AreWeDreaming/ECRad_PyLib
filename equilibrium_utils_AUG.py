@@ -21,7 +21,7 @@ from equilibrium_utils import EQDataExt, EQDataSlice, eval_spline, special_point
 from Geometry_utils import get_contour, get_Surface_area_of_torus, get_arclength, get_av_radius
 from scipy import __version__ as scivers
 import scipy.optimize as scopt
-from map_equ import equ_map
+from map_equ_local import equ_map
 vessel_bd_file = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/ECRad_Pylib/ASDEX_Upgrade_vessel.txt"
 
 
@@ -101,12 +101,12 @@ class EQData(EQDataExt):
             self.init_read_from_shotfile()
         R = self.equ.Rmesh
         z = self.equ.Zmesh
-        self.equ._read_scalars()
+        self.equ.read_scalars()
         dummy, time_index = self.equ._get_nearest_index(time)
         time_index = time_index[0]
         special = special_points(self.equ.ssq["Rmag"][time_index], self.equ.ssq["Zmag"][time_index], self.equ.psi0[time_index], \
                                  self.equ.ssq["Rxpo"][time_index], self.equ.ssq["Zxpo"][time_index], self.equ.psix[time_index])
-        self.equ._read_pfm()
+        self.equ.read_pfm()
         Psi = self.equ.pfm[:, :, time_index]
         R0 = 1.65  # Point for which BTFABB is defined
         # Adapted from mod_eqi.f90 by R. Fischer

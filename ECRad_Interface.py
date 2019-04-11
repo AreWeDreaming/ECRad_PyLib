@@ -19,112 +19,84 @@ import scipy.constants as cnst
 if(itm):
     tb_path = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/torbeam"
 else:
-    tb_path = "/marconi_work/eufus_gw/work/g2sdenk/torbeam/lib-OUT" 
+    tb_path = "/marconi_work/eufus_gw/work/g2sdenk/torbeam/lib-OUT"
 from equilibrium_utils import EQDataExt
 from electron_distribution_utils import export_gene_fortran_friendly, \
                                         export_gene_bimax_fortran_friendly, \
                                         load_f_from_mat, export_fortran_friendly
 from scipy.interpolate import InterpolatedUnivariateSpline
 from Geometry_utils import get_Surface_area_of_torus
+from shutil import rmtree
 
 def GetECRadExec(Config, Scenario, time):
     # Determine OMP stacksize
-    stacksize = 0
-    for diag in Scenario.used_diags_dict:
-        if(diag == "ECN" or diag == "ECO"  or diag == "ECI"):
-            stacksize += int(np.ceil(Config.max_points_svec * 3.125) * 3)
-        else:
-            stacksize += int(np.ceil(Config.max_points_svec * 3.125))
+    parallel = Config.parallel
     if(Config.debug):
         if(Config.parallel):
-            if(Config.batch):
-                if(Config.parallel_cores > 16):
-                    print("The maximum amount of cores for tokp submission is 16")
-                    return
-                InvokeECRad = "ssh tokp01.itm \"cd " + Config.working_dir + \
-                                  " && setenv ECRad_working_dir_1 " + Config.working_dir + " &&" + \
-                                  " setenv OMP_STACKSIZE " + "{0:d}k".format(stacksize) + " && setenv ECRad " + ECRadDevPath + \
-                                  " && setenv OMP_NUM_THREADS " + "{0:d}".format(Config.parallel_cores)
-                InvokeECRad += " && qsub" + " -N " + "E{0:5d}{1:1.1f}".format(Config.shot, time) + \
-                                   " -l h_rt={0:02d}:00:00".format(Config.wall_time) + \
-                                   " -l h_vmem={0:d}M".format(Config.vmem) + \
-                                   " -pe \'impi_hydra.*\' " + "{0:d} ".format(Config.parallel_cores) + ECRadPathBSUB + '"'
-#                                          " /afs/ipp-garching.mpg.de/home/s/sdenk/F90/Ecfm_Model_parallel_dev/batch_submit_ECRad_parallel_new.sge\""
-                print("Submitting job to tokp queue.")
+            print("No parallel version with debug symbols available at the moment")
+            print("Falling back to single core")
+            parallel = False
+        ECRadVers = ECRadDevPath
+    else:
+        ECRadVers = ECRadPath
+    if(parallel and Config.parallel_cores > 16):
+        print("The maximum amount of cores for tokp submission is 16")
+        return
+    if(parallel):
+        stacksize = 0
+        cores  = Config.parallel_cores
+        for diag in Scenario.used_diags_dict:
+            if(diag == "ECN" or diag == "ECO"  or diag == "ECI"):
+                stacksize += int(np.ceil(Config.max_points_svec * 3.125) * 3)
             else:
-                print("Running ECRad model with {0:d} cores and reduced priority".format(Config.parallel_cores))
-                os.environ['OMP_NUM_THREADS'] = "{0:d}".format(Config.parallel_cores)
-                os.environ['OMP_STACKSIZE'] = "{0:d}k".format(stacksize)
-                InvokeECRad = ECRadDevPath + " " + Config.working_dir
-        elif(Config.batch):
-            os.environ['ECRad'] = ECRadDevPath
-            os.environ['ECRad_working_dir_1'] = Config.working_dir
-            os.environ['WALLTIME'] = r"{0:2d}:00:00".format(Config.wall_time)
-            os.environ['VMEM'] = r"{0:d}M".format(Config.vmem)
-            # os.environ['ECRad_job_name'] = "E{0:5d}{1:1.1f}".format(Config.shot, time)
-            InvokeECRad = "ssh tokp01.itm  \"cd " + Config.working_dir + \
-                              " && setenv ECRad_working_dir_1 " + Config.working_dir + " &&" + \
-                              " setenv ECRad " + ECRadDevPath
-            InvokeECRad += " && qsub" + " -N " + "E{0:5d}{1:1.1f}".format(Config.shot, time) + \
-                               " -l h_rt={0:02d}:00:00".format(Config.wall_time) + \
-                               " -l h_vmem={0:d}M".format(Config.vmem) + \
-                               " -pe \'openmp.*\' " + "{0:d}".format(1) + ECRadPathBSUB + '"'
-            print("Submitting job to tokp queue.")
+                stacksize += int(np.ceil(Config.max_points_svec * 3.125))
+    else:
+        cores = 1 # serial
+    if(Config.batch):
+        os.environ['ECRad_working_dir_1'] = Config.working_dir
+        os.environ['ECRad'] = ECRadVers
+        launch_options_dict = {}
+        launch_options_dict["jobname"] = "-J " + "E{0:5d}{1:1.1f}".format(Scenario.shot, time)
+        os.environ['OMP_STACKSIZE'] = "{0:d}k".format(stacksize)
+        if(parallel):
+            launch_options_dict["partition"] = "--partition=p.tok.openmp"
+            launch_options_dict["qos"] = "--qos p.tok.2h"
+            if(Config.wall_time > 2):
+                launch_options_dict["qos"] = "p.tok.48h"
+            launch_options_dict["memory"] = "--mem-per-cpu={0:d}M".format(int(Config.vmem / Config.parallel_cores))
+            launch_options_dict["cpus"] = " --cpus-per-task={0:d}".format(cores)
         else:
-            os.environ['ECRad'] = ECRadDevPath
-            os.environ['ECRad_working_dir_1'] = Config.working_dir
-            # os.environ['ECRad_job_name'] = "E{0:5d}{1:1.1f}".format(Config.shot, time)
-            InvokeECRad = ECRadDevPath + " " + Config.working_dir
-            print("Submitting job to toks queue.")
-    elif(not Config.debug):
-        if(Config.batch):
-            if(Config.parallel):
-                if(Config.parallel_cores > 16):
-                    print("The maximum amount of cores for tokp submission is 16")
-                    return
-                InvokeECRad = "ssh tokp01.itm \"cd " + Config.working_dir + \
-                                  " && setenv ECRad_working_dir_1 " + Config.working_dir + " &&" + \
-                                  " setenv OMP_STACKSIZE " + "{0:d}k".format(stacksize) + " && setenv ECRad " + ECRadPath + \
-                                  " && setenv OMP_NUM_THREADS " + "{0:d}".format(Config.parallel_cores)
-                InvokeECRad += " && qsub" + " -N " + "E{0:5d}{1:1.1f}".format(Scenario.shot, time) + \
-                                   " -l h_rt={0:02d}:00:00".format(Config.wall_time) + \
-                                   " -l h_vmem={0:d}M".format(Config.vmem) + \
-                                   " -pe \'impi_hydra.*\' " + "{0:d} ".format(Config.parallel_cores) + ECRadPathBSUB + '"'
-                print("Submitting job to tokp queue.")
-            else:
-                InvokeECRad = "ssh tokp01.itm  \"cd " + Config.working_dir + \
-                                  " && setenv ECRad_working_dir_1 " + Config.working_dir + " &&" + \
-                                  " setenv OMP_STACKSIZE " + "{0:d}k".format(stacksize) + " && setenv ECRad " + \
-                                  ECRadPath + " && setenv OMP_NUM_THREADS " + "{0:d}".format(1)  # Serial
-                InvokeECRad += " && qsub" + " -N " + "E{0:5d}{1:1.1f}".format(Config.shot, time) + \
-                                   " -l h_rt={0:02d}:00:00 ".format(Config.wall_time) + \
-                                   " -l h_vmem={0:d}M".format(Config.vmem) + \
-                                   ECRadPathBSUB + '"'
-                os.environ['ECRad'] = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/Ecfm_Model/ecfm_model"
-                os.environ['ECRad_working_dir_1'] = Config.working_dir
-                print("Submitting job to tokp queue.")
-        else:
-            print("Running ECRad model with {0:d} cores and reduced priority".format(Config.parallel_cores))
-            if(Config.parallel):
-                os.environ['OMP_NUM_THREADS'] = "{0:d}".format(Config.parallel_cores)
-            else:
-                os.environ['OMP_NUM_THREADS'] = "{0:d}".format(1)  # serial
-            os.environ['OMP_STACKSIZE'] = "{0:d}k".format(stacksize)
-            InvokeECRad = ECRadPath + " " + Config.working_dir
+            launch_options_dict["partition"] = "--partition=s.tok"
+            launch_options_dict["qos"] = "--qos s.tok.short"
+            if(Config.wall_time > 4):
+                launch_options_dict["qos"] = "--qos s.tok.standard"
+            if(Config.wall_time > 36):
+                launch_options_dict["qos"] = "--qos s.tok.long"
+            launch_options_dict["memory"] = "--mem-per-cpu={0:d}M".format(Config.vmem)
+            launch_options_dict["cpus"] = " --cpus-per-task={0:d}".format(cores)
+        InvokeECRad = "sbatch"
+        for key in launch_options_dict:
+            InvokeECRad += " " + launch_options_dict[key]
+        InvokeECRad += " " + ECRadPathBSUB
+    else:
+        os.environ['OMP_NUM_THREADS'] = "{0:d}".format(cores)
+        InvokeECRad = ECRadVers + " " + Config.working_dir
     return InvokeECRad
 
 def prepare_input_files(Config, Scenario, index, copy_dist=True):
     working_dir = Config.working_dir
     # eq_exp = Config.EQ_exp always exp
     ECRad_data_path = os.path.join(working_dir, "ECRad_data", "")
-    if(not(os.path.isdir(ECRad_data_path))):
-        try:
-            os.mkdir(ECRad_data_path)
-        except OSError:
-            print("Failed to create ECRad_data folder in: ", working_dir)
-            print("Please check that this folder exists and you have write permissions")
-            return False
-        print("Created folder " + ECRad_data_path)
+    if(os.path.isdir(ECRad_data_path)):
+    #Get rid of old data -> This ensures that the new data is really new
+        rmtree(ECRad_data_path)
+    try:
+        os.mkdir(ECRad_data_path)
+    except OSError:
+        print("Failed to create ECRad_data folder in: ", working_dir)
+        print("Please check that this folder exists and you have write permissions")
+        return False
+    print("Created folder " + ECRad_data_path)
     if(Config.dstf != "GB"):
         Ich_path = os.path.join(ECRad_data_path, "Ich" + Config.dstf)
     else:
@@ -295,7 +267,7 @@ def get_diag_launch(shot, time, used_diag_dict, gy_dict=None, ECI_dict=None):
         launch = {}
         if(used_diag_dict[diag].name == "ECE"):
             launch = get_ECE_launch_info(shot, used_diag_dict[diag])
-        elif(used_diag_dict[diag].diag == "IEC"):
+        elif(used_diag_dict[diag].name == "IEC"):
             launch["f"] = []
             dfreq_IEC = 3.0e9
             for i in range(6):
@@ -322,10 +294,10 @@ def get_diag_launch(shot, time, used_diag_dict, gy_dict=None, ECI_dict=None):
 #            R_curv = gy_dict[str(used_diag_dict[diag].beamline)].curv_y
 #            dist_foc = (launch["f"] ** 2 * np.pi ** 2 * R_curv * launch["width"] ** 4) / (cnst.c ** 2 * R_curv ** 2 + launch["f"] ** 2 * np.pi ** 2 * launch["width"] ** 4)
 #            launch["dist_focus"][:] = dist_foc
-        if(used_diag_dict[diag].diag == "CTC" or used_diag_dict[diag].diag == "CTA"):
+        if(used_diag_dict[diag].name == "CTC" or used_diag_dict[diag].name == "CTA"):
             if(type(time) != float):
                 time = float(time)
-            if(used_diag_dict[diag].diag == "CTC"):
+            if(used_diag_dict[diag].name == "CTC"):
                 if(used_diag_dict[diag].base_freq_140):
                     f_CTC = np.array([137.0000, 137.6500, 138.0750, 138.3750, 138.5700, \
                          138.6600, 138.7400, 138.8200, 138.9000, 138.9800, \
@@ -407,55 +379,55 @@ def get_diag_launch(shot, time, used_diag_dict, gy_dict=None, ECI_dict=None):
 #            R_curv = gy_dict[str(used_diag_dict[diag].beamline)].curv_y
 #            dist_foc = (launch["f"] ** 2 * np.pi ** 2 * R_curv * launch["width"] ** 4) / (cnst.c ** 2 * R_curv ** 2 + launch["f"] ** 2 * np.pi ** 2 * launch["width"] ** 4)
 #            launch["dist_focus"][:] = dist_foc
-        if(used_diag_dict[diag].diag == "VCE"):
-            launch["f"] = np.array([104.9, 106.6, 108.1, 109.8, 111.3, 112.9, \
-                              133.5, 136.4, 139.3, 141.9, 144.9, 147.5]) * 1.e9
-            launch["df"] = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, \
-                                  0.2, 0.2, 0.2, 0.2, 0.2, 0.2 ]) * 1.e9
-            launch["R"] = np.zeros(len(launch["f"]))
-            launch["phi"] = np.zeros(len(launch["f"]))
-            launch["z"] = np.zeros(len(launch["f"]))
-            launch["theta_pol"] = np.zeros(len(launch["f"]))
-            launch["phi_tor"] = np.zeros(len(launch["f"]))
-            launch["dist_focus"] = np.zeros(len(launch["f"]))
-            launch["width"] = np.zeros(len(launch["f"]))
-            if(AUG):
-                launch["R"][:] = 0.88 * used_diag_dict[diag].R_scale
-                launch["phi"][:] = 0.0
-                launch["z"][:] = 0.99 * used_diag_dict[diag].z_scale
-            else:
-                launch["R"][:] = 0.88
-                launch["phi"][:] = 0.0
-                launch["z"][:] = 0.99
-            launch["phi_tor"][:] = 1.e-1
-            launch["theta_pol"][:] = 90.e0
-            launch["width"][:] = 0.03e0  # assuming a very parallel beam
-            launch["dist_focus"][:] = 10.0
-        if(used_diag_dict[diag].diag == "LCE" or used_diag_dict[diag].diag == "UCE"):
-            launch["f"] = np.array([67.6, 69.1, 70.5, 72. , 73.4, 74.9, 76.3, 77.8,
-                              79.2, 80.7, 82.2, 85.5, 86.9, 88.4, 89.8, 91.3,
-                              92.7, 94.2, 95.7, 97.1, 98.6, 100. , 101.5]) * 1.e9
-            launch["df"] = np.zeros(len(launch["f"]))
-            launch["R"] = np.zeros(len(launch["f"]))
-            launch["phi"] = np.zeros(len(launch["f"]))
-            launch["z"] = np.zeros(len(launch["f"]))
-            launch["theta_pol"] = np.zeros(len(launch["f"]))
-            launch["phi_tor"] = np.zeros(len(launch["f"]))
-            launch["dist_focus"] = np.zeros(len(launch["f"]))
-            launch["width"] = np.zeros(len(launch["f"]))
-            launch["df"][:] = 0.75e9
-            launch["R"][:] = 1.15
-            launch["phi"][:] = 0.0
-            if(used_diag_dict[diag].diag == "LCE"):
-                launch["z"][:] = 0.e0
-                launch["width"][:] = 0.0351e0
-                launch["dist_focus"][:] = -0.33e0  # Beam is not focused
-            else:
-                launch["z"][:] = 0.21e0
-                launch["width"][:] = 0.0211e0
-                launch["dist_focus"][:] = -0.257e0  # Beam is not focused
-            launch["phi_tor"][:] = 1.e-1
-            launch["theta_pol"][:] = 0.e0
+#        if(used_diag_dict[diag].name == "VCE"):
+#            launch["f"] = np.array([104.9, 106.6, 108.1, 109.8, 111.3, 112.9, \
+#                              133.5, 136.4, 139.3, 141.9, 144.9, 147.5]) * 1.e9
+#            launch["df"] = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, \
+#                                  0.2, 0.2, 0.2, 0.2, 0.2, 0.2 ]) * 1.e9
+#            launch["R"] = np.zeros(len(launch["f"]))
+#            launch["phi"] = np.zeros(len(launch["f"]))
+#            launch["z"] = np.zeros(len(launch["f"]))
+#            launch["theta_pol"] = np.zeros(len(launch["f"]))
+#            launch["phi_tor"] = np.zeros(len(launch["f"]))
+#            launch["dist_focus"] = np.zeros(len(launch["f"]))
+#            launch["width"] = np.zeros(len(launch["f"]))
+#            if(AUG):
+#                launch["R"][:] = 0.88 * used_diag_dict[diag].R_scale
+#                launch["phi"][:] = 0.0
+#                launch["z"][:] = 0.99 * used_diag_dict[diag].z_scale
+#            else:
+#                launch["R"][:] = 0.88
+#                launch["phi"][:] = 0.0
+#                launch["z"][:] = 0.99
+#            launch["phi_tor"][:] = 1.e-1
+#            launch["theta_pol"][:] = 90.e0
+#            launch["width"][:] = 0.03e0  # assuming a very parallel beam
+#            launch["dist_focus"][:] = 10.0
+#        if(used_diag_dict[diag].diag == "LCE" or used_diag_dict[diag].diag == "UCE"):
+#            launch["f"] = np.array([67.6, 69.1, 70.5, 72. , 73.4, 74.9, 76.3, 77.8,
+#                              79.2, 80.7, 82.2, 85.5, 86.9, 88.4, 89.8, 91.3,
+#                              92.7, 94.2, 95.7, 97.1, 98.6, 100. , 101.5]) * 1.e9
+#            launch["df"] = np.zeros(len(launch["f"]))
+#            launch["R"] = np.zeros(len(launch["f"]))
+#            launch["phi"] = np.zeros(len(launch["f"]))
+#            launch["z"] = np.zeros(len(launch["f"]))
+#            launch["theta_pol"] = np.zeros(len(launch["f"]))
+#            launch["phi_tor"] = np.zeros(len(launch["f"]))
+#            launch["dist_focus"] = np.zeros(len(launch["f"]))
+#            launch["width"] = np.zeros(len(launch["f"]))
+#            launch["df"][:] = 0.75e9
+#            launch["R"][:] = 1.15
+#            launch["phi"][:] = 0.0
+#            if(used_diag_dict[diag].diag == "LCE"):
+#                launch["z"][:] = 0.e0
+#                launch["width"][:] = 0.0351e0
+#                launch["dist_focus"][:] = -0.33e0  # Beam is not focused
+#            else:
+#                launch["z"][:] = 0.21e0
+#                launch["width"][:] = 0.0211e0
+#                launch["dist_focus"][:] = -0.257e0  # Beam is not focused
+#            launch["phi_tor"][:] = 1.e-1
+#            launch["theta_pol"][:] = 0.e0
         if(diag == "ECN" or diag == "ECO"):
             if(ECI_dict is None):
                 raise ValueError("ECI_dict has to present if diag.name is ECN or ECO!")
@@ -476,7 +448,7 @@ def get_diag_launch(shot, time, used_diag_dict, gy_dict=None, ECI_dict=None):
                 launch["df"][:] = 0.7e9
             else:
                 launch["df"][:] = 0.39e9
-        if(used_diag_dict[diag].diag == "EXT"):
+        if(used_diag_dict[diag].name == "EXT"):
             launch["f"] = np.copy(used_diag_dict[diag].f)
             launch["df"] = np.copy(used_diag_dict[diag].df)
             launch["R"] = np.copy(used_diag_dict[diag].R)
@@ -487,19 +459,19 @@ def get_diag_launch(shot, time, used_diag_dict, gy_dict=None, ECI_dict=None):
             launch["dist_focus"] = np.copy(used_diag_dict[diag].dist_focus)
             launch["width"] = np.copy(used_diag_dict[diag].width)
             launch["pol_coeff_X"] = np.copy(used_diag_dict[diag].pol_coeff_X)
-        if(used_diag_dict[diag].diag == "CCE"):
-            if(type(time) != float):
-                time = float(time)
-            launch_geo = used_diag_dict[diag].get_launch_geo(time)
-            launch["f"] = np.copy(launch_geo[0])
-            launch["df"] = np.copy(launch_geo[1])
-            launch["R"] = np.copy(launch_geo[2])
-            launch["phi"] = np.copy(launch_geo[3])
-            launch["z"] = np.copy(launch_geo[4])
-            launch["phi_tor"] = np.copy(launch_geo[5])
-            launch["theta_pol"] = np.copy(launch_geo[6])
-            launch["width"] = np.copy(launch_geo[7])
-            launch["dist_focus"] = np.copy(launch_geo[8])
+#        if(used_diag_dict[diag].diag == "CCE"):
+#            if(type(time) != float):
+#                time = float(time)
+#            launch_geo = used_diag_dict[diag].get_launch_geo(time)
+#            launch["f"] = np.copy(launch_geo[0])
+#            launch["df"] = np.copy(launch_geo[1])
+#            launch["R"] = np.copy(launch_geo[2])
+#            launch["phi"] = np.copy(launch_geo[3])
+#            launch["z"] = np.copy(launch_geo[4])
+#            launch["phi_tor"] = np.copy(launch_geo[5])
+#            launch["theta_pol"] = np.copy(launch_geo[6])
+#            launch["width"] = np.copy(launch_geo[7])
+#            launch["dist_focus"] = np.copy(launch_geo[8])
         if("pol_coeff_X" not in launch.keys()):
             launch["pol_coeff_X"] = np.zeros(len(launch["f"]))
             launch["pol_coeff_X"][:] = -1  # Means that ECRad will compute the X-mode fraction

@@ -1,6 +1,5 @@
 # Import statements
 import numpy as np
-import fmtout as fmt
 import SpitzerHaerm as sh
 import os
 import scipy.odr as odr
@@ -340,13 +339,13 @@ def modify_ece_data(scale):
             for j in range(4):
                 final_ece_array.append(cur_ece_array[j * 12 + 1:(j + 1) * 12 + 1])
             if(len(final_ece_array) != 4):
-                print final_ece_array
+                print(final_ece_array)
                 return -1
             for j in range(0, 4):
                 try:
                     cur_ece[j] = np.double(final_ece_array[j])
                 except ValueError:
-                    print np.double(final_ece_array[j])
+                    print(np.double(final_ece_array[j]))
             ece.append(cur_ece)
     for i in range(len(ece)):
         if((i - 36) % 50 == 0):
@@ -415,7 +414,6 @@ def remap_f(x, y, Fe_rhop, uxx, ull):
         for j in range(len(uxx)):
             cur_x = np.sqrt(uxx[j] ** 2 + ull[i] ** 2)
             cur_y = np.arctan2(uxx[j], ull[i])
-            # print cur_x, cur_y
             Fe_remapped[i, j] = spline.ev(cur_x, cur_y)
             # print(len(Fe_remapped[:,0]), len(Fe_remapped[0,:]))
     return Fe_remapped
@@ -759,13 +757,13 @@ def read_beta_from_file(beta_filename):
         for j in range(11):
             final_beta_array.append(cur_beta_array[j * 15:(j + 1) * 15])
         if(len(final_beta_array) != 11):
-            print final_beta_array
+            print(final_beta_array)
             return -1
         for j in range(1, 11):
             try:
                 beta[i][j - 1] = np.double(final_beta_array[j])
             except ValueError:
-                print np.double(final_beta_array[j])
+                print(np.double(final_beta_array[j]))
     return beta
 
 def read_svec_from_file(folder, ich, mode="X"):  # ch no. starts from 1
@@ -1797,7 +1795,6 @@ def fit_Pedestal(f, u, Te , f_fit, m, beta, ifixb):
     # Te = 5000.0
     # params = [Te]
     # middle = np.floor(float(len(ull)) / 2.0) - 1
-    # print f[:,0]
     # popt, pcov = curve_fit(Juettner1D, ull,f[:,0],params)
     # y = Juettner1D(ull, popt[0])
     # fig = plt.figure(figsize = (16,9),tight_layout=True)
@@ -1846,9 +1843,9 @@ def fit_Pedestal(f, u, Te , f_fit, m, beta, ifixb):
         print(results.stopreason)
         f_fit = Juettner2D_ped(beta, u, f_fit, m)
         return f_fit, beta
-    print beta
+    print(beta)
     beta = results.beta
-    print beta
+    print(beta)
     # y = Juettner1D_ped(uxx,  params[0], params[1], params[2], params[3],params[4])
     # ax.plot(uxx, y, "--m",label = r"$u_\Vert = 0$ with $T_e = ${0:4.1f}".format(params[0]))
     # ax2.plot(uxx, f[middle,:], "+r", label = r"$f(u_\bot,u_\Vert = 0)$ numerical Data".format(params[0]))
@@ -2039,7 +2036,6 @@ def find_vd(args):
     rhopfile.flush()
     rhopfile.close()
     u_drift_sh = u_drift_sh / norm_sh
-    # print u_drift_sh
     # norm_sh = norm_sh[i1:i2]
     # rhop = rhop[i1:i2]
     u_drift_Relax = u_drift_Relax / norm_Relax
@@ -2524,7 +2520,6 @@ def export_fortran_friendly(args):
     wpath = args[1]
     # shot = args[2]
     # time = args[3]
-    # print y
     # LUKE = False
     print(dist_obj)
     print("Fe", np.shape(dist_obj.f))
@@ -2733,7 +2728,6 @@ def test_integral(f, dx, dy, x0, y0, lenx, leny, r=False):
     int = 0
     x = x0
     y = y0
-    # print len(f[:,0]), len(f[0]), lenx, leny
     if(r):
         int += 0.25 * f[0, 0] * dy * dx * x
     else:
@@ -2784,19 +2778,8 @@ def test_integral(f, dx, dy, x0, y0, lenx, leny, r=False):
         int += 0.25 * f[lenx - 1, leny - 1] * dy * dx * x
     else:
         int += 0.25 * f[lenx - 1, leny - 1] * dy * dx
-    print int
-"""
-def remap_f(x,y, Fe_rhop, uxx, ull, Fe_remapped):
-    spline = RectBivariateSpline(x,y,Fe_rhop, kx = 3, ky =3)
-    for i in range(len(ull)):
-        for j in range(len(uxx)):
-            cur_x = np.sqrt(uxx[j]**2 + ull[i]**2)
-            cur_y = np.arctan2(uxx[j],ull[i])
-            #print cur_x, cur_y
-            Fe_remapped[i,j] = spline.ev(cur_x, cur_y)
-            #print(len(Fe_remapped[:,0]), len(Fe_remapped[0,:]))
-    return Fe_remapped
- """
+    print(int)
+
 def Fe_remapped(x, y, Fe, xi, ull, uxx, LUKE=False):
 
     """ Comment this!
@@ -3018,7 +3001,6 @@ def remap_f1D(x, y, Fe_rhop, uxx, ull, Fe_remapped):
     for i in range(len(ull)):
         cur_x = np.sqrt(uxx ** 2 + ull[i] ** 2)
         cur_y = np.arctan2(uxx, ull[i])
-        # print cur_x, cur_y
         Fe_remapped[i] = spline.ev(cur_x, cur_y)
         # print(len(Fe_remapped[:,0]), len(Fe_remapped[0,:]))
     return Fe_remapped
@@ -3028,7 +3010,6 @@ def remap_f1D_uxx(x, y, Fe_rhop, uxx, ull, Fe_remapped):
     for i in range(len(uxx)):
         cur_x = np.sqrt(uxx[i] ** 2 + ull ** 2)
         cur_y = np.arctan2(uxx[i], ull)
-        # print cur_x, cur_y
         Fe_remapped[i] = spline.ev(cur_x, cur_y)
         # print(len(Fe_remapped[:,0]), len(Fe_remapped[0,:]))
     return Fe_remapped
@@ -3038,7 +3019,6 @@ def remap_f_res(x, y, Fe_rhop, uxx, ull, Fe_remapped):
     for i in range(len(ull)):
         cur_x = np.sqrt(uxx[i] ** 2 + ull[i] ** 2)
         cur_y = np.arctan2(uxx[i], ull[i])
-            # print cur_x, cur_y
         Fe_remapped[i] = spline.ev(cur_x, cur_y)
             # print(len(Fe_remapped[:,0]), len(Fe_remapped[0,:]))
     return Fe_remapped
@@ -3117,8 +3097,6 @@ def create_test_data():
     for i in range(len(temps)):
         rhop.append(float(temps[i].split("   ")[0]))
         Te.append(float(temps[i].split("   ")[1]))
-    # print Te
-    # print rhop
     for i in range(len(rhop)):
         rhopfile.write("{0: 1.5f}\n".format(rhop[i]))
         thefile = open(\
@@ -4057,6 +4035,49 @@ def export_art_gene_f_fortran_friendly(args):
     thefile.flush()
     thefile.close()
     print("Gene distribution ready")
+
+class Ray:
+    def __init__(self, s, x, y, z, H, N, N_cold, Te=0, ne=0, Y=0, X=0, x_tb=0, y_tb=0, z_tb=0, \
+                                                                       x_tbp1=0, y_tbp1=0, z_tbp1=0, \
+                                                                       x_tbp2=0, y_tbp2=0, z_tbp2=0):
+        self.s = s  # can either be 1D or 2D depending on the number of rays (first dimension)
+#        print("s", s)
+        self.x = x
+#        print("x", x)
+        self.y = y
+#        print("y", y)
+        self.z = z
+#        print("z", z)
+        self.R = np.sqrt(x ** 2 + y ** 2)
+        self.phi = np.arctan(y / x) * 180.0 / np.pi
+        self.x_tb = x_tb
+        self.y_tb = y_tb
+        self.z_tb = z_tb
+        self.x_tbp1 = x_tbp1
+        self.y_tbp1 = y_tbp1
+        self.z_tbp1 = z_tbp1
+        self.x_tbp2 = x_tbp2
+        self.y_tbp2 = y_tbp2
+        self.z_tbp2 = z_tbp2
+        self.R_tb = 0
+        self.phi_tb = 0
+        self.R_tbp1 = 0
+        self.phi_tbp1 = 0
+        self.R_tbp2 = 0
+        self.phi_tbp2 = 0
+        if(type(x_tb) != int):
+            self.R_tb = np.sqrt(x_tb ** 2 + y_tb ** 2)
+            self.phi_tb = np.arctan(y / x) * 180.0 / np.pi
+            if(type(x_tbp1) != int):
+                self.R_tbp1 = np.sqrt(x_tbp1 ** 2 + y_tbp1 ** 2)
+                self.phi_tbp1 = np.arctan(y_tbp1 / x_tbp1) * 180.0 / np.pi
+                self.R_tbp2 = np.sqrt(x_tbp2 ** 2 + y_tbp2 ** 2)
+                self.phi_tbp2 = np.arctan(y_tbp2 / x_tbp2) * 180.0 / np.pi
+        self.H = H
+        self.N = N
+        self.N_cold = N_cold
+        self.Y = Y
+        self.X = X
 
 if(__name__ == "__main__"):
     pass

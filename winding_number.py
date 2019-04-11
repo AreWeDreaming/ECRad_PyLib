@@ -1,5 +1,5 @@
 import numpy as np
-import matplotlib.pyplot as plt
+from plotting_configuration import *
 
 def isLeft(P0, P1, P2):
     return (P1[0] - P0[0]) * (P2[1] - P0[1]) - \

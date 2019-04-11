@@ -31,6 +31,9 @@ EVT_IDA_DATA_READY = wx.PyEventBinder(Unbound_EVT_IDA_DATA_READY , 1)
 Unbound_EVT_LOAD_CONFIG = wx.NewEventType()  # Call This
 EVT_LOAD_CONFIG = wx.PyEventBinder(Unbound_EVT_LOAD_CONFIG, 1)  # Bind that
 
+Unbound_EVT_LOAD_CONFIG_IDE = wx.NewEventType()  # Call This
+EVT_LOAD_CONFIG_IDE = wx.PyEventBinder(Unbound_EVT_LOAD_CONFIG_IDE, 1)  # Bind that
+
 Unbound_EVT_UPDATE_CONFIG = wx.NewEventType()  # Call This
 EVT_UPDATE_CONFIG = wx.PyEventBinder(Unbound_EVT_UPDATE_CONFIG , 1)
 

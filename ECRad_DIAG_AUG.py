@@ -6,7 +6,7 @@ Created on Dec 16, 2015
 from collections import OrderedDict as od
 import numpy as np
 from GlobalSettings import *
-from Diags import Diag, ECI_diag, ECRH_diag, EXT_diag, TCV_diag
+from Diags import Diag, ECI_diag, ECRH_diag, EXT_diag
 import getpass
 
 DefaultDiagDict = od()
@@ -42,4 +42,4 @@ for diag_name in ["ECE", "CTC", "CTA", "IEC", "ECN", "ECO", "EXT"]:
         launch_geo[10, 0] = -8.24
         launch_geo[11, 0] = 1.1850
         launch_geo[12, 0] = 0.0865
-        DefaultDiagDict.update({diag_name:  EXT_diag(diag_name, "AUGD", diag_name, 0, launch_geo)})
+        DefaultDiagDict.update({diag_name:  EXT_diag(diag_name, launch_geo)})

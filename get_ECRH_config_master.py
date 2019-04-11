@@ -8,7 +8,7 @@ sys.path.append("/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib")
 import dd
 import os
 import ctypes as ct
-import matplotlib.pyplot as plt
+from plotting_configuration import *
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline
 libECRH = np.ctypeslib.load_library("libaug_ecrh_setmirrors", '/afs/ipp-garching.mpg.de/home/e/ecrh/sys/amd64_sles11/')

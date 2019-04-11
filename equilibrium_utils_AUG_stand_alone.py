@@ -14,7 +14,7 @@ from kk_mwillens import KK
 from scipy.optimize import minimize
 from scipy.interpolate import RectBivariateSpline
 import copy
-import matplotlib.pyplot as plt
+
 
 def eval_spline(x_vec, spl):
     return np.array([spl[0](x_vec[0], x_vec[1])])
@@ -282,6 +282,7 @@ class EQData:
             return output.rho_p
 
 if(__name__ == "__main__"):
+    import matplotlib.pyplot as plt
     EQobj = EQData(33896, EQ_exp="AUGD", EQ_diag="EQH", EQ_ed=0, bt_vac_correction=1.005, Ext_data=False)
     EQ_t = EQobj.GetSlice(3.0)
     plt.contour(EQ_t.R, EQ_t.z, (EQ_t.Psi.T - EQ_t.Psi_ax) / (EQ_t.Psi_sep - EQ_t.Psi_ax), levels=np.linspace(0.1, 1.2, 12))

@@ -5,7 +5,7 @@ Created on Apr 20, 2016
 '''
 from shotfile_handling import get_diag_data_no_calib, get_data_calib_entire_shot, filter_CTA, get_ECRH_PW, load_IDA_data, get_data_calib
 import numpy as np
-import matplotlib.pyplot as plt
+from plotting_configuration import *
 from scipy.signal import medfilt
 from Diags import Diag
 

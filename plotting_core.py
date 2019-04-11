@@ -32,7 +32,6 @@ from electron_distribution_utils import ratio_B, weighted_emissivity_along_s, Ju
 import scipy.constants as cnst
 from scipy.integrate import simps
 from ECRad_utils import get_files_and_labels
-# import matplotlib.pyplot as plt
 from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline, SmoothBivariateSpline
 from scipy import stats
 from wxEvents import ThreadFinishedEvt, Unbound_EVT_DONE_PLOTTING
@@ -4245,7 +4244,6 @@ class plotting_core:
         self.axlist[0].set_xlim(0.7, 2.5)
         self.axlist[0].set_ylim(-1.75, 1.75)
         self.axlist[1].set_ylim(-1.0, 1.0)
-        self.axlist_2[0].set_ylim(0, 1)
         if(H):
             return self.fig, self.fig_2
         else:

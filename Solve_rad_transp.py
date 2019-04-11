@@ -10,7 +10,7 @@ from em_Albajar import em_abs_Alb, s_vec, distribution_interpolator, \
                                         gene_distribution_interpolator
 from scipy.integrate import ode, quad
 from scipy import constants as cnst
-import matplotlib.pyplot as plt
+from plotting_configuration import *
 from electron_distribution_utils import f_interpolator, \
                                         get_dist_moments_non_rel, load_f_from_ASCII
 
