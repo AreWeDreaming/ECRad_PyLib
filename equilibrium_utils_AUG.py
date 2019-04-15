@@ -24,7 +24,7 @@ import scipy.optimize as scopt
 from map_equ import equ_map
 vessel_bd_file = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/ECRad_Pylib/ASDEX_Upgrade_vessel.txt"
 
-
+R0 = 1.65  # Point for which BTFABB is defined
 def eval_R(x):
     return -x[0] ** 3
 
@@ -93,7 +93,7 @@ class EQData(EQDataExt):
             self.FPC = None
         else:
             print("EQ diagnostic {0:s} not supported - only EQH and IDE are currently supported!".format(self.EQ_diag))
-        self.MBI_shot = dd.shotfile('MBI', int(self.shot))
+        self.MBI = dd.shotfile('MBI', int(self.shot))
         self.shotfile_ready = True
 
     def GetSlice(self, time):
@@ -108,7 +108,6 @@ class EQData(EQDataExt):
                                  self.equ.ssq["Rxpo"][time_index], self.equ.ssq["Zxpo"][time_index], self.equ.psix[time_index])
         self.equ._read_pfm()
         Psi = self.equ.pfm[:, :, time_index]
-        R0 = 1.65  # Point for which BTFABB is defined
         # Adapted from mod_eqi.f90 by R. Fischer
         rv = 2.40
         vz = 0.e0
@@ -125,7 +124,7 @@ class EQData(EQDataExt):
             Btf0 = signal
         else:
             try:
-                signal = self.MBI_shot.getSignal("BTFABB", \
+                signal = self.MBI.getSignal("BTFABB", \
                               tBegin=time - 5.e-5, tEnd=time + 5.e-5)
                 if(not np.isscalar(signal)):
                     signal = np.mean(signal)
@@ -160,7 +159,7 @@ class EQData(EQDataExt):
             return self.equ.rz2rho(R, z, t_in=time, coord_out="rho_tor")
 
 
-    def rhop_to_rot(self, time, rhop):
+    def rhop_to_rhot(self, time, rhop):
         if(self.external_folder != '' or self.Ext_data):
             print("Not yet implemented")
             raise ValueError("Not yet implemented")
