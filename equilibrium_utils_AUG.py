@@ -145,9 +145,9 @@ class EQData(EQDataExt):
             Btok_eq = Btf0_eq * R0 / R  # vacuum toroidal field from EQH
             Bdia = Bt.T[j] - Btok_eq  # subtract vacuum toroidal field from equilibrium to obtain diamagnetic field
             Bt.T[j] = (Btok * self.bt_vac_correction) + Bdia  # add corrected vacuum toroidal field to be used
-        print(Btf0)
-        print("Original magnetic field: {0:2.3f}".format(Btf0))
-        print("New magnetic field: {0:2.3f}".format(Btf0 * self.bt_vac_correction))
+#         print(Btf0)
+#         print("Original magnetic field: {0:2.3f}".format(Btf0))
+#         print("New magnetic field: {0:2.3f}".format(Btf0 * self.bt_vac_correction))
         return EQDataSlice(time, R, z, Psi, Br, Bt, Bz, special=special, rhop=rhop)
 
     def map_Rz_to_rhot(self, time, R, z):

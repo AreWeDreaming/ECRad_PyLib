@@ -10,6 +10,7 @@ from scipy.integrate import simps
 import os
 import scipy.constants as cnst
 from GlobalSettings import AUG, TCV
+import ECRad_Results
 try:
     import h5py
 except ImportError:
@@ -50,6 +51,25 @@ elif(TCV):
     from equilibrium_utils_TCV import EQData
 
 wave_folder = "/afs/ipp-garching.mpg.de/home/s/sdenk/Documentation/Data/DistData"
+
+
+
+def repair_ECRad_results(folder_in, folder_out=None):
+    # Allows to make bulk modification of result files using glob
+    # If folder_out is True it overwrites!
+    filelist = glob.glob(os.path.join(folder_in, "*.mat"))
+#     filelist = ['/tokp/work/sdenk/DRELAX_Results/ECRad_35662_ECECTACTC_run0208.mat']
+    cur_result = ECRadResults()
+    for filename in filelist:
+        cur_result.reset()
+        cur_result.from_mat_file(filename)
+        # Enter bulk modifcations here
+        cur_result.Scenario.used_diags_dict["CTC"].diag = "CTC"
+        if(folder_out is None):
+            cur_result.to_mat_file(filename)
+        else:
+            cur_result.to_mat_file(os.path.join(folder_out, os.path.basename(filename)))
+            
 
 def get_files_and_labels(dstf, simpl=None):
         third_model = False
@@ -2834,6 +2854,7 @@ def make_I0(rhop_X, rhop_O, I_X, I_O, T_X, T_O, reflec_X, reflec_O, mode_conv, v
     plt.show()
 
 if __name__ == "__main__":
+    repair_ECRad_results("/tokp/work/sdenk/DRELAX_Results")
 #    plot_delta_f("/tokp/work/sdenk/nssf/33697/4.80/OERT/ed_0/ecfm_data/", 0.15)
 #    compare_BPD_to_Teperp(1000)
 #    exampl_reso([120.e9, 120.e9], [70.e9, 70.e9], [0.99 * np.pi / 2.e0, np.pi / 4.e0], 8.e3, 5.e18, n=2)
@@ -2878,12 +2899,12 @@ if __name__ == "__main__":
 #                        r"$\tilde{T}_\mathrm{rad}$[rel. BiMaxwellian($T_\parallel=T_0$)]", \
 #                        r"$\tilde{T}_\mathrm{rad}$[rel. BiMaxwellian($T_\perp=T_0$)]", \
 #                        r"$\tilde{T}_\mathrm{rad}$[rel. BiMaxwellian]"])
-    compare_Trad_difs_light("/ptmp1/work/sdenk/nssf/33585/3.00/OERT/", \
-                      ["ed_4", "ed_5", "ed_6", "ed_7"], \
-                       [r"$\tilde{T}_\mathrm{rad}$[GENE]", \
-                        r"$\tilde{T}_\mathrm{rad}$[BiMaxwellian($T_\parallel=T_0$)]", \
-                        r"$\tilde{T}_\mathrm{rad}$[BiMaxwellian($T_\perp=T_0$)]", \
-                        r"$\tilde{T}_\mathrm{rad}$[BiMaxwellian]"])
+#     compare_Trad_difs_light("/ptmp1/work/sdenk/nssf/33585/3.00/OERT/", \
+#                       ["ed_4", "ed_5", "ed_6", "ed_7"], \
+#                        [r"$\tilde{T}_\mathrm{rad}$[GENE]", \
+#                         r"$\tilde{T}_\mathrm{rad}$[BiMaxwellian($T_\parallel=T_0$)]", \
+#                         r"$\tilde{T}_\mathrm{rad}$[BiMaxwellian($T_\perp=T_0$)]", \
+#                         r"$\tilde{T}_\mathrm{rad}$[BiMaxwellian]"])
 #    compare_Trad_difs("/ptmp1/work/sdenk/nssf/33585/3.00/OERT/", \
 #                      ["ed_4", "ed_23", "ed_7", "ed_24"], \
 #                       [r"$\tilde{T}_\mathrm{rad}$[GENE perp.]", \

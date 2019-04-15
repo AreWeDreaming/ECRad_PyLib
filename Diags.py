@@ -48,12 +48,14 @@ class Diag(BasicDiag):
 #        self.waist_shift = waist_shift
 #        self.properties.append("waist_shift")
 #        self.descriptions_dict["waist_shift"] = "Shift beam waist"
-#        self.mode_filter = mode_filter
+        self.mode_filter = mode_filter
+        self.mode_width = mode_width
+        self.freq_cut_off = freq_cut_off
 #        self.properties.append("mode_filter")
 #        self.descriptions_dict["mode_filter"] = "Shift beam waist"
 #        self.mode_harmonics = mode_harmonics
-#        self.mode_width = mode_width
-#        self.freq_cut_off = freq_cut_off
+#        
+
 
 class ECI_diag(Diag):
     def __init__(self, name, exp, diag_str, ed, Rz_exp, Rz_diag, Rz_ed, t_smooth=1.e-3):

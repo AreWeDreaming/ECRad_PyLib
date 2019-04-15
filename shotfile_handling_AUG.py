@@ -14,7 +14,6 @@ if(not itm):
     sys.path.append('/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib')
 else:
     sys.path.append('../lib')
-# import dd
 import dd
 from scipy.signal import medfilt, argrelmax
 root = "/afs/ipp-garching.mpg.de/home/s/sdenk/"
@@ -38,6 +37,14 @@ from scipy.signal import resample  # decimate
 from Diags import Diag
 from shutil import copyfile
 from data_processing import remove_mode
+AUG_profile_diags = ["IDA", "RMD", "CEC", "VTA", "CEZ", "COZ", "CUZ"]
+
+def shotfile_exists(shot, diag):
+    try:
+        sf = dd.shotfile(diagnostic=diag.diag, pulseNumber=shot, experiment=diag.exp, edition=diag.ed)
+        return True
+    except dd.PyddError:
+        return False
 
 def get_diag_data_no_calib_wrapper(shot, name, exp="AUGD", diag="None", ed=0):
     if(diag is None):
@@ -301,7 +308,8 @@ def get_data_calib_entire_shot(diag, shot, ext_resonances=None, calib=None):
 
 
 def get_data_calib(diag, shot=0, time=None, eq_exp="AUGD", eq_diag="EQH", \
-                   eq_ed=0, calib=None, std_dev_calib=None, sys_dev_calib=None, ext_resonances=None, name="", t_smooth=None, median=True):
+                   eq_ed=0, calib=None, std_dev_calib=None, sys_dev_calib=None, \
+                   ext_resonances=None, name="", t_smooth=None, median=True):
     # Gets the data from all ECE diagnostics that have shotfiles
     # Returns std deviation in keV, rho poloidal resonance and Trad in keV
     if(t_smooth is None):

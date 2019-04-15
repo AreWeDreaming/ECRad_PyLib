@@ -354,24 +354,22 @@ class EQDataExt:
 
     def map_Rz_to_rhop(self, time, R, z):
         cur_slice = self.GetSlice(time)
-        R = cur_slice.R
-        z = cur_slice.z
         Psi = cur_slice.Psi
         special = cur_slice.special
-        if(Psi[len(R) / 2][len(z) / 2] > special[1]):
+        if(Psi[len(cur_slice.R) / 2][len(cur_slice.z) / 2] > special[1]):
         # We want a minimum in the flux at the magn. axis
             Psi *= -1.0
             special[1] *= -1.0
-        psi_spl = RectBivariateSpline(R, z, Psi)
+        psi_spl = RectBivariateSpline(cur_slice.R, cur_slice.z, Psi)
         indicies = np.unravel_index(np.argmin(Psi), Psi.shape)
-        R_init = np.array([R[indicies[0]], z[indicies[1]]])
+        R_init = np.array([cur_slice.R[indicies[0]], cur_slice.z[indicies[1]]])
         print(R_init)
         opt = minimize(eval_spline, R_init, args=[psi_spl], \
-                 bounds=[[np.min(R), np.max(R)], [np.min(z), np.max(z)]])
+                 bounds=[[np.min(cur_slice.R), np.max(cur_slice.R)], [np.min(cur_slice.z), np.max(cur_slice.z)]])
         print("Magnetic axis position: ", opt.x[0], opt.x[1])
         psi_ax = psi_spl(opt.x[0], opt.x[1])
         rhop = np.sqrt((Psi - psi_ax) / (special[1] - psi_ax))
-        rhop_spl = RectBivariateSpline(R, z, rhop)
+        rhop_spl = RectBivariateSpline(cur_slice.R, cur_slice.z, rhop)
         return rhop_spl(R, z, grid=False)
 
 

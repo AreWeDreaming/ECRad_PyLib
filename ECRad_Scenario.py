@@ -69,7 +69,6 @@ class ECRad_Scenario:
                 print(e)
                 print("Error: File appears to be corrupted does not exist")
                 return False
-
         profile_dimension = mdict["profile_dimension"]
         # Loading from .mat sometimes adds single entry arrays that we don't want
         at_least_1d_keys = ["diag", "time", "Diags_exp", "Diags_diag", "Diags_ed", "Extra_arg_1", "Extra_arg_2", "Extra_arg_3", \
@@ -128,12 +127,6 @@ class ECRad_Scenario:
                     self.used_diags_dict.update({diagname: EXT_diag(diagname, mdict["Ext_launch_geo"], mdict["Ext_launch_pol"])})
                 else:
                     self.used_diags_dict.update({diagname: EXT_diag(diagname, mdict["Ext_launch_geo"], -1)})
-            elif(diagname == "VCE"):
-                if(AUG):
-                    self.used_diags_dict.update({diagname: TCV_diag(diagname, mdict["Diags_exp"][i], mdict["Diags_diag"][i], int(mdict["Diags_ed"][i]), \
-                                              mdict["Extra_arg_1"][i], mdict["Extra_arg_2"][i])})
-                else:
-                    self.used_diags_dict.update({diagname: Diag(diagname, mdict["Diags_exp"][i], mdict["Diags_diag"][i], int(mdict["Diags_ed"][i]))})
             else:
                 self.used_diags_dict.update({diagname: \
                         Diag(diagname, mdict["Diags_exp"][i], mdict["Diags_diag"][i], int(mdict["Diags_ed"][i]))})
@@ -151,6 +144,7 @@ class ECRad_Scenario:
                 self.ray_launch[-1]["width"] = mdict["launch_width"][itime]
                 self.ray_launch[-1]["pol_coeff_X"] = mdict["launch_pol_coeff_X"][itime]
                 self.ray_launch[-1]["diag_name"] = mdict["diag_name"][itime]
+            self.ray_launch = np.array(self.ray_launch)
             self.diags_set = True
         if(not load_plasma_dict):
             return

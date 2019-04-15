@@ -1324,8 +1324,8 @@ class plotting_core:
 #            pass
 #        self.axlist[0].set_ylim(0, 10.0)
 
-    def plot_Trad(self, time, rhop, Trad, Trad_comp, rhop_IDA, Te_IDA, \
-                  rhop_ECE, ECE_dat, ECE_err, ECE_mod, dstf, model_2=True, \
+    def plot_Trad(self, time, rhop, Trad, Trad_comp, rhop_Te, Te, \
+                  diags, diag_names, dstf, model_2=True, \
                   X_mode_fraction=None, X_mode_fraction_comp=None):
         if(X_mode_fraction is not None):
             twinx = "_twinx"
@@ -1367,99 +1367,58 @@ class plotting_core:
         # No ne as of yet                                       #    y_range_in = self.y_range_list[0])  \,R = 0.90 $
 #        self.axlist[1],  self.y_range_list[1] = self.add_plot(self.axlist[1], data = [rhop_ne_vec, ne_vec], \
 #            name = r"IDA $n_\mathrm{e}$", marker = "-",color=(0.0,0.0,0.0), y_range_in = self.y_range_list[1], ax_flag = "ne")
-        self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[ rhop_IDA, Te_IDA], \
-            name=r"$T_" + mathrm + "{e}$", coloumn=1, marker="-", color=(0.0, 0.0, 0.0), \
-                 y_range_in=self.y_range_list[0], y_scale=1.0, ax_flag=ax_flag)  # \times 100$
-#        if(ECE):
-#            y_err, ECE_data = get_data_calib(folder,diag,shotno, time, rel_res, exp = exp)
-#            if(ECE_data is not None):
-#                ECE_data[0][Channel_list[diag_data==diag] == 0] *= - 1.0
-#                self.axlist[0],  self.y_range_list[0] = self.add_plot(self.axlist[0], \
-#                     data = [ECE_data[0][ECE_data[0] < rho_max],ECE_data[1][ECE_data[0] < rho_max]] , \
-#                     y_error= y_err[ECE_data[0] < rho_max],\
-#                     name = r"$T_\mathrm{rad,ECE}$", marker = r"o",color=(0,126.0/255,0),\
-#                     y_range_in = self.y_range_list[0],ax_flag = ax_flag,label_x = label_x) #(0.0,0.3,0.0)
-#            except IOError:
-#
-#                self.axlist[0],  self.y_range_list[0] = self.add_plot(self.axlist[0], filename = d_backup_filename, \
-#                         name = r"$T_\mathrm{rad,ECE}$", marker = r"o",color=(0,126.0/255,0),\
-#                         y_range_in = self.y_range_list[0],ax_flag = ax_flag,label_x = label_x)
-#        if(CTC):
-#            y_err, CTC_data = get_data_calib(folder,"CTC",shotno, time, rel_res)
-#            if(CTC_data is not None):
-#                CTC_data[0][Channel_list[diag_data=="CTC"] == 0] *= - 1.0
-#                self.axlist[0],  self.y_range_list[0] = self.add_plot(self.axlist[0], \
-#                     data = [CTC_data[0][CTC_data[0] < rho_max],CTC_data[1][CTC_data[0] < rho_max]], \
-#                     y_error= y_err[CTC_data[0] < rho_max], \
-#                     name = r"$T_\mathrm{rad,CTS}$", marker = r"*",color=(126.0/255.,100.0/255,0),\
-#                     y_range_in = self.y_range_list[0],ax_flag = ax_flag,label_x = label_x)
-#        if(IEC):
-#            y_err, IEC_data = get_data_calib(folder,"IEC",shotno, time, rel_res)
-#            if(IEC_data is not None):
-#                IEC_data[0][Channel_list[diag_data=="IEc"] == 0] *= - 1.0
-#                self.axlist[0],  self.y_range_list[0] = self.add_plot(self.axlist[0], \
-#                     data = [IEC_data[0][IEC_data[0] < rho_max],IEC_data[1][IEC_data[0] < rho_max]], \
-#                     y_error= y_err[IEC_data[0] < rho_max], \
-#                     name = r"$T_\mathrm{rad,Inline}$", marker = r"*",color=(0.0,126.0/255,87.0/255),\
-#                     y_range_in = self.y_range_list[0],ax_flag = ax_flag,label_x = label_x)
-#        if(ECI):
-#            y_err, ECI_data = get_data_calib(folder,"ECI",shotno, time, rel_res)
-#            if(ECI_data is not None):
-#                ECI_data[0][Channel_list[diag_data=="ECI"] == 0] *= - 1.0
-#                self.axlist[0],  self.y_range_list[0] = self.add_plot(self.axlist[0], \
-#                     data = [ECI_data[0][ECI_data[0] < rho_max],ECI_data[1][ECI_data[0] < rho_max]], \
-#                     y_error= y_err[ECI_data[0] < rho_max], \
-#                     name = r"$T_\mathrm{rad,ECEI}$", marker = r"*",color=(126.0/255,0.0,87.0/255.0),\
-#                     y_range_in = self.y_range_list[0],ax_flag = ax_flag,label_x = label_x)
-#        if(IDA_model):
-#            try:
-#                ECE_residue = np.loadtxt(d_abs_filename)
-#                ECE_residue.T[0][Channel_list[(diag_data==diag) | (diag_data==fall_back_diag)] == 0] *= -1.0
-#                self.axlist[0],  self.y_range_list[0] = self.add_plot(self.axlist[0], \
-#                         data =[ECE_residue.T[0][0:len((diag_data==diag) | \
-#                                (diag_data==fall_back_diag))][ECE_residue.T[0][0:len((diag_data==diag) | \
-#                                (diag_data==fall_back_diag))] < rho_max], ECE_residue.T[2][0:len((diag_data==diag) | \
-#                                (diag_data==fall_back_diag))][ECE_residue.T[0][0:len((diag_data==diag) | \
-#                                (diag_data==fall_back_diag))] < rho_max]], \
-#                         name = r"$T_\mathrm{rad,IDA}$", marker = r"d",color=(0.0,200.0/255,200.0/255),\
-#                         y_range_in = self.y_range_list[0],ax_flag = ax_flag,label_x = label_x) #(0.0,0.3,0.0)
-#            except IOError:
-#                print("Could not find IDA model data at:", d_abs_filename)
-        if(model_2):
+        self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[rhop_Te, Te], \
+                                                             name=r"$T_" + mathrm + "{e}$", coloumn=1, \
+                                                             marker="-", color=(0.0, 0.0, 0.0), \
+                                                             y_range_in=self.y_range_list[0], y_scale=1.0, \
+                                                             ax_flag=ax_flag)  # \times 100$
+        mask = np.zeros(len(Trad), dtype=np.bool)
+        if(len(diags) > 0):
+            mask[:] = False
+            for diag in diags:
+                # For some reason there is no automatic cast from unicode to string here -> make it explicit
+                mask[str(diag.name)==diag_names] = True
+        else:
+            mask[:] = True
+        if(model_2 and len(Trad_comp) > 0):
             self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
-                data=[rhop, Trad_comp], \
+                data=[rhop[mask], Trad_comp[mask]], \
                 name=r"$T_" + mathrm + "{rad,mod}" + dist_simpl + r"$", \
                 marker="s", color=(126.0 / 255, 0.0, 126.0 / 255), \
                 y_range_in=self.y_range_list[0], ax_flag=ax_flag)
             if(X_mode_fraction_comp is not None):
                 self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], \
-                                                                     data=[rhop, X_mode_fraction_comp * 1.e2], \
+                                                                     data=[rhop[mask], X_mode_fraction_comp[mask] * 1.e2], \
                                                                      name=r"X-mode fraction $" + dist_simpl + r"$", \
                                                                      marker="o", color=(0.0, 0.2, 0.2e0), \
                                                                      y_range_in=self.y_range_list[1], ax_flag="X_frac")
         self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
-            data=[rhop, Trad], \
+            data=[rhop[mask], Trad[mask]], \
             name=r"$T_" + mathrm + "{rad,mod}" + dist + r"$", \
             marker="v", color=(126.0 / 255, 126.0 / 255, 0.e0), \
             y_range_in=self.y_range_list[0], ax_flag=ax_flag)
         if(X_mode_fraction is not None):
             # percent
             self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], \
-                data=[rhop, X_mode_fraction * 1.e2], \
+                data=[rhop[mask], X_mode_fraction[mask] * 1.e2], \
                 name=r"X-mode fraction $" + dist + r"$", \
                 marker="+", color=(0.0, 0.0, 0.e0), \
                 y_range_in=self.y_range_list[1], ax_flag="X_frac")
-        if(len(rhop_ECE) > 0):
+        for diag in diags:
             self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
-                data=[rhop_ECE[ECE_err < 1.e5], ECE_dat[ECE_err < 1.e5]], y_error=ECE_err[ECE_err < 1.e5], \
-                name=r"ECE $T_" + mathrm + "{rad,data}$", \
-                marker="+", color=(0.0, 126.0 / 255, 0.0), \
+                data=[diag.rhop, diag.val], y_error=diag.unc, \
+                name=diag.name, marker=self.diag_markers[self.diag_marker_index[0]], \
+                color=self.diag_colors[self.diag_color_index[0]], \
                 y_range_in=self.y_range_list[0], ax_flag=ax_flag)
-            self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
-                data=[rhop_ECE[ECE_err < 1.e5], ECE_mod[ECE_err < 1.e5]], \
-                name=r"ECE $T_" + mathrm + "{rad,mod}$ IDA", \
-                marker="o", color=(1.0, 0.e0, 0.e0), \
-                y_range_in=self.y_range_list[0], ax_flag=ax_flag)
+            self.diag_marker_index[0] += 1
+            if(self.diag_marker_index[0] > len(self.diag_markers)):
+                print("Warning too many diagnostics to plot - ran out of unique markers")
+                self.diag_color_index[0] = 0
+            self.diag_color_index[0] += 1
+            if(self.diag_color_index[0] > len(self.diag_colors)):
+                print("Warning too many diagnostics to plot - ran out of unique colors")
+                self.diag_color_index[0] = 0
+            
         self.create_legends("Te_no_ne" + twinx)
         return self.fig
 
@@ -2014,11 +1973,16 @@ class plotting_core:
                 color = (0.0, 0.0, 1.0)
             else:
                 color = self.diag_cmap.to_rgba(float(i) / float(len(ECRad_result_list) - 1))
+            Trad = []
+            for itime in range(len(result.time)):
+                if(result.masked_time_points[diag][itime]):
+                    Trad.append(result.Trad[itime][result.Scenario.ray_launch[itime]["diag_name"]  == diag])
+            Trad = np.array(Trad)
 #            self.axlist[0].plot([], [], color=color, label=r"$T_\mathrm{rad, mod}$" + r" \# {0:d} ed {1:d} ch {2:d}".format(result.Config.shot, result.edition, ch + 1))
             self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
-                data=[result.Config.time[result.masked_time_points[diag]], np.abs(result.calib_mat[diag].T[ch])], \
+                data=[result.time[result.masked_time_points[diag]], np.abs(result.calib_mat[diag].T[ch])], \
                 y_error=result.std_dev_mat[diag].T[ch], \
-                name=r"$c$" + r" \# {0:d} ed {1:d} ch {2:d}".format(result.Config.shot, result.edition, ch + 1), marker="+", \
+                name=r"$c$" + r" \# {0:d} ed {1:d} ch {2:d}".format(result.Scenario.shot, result.edition, ch + 1), marker="+", \
                      color=color, y_range_in=self.y_range_list[0], ax_flag="Calib_trace")
 #            self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], \
 #                data=[result.Config.time, result.T.T[ch]], \
@@ -2033,7 +1997,7 @@ class plotting_core:
 #                # name=r"$T_\mathrm{rad}$" + r" \# {0:n} ed {1:n} ch {2:n}".format(result.Config.shot, result.edition, ch + 1), \
 #            else:
             self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], \
-                data=[result.Config.time[result.masked_time_points[diag]], result.Trad[result.masked_time_points[diag]].T[ch]], \
+                data=[result.time[result.masked_time_points[diag]], Trad.T[ch]], \
                 color=color, marker="-", \
                      y_range_in=self.y_range_list[1], ax_flag="Trad_trace")
 #            Te_spline = InterpolatedUnivariateSpline(result.Config.IDA_dict["rhop"], result.Config.IDA_dict["Te"])
@@ -2068,18 +2032,23 @@ class plotting_core:
                 color = (0.0, 0.0, 1.0)
             else:
                 color = self.diag_cmap.to_rgba(float(i) / float(len(ECRad_result_list) - 1))
+            Trad = []
+            for itime in range(len(result.time)):
+                if(result.masked_time_points[diag][itime]):
+                    Trad.append(result.Trad[itime][result.Scenario.ray_launch[itime]["diag_name"]  == diag])
+            Trad = np.array(Trad)
             self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
-                    data=[result.Trad[result.masked_time_points[actual_diag]].T[result.diag == actual_diag][ch], \
+                    data=[Trad.T[ch], \
                           diag_data[i]], \
                     y_error=std_dev_data[i], name=r"Signal ed {0: d}  ch. no. {1: d}".format(result.edition, ch + 1), \
                     marker="+", color=color, \
                     y_range_in=self.y_range_list[0], ax_flag="Sig_vs_Trad_small", y_scale=1.e3)
             if(pol_angle_list is not None):
                 self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], \
-                    data=[result.Trad[result.masked_time_points[actual_diag]].T[result.diag == actual_diag][ch], pol_angle_list[i][result.masked_time_points[actual_diag]]], \
+                    data=[Trad.T, pol_angle_list[i][result.masked_time_points[actual_diag]]], \
                     marker="*", color="red", name=r"$\theta_\mathrm{pol}$", \
                     y_range_in=self.y_range_list[1], ax_flag="Ang_vs_Trad")
-            Trad_ax = np.linspace(0.0, np.max(result.Trad.T[result.diag == actual_diag][ch]) * 1.2, 100)
+            Trad_ax = np.linspace(0.0, np.max(Trad.T) * 1.2, 100)
             art_data = Trad_ax * popt_list[i][1] + popt_list[i][0]
             self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                 data=[Trad_ax, art_data], \
