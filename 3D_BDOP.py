@@ -824,19 +824,21 @@ def make_3DBDOP_cut(matfilename, shot, time, ch_list, m_list, dist, diag="EQH", 
     Te_spline = InterpolatedUnivariateSpline(rhop_Te, Te)
     ne_spline = InterpolatedUnivariateSpline(rhop_ne, ne)
     print("Position of magn. axus", R_ax, z_ax)
-    if(include_ECRH):
-        if(usemat):
-            mat = loadmat(matfilename, squeeze_me=True)
+    if(usemat):
+        mat = loadmat(matfilename, squeeze_me=True)
+        if(include_ECRH):
             linear_beam = read_waves_mat_to_beam(mat, EqSlice, use_wave_prefix=True)
             quasi_linear_beam = read_dist_mat_to_beam(mat, use_dist_prefix=True)
-            dist_obj = load_f_from_mat(matfilename, use_dist_prefix=True)
-        else:
-            waves_mat = loadmat(os.path.join("/afs/ipp-garching.mpg.de/home/s/sdenk/Documentation/Data/DistData", "GRAY_rays_{0:d}_{1:1.2f}.mat".format(shot, time)), squeeze_me=True)
+        dist_obj = load_f_from_mat(matfilename, use_dist_prefix=True)
+    else:
+        dist_obj = load_f_from_mat(os.path.join("/afs/ipp-garching.mpg.de/home/s/sdenk/Documentation/Data/DistData", "Dist_{0:d}_{1:1.2f}.mat".format(shot, time)), use_dist_prefix=False)
+        if(include_ECRH):
             dist_mat = loadmat(os.path.join("/afs/ipp-garching.mpg.de/home/s/sdenk/Documentation/Data/DistData", "Dist_{0:d}_{1:1.2f}.mat".format(shot, time)), squeeze_me=True)
-            linear_beam = read_waves_mat_to_beam(waves_mat, EqSlice)
+            waves_mat = loadmat(os.path.join("/afs/ipp-garching.mpg.de/home/s/sdenk/Documentation/Data/DistData", "GRAY_rays_{0:d}_{1:1.2f}.mat".format(shot, time)), squeeze_me=True)
+            linear_beam = read_waves_mat_to_beam(waves_mat, EqSlice)            
             quasi_linear_beam = read_dist_mat_to_beam(dist_mat)
-        if(single_Beam):
-                linear_beam.rays = linear_beam.rays[1:2]
+    if(single_Beam):
+            linear_beam.rays = linear_beam.rays[1:2]
     freq = ECRH_freq
     cmaps = []
     alphas = []
@@ -1207,8 +1209,8 @@ if(__name__ == "__main__"):
 #    make_3DBDOP_cut("/tokp/work/sdenk/nssf/33697/4.80/OERT/ed_8/", 33697, 4.80, [2], [2], "Re", diag="IDE", m_ECRH_list=[2], include_ECRH=True, single_Beam=False, only_contribution=True, save_only=False, single_ray_BPD=False)  # RELAX
 #    make_3DBDOP_cut("/tokp/work/sdenk/nssf/33705/4.90/OERT/ed_8/", 33705, 4.90, [95], [2], "Re", diag="IDE", ece_alpha=0.7, include_ECRH=True, single_Beam=False, only_contribution=True, save_only=False, single_ray_BPD=False)  # RELAX
 #    make_3DBDOP_cut("/tokp/work/sdenk/nssf/33697/4.80/OERT/ed_11/", 34663, 3.60, [15, 95], [2, 2], "Re", diag="IDE", m_ECRH_list=[2], ece_alpha=0.7, include_ECRH=True, single_Beam=False, only_contribution=True, save_only=False, single_ray_BPD=False)  # RELAX
-    make_3DBDOP_cut("/afs/ipp-garching.mpg.de/home/s/sdenk/Documentation/Data/ECRad_35662_ECECTACTC_run0101.mat", 35662, 4.40, [132], [2], "Re", diag="IDE", m_ECRH_list=[2], ece_alpha=0.7, include_ECRH=True, single_Beam=False, only_contribution=True, save_only=False, \
-                    single_ray_BPD=False, preserve_original_BPD=True, ECRH_freq=105.e9)  # RELAX
+    make_3DBDOP_cut("/tokp/work/sdenk/DRELAX_Results/ECRad_35662_ECECTACTC_run0052.mat", 35662, 1.672, [132], [2], "Re", diag="IDE", m_ECRH_list=[], ece_alpha=0.7, include_ECRH=False, single_Beam=False, only_contribution=True, save_only=False, \
+                    single_ray_BPD=False, preserve_original_BPD=True, ECRH_freq=105.e9, Teweight=True)  # 
 #    make_3DBDOP_cut("/ptmp1/work/sdenk/nssf/33585/3.00/OERT/ed_4/", 33585, 3.0, [5], [2], "Ge", diag="EQH", m_ECRH_list=[], ece_alpha=0.7, include_ECRH=False, single_Beam=False, only_contribution=True, save_only=False, single_ray_BPD=True, preserve_original_BPD=True, Teweight=True)  # RELAX
 #    make_3DBDOP("/ptmp1/work/sdenk/nssf/33585/3.00/OERT/ed_4/", 33585, 3.00, [5], [2], "Ge", diag="EQH", title=None, ece_alpha=0.7, include_ECRH=False, only_ECRH=False, only_contribution=True, flat=True, single_Beam=True)  # RELAX
 #    make_3DBDOP("/tokp/work/sdenk/nssf/33697/4.80/OERT/ed_3/", 33697, 4.80, [38], [2], "Re", diag="IDE", title=None, ece_alpha=0.7, include_ECRH=False, only_ECRH=False, only_contribution=True, flat=True, single_Beam=True)  # RELAX

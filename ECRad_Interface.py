@@ -3,11 +3,11 @@ Created on Dec 9, 2015
 
 @author: sdenk
 '''
+from GlobalSettings import AUG, TCV, itm, ECRadDevPath, ECRadPath, ECRadPathBSUB
 import os
 import numpy as np
 import sys
 sys.path.append("../ECRad_Pylib")
-from GlobalSettings import AUG, TCV, itm, ECRadDevPath, ECRadPath, ECRadPathBSUB
 from Diags import Diag
 if(AUG):
     vessel_file = '../ECRad_Pylib/ASDEX_Upgrade_vessel.txt'
@@ -17,9 +17,9 @@ from shutil import copy, copyfile, rmtree
 from scipy.io import loadmat
 import scipy.constants as cnst
 if(itm):
-    tb_path = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/torbeam"
-else:
     tb_path = "/marconi_work/eufus_gw/work/g2sdenk/torbeam/lib-OUT"
+else:
+    tb_path = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/torbeam"
 from equilibrium_utils import EQDataExt
 from electron_distribution_utils import export_gene_fortran_friendly, \
                                         export_gene_bimax_fortran_friendly, \
@@ -39,8 +39,8 @@ def GetECRadExec(Config, Scenario, time):
         ECRadVers = ECRadDevPath
     else:
         ECRadVers = ECRadPath
-    if(parallel and Config.parallel_cores > 16):
-        print("The maximum amount of cores for tokp submission is 16")
+    if(parallel and Config.parallel_cores > 32):
+        print("The maximum amount of cores for tokp submission is 32")
         return
     if(parallel):
         stacksize = 0
@@ -58,15 +58,28 @@ def GetECRadExec(Config, Scenario, time):
         launch_options_dict = {}
         launch_options_dict["jobname"] = "-J " + "E{0:5d}{1:1.1f}".format(Scenario.shot, time)
         os.environ['OMP_STACKSIZE'] = "{0:d}k".format(stacksize)
+        launch_options_dict["IO"] = "-o {0:s} -e {1:s} ".format(os.path.join(Config.working_dir, "ECRad.stdout"), \
+                                                                os.path.join(Config.working_dir, "ECRad.stderr"))
         if(parallel):
             launch_options_dict["partition"] = "--partition=p.tok.openmp"
-            launch_options_dict["qos"] = "--qos p.tok.2h"
-            if(Config.wall_time > 2):
-                launch_options_dict["qos"] = "p.tok.48h"
+            if(Config.wall_time <= 2):
+                launch_options_dict["qos"] = "--qos p.tok.openmp.2h"
+            elif(Config.wall_time <= 4):
+                launch_options_dict["qos"] = "--qos p.tok.openmp.4h"
+            elif(Config.wall_time <= 24):
+                launch_options_dict["qos"] = "--qos p.tok.openmp.24h"
+            else:
+                launch_options_dict["qos"] = "--qos p.tok.openmp.48h"
             launch_options_dict["memory"] = "--mem-per-cpu={0:d}M".format(int(Config.vmem / Config.parallel_cores))
             launch_options_dict["cpus"] = " --cpus-per-task={0:d}".format(cores)
         else:
             launch_options_dict["partition"] = "--partition=s.tok"
+            if(Config.wall_time <= 4):
+                launch_options_dict["qos"] = "--qos s.tok.short"
+            elif(Config.wall_time <= 36):
+                launch_options_dict["qos"] = "--qos s.tok.standard"
+            else:
+                launch_options_dict["qos"] = "--qos s.tok.long"
             launch_options_dict["qos"] = "--qos s.tok.short"
             if(Config.wall_time > 4):
                 launch_options_dict["qos"] = "--qos s.tok.standard"
@@ -109,6 +122,13 @@ def prepare_input_files(Config, Scenario, index, copy_dist=True):
         os.mkdir(ray_folder)
         print("Created folder " + ray_folder)
     write_diag_launch(ECRad_data_path, Scenario.ray_launch[index])
+    
+    if(Config.Te_scale != 1.0):
+        print("Te scale != 1 -> scaling Te for model")
+    if(Config.ne_scale != 1.0):
+        print("ne scale != 1 -> scaling ne for model")
+    if((Config.dstf != "Ge" and Config.dstf != "GB")):
+        success = make_ECRadInputFromPlasmaDict(ECRad_data_path, Scenario.plasma_dict, index)
     input_file = open(os.path.join(ECRad_data_path, "ECRad.inp"), "w")
     if(Config.dstf == "GB"):
         input_file.write("Ge" + "\n")  # Model does not distinguish between Ge and GB
@@ -118,12 +138,6 @@ def prepare_input_files(Config, Scenario, index, copy_dist=True):
         input_file.write("T\n")
     else:
         input_file.write("F\n")
-    if(Config.Te_scale != 1.0):
-        print("Te scale != 1 -> scaling Te for model")
-    if(Config.ne_scale != 1.0):
-        print("ne scale != 1 -> scaling ne for model")
-    if((Config.dstf != "Ge" and Config.dstf != "GB")):
-        success = make_ECRadInputFromPlasmaDict(ECRad_data_path, Scenario.plasma_dict, index)
     if(Config.raytracing):
         input_file.write("F\n")
     else:
@@ -161,15 +175,9 @@ def prepare_input_files(Config, Scenario, index, copy_dist=True):
     fvessel.flush()
     fvessel.close()
     if(Config.dstf == "Re" and copy_dist):
-        dist_filename = os.path.join(Config.Relax_dir, "Dist_{0:d}_{1:1.2f}.mat".format(Scenario.shot, Scenario.plasma_dict["time"][index]))
-        if(os.path.isfile(dist_filename)):
-            dist_obj = load_f_from_mat(dist_filename)
-            fRe_dir = os.path.join(ECRad_data_path, "fRe")
-            os.mkdir(fRe_dir)
-            export_fortran_friendly([dist_obj, fRe_dir])
-        else:
-            print(dist_filename + " does not exist!")
-            return False
+        fRe_dir = os.path.join(ECRad_data_path, "fRe")
+        os.mkdir(fRe_dir)
+        export_fortran_friendly([Scenario.dist_obj, fRe_dir])
     if(Config.dstf == "Ge" and copy_dist):
         wpath = os.path.join(os.path.join(Config.working_dir, "ECRad_data", "fGe"))
         if os.path.exists(wpath):
@@ -195,7 +203,7 @@ def prepare_input_files(Config, Scenario, index, copy_dist=True):
 def get_ECE_launch_info(shot, diag):
     from shotfile_handling_AUG import get_ECE_launch_params
     from equilibrium_utils_AUG import EQData
-    from geo_los import geo_los
+    import geo_los
     N = 200
     ECE_launch = get_ECE_launch_params(shot, diag)
     ECE_launch["phi"] = np.zeros(len(ECE_launch["f"]))
@@ -234,16 +242,16 @@ def get_ECE_launch_info(shot, diag):
                 ECE_launch["phi"][ich] = -0.28
             elif(ECE_launch["waveguide"][ich] == 10):
                 ECE_launch["phi_tor"][ich] = +0.7265
-                ECE_launch["phi"][ich] = 0.04
+                ECE_launch["phi"][ich] = -0.04
             elif (ECE_launch["waveguide"][ich] == 11 or ECE_launch["waveguide"][ich] == 3):
                 ECE_launch["phi_tor"][ich] = -0.7265
-                ECE_launch["phi"][ich] = -0.04
+                ECE_launch["phi"][ich] = 0.04
             else:
                 print("subroutine make_theta_los: something wrong with wg(ich) for shotno. > 33724!")
                 print("wg", ECE_launch["waveguide"][ich])
                 raise ValueError
         if(ECE_launch["waveguide"][ich] != wg_last):
-            R, z = geo_los(shot, ECE_launch["waveguide"][ich], ECE_launch["z_lens"], R, z)
+            R, z = geo_los.geo_los(shot, ECE_launch["waveguide"][ich], ECE_launch["z_lens"], R, z)
             R1 = R[0]
             R2 = R[-1]
             z1 = z[0]
@@ -258,6 +266,7 @@ def get_ECE_launch_info(shot, diag):
     ECE_launch["phi"][:] += (8.5e0) * 22.5
     ECE_launch["dist_focus"][:] = 2.131
     ECE_launch["width"][:] = 17.17e-2
+    del(geo_los) # Delete to avoid problems with conflicting libraries
     return ECE_launch
 
 def get_diag_launch(shot, time, used_diag_dict, gy_dict=None, ECI_dict=None):
@@ -596,64 +605,65 @@ def make_hedgehog_launch(working_dir, f, df, R, phi, z):
     launch_file.flush()
     launch_file.close()
 
-def make_vessel_plasma_ratio(index, Config):
-    if(Config.Ext_plasma):
-        EQ_obj = EQData(Config.shot, external_folder=None, bt_vac_correction=Config.bt_vac_correction)
-        EQ_obj.insert_slices_from_ext(Config.time[index], Config.plasma_dict["eq_data"][index])
-        R_vessel = Config.plasma_dict["vessel_bd"][0]
-        z_vessel = Config.plasma_dict["vessel_bd"][0]
-        raise ValueError("Not implemented yet for ExtPlasmas")
-    else:
-        EQ_obj = EQData(Config.shot, EQ_exp=Config.EQ_exp, EQ_diag=Config.EQ_diag, EQ_ed=Config.EQ_ed, bt_vac_correction=Config.bt_vac_correction)
-        vessel_data = np.loadtxt(vessel_file, skiprows=1)
-        R_vessel = vessel_data.T[0]
-        z_vessel = vessel_data.T[1]
-    A_torus = get_Surface_area_of_torus(R_vessel, z_vessel)
-    A_plasma = EQ_obj.get_surface_area(Config.time[index], 0.99)
-    print("Wall surface area", A_torus)
-    print("Plasma surface area", A_plasma)
-    return A_torus / A_plasma
+#Used for deprecated feature of advanced reclections 
+# def make_vessel_plasma_ratio(index, Config):
+#     if(Config.Ext_plasma):
+#         EQ_obj = EQData(Config.shot, external_folder=None, bt_vac_correction=Config.bt_vac_correction)
+#         EQ_obj.insert_slices_from_ext(Config.time[index], Config.plasma_dict["eq_data"][index])
+#         R_vessel = Config.plasma_dict["vessel_bd"][0]
+#         z_vessel = Config.plasma_dict["vessel_bd"][0]
+#         raise ValueError("Not implemented yet for ExtPlasmas")
+#     else:
+#         EQ_obj = EQData(Config.shot, EQ_exp=Config.EQ_exp, EQ_diag=Config.EQ_diag, EQ_ed=Config.EQ_ed, bt_vac_correction=Config.bt_vac_correction)
+#         vessel_data = np.loadtxt(vessel_file, skiprows=1)
+#         R_vessel = vessel_data.T[0]
+#         z_vessel = vessel_data.T[1]
+#     A_torus = get_Surface_area_of_torus(R_vessel, z_vessel)
+#     A_plasma = EQ_obj.get_surface_area(Config.time[index], 0.99)
+#     print("Wall surface area", A_torus)
+#     print("Plasma surface area", A_plasma)
+#     return A_torus / A_plasma
 
-def make_reflec_Trad(index, Config, f_reflec, Trad_X_reflec, tau_X_reflec, Trad_O_reflec, tau_O_reflec):
-    # Currently broken  DO NOT USE !!!
-    # Simplified improved wall reflection model - no mode conversion (adapted from W. H. M. Clark, 1983, Plasma Phys. 23 1501
-    ECRad_data_path = os.path.join(Config.working_dir, "ECRad_data", "")
-    vessel_plasma_ratio = make_vessel_plasma_ratio(index, Config)
-    if(Config.considered_modes == 1):
-        Trad_X_reflected = Trad_X_reflec / (vessel_plasma_ratio * (1.e0 - Config.reflec_X) + (1.0 - np.exp(-tau_X_reflec)))
-        Trad_X_reflec_file = open(os.path.join(ECRad_data_path, "X_reflec_Trad.dat"), "w")
-        Trad_X_reflec_file.write("{0: 5d}\n".format(len(Trad_X_reflected)))
-        for i in range(len(Trad_X_reflec)):
-            print("tau_reflect - T_rad X reflected / Trad_X {0:1.3f} - {1:1.3f}".format(tau_X_reflec[i], Trad_X_reflected[i] / Trad_X_reflec[i]))
-            Trad_X_reflec_file.write("{0: 1.10E} {1: 1.10E}\n".format(f_reflec[i], Trad_X_reflected[i] * 1.e3))  # keV -> eV
-        Trad_X_reflec_file.flush()
-        Trad_X_reflec_file.close()
-    elif(Config.considered_modes == 2):
-        Trad_O_reflected = Trad_O_reflec / (vessel_plasma_ratio * (1.e0 - Config.reflec_O) + (1.0 - np.exp(-tau_O_reflec)))
-        Trad_O_reflec_file = open(os.path.join(ECRad_data_path, "O_reflec_Trad.dat"), "w")
-        Trad_O_reflec_file.write("{0: 5d}\n".format(len(Trad_O_reflected)))
-        for i in range(len(Trad_O_reflec)):
-            Trad_O_reflec_file.write("{0: 1.10E} {1: 1.10E}\n".format(f_reflec[i], Trad_O_reflected[i] * 1.e3))  # keV -> eV
-        Trad_O_reflec_file.flush()
-        Trad_O_reflec_file.close()
-    else:
-        Trad_X_reflected = Trad_X_reflec / (vessel_plasma_ratio * (1.e0 - Config.reflec_X) + (1.0 - np.exp(-tau_X_reflec)))
-        Trad_O_reflected = Trad_O_reflec / (vessel_plasma_ratio * (1.e0 - Config.reflec_O) + (1.0 - np.exp(-tau_O_reflec)))
-        Trad_X_mix = (1.0 - Config.mode_conv) * Trad_X_reflected + Config.mode_conv * Trad_O_reflected
-        Trad_O_mix = (1.0 - Config.mode_conv) * Trad_O_reflected + Config.mode_conv * Trad_X_reflected
-        Trad_X_reflec_file = open(os.path.join(ECRad_data_path, "X_reflec_Trad.dat"), "w")
-        Trad_X_reflec_file.write("{0: 5d}\n".format(len(Trad_X_mix)))
-        for i in range(len(Trad_X_mix)):
-            print("tau_reflect - T_rad X reflected / Trad_X {0:1.3f} - {1:1.3f}".format(tau_X_reflec[i], Trad_X_mix[i] / Trad_X_reflec[i]))
-            Trad_X_reflec_file.write("{0: 1.10E} {1: 1.10E}\n".format(f_reflec[i], Trad_X_mix[i] * 1.e3))  # keV -> eV
-        Trad_X_reflec_file.flush()
-        Trad_X_reflec_file.close()
-        Trad_O_reflec_file = open(os.path.join(ECRad_data_path, "O_reflec_Trad.dat"), "w")
-        Trad_O_reflec_file.write("{0: 5d}\n".format(len(Trad_O_mix)))
-        for i in range(len(Trad_O_mix)):
-            Trad_O_reflec_file.write("{0: 1.10E} {1: 1.10E}\n".format(f_reflec[i], Trad_O_mix[i] * 1.e3))  # keV -> eV
-        Trad_O_reflec_file.flush()
-        Trad_O_reflec_file.close()
+# def make_reflec_Trad(index, Config, f_reflec, Trad_X_reflec, tau_X_reflec, Trad_O_reflec, tau_O_reflec):
+#     # Currently broken  DO NOT USE !!!
+#     # Simplified improved wall reflection model - no mode conversion (adapted from W. H. M. Clark, 1983, Plasma Phys. 23 1501
+#     ECRad_data_path = os.path.join(Config.working_dir, "ECRad_data", "")
+#     vessel_plasma_ratio = make_vessel_plasma_ratio(index, Config)
+#     if(Config.considered_modes == 1):
+#         Trad_X_reflected = Trad_X_reflec / (vessel_plasma_ratio * (1.e0 - Config.reflec_X) + (1.0 - np.exp(-tau_X_reflec)))
+#         Trad_X_reflec_file = open(os.path.join(ECRad_data_path, "X_reflec_Trad.dat"), "w")
+#         Trad_X_reflec_file.write("{0: 5d}\n".format(len(Trad_X_reflected)))
+#         for i in range(len(Trad_X_reflec)):
+#             print("tau_reflect - T_rad X reflected / Trad_X {0:1.3f} - {1:1.3f}".format(tau_X_reflec[i], Trad_X_reflected[i] / Trad_X_reflec[i]))
+#             Trad_X_reflec_file.write("{0: 1.10E} {1: 1.10E}\n".format(f_reflec[i], Trad_X_reflected[i] * 1.e3))  # keV -> eV
+#         Trad_X_reflec_file.flush()
+#         Trad_X_reflec_file.close()
+#     elif(Config.considered_modes == 2):
+#         Trad_O_reflected = Trad_O_reflec / (vessel_plasma_ratio * (1.e0 - Config.reflec_O) + (1.0 - np.exp(-tau_O_reflec)))
+#         Trad_O_reflec_file = open(os.path.join(ECRad_data_path, "O_reflec_Trad.dat"), "w")
+#         Trad_O_reflec_file.write("{0: 5d}\n".format(len(Trad_O_reflected)))
+#         for i in range(len(Trad_O_reflec)):
+#             Trad_O_reflec_file.write("{0: 1.10E} {1: 1.10E}\n".format(f_reflec[i], Trad_O_reflected[i] * 1.e3))  # keV -> eV
+#         Trad_O_reflec_file.flush()
+#         Trad_O_reflec_file.close()
+#     else:
+#         Trad_X_reflected = Trad_X_reflec / (vessel_plasma_ratio * (1.e0 - Config.reflec_X) + (1.0 - np.exp(-tau_X_reflec)))
+#         Trad_O_reflected = Trad_O_reflec / (vessel_plasma_ratio * (1.e0 - Config.reflec_O) + (1.0 - np.exp(-tau_O_reflec)))
+#         Trad_X_mix = (1.0 - Config.mode_conv) * Trad_X_reflected + Config.mode_conv * Trad_O_reflected
+#         Trad_O_mix = (1.0 - Config.mode_conv) * Trad_O_reflected + Config.mode_conv * Trad_X_reflected
+#         Trad_X_reflec_file = open(os.path.join(ECRad_data_path, "X_reflec_Trad.dat"), "w")
+#         Trad_X_reflec_file.write("{0: 5d}\n".format(len(Trad_X_mix)))
+#         for i in range(len(Trad_X_mix)):
+#             print("tau_reflect - T_rad X reflected / Trad_X {0:1.3f} - {1:1.3f}".format(tau_X_reflec[i], Trad_X_mix[i] / Trad_X_reflec[i]))
+#             Trad_X_reflec_file.write("{0: 1.10E} {1: 1.10E}\n".format(f_reflec[i], Trad_X_mix[i] * 1.e3))  # keV -> eV
+#         Trad_X_reflec_file.flush()
+#         Trad_X_reflec_file.close()
+#         Trad_O_reflec_file = open(os.path.join(ECRad_data_path, "O_reflec_Trad.dat"), "w")
+#         Trad_O_reflec_file.write("{0: 5d}\n".format(len(Trad_O_mix)))
+#         for i in range(len(Trad_O_mix)):
+#             Trad_O_reflec_file.write("{0: 1.10E} {1: 1.10E}\n".format(f_reflec[i], Trad_O_mix[i] * 1.e3))  # keV -> eV
+#         Trad_O_reflec_file.flush()
+#         Trad_O_reflec_file.close()
 
 def load_and_validate_external_plasma(ECRadConfig):
     try:
@@ -917,9 +927,8 @@ def make_ECRadInputFromPlasmaDict(working_dir, plasma_dict, index):
     topfile = open(os.path.join(working_dir, "topfile"), "w")
     topfile.write('Number of radial and vertical grid points:\n')
     topfile.write('   {0: 8d} {1: 8d}\n'.format(len(EQ.R), len(EQ.z)))
-    topfile.write('Inside and Outside radius and psi_sep\n')
-    topfile.write('   {0: 1.8E}  {1: 1.8E}  {2: 1.8E}'.format(EQ.R[0], EQ.R[-1], \
-        EQ.special[1]))
+    topfile.write('Inside and Outside radius, psi_sep \n')
+    topfile.write('   {0: 1.8E}  {1: 1.8E}  {2: 1.8E}'.format(EQ.R[0], EQ.R[-1], 1.0))
     topfile.write('\n')
     topfile.write('Radial grid coordinates\n')
     cnt = 0
@@ -983,7 +992,7 @@ def make_ECRadInputFromPlasmaDict(working_dir, plasma_dict, index):
     topfile.write('Normalised psi on grid\n')
     for i in range(len(EQ.Psi.T)):
         for j in range(len(EQ.Psi.T[i])):
-            topfile.write("  {0: 1.8E}".format(EQ.Psi.T[i][j]))
+            topfile.write("  {0: 1.8E}".format(EQ.rhop.T[i][j]**2))
             if(cnt == columns):
                 topfile.write("\n")
                 cnt = 0

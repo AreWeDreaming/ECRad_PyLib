@@ -17,7 +17,6 @@ if(AUG):
     from equilibrium_utils_AUG import EQData, make_rhop_signed_axis
     from shotfile_handling_AUG import get_diag_data_no_calib, get_data_calib, load_IDA_data, get_shot_heating, get_NPA_data, get_ECE_spectrum, get_Thomson_data
     import fconf
-    from get_ECRH_config import get_ECRH_viewing_angles
 elif(TCV):
     from equilibrium_utils_TCV import EQData, make_rhop_signed_axis
     from shotfile_handling_AUG import get_diag_data_no_calib, get_data_calib, load_IDA_data, get_shot_heating, get_NPA_data, get_ECE_spectrum, get_Thomson_data
@@ -1326,7 +1325,8 @@ class plotting_core:
 
     def plot_Trad(self, time, rhop, Trad, Trad_comp, rhop_Te, Te, \
                   diags, diag_names, dstf, model_2=True, \
-                  X_mode_fraction=None, X_mode_fraction_comp=None):
+                  X_mode_fraction=None, X_mode_fraction_comp=None, \
+                  multiple_models=False, label_list=None):
         if(X_mode_fraction is not None):
             twinx = "_twinx"
         else:
@@ -1372,31 +1372,74 @@ class plotting_core:
                                                              marker="-", color=(0.0, 0.0, 0.0), \
                                                              y_range_in=self.y_range_list[0], y_scale=1.0, \
                                                              ax_flag=ax_flag)  # \times 100$
-        mask = np.zeros(len(Trad), dtype=np.bool)
-        if(len(diags) > 0):
+        if(multiple_models):
+            mask = np.zeros(len(Trad[0]), dtype=np.bool)
+        else:
+            mask = np.zeros(len(Trad), dtype=np.bool)
+        if(len(diags.keys()) > 0):
             mask[:] = False
-            for diag in diags:
+            for key in diags.keys():
                 # For some reason there is no automatic cast from unicode to string here -> make it explicit
-                mask[str(diag.name)==diag_names] = True
+                if(multiple_models):
+                    mask[str(diags[key].name)==diag_names[0]] = True
+                else:
+                    mask[str(diags[key].name)==diag_names] = True
+            if(np.all(mask == False)):
+                mask[:] = True
         else:
             mask[:] = True
         if(model_2 and len(Trad_comp) > 0):
-            self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
-                data=[rhop[mask], Trad_comp[mask]], \
-                name=r"$T_" + mathrm + "{rad,mod}" + dist_simpl + r"$", \
-                marker="s", color=(126.0 / 255, 0.0, 126.0 / 255), \
-                y_range_in=self.y_range_list[0], ax_flag=ax_flag)
+            if(multiple_models):
+                self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
+                    data=[rhop[0][mask], Trad_comp[mask]], \
+                    name=r"$T_" + mathrm + "{rad,mod}" + dist_simpl + r"$", \
+                    marker="s", color=(0.0, 0.0, 0.0), \
+                    y_range_in=self.y_range_list[0], ax_flag=ax_flag)
+            else:
+                self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
+                    data=[rhop[mask], Trad_comp[mask]], \
+                    name=r"$T_" + mathrm + "{rad,mod}" + dist_simpl + r"$", \
+                    marker="s", color=(126.0 / 255, 0.0, 126.0 / 255), \
+                    y_range_in=self.y_range_list[0], ax_flag=ax_flag)
             if(X_mode_fraction_comp is not None):
                 self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], \
                                                                      data=[rhop[mask], X_mode_fraction_comp[mask] * 1.e2], \
                                                                      name=r"X-mode fraction $" + dist_simpl + r"$", \
                                                                      marker="o", color=(0.0, 0.2, 0.2e0), \
                                                                      y_range_in=self.y_range_list[1], ax_flag="X_frac")
-        self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
-            data=[rhop[mask], Trad[mask]], \
-            name=r"$T_" + mathrm + "{rad,mod}" + dist + r"$", \
-            marker="v", color=(126.0 / 255, 126.0 / 255, 0.e0), \
-            y_range_in=self.y_range_list[0], ax_flag=ax_flag)
+        if(multiple_models):
+            self.model_color_index = 0
+            for rhop_entry, Trad_entry, diag_name_entry, label in zip(rhop, Trad, diag_names, label_list):
+                try:
+                    cur_mask = np.zeros(len(Trad_entry), dtype=np.bool)
+                    cur_mask[:] = False
+                    nice_label = str(label)
+                    nice_label = nice_label.replace("_max", "$_\mathrm{max}$")
+                    nice_label = nice_label.replace("rad_reac", "rad. reac.")
+                    nice_label = nice_label.replace("diff", "$_\mathrm{diff}$")
+                    nice_label = nice_label.replace("V_loop", "$V_\mathrm{loop}$")
+                    for key in diags.keys():
+                        # For some reason there is no automatic cast from unicode to string here -> make it explicit
+                        cur_mask[str(diags[key].name)==diag_name_entry] = True
+                    if(np.all(cur_mask == False)):
+                        cur_mask[:] = True
+                    self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
+                                                                         data=[rhop_entry[cur_mask], Trad_entry[cur_mask]], \
+                                                                         name=nice_label, \
+                                                                         marker="v", color=self.model_colors[self.model_color_index], \
+                                                                         y_range_in=self.y_range_list[0], ax_flag=ax_flag)
+                    self.model_color_index += 1
+                    if(self.model_color_index >= len(self.model_colors)):
+                        print("Too many models -> ran out of unique colors")
+                except KeyError:
+                    print("THe result with the name " + label + "caused an index error")
+                    print("Most likely it does not have the correct amount of modeled channels for the currently selected diagnostic")
+        else:
+            self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
+                                                                 data=[rhop[mask], Trad[mask]], \
+                                                                 name=r"$T_" + mathrm + "{rad,mod}" + dist + r"$", \
+                                                                 marker="v", color=(126.0 / 255, 126.0 / 255, 0.e0), \
+                                                                 y_range_in=self.y_range_list[0], ax_flag=ax_flag)
         if(X_mode_fraction is not None):
             # percent
             self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], \
@@ -1404,12 +1447,19 @@ class plotting_core:
                 name=r"X-mode fraction $" + dist + r"$", \
                 marker="+", color=(0.0, 0.0, 0.e0), \
                 y_range_in=self.y_range_list[1], ax_flag="X_frac")
-        for diag in diags:
-            self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
-                data=[diag.rhop, diag.val], y_error=diag.unc, \
-                name=diag.name, marker=self.diag_markers[self.diag_marker_index[0]], \
-                color=self.diag_colors[self.diag_color_index[0]], \
-                y_range_in=self.y_range_list[0], ax_flag=ax_flag)
+        for key in diags.keys():
+            if(diags[key].is_prof):
+                self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
+                    data=[diags[key].rhop, diags[key].val],\
+                    marker="--", \
+                    color="black", \
+                    y_range_in=self.y_range_list[0], ax_flag=ax_flag)
+            else:
+                self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
+                    data=[diags[key].rhop, diags[key].val], y_error=diags[key].unc, \
+                    name=key, marker=self.diag_markers[self.diag_marker_index[0]], \
+                    color=self.diag_colors[self.diag_color_index[0]], \
+                    y_range_in=self.y_range_list[0], ax_flag=ax_flag)
             self.diag_marker_index[0] += 1
             if(self.diag_marker_index[0] > len(self.diag_markers)):
                 print("Warning too many diagnostics to plot - ran out of unique markers")
@@ -6580,7 +6630,7 @@ class plotting_core:
                     ax.set_ylabel(r"Sig [\si{\volt\per\second}]")
                 elif(ax_flag == "Sig_vs_Trad_small"):
                     ax.set_xlabel(r"$T_\mathrm{rad,mod}$ [\si{\kilo\electronvolt}]")
-                    ax.set_ylabel(r"Sig [\si{\mili\volt\per\second}]")
+                    ax.set_ylabel(r"Sig [\si{\milli\volt\per\second}]")
                 elif(ax_flag == "Ang_vs_Trad"):
                     ax.set_xlabel(r"$T_\mathrm{rad,mod}$ \si{\kilo\electronvolt}")
                     ax.set_ylabel(r"$\theta_\mathrm{pol}$ [$^\circ$]")

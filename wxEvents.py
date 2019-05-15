@@ -16,6 +16,9 @@ EVT_NEW_STATUS = wx.PyEventBinder(Unbound_EVT_NEW_STATUS, 1)  # Bind that
 Unbound_EVT_DIAGNOSTICS_LOADED = wx.NewEventType()  # Call This
 EVT_DIAGNOSTICS_LOADED = wx.PyEventBinder(Unbound_EVT_DIAGNOSTICS_LOADED, 1)  # Bind that
 
+Unbound_EVT_OTHER_RESULTS_LOADED = wx.NewEventType()  # Call This
+EVT_OTHER_RESULTS_LOADED = wx.PyEventBinder(Unbound_EVT_OTHER_RESULTS_LOADED, 1)  # Bind that
+
 Unbound_EVT_UPDATE = wx.NewEventType()  # Call This
 EVT_UPDATE = wx.PyEventBinder(Unbound_EVT_UPDATE, 1)  # Bind that
 
@@ -83,6 +86,14 @@ class UpdateDiagDataEvt(wx.PyCommandEvent):
         
     def insertDiagData(self, DiagData):
         self.DiagData = DiagData
+    
+class GenerticEvt(wx.PyCommandEvent):
+    def __init__(self, evtType, id):
+        wx.PyCommandEvent.__init__(self, evtType, id)
+        
+    def insertData(self, DiagData):
+        self.Data = DiagData
+
 
 class UpdateDataEvt(wx.PyCommandEvent):
     def __init__(self, evtType, id):

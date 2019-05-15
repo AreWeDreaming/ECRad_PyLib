@@ -2882,7 +2882,6 @@ def remap_f_Maj_single(x, y, Fe, ull, uxx, Fe_rem, freq_2X, B0, LUKE=False):
     xi = freq_2X * np.pi * cnst.m_e / (B0 * cnst.e)
     if(xi < 1.0):
         xi = 1.0
-
     # Fe_rem= Fe_remapped(x,y,Fe[ipsi], xi, pll, pxx)
     # Corresponding equatorial pitch-angle cosine
     # Remapped distribution function

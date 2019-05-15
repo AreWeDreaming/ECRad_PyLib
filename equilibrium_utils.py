@@ -5,7 +5,6 @@ Created on Jan 29, 2017
 '''
 from GlobalSettings import AUG, TCV, itm
 import sys
-import ctypes as ct
 import os
 if(not itm):
     sys.path.append("/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib")
@@ -16,7 +15,6 @@ import copy
 from Geometry_utils import get_contour, get_Surface_area_of_torus, get_arclength, get_av_radius
 from scipy import __version__ as scivers
 import scipy.optimize as scopt
-from plotting_configuration import *
 
 def eval_spline(x_vec, spl):
     return np.array([spl[0](x_vec[0], x_vec[1])])
@@ -286,23 +284,39 @@ class EQDataExt:
         options['maxiter'] = 100
         options['disp'] = False
         R_ax, z_ax = self.get_axis(time)
+        B_ax = Btot_spl(R_ax, z_ax, grid=False)
         x0 = np.array([R_ax, z_ax])
         for i in range(len(rhop_in)):
+            if(rhop_in[i] == 0):
+                B_min[i] = 0
+                continue
             constraints["args"][1] = rhop_in[i]
             res = scopt.minimize(eval_Btot, x0, method='SLSQP', bounds=[[1.2, 2.3], [-1.0, 1.0]], \
                                  constraints=constraints, options=options, args=[Btot_spl])
             if(not res.success):
                 print("Error could not find Bmin for ", rhop_in[i])
                 print("Cause: ", res.message)
-                raise ValueError
+                if(rhop_in[i] < 0.1 and not unwrap):
+                    print("Current rhop very small -> will interpolate using magn. axis value")
+                    B_min[i]  = 0.0
+                else:
+                    raise ValueError
             else:
                 B_min[i] = Btot_spl(res.x[0], res.x[1])
         if(unwrap):
             return B_min[0]
+        B_min[rhop_in == 0] = B_ax
+        if(np.any(B_min == 0)):
+            rhop_short  =  np.copy(rhop_in[B_min != 0])
+            B_min_short =  np.copy(B_min[B_min != 0])
+            if(0.0 not in rhop_short):
+                rhop_short  =  np.concatenate([[0], rhop_short])
+                B_min_short =  np.concatenate([[B_ax], B_min_short])
+            B_min_spl = InterpolatedUnivariateSpline(rhop_short, B_min_short)
+            B_min = B_min_spl(rhop_in)
         if(append_B_ax):
             if(0.0 in rhop_in):
                 return np.copy(rhop_in), B_min
-            B_ax = Btot_spl(R_ax, z_ax, grid=False)
             return np.concatenate([[0], rhop_in]), np.concatenate([[B_ax], B_min])
         else:
             return B_min
@@ -354,6 +368,13 @@ class EQDataExt:
 
     def map_Rz_to_rhop(self, time, R, z):
         cur_slice = self.GetSlice(time)
+        if(hasattr(cur_slice, "rhop")):
+            rhop_spl = RectBivariateSpline(cur_slice.R, cur_slice.z, cur_slice.rhop)
+            return rhop_spl(R,z, grid=False)
+        if(hasattr(cur_slice, "Psi_ax")):
+            rhop = np.sqrt((cur_slice.Psi - cur_slice.Psi_ax) / (cur_slice.Psi_sep - cur_slice.Psi_ax))
+            rhop_spl = RectBivariateSpline(cur_slice.R, cur_slice.z, rhop)
+            return rhop_spl(R,z, grid=False)
         Psi = cur_slice.Psi
         special = cur_slice.special
         if(Psi[len(cur_slice.R) / 2][len(cur_slice.z) / 2] > special[1]):
@@ -363,10 +384,8 @@ class EQDataExt:
         psi_spl = RectBivariateSpline(cur_slice.R, cur_slice.z, Psi)
         indicies = np.unravel_index(np.argmin(Psi), Psi.shape)
         R_init = np.array([cur_slice.R[indicies[0]], cur_slice.z[indicies[1]]])
-        print(R_init)
         opt = minimize(eval_spline, R_init, args=[psi_spl], \
                  bounds=[[np.min(cur_slice.R), np.max(cur_slice.R)], [np.min(cur_slice.z), np.max(cur_slice.z)]])
-        print("Magnetic axis position: ", opt.x[0], opt.x[1])
         psi_ax = psi_spl(opt.x[0], opt.x[1])
         rhop = np.sqrt((Psi - psi_ax) / (special[1] - psi_ax))
         rhop_spl = RectBivariateSpline(cur_slice.R, cur_slice.z, rhop)

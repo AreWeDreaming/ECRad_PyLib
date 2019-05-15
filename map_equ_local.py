@@ -1,7 +1,9 @@
 import sys
 import numpy as np
 from scipy.ndimage.interpolation import map_coordinates
-from scipy.interpolate import UnivariateSpline, interp1d, InterpolatedUnivariateSpline, LinearNDInterpolator
+from scipy.interpolate import UnivariateSpline, interp1d, \
+                              InterpolatedUnivariateSpline, LinearNDInterpolator, \
+                              RectBivariateSpline
 import dd_20180130
 sf = dd_20180130.shotfile()
 
@@ -41,14 +43,13 @@ class equ_map:
 
         self.Close()
         self.sf = sf
-        if isinstance(self.sf, dd_20180130.shotfile):
-            self.sf.Open(diag, shot, experiment=exp, edition=ed)
+        if self.sf.Open(diag, shot, experiment=exp, edition=ed):
 # Time grid of equilibrium shotfile
             self.t_eq = self.sf.GetSignal('time')
             nt = len(self.t_eq)
 # R, z of PFM cartesian grid
-            self.nR = self.sf.GetParameter('PARMV', 'M')[0] + 1
-            self.nZ = self.sf.GetParameter('PARMV', 'N')[0] + 1
+            self.nR = int(self.sf.GetParameter('PARMV', 'M')) + 1
+            self.nZ = int(self.sf.GetParameter('PARMV', 'N')) + 1
             self.Rmesh = self.sf.GetSignal('Ri')[: self.nR, 0]
             self.Zmesh = self.sf.GetSignal('Zj')[: self.nZ, 0]
             Lpf = self.sf.GetSignal('Lpf')
@@ -459,34 +460,43 @@ class equ_map:
         unique_idx, idx =  self._get_nearest_index(tarr)
         pf = self.get_profile('PFL')
         jpol, _ = self.get_mixed('Jpol')
-
+        Br = []
+        Bt = []
+        Bz = []
         for i in unique_idx:
+#             psi_ax = self.psi0[i]
+#             psi_sep = self.psix[i]
+            sort = np.argsort(pf[i])
+            jpol_spl = InterpolatedUnivariateSpline(pf[i][sort], jpol[i][sort], ext=0)
+            Psi = self.pfm[...,i]
+            Psi_spl = RectBivariateSpline(self.Rmesh, self.Zmesh, Psi)
+            Br.append(-Psi_spl.ev(r_in, z_in, dy=1) / (2.0 * np.pi * r_in))
+#             Br = -np.diff(Phi, axis=1)/(self.Rmesh[:, None]) 
+#             Bz =  np.diff(Phi, axis=0)/(.5*(self.Rmesh[1:] + self.Rmesh[:-1])[:, None])
+#             Bt =  np.interp(Phi, pf[i], jpol[i])*mu_0/self.Rmesh[:, None]
+            Bz.append(Psi_spl.ev(r_in, z_in, dx=1) / (2.0 * np.pi * .5*(self.Rmesh[1:] + self.Rmesh[:-1])))
+            Bt.append(jpol_spl(Psi_spl.ev(r_in, z_in)) * mu_0/(np.pi * r_in))
+#     
+#             jt = idx == i
+# 
+#             if diag:
+#                 r = r_in[jt]
+#                 z = z_in[jt]
+#             else:
+#                 r = np.tile(r_in[jt], (nz_in, 1, 1)).transpose(1, 2, 0)
+#                 z = np.tile(z_in[jt], (nr_in, 1, 1)).transpose(1, 0, 2)
+# 
+#             coords =  np.array((r,z))
+# 
+#             index_t = ((coords.T - offset)/scaling).T
+#             index_r = ((coords.T - offset)/scaling - np.array((0, .5))).T
+#             index_z = ((coords.T - offset)/scaling - np.array((.5, 0))).T
+# 
+#             interpBr[jt] = map_coordinates(Br, index_r, mode='nearest', order=2, prefilter=True)
+#             interpBz[jt] = map_coordinates(Bz, index_z, mode='nearest', order=2, prefilter=True)
+#             interpBt[jt] = map_coordinates(Bt, index_t, mode='nearest', order=2, prefilter=True)
 
-            Phi = self.pfm[...,i]
-            Br = -np.diff(Phi, axis=1)/(self.Rmesh[:, None]) 
-            Bz =  np.diff(Phi, axis=0)/(.5*(self.Rmesh[1:] + self.Rmesh[:-1])[:, None])
-            Bt = np.interp(Phi, pf[i], jpol[i])*mu_0/self.Rmesh[:, None]
-
-            jt = idx == i
-
-            if diag:
-                r = r_in[jt]
-                z = z_in[jt]
-            else:
-                r = np.tile(r_in[jt], (nz_in, 1, 1)).transpose(1, 2, 0)
-                z = np.tile(z_in[jt], (nr_in, 1, 1)).transpose(1, 0, 2)
-
-            coords =  np.array((r,z))
-
-            index_t = ((coords.T - offset)/scaling).T
-            index_r = ((coords.T - offset)/scaling - np.array((0, .5))).T
-            index_z = ((coords.T - offset)/scaling - np.array((.5, 0))).T
-
-            interpBr[jt] = map_coordinates(Br, index_r, mode='nearest', order=2, prefilter=True)
-            interpBz[jt] = map_coordinates(Bz, index_z, mode='nearest', order=2, prefilter=True)
-            interpBt[jt] = map_coordinates(Bt, index_t, mode='nearest', order=2, prefilter=True)
-
-        return interpBr/(2*np.pi*dz), interpBz/(2*np.pi*dr), interpBt/(2.*np.pi)
+        return np.array(Br), np.array(Bz), np.array(Bt)
 
 
     def rz2rho(self, r_in, z_in, t_in=None, coord_out='rho_pol', extrapolate=True):
@@ -931,9 +941,10 @@ if __name__ == "__main__":
     import matplotlib.pylab as plt
 
     eqm = equ_map()
+    nshot = 35662
+    tref = 2.
 
-
-    if eqm.Open(28053,diag='EQH'):
+    if eqm.Open(nshot,diag='EQH'):
         eqm.read_pfm()
         eqm.read_scalars()
 
@@ -943,8 +954,8 @@ if __name__ == "__main__":
         Z = np.linspace(.06, .06, 1000)
         rhop = np.linspace(0, 1, 100)
 
-        r, z = eqm.rhoTheta2rz(rhop, 0, t_in=3)
-        out = kk.KK().kkrhorz(28053, 3, rhop, 0)
+        r, z = eqm.rhoTheta2rz(rhop, 0, t_in=tref)
+        out = kk.KK().kkrhorz(nshot, 3, rhop, 0)
 
         plt.figure(1)
         plt.plot(rhop, r[0, 0])
@@ -953,7 +964,7 @@ if __name__ == "__main__":
         plt.ylabel('R')
         plt.title('kkrhorz')
         
-        out = kk.KK().kkrzptfn( 28053, 3, R, Z)
+        out = kk.KK().kkrzptfn( nshot, 3, R, Z)
         rho = eqm.rz2rho( R,Z, 3)
 
         plt.figure(2)
@@ -965,7 +976,7 @@ if __name__ == "__main__":
 
 #------
         
-        out = kk.KK().kkrhopto(28053, 3, rhop)
+        out = kk.KK().kkrhopto(nshot, 3, rhop)
         rhot = eqm.rho2rho(rhop, 3, coord_in='rho_pol', coord_out='rho_tor')
 
         plt.figure(3)
@@ -977,7 +988,7 @@ if __name__ == "__main__":
  
 #------
         
-        out = kk.KK().kkrzBrzt(28053, 3, R, Z,diag='EQH')
+        out = kk.KK().kkrzBrzt(nshot, 3, R, Z,diag='EQH')
         br, bz, bt = eqm.rz2brzt(r_in=R, z_in=Z[0], t_in=3)
 
         plt.figure(4, (14, 9))

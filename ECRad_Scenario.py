@@ -12,6 +12,7 @@ from GlobalSettings import AUG, TCV
 import numpy as np
 from equilibrium_utils import EQDataSlice, special_points
 from Diags import Diag, ECRH_diag, ECI_diag, EXT_diag
+from electron_distribution_utils import load_f_from_mat
 if(AUG):
     from ECRad_DIAG_AUG import DefaultDiagDict
 elif(TCV):
@@ -51,6 +52,8 @@ class ECRad_Scenario:
         self.shot = 35662
         self.default_diag = "ECE"
         self.data_source = "aug_database"
+        self.dist_obj = None
+        self.profile_dimension = 1
 
     def from_mat(self, mdict=None, path_in=None, load_plasma_dict=True):
         self.reset()
@@ -69,7 +72,7 @@ class ECRad_Scenario:
                 print(e)
                 print("Error: File appears to be corrupted does not exist")
                 return False
-        profile_dimension = mdict["profile_dimension"]
+        self.profile_dimension = mdict["profile_dimension"]
         # Loading from .mat sometimes adds single entry arrays that we don't want
         at_least_1d_keys = ["diag", "time", "Diags_exp", "Diags_diag", "Diags_ed", "Extra_arg_1", "Extra_arg_2", "Extra_arg_3", \
                             "used_diags"]
@@ -77,10 +80,10 @@ class ECRad_Scenario:
                              "launch_z", "launch_tor_ang" , "launch_pol_ang", "launch_dist_focus", \
                              "launch_width", "launch_pol_coeff_X", "eq_special", "eq_special_complete"  ]
         at_least_3d_keys = ["eq_Psi", "eq_rhop", "eq_Br", "eq_Bt", "eq_Bz"]
-        if(profile_dimension == 1):
+        if(self.profile_dimension == 1):
             for key in ["rhop_prof", "Te", "ne"  ]:
                 at_least_2d_keys.append(key)
-        elif(profile_dimension == 2):
+        elif(self.profile_dimension == 2):
             for key in ["Te", "ne"  ]:
                 at_least_3d_keys.append(key)
         self.shot = mdict["shot"]
@@ -148,7 +151,7 @@ class ECRad_Scenario:
             self.diags_set = True
         if(not load_plasma_dict):
             return
-        if(profile_dimension == 1):
+        if(self.profile_dimension == 1):
             self.plasma_dict["rhop_prof"] = mdict["rhop_prof"]
         self.plasma_dict["Te"] = mdict["Te"]
         self.plasma_dict["ne"] = mdict["ne"]
@@ -250,7 +253,7 @@ class ECRad_Scenario:
         mdict["time"] = self.plasma_dict["time"]
         mdict["Te"] = self.plasma_dict["Te"]
         mdict["ne"] = self.plasma_dict["ne"]
-        mdict["profile_dimension"] = len(self.plasma_dict["Te"][0].shape)
+        mdict["profile_dimension"] = self.profile_dimension
         if(mdict["profile_dimension"] == 1):
             mdict["rhop_prof"] = self.plasma_dict["rhop_prof"]
         mdict["eq_R"] = []
@@ -300,3 +303,5 @@ class ECRad_Scenario:
         else:
             return True
 
+    def load_dist_obj(self, filename):
+        self.dist_obj = load_f_from_mat(filename, use_dist_prefix=True)

@@ -27,7 +27,10 @@ class ECRad_Config:
                 ext_mdict = True
         else:
             mdict = provide_default_mdict()
-        self.working_dir = mdict["working_dir"]
+        if(os.path.isdir(mdict["working_dir"])):
+            self.working_dir = mdict["working_dir"]
+        else:
+            print("Warning working dir not imported, since it is not a valid directory")
         self.dstf = mdict["dstf"]
         self.extra_output = mdict["extra_output"]
         try:

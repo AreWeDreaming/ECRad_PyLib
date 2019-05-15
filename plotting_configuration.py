@@ -4,7 +4,7 @@ use('WXAgg')
 from matplotlib import pyplot as plt
 # plt.style.use('bmh')
 if(SLES12):
-    plot_mode = "Software"
+    plot_mode = "Presentation"
 else:
     plot_mode = "Presentation"  #  "Presentation"  "Article"
 if(plot_mode != "Software"):
@@ -15,8 +15,7 @@ if(plot_mode != "Software"):
        r'\usepackage{amsmath}' , \
        r'\usepackage{amsfonts}', \
        r'\usepackage{amssymb}', \
-       r'\usepackage{braket}', \
-       r'\sisetup{detect-all}']
+       r'\usepackage{braket}']
 # plt.rcParams['text.latex.preamble'] = [\
 #       r'\usepackage{siunitx}',  \
 #       r'\sisetup{detect-all}',   \

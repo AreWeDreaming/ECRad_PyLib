@@ -4,7 +4,7 @@ Created on Dec 10, 2015
 @author: sdenk
 '''
 import sys
-from GlobalSettings import itm
+from GlobalSettings import itm, SLES12
 if(not itm):
     sys.path.append('/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib/')
 else:
@@ -12,13 +12,15 @@ else:
 import dd
 import os
 import ctypes as ct
-from plotting_configuration import *
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline
 libECRH = np.ctypeslib.load_library("libaug_ecrh_setmirrors", '/afs/ipp-garching.mpg.de/home/e/ecrh/sys/amd64_sles11/')
+if(SLES12):
+    print("Warning libaug_ecrh which is not compiled for SLES12 has been loaded.")
+    print("This may lead to runtime errors!")
 import datetime
-# NOTE: This routine is not compatible with ECRH 3, yet.
-# Contact S. Denk for a new version.
+# NOTE: Values not verified for ECRH III
+#       Swap of launcher 3 and 4 implemented in launcher class
 gy_pos_x = np.zeros(8, np.double)
 gy_pos_y = np.zeros(8, np.double)
 gy_sect = np.zeros(8, np.double)
@@ -157,25 +159,30 @@ class AUGLauncher:
     def __init__(self, shot, N, view=False, view_140=True):  # N is the gyrotron number from 1-8
         # All units are SI units (i.e. m, W, Hz)
         # Angles are given in degrees
-        self.x = gy_pos_x[N - 1]
-        self.y = gy_pos_y[N - 1]
-        self.z = gy_pos_z[N - 1]
-        sect = gy_sect[N - 1]
-        self.name = gy_name[N - 1]
+        N_cor = N
+        if(shot > 33725 and N ==3):
+            N_cor = 4
+        if(shot > 33725 and N ==4):
+            N_cor = 3
+        self.x = gy_pos_x[N_cor - 1]
+        self.y = gy_pos_y[N_cor - 1]
+        self.z = gy_pos_z[N_cor - 1]
+        sect = gy_sect[N_cor - 1]
+        self.name = gy_name[N_cor - 1]
         self.R = np.sqrt(self.x ** 2 + self.y ** 2)
         self.phi = (np.arctan2(self.y, self.x) + sect / 8.0 * np.pi) / np.pi * 180.e0
         self.x = np.cos(np.deg2rad(self.phi)) * self.R
         self.y = np.sin(np.deg2rad(self.phi)) * self.R
         self.error = 0
-        self.curv_y = gy_curv_y_140[N - 1]  # This we can only correct if we know the frequency
-        self.curv_z = gy_curv_z_140[N - 1]
-        self.width_y = gy_width_z_140[N - 1]
-        self.width_z = gy_width_z_140[N - 1]
+        self.curv_y = gy_curv_y_140[N_cor - 1]  # This we can only correct if we know the frequency
+        self.curv_z = gy_curv_z_140[N_cor - 1]
+        self.width_y = gy_width_z_140[N_cor - 1]
+        self.width_z = gy_width_z_140[N_cor - 1]
         if(view and not view_140):
-            self.curv_y = gy_curv_y_105[N - 1]
-            self.curv_z = gy_curv_z_105[N - 1]
-            self.width_y = gy_width_z_105[N - 1]
-            self.width_z = gy_width_z_105[N - 1]
+            self.curv_y = gy_curv_y_105[N_cor - 1]
+            self.curv_z = gy_curv_z_105[N_cor - 1]
+            self.width_y = gy_width_z_105[N_cor - 1]
+            self.width_z = gy_width_z_105[N_cor - 1]
         self.theta_pol = 0.0  # Will be overwritten later
         self.phi_tor = 0.0  # Will be overwritten later
         self.f = 140.e9
@@ -197,7 +204,7 @@ class gyrotron(AUGLauncher):
             N_2 = N
         # print(N, 'P_sy{0:n}'.format(int(N / 5.0) + 1) + '_g{0:n}'.format(N_2))
         if(N <= 4):
-            if(shot < 33725):
+            if(shot < 33725):# ECRH I -> ECRH III
                 self.f = ECS.getParameter('P_sy{0:d}'.format(int(N / 5.0) + 1) + '_g{0:d}'.format(N_2), 'gyr_freq').data
             else:
                 self.f = ECS.getParameter('P_sy3' + '_g{0:d}'.format(N_2), 'gyr_freq').data
