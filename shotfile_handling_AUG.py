@@ -133,6 +133,15 @@ def smooth(y_arr, median=False):
             std_dev = 0.0
     return y_smooth, std_dev
 
+def moving_average(time, signal, window):
+    step = np.mean(np.gradient(time))
+    N = np.int(np.floor(window / step))
+    if(N < 4):
+        print("Window too small for resolution of signal - returning original signal")
+        return time, signal
+    else:
+        return time[:len(time) - N + 1], np.convolve(signal, np.ones(N)/N, mode="valid")
+
 def get_diag_data_no_calib(diag, shot, preview=False, single_channel=0):
     print("Told to get " + diag.diag + " data")
     try:

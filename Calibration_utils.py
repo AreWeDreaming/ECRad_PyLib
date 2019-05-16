@@ -10,8 +10,6 @@ from Fitting import make_fit
 from GlobalSettings import TCV, AUG
 if(AUG):
     from shotfile_handling_AUG import get_data_calib
-elif(TCV):
-    from shotfile_handling_TCV import get_data_calib
 else:
     print('Neither AUG nor TCV selected')
     raise(ValueError('No system selected!'))

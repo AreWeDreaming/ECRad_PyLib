@@ -13,6 +13,7 @@ sys.path.append("../ECRad_Pylib")
 # from kk_abock import kk as KKeqi
 # from kk_extra import kk_extra
 from GlobalSettings import AUG, TCV
+from Diags import ECRH_diag
 from EQU import EQU
 import dd
 from plotting_configuration import *
@@ -969,13 +970,32 @@ def debug_EQ():
                                mdict["Te"][itime] * 1.e3, mdict["ne"][itime], grid=False)
 
 
+def debug_calib(resultfile):
+    result = ECRadResults()
+    result.from_mat_file(resultfile)
+    CTA = ECRH_diag("CTA", "AUGD", "CTA", 0, 7, 1.0, False, t_smooth=1.e-3)
+    res = result.resonance["rhop_cold"][0][result.Scenario.ray_launch[0]["diag_name"] == CTA.name]
+    calib = np.zeros(len(res))
+    calib[:] = 1.0
+    std_dev_calib = np.zeros(len(res))
+    sys_dev_calib = np.zeros(len(res))
+    err, data = get_data_calib(CTA, 35662, 1.5,calib=calib, std_dev_calib=std_dev_calib, sys_dev_calib=sys_dev_calib, ext_resonances=res)
+    plt.plot(res, err[0] / data[1], "+")
+    # Gets the data from al )
+#     plt.plot(result.resonance["rhop_cold"][0][result.Scenario.ray_launch[0]["diag_name"] == diag], np.abs(result.sys_dev["CTA"]/result.calib["CTA"]), "+")
+#     plt.plot(result.resonance["rhop_cold"][0][result.Scenario.ray_launch[0]["diag_name"] == diag], np.abs(result.rel_dev["CTA"]), "^")
+#     plt.errorbar(result.resonance["rhop_cold"][0][result.Scenario.ray_launch[0]["diag_name"] == diag], result.calib["CTA"], result.sys_dev["CTA"])
+    plt.show()
+
+
 if(__name__ == "__main__"):
 #     compare_LOS_Rz("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/", 20)
 #     compare_EQData(35662, 2.0, "AUGD", "EQH", 0)
 #     debug_EQ()
 #     compare_ds("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/", 15)
 #     compare_ds_rel("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/", 15)
-    inspect_EQData(35186, 1.258, "AUGD", "EQH", 0)
+    debug_calib("/tokp/work/sdenk/ECRad/ECRad_35662_CTCCTA_w_calib_ed8.mat")
+#     inspect_EQData(35186, 1.258, "AUGD", "EQH", 0)
 #     get_max_length_svec("/tokp/work/sdenk/ECRad_2/ECRad_data/")
 #     compare_rhop("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/", 15)
 #     compare_res_pos("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/")
