@@ -6,7 +6,7 @@ Created on Sep 7, 2017
 
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
-import matplotlib.pyplot as plt
+from plotting_configuration import *
 from winding_number import wn_PnPoly
 import scipy.optimize as scopt
 from scipy import __version__ as scivers

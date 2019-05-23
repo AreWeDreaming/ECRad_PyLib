@@ -6,7 +6,7 @@ Created on Mar 14, 2016
 from plotting_core import plotting_core
 import os
 import sys
-import matplotlib.pyplot as plt
+from plotting_configuration import *
 import numpy as np
 def tb_plot(working_dir=None, shot=None, time=None):
     if(working_dir is None):

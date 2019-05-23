@@ -21,11 +21,6 @@ if(AUG):
                                       get_Thomson_data, get_RMC_data_calib, get_data_calib_entire_shot, get_z_mag
     import fconf
     from get_ECRH_config import get_ECRH_viewing_angles
-elif(TCV):
-    from equilibrium_utils_TCV import EQData, make_rhop_signed_axis
-    from shotfile_handling_AUG import get_diag_data_no_calib, get_data_calib, load_IDA_data, \
-                                      get_shot_heating, get_NPA_data, get_ECE_spectrum, \
-                                      get_Thomson_data, get_RMC_data_calib
 else:
     print('Neither AUG nor TCV selected')
     raise(ValueError('No system selected!'))

@@ -3,6 +3,9 @@ Created on Apr 12, 2016
 
 @author: sdenk
 '''
+import ECRad_Results
+from __builtin__ import getattr
+from TB_communication import read_topfile
 working_dir = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/Ecfm_Model/"
 import sys
 sys.path.append("/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib")
@@ -10,6 +13,7 @@ sys.path.append("../ECRad_Pylib")
 # from kk_abock import kk as KKeqi
 # from kk_extra import kk_extra
 from GlobalSettings import AUG, TCV
+from Diags import ECRH_diag
 from EQU import EQU
 import dd
 from plotting_configuration import *
@@ -28,13 +32,106 @@ from electron_distribution_utils import read_svec_dict_from_file, load_f_from_AS
 from em_Albajar import em_abs_Alb, distribution_interpolator, gene_distribution_interpolator, s_vec
 from ECRad_Interface import make_topfile_from_ext_data
 from equilibrium_utils import EQDataExt
-if(AUG):
-    from equilibrium_utils_AUG import EQData
-elif(TCV):
-    from equilibrium_utils_TCV import EQData
+from equilibrium_utils_AUG import EQData
+from equilibrium_utils_AUGEQU import EQData as EQDataEQU
 from shotfile_handling_AUG import get_data_calib
 from scipy.io import loadmat
+from ECRad_Results import ECRadResults
+from TB_communication import make_topfile
 
+
+def get_max_length_svec(working_dir):
+    freqs = np.loadtxt(os.path.join(working_dir,"ray_launch.dat"), skiprows=1)
+    N_ch = len(freqs)
+    max_lenght = 0
+    ich = 0
+    for i in range(N_ch):
+        svec_ECRad, freq = read_svec_dict_from_file(working_dir, i + 1)
+        if(len(svec_ECRad["s"]) > max_lenght):
+            max_lenght = len(svec_ECRad["s"])
+            ich = i + 1
+    print("Longset svec ", max_lenght, " channel ", ich)
+
+def debug_append_ECRadResults(filename):
+    results = ECRadResults()
+    results.from_mat_file(filename) # Get scenario and launch
+    results.reset()
+    results.append_new_results(1.5)
+    results.tidy_up(True)
+
+def compare_ECRad_results(result_file_list, time, ch, ir=1):
+    main_quant = "ray"
+    subquantx = "sX"
+    subquanty = "rhopX"
+    res = ECRadResults()
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    for result_file,marker in zip(result_file_list,["-", "--"]):
+        res.from_mat_file(result_file)
+        itime = np.argmin(np.abs(time - res.time))
+        if(res.Config.N_ray > 1):
+            ax.plot(getattr(res, main_quant)[subquantx][itime][ch - 1], np.rad2deg(1) * getattr(res, main_quant)[subquanty][itime][ch - 1][ir-1], marker)
+        else:
+            ax.plot(getattr(res, main_quant)[subquantx][itime][ch - 1], np.rad2deg(1) * getattr(res, main_quant)[subquanty][itime][ch - 1], marker)
+        ax.vlines(res.resonance[subquantx[:-1] + "_cold"][itime][ch-1], 0 , 2000, linestyle=marker )
+#     ax.hlines(0.5, 0, 4)
+    plt.show()
+
+def compare_ECRad_results_ds(result_file_list, time, ch, ir=1):
+    res = ECRadResults()
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    for result_file,marker in zip(result_file_list,["-", "--"]):
+        res.from_mat_file(result_file)
+        itime = np.argmin(np.abs(time - res.time))
+        ax.plot(res.ray["sX"][itime][ch - 1][:-1], (res.ray["sX"][itime][ch - 1][1:] - res.ray["sX"][itime][ch - 1][:-1])/ np.max(res.ray["sX"][itime][ch - 1][1:] - res.ray["sX"][itime][ch - 1][:-1]), marker)    
+        ax.plot(res.ray["sX"][itime][ch - 1], res.ray["BPDX"][itime][ch - 1] / np.max(res.ray["BPDX"][itime][ch - 1]), "+")
+        ax.vlines(res.resonance["s_cold"][itime][ch-1], 0 , 1)
+#     ax.hlines(0.5, 0, 4)
+    plt.show()
+    
+def compare_ECRad_results_R(result_file_list, time, ch, ir=1):
+    res = ECRadResults()
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    for result_file,marker in zip(result_file_list,["+", "*"]):
+        res.from_mat_file(result_file)
+        itime = np.argmin(np.abs(time - res.time))
+        R = np.sqrt(res.ray["xX"][itime][ch - 1]**2 + res.ray["yX"][itime][ch - 1]**2)
+        ax.plot(res.ray["sX"][itime][ch - 1], R, marker)
+#         ax.vlines(res.resonance["s_cold"][itime][ch-1], 0 , 1.e-2)
+#     ax.hlines(0.5, 0, 4)
+    plt.show()
+
+
+def compare_EQData(shot, time, exp, diag, ed):
+    EQ_obj = EQData(shot, EQ_exp=exp, EQ_diag=diag, EQ_ed=ed)
+    EQEQU_obj = EQDataEQU(shot, EQ_exp=exp, EQ_diag=diag, EQ_ed=ed)
+    EQ_slice = EQ_obj.GetSlice(time)
+#     sliceEQU = EQEQU_obj.GetSlice(time)
+    quantname = "Psi"
+    quant = getattr(EQ_slice, quantname)
+#     quantEQU = getattr(sliceEQU, quantname)
+    levels = np.linspace(np.round(np.min(quant),1), np.round(np.max(quant)), 12)
+    plt.contour(EQ_slice.R, EQ_slice.z, quant.T, levels = levels, colors="k",linestyles="-")
+#     plt.contour(sliceEQU.R, sliceEQU.z, quantEQU.T, levels = levels, colors="r", linestyles="--")
+    plt.show()
+    plt.hold(True)
+
+
+def inspect_EQData(shot, time, exp, diag, ed):
+    EQ_obj = EQData(shot, EQ_exp=exp, EQ_diag=diag, EQ_ed=ed)
+    EQEQU_obj = EQDataEQU(shot, EQ_exp=exp, EQ_diag=diag, EQ_ed=ed)
+    EQ_slice = EQ_obj.GetSlice(time)
+#     sliceEQU = EQEQU_obj.GetSlice(time)
+    quantname = "rhop"
+    quant = getattr(EQ_slice, quantname)
+#     quantEQU = getattr(sliceEQU, quantname)
+    levels = np.linspace(np.round(np.min(quant),1), np.round(np.max(quant)), 12)
+    plt.contour(EQ_slice.R, EQ_slice.z, quant.T, levels = levels, colors="k",linestyles="-")
+#     plt.contour(sliceEQU.R, sliceEQU.z, quantEQU.T, levels = levels, colors="r", linestyles="--")
+    plt.show()
+    plt.hold(True)
 
 def debug_f_remap(working_dir):
     fig_list = []
@@ -422,45 +519,7 @@ def validate_theta_along_los(ida_working_dir, ed, ch):
     ax2.legend()
     plt.show()
 
-def copmare_Rz(working_dir, ida_working_dir):
-    sres = np.loadtxt(os.path.join(working_dir, "sres.dat"))
-    freq = np.loadtxt(os.path.join(working_dir, "f_ECE.dat"))
-    R_ecfm = sres.T[1]
-    z_ecfm = sres.T[2]
-    rhop_ecfm = sres.T[3]
-    R_B_ida = np.loadtxt(os.path.join(ida_working_dir, "R_los"))[599]
-    B_ida = np.loadtxt(os.path.join(ida_working_dir, "B_los"))[599]
-    freq_2x_IDA = B_ida * cnst.e / (cnst.m_e * np.pi)
-    R_ida, z_ida, rhop_ida = np.loadtxt(os.path.join(ida_working_dir, "Rzrhop_res"), unpack=True)
-    R_ida = R_ida.reshape((400, 53))[199]
-    z_ida = z_ida.reshape((400, 53))[199]
-    rhop_ida = rhop_ida.reshape((400, 53))[199]
-    R_check = np.zeros(len(freq))
-    z_check = np.zeros(len(freq))
-    for i in range(len(freq)):
-        svec = np.loadtxt(os.path.join(working_dir, "chdata{0:03d}.dat".format(i + 1)))
-        s_ecfm_vec = svec.T[0]
-        R_ecfm_vec = svec.T[1]
-        z_ecfm_vec = svec.T[2]
-        R_spl = InterpolatedUnivariateSpline(s_ecfm_vec, R_ecfm_vec)
-        z_spl = InterpolatedUnivariateSpline(R_ecfm_vec, z_ecfm_vec)
-        freq2X_ecfm = svec.T[-1]
-        freq_spl = InterpolatedUnivariateSpline(R_B_ida, freq_2x_IDA - freq[i])
-        # freq_spl = InterpolatedUnivariateSpline(s_ecfm_vec, freq2X_ecfm - freq[i])
-        # R_check[i] = R_spl(freq_spl.roots()[0])
-        R_check[i] = freq_spl.roots()[0]
-        z_check[i] = z_spl(R_check[i])
-    plt.plot(R_ida, z_ida, "^", label=r"$R_\mathrm{IDA}(z)$")
-    plt.plot(R_ecfm, z_ecfm, "*", label=r"$R_\mathrm{ECRad}(z)$")
-    plt.plot(R_check, z_check, "+", label=r"$R_\mathrm{local}(z)$")
-    # plt.gca().set_ylim(-0.01, 0.01)
-    plt.gca().set_xlabel(r"$R$ [m]")
-    plt.gca().set_ylabel(r"$z$ [m]")
-    plt.legend()
-    plt.title(r"Rz IDA vs ECRad 3D w. ripple vs adjusted ECRad w. 3D ripple Rz")
-    plt.show()
-
-def compare_LOS(working_dir, ida_working_dir, chno):
+def compare_LOS_Rz(working_dir, ida_working_dir, chno):
     svec_ECRad = np.loadtxt(os.path.join(working_dir, "chdata{0:03d}.dat".format(chno)))
     svec_IDA = np.loadtxt(os.path.join(ida_working_dir, "chdata{0:03d}.dat".format(chno)))
     plt.plot(svec_ECRad.T[1][svec_ECRad.T[3] > 0], svec_ECRad.T[2][svec_ECRad.T[3] > 0], "-", label=r"$R_\mathrm{ECRad}(z)$")
@@ -470,6 +529,267 @@ def compare_LOS(working_dir, ida_working_dir, chno):
     plt.legend()
     plt.title(r"Rz IDA vs ECRad")
     plt.show()
+    
+def compare_quant_on_LOS(working_dir, ida_working_dir, chno):
+    svec_ECRad, freq = read_svec_dict_from_file(working_dir, chno)
+    svec_IDA, freq = read_svec_dict_from_file(ida_working_dir, chno)
+    scale_dict = {}
+    scale_dict["ne"] = 1.e19
+    scale_dict["Te"] = 1.e3
+    scale_dict["R"] = 1.0
+    scale_dict["z"] = 1.e-2
+    scale_dict["freq_2X"] = 100.e9
+    scale_dict["rhop"] = 1.e0
+    for quant, deriv in zip(["R", "z"], [0,0]):
+        if(quant not in ["R", "z"]):
+            mask_ECRad = svec_ECRad["rhop"] >= 0
+            mask_IDA = svec_IDA["rhop"] >= 0
+        else:
+            mask_ECRad = np.zeros(len(svec_ECRad["s"]), dtype=np.bool)
+            mask_ECRad[:] = True
+            mask_IDA = np.zeros(len(svec_IDA["s"]), dtype=np.bool)
+            mask_IDA[:] = True
+        ECRadx = svec_ECRad["R"][mask_ECRad]
+        ECRadquant = svec_ECRad[quant][mask_ECRad]
+        IDAx = svec_IDA["R"][mask_IDA]
+        IDAquant =  svec_IDA[quant][mask_IDA]
+        print("ECRad: {0:1.8e}\t IDA: {1:1.8e}".format(ECRadquant[-1], IDAquant[-1]))
+        plt.plot(ECRadx, ECRadquant/scale_dict[quant], "-", label=quant.replace("_"," ") + " ECRad")
+        plt.plot(IDAx, IDAquant/scale_dict[quant], "--", label=quant.replace("_"," ") + " IDA")
+#     plt.gca().set_xlabel(r"$s$ [m]")
+#     plt.gca().set_ylabel(r"$\rho_\mathrm{pol}$")
+    plt.legend()
+#     plt.title(r"$\rho_\mathrm{pol}$ IDA vs ECRad")
+    plt.show()
+    
+def compare_quant_on_LOS_rel(working_dir, ida_working_dir, chno):
+    svec_ECRad, freq = read_svec_dict_from_file(working_dir, chno)
+    svec_IDA, freq = read_svec_dict_from_file(ida_working_dir, chno)
+    scale_dict = {}
+    x_quant = "R"
+    scale_dict["ne"] = 1.e19
+    scale_dict["Te"] = 1.e3
+    scale_dict["R"] = 1.0
+    scale_dict["z"] = 1.e-2
+    scale_dict["freq_2X"] = 100.e9
+    scale_dict["rhop"] = 1.e0
+    scale_dict["theta"] = 2.0 * np.pi
+    s_R_spl = InterpolatedUnivariateSpline(svec_ECRad["s"], svec_ECRad["R"])
+    for quant, deriv in zip(["freq_2X","ne", "z"], [0,0,0,0]):
+        if(False):#quant not in ["R", "z"]
+            mask_ECRad = svec_ECRad["rhop"] >= 0
+            mask_IDA = svec_IDA["rhop"] >= 0
+        else:
+            mask_ECRad = np.zeros(len(svec_ECRad["s"]), dtype=np.bool)
+            mask_ECRad[:] = True
+            mask_IDA = np.zeros(len(svec_IDA["s"]), dtype=np.bool)
+            mask_IDA[:] = True
+        ECRadx = svec_ECRad[x_quant][mask_ECRad]
+        ECRadquant = svec_ECRad[quant][mask_ECRad]
+        ECRad_spl = InterpolatedUnivariateSpline(ECRadx, ECRadquant)
+        IDAx = svec_IDA[x_quant][mask_IDA]
+        IDAquant =  svec_IDA[quant][mask_IDA]
+        IDA_spl = InterpolatedUnivariateSpline(IDAx, IDAquant)
+        s = np.linspace(max(np.min(ECRadx),np.min(IDAx)), min(np.max(ECRadx),np.max(IDAx)), 2000)
+        plt.plot(s, (IDA_spl(s, nu=deriv)-ECRad_spl(s, nu=deriv)) / scale_dict[quant], label=quant.replace("_"," "))
+    plt.gca().set_xlabel(r"$\rho_\mathrm{pol}$")
+    plt.legend()
+    plt.show() 
+
+def compare_res_pos(working_dir, ida_working_dir, channel_num_as_x=False):
+    res_ECRad = np.loadtxt(os.path.join(working_dir, "sres.dat"))
+    res_IDA = np.loadtxt(os.path.join(ida_working_dir, "sres.dat"))
+    if(channel_num_as_x):
+        plt.plot(np.array(range(len(res_ECRad.T[0])))  + 1, 1.0 - res_ECRad.T[3]/res_IDA.T[3], "s")#, label="ECRad"
+#         plt.plot(np.array(range(len(res_IDA.T[0]))) + 1, res_IDA.T[0], "+", label="IDA")
+    else:
+        plt.plot(res_ECRad.T[3], res_ECRad.T[3]-res_IDA.T[3], "s", label="ECRad")
+#         plt.plot(res_IDA.T[0], res_IDA.T[-1], "+", label="IDA")
+    plt.gca().set_xlabel(r"$\rho_\mathrm{pol,res}$")
+    plt.gca().set_ylabel(r"$\Delta\rho_\mathrm{pol,res}$")
+#     plt.legend()
+    plt.title(r"$\rho_\mathrm{pol,res}$ [ECRad] $-$ $\rho_\mathrm{pol,res}$ [IDA]")
+    plt.show()
+    
+def compare_ds(working_dir, ida_working_dir, chno):
+    svec_ECRad, freq = read_svec_dict_from_file(working_dir, chno)
+    svec_IDA, freq = read_svec_dict_from_file(ida_working_dir, chno)
+    res_ECRad = np.loadtxt(os.path.join(working_dir, "sres.dat"))
+    res_IDA = np.loadtxt(os.path.join(ida_working_dir, "sres.dat"))
+    ds_ECRad = svec_ECRad["s"][1:] - svec_ECRad["s"][:-1]
+    ds_IDA = svec_IDA["s"][1:] - svec_IDA["s"][:-1]
+    plt.plot(svec_ECRad["s"][:-1], ds_ECRad, "-", label="ECRad")
+    plt.vlines(res_ECRad.T[0][chno-1], 0, np.max(ds_ECRad))
+    plt.plot(svec_IDA["s"][:-1], ds_IDA, "--", label="IDA")
+    plt.vlines(res_IDA.T[0][chno-1], 0, np.max(ds_IDA), linestyles="--", color="red")
+#     plt.gca().set_xlabel(r"$s$ [m]")
+#     plt.gca().set_ylabel(r"$\rho_\mathrm{pol}$")
+    plt.legend()
+#     plt.title(r"$\rho_\mathrm{pol}$ IDA vs ECRad")
+    plt.show()   
+    
+def compare_ds_rel(working_dir, ida_working_dir, chno):
+    svec_ECRad, freq = read_svec_dict_from_file(working_dir, chno)
+    svec_IDA, freq = read_svec_dict_from_file(ida_working_dir, chno)
+    res_IDA = np.loadtxt(os.path.join(ida_working_dir, "sres.dat"))
+    ds_ECRad = svec_ECRad["s"][1:] - svec_ECRad["s"][:-1]
+    ds_spl_ECRad=InterpolatedUnivariateSpline(svec_ECRad["s"][:-1], ds_ECRad)
+    ds_IDA = svec_IDA["s"][1:] - svec_IDA["s"][:-1]
+    ds_spl_IDA=InterpolatedUnivariateSpline(svec_IDA["s"][:-1], ds_IDA)
+    s = np.linspace(max([np.min(svec_IDA["s"][:-1]), np.min(svec_ECRad["s"][:-1])]), min([np.max(svec_IDA["s"][:-1]), np.max(svec_ECRad["s"][:-1])]), 500)
+    plt.plot(s, ds_spl_IDA(s) - ds_spl_ECRad(s), "--")
+    plt.vlines(res_IDA.T[0][chno-1], 0, np.max(ds_IDA), linestyles="--", color="red")
+#     plt.gca().set_xlabel(r"$s$ [m]")
+#     plt.gca().set_ylabel(r"$\rho_\mathrm{pol}$")
+#     plt.title(r"$\rho_\mathrm{pol}$ IDA vs ECRad")
+    plt.show()    
+  
+def compare_rhop(working_dir, ida_working_dir, chno):
+    ECRad_topdata = read_topfile(working_dir)
+    IDA_topdata = read_topfile(ida_working_dir)
+    ECRad_rhop = np.sqrt(ECRad_topdata["Psi"])
+    rhop_spl = RectBivariateSpline(ECRad_topdata["R"], ECRad_topdata["z"], ECRad_rhop)
+    IDA_rhop = np.sqrt(IDA_topdata["Psi"])
+    levels_rhop = np.linspace(0.0, 1.2, 13)
+    plt_range = np.array([np.min(ECRad_rhop - IDA_rhop), np.max(ECRad_rhop - IDA_rhop)])
+    quant_av = np.sqrt(np.mean(np.abs(ECRad_rhop).flatten()))
+    print(plt_range)
+    print(plt_range/quant_av)
+    levels = np.linspace(plt_range[0],plt_range[1], 30)
+    plt.contourf(IDA_topdata["R"], IDA_topdata["z"], IDA_rhop.T - ECRad_rhop.T, levels=levels, cmap=plt.cm.get_cmap("plasma"))
+    plt.contour(ECRad_topdata["R"], ECRad_topdata["z"], ECRad_rhop.T, levels=levels_rhop, colors="k", linestyles="-")
+    fig = plt.figure()
+    svec_ECRad, freq = read_svec_dict_from_file(working_dir, chno)
+    svec_IDA, freq = read_svec_dict_from_file(ida_working_dir, chno)
+    quant = "rhop"
+    if(quant not in ["R", "z"]):
+        mask_ECRad = svec_ECRad["rhop"] >= 0
+        mask_IDA = svec_IDA["rhop"] >= 0
+    else:
+        mask_ECRad = np.zeros(len(svec_ECRad["s"]), dtype=np.bool)
+        mask_ECRad[:] = True
+        mask_IDA = np.zeros(len(svec_IDA["s"]), dtype=np.bool)
+        mask_IDA[:] = True
+    plt.plot(svec_ECRad["s"][mask_ECRad], svec_ECRad[quant][mask_ECRad] - \
+             rhop_spl( svec_ECRad["R"][mask_ECRad],svec_ECRad["z"][mask_ECRad], grid=False), "-k", label="ECRad")
+    plt.plot(svec_IDA["s"][mask_IDA], svec_IDA[quant][mask_IDA] - \
+             rhop_spl( svec_IDA["R"][mask_IDA],svec_IDA["z"][mask_IDA], grid=False), "--r", label="IDA")
+    plt.legend()
+    plt.show()
+    plt.hold(True)
+    
+def compare_LOS_dev(working_dir, ida_working_dir, chno):
+    svec_ECRad, freq = read_svec_dict_from_file(working_dir, chno)
+    svec_IDA, freq = read_svec_dict_from_file(ida_working_dir, chno)
+    mask_ECRad = svec_ECRad["rhop"] >= 0
+    mask_IDA = svec_IDA["rhop"] >= 0
+    for quant, deriv in zip(["ne", "Te"], [0,0]):
+        ECRadx = svec_ECRad["s"][mask_ECRad]
+        ECRadquant = svec_ECRad[quant][mask_ECRad]
+        ECRadquantspl = InterpolatedUnivariateSpline(ECRadx, ECRadquant)
+        IDAx = svec_IDA["s"][mask_IDA]
+        IDAquant =  svec_IDA[quant][mask_IDA]
+        IDAquantspl = InterpolatedUnivariateSpline(IDAx, IDAquant)
+        s = np.linspace(max([np.min(IDAx), np.min(ECRadx)]), min([np.max(IDAx), np.max(ECRadx)]), 500)
+        plt.plot(s, (ECRadquantspl(s,nu=deriv) - IDAquantspl(s,nu=deriv)) / ECRadquantspl(s,nu=deriv), label=quant)
+#     plt.gca().set_xlabel(r"$s$ [m]")
+#     plt.gca().set_ylabel(r"$\rho_\mathrm{pol}$")
+    plt.legend()
+#     plt.title(r"$\rho_\mathrm{pol}$ IDA vs ECRad")
+    plt.show()
+
+def compare_topfiles(working_dir, ida_working_dir, shot=None, time=None, EQ_exp=None, EQ_diag=None, EQ_ed=None, btf_cor=None):
+    ECRad_topdata = read_topfile(working_dir)
+    IDA_topdata = read_topfile(ida_working_dir)
+    ref_path = "/tokp/work/sdenk/"
+    if(shot is not None):
+        make_topfile(ref_path, shot, time, EQ_exp, EQ_diag, EQ_ed, bt_vac_correction=1.005, copy_Te_ne=False)
+        IDA_topdata = read_topfile(ref_path)
+    quant = "Bt"
+    level_dict = {}
+    level_dict["Psi"] = np.linspace(0.0, 1.2, 13)
+    level_dict["Bt"] = np.linspace(-3.0, -1.2, 13)
+    level_dict["Br"] = np.linspace(-200.e-3, 200.e-3, 13)
+    level_dict["Bz"] = np.linspace(-200.e-3, 200.e-3, 13)
+#     plt.contour(ECRad_topdata["R"], ECRad_topdata["z"], ECRad_topdata["Psi"].T, levels=level_dict["Psi"], colors="k", linestyles="-")
+#     plt.contour(IDA_topdata["R"], IDA_topdata["z"], IDA_topdata["Psi"].T, levels=level_dict["Psi"], colors="r", linestyles="--")
+    plt_range = np.array([np.min(IDA_topdata[quant].T - ECRad_topdata[quant].T), np.max(IDA_topdata[quant].T - ECRad_topdata[quant].T)])
+    quant_av = np.mean(np.abs(ECRad_topdata[quant]).flatten())
+    print(plt_range)
+    print(plt_range/quant_av)
+    levels = np.linspace(plt_range[0],plt_range[1], 30)
+    plt.contourf(IDA_topdata["R"], IDA_topdata["z"], IDA_topdata[quant].T - ECRad_topdata[quant].T, levels=levels, cmap=plt.cm.get_cmap("plasma"))
+    plt.contour(ECRad_topdata["R"], ECRad_topdata["z"],ECRad_topdata[quant].T, levels=level_dict[quant], colors="k", linestyles="-")
+    plt.show()
+    plt.hold(True)
+    
+def compare_topfiles_cut(working_dir, ida_working_dir, shot=None, time=None, EQ_exp=None, EQ_diag=None, EQ_ed=None, btf_cor=None):
+    ECRad_topdata = read_topfile(working_dir)
+    IDA_topdata = read_topfile(ida_working_dir)
+    ref_path = "/tokp/work/sdenk/"
+    if(shot is not None):
+        make_topfile(ref_path, shot, time, EQ_exp, EQ_diag, EQ_ed, bt_vac_correction=1.005, copy_Te_ne=False)
+        ECRad_topdata = read_topfile(ref_path)
+    quant = "Psi"
+    level_dict = {}
+    level_dict["Psi"] = np.linspace(0.0, 1.2, 13)
+    level_dict["Bt"] = np.linspace(-3.0, -1.2, 13)
+    level_dict["Br"] = np.linspace(-200.e-3, 200.e-3, 13)
+    level_dict["Bz"] = np.linspace(-200.e-3, 200.e-3, 13)
+#     plt.contour(ECRad_topdata["R"], ECRad_topdata["z"], ECRad_topdata["Psi"].T, levels=level_dict["Psi"], colors="k", linestyles="-")
+#     plt.contour(IDA_topdata["R"], IDA_topdata["z"], IDA_topdata["Psi"].T, levels=level_dict["Psi"], colors="r", linestyles="--")
+    plt_range = np.array([np.min(IDA_topdata[quant].T - ECRad_topdata[quant].T), np.max(IDA_topdata[quant].T - ECRad_topdata[quant].T)])
+    quant_av = np.mean(np.abs(ECRad_topdata[quant]).flatten())
+    plt.plot(ECRad_topdata["R"], ECRad_topdata[quant][:,len(ECRad_topdata["z"]) / 2], "-k")
+    plt.plot(IDA_topdata["R"], IDA_topdata[quant][:,len(IDA_topdata["z"]) / 2], "--r")
+    plt.show()
+    plt.hold(True)    
+
+def compare_topfiles_B_tot(working_dir, ida_working_dir):
+    ECRad_topdata = read_topfile(working_dir,)
+    IDA_topdata = read_topfile(ida_working_dir)
+    fig1 = plt.figure()
+    level_dict = {}
+    level_dict["Btot"] = np.linspace(-3.0, -1.2, 13)
+    Btot_ECRad = np.zeros(ECRad_topdata["Bt"].shape)
+    Btot_IDA = np.zeros(ECRad_topdata["Bt"].shape)
+    for quant  in ["Br", "Bz"]: # "Bt", 
+        Btot_ECRad += ECRad_topdata[quant]**2
+        Btot_IDA += IDA_topdata[quant]**2
+    Btot_ECRad = np.sqrt(Btot_ECRad)
+    Btot_IDA = np.sqrt(Btot_IDA)
+#     plt.contour(ECRad_topdata["R"], ECRad_topdata["z"], ECRad_topdata["Psi"].T, levels=rhop_levels, colors="k", linestyles="-")
+#     plt.contour(IDA_topdata["R"], IDA_topdata["z"], IDA_topdata["Psi"].T, levels=rhop_levels, colors="r", linestyles="--")
+    plt_range = np.array([np.min(Btot_IDA-Btot_ECRad), np.max(Btot_IDA-Btot_ECRad)])
+    Btot_av = np.mean(np.abs(Btot_ECRad).flatten())
+    print(plt_range) 
+    print(plt_range / Btot_av)
+    levels = np.linspace(plt_range[0],plt_range[1], 30)
+    plt.contourf(IDA_topdata["R"], IDA_topdata["z"], Btot_IDA.T-Btot_ECRad.T, levels=levels, cmap=plt.cm.get_cmap("plasma"))
+#     plt.imshow(1.0 - Btot_IDA/Btot_ECRad, interpolation=None, cmap=plt.cm.get_cmap("plasma"))
+#     plt.contour(ECRad_topdata["R"], ECRad_topdata["z"],Btot_ECRad.T, levels=level_dict[quant], colors="k", linestyles="-")
+    plt.show()
+    plt.hold(True)
+
+def inspect_svec(working_dir, chno):
+    svec_ECRad, freq = read_svec_dict_from_file(working_dir, chno)
+    mask_ECRad = svec_ECRad["rhop"] >= 0
+    scale_dict= {}
+    scale_dict["ne"] = 1.e19
+    scale_dict["Te"] = 1.e3
+    scale_dict["freq_2X"] = 1.e9
+    scale_dict["theta"] = np.deg2rad(1)
+    scale_dict["R"] = 1.0
+    scale_dict["z"] = 1.0
+    scale_dict["ds"] = 1.e-3
+    svec_ECRad["ds"] = svec_ECRad["s"][1:] - svec_ECRad["s"][:-1]
+    ECRadx = svec_ECRad["s"][mask_ECRad][:-1]
+    for quant in ["ds"]:
+        ECRadquant = svec_ECRad[quant][mask_ECRad[:-1]]
+        plt.plot(ECRadx, ECRadquant / scale_dict[quant], label=quant.replace("_", " "))
+    plt.legend()
+    plt.show()
+    plt.hold(True)
 
 def calculate_coupling(path, channel):
     svec_X, freq = read_svec_dict_from_file(os.path.join(path, "ecfm_data"), channel)
@@ -650,10 +970,43 @@ def debug_EQ():
                                mdict["Te"][itime] * 1.e3, mdict["ne"][itime], grid=False)
 
 
-if(__name__ == "__main__"):
-#    debug_EQ()
-    compare_LOS("/tokp/work/sdenk/ECRad2/ecfm_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/", 43)
+def debug_calib(resultfile):
+    result = ECRadResults()
+    result.from_mat_file(resultfile)
+    CTA = ECRH_diag("CTA", "AUGD", "CTA", 0, 7, 1.0, False, t_smooth=1.e-3)
+    res = result.resonance["rhop_cold"][0][result.Scenario.ray_launch[0]["diag_name"] == CTA.name]
+    calib = np.zeros(len(res))
+    calib[:] = 1.0
+    std_dev_calib = np.zeros(len(res))
+    sys_dev_calib = np.zeros(len(res))
+    err, data = get_data_calib(CTA, 35662, 1.5,calib=calib, std_dev_calib=std_dev_calib, sys_dev_calib=sys_dev_calib, ext_resonances=res)
+    plt.plot(res, err[0] / data[1], "+")
+    # Gets the data from al )
+#     plt.plot(result.resonance["rhop_cold"][0][result.Scenario.ray_launch[0]["diag_name"] == diag], np.abs(result.sys_dev["CTA"]/result.calib["CTA"]), "+")
+#     plt.plot(result.resonance["rhop_cold"][0][result.Scenario.ray_launch[0]["diag_name"] == diag], np.abs(result.rel_dev["CTA"]), "^")
+#     plt.errorbar(result.resonance["rhop_cold"][0][result.Scenario.ray_launch[0]["diag_name"] == diag], result.calib["CTA"], result.sys_dev["CTA"])
+    plt.show()
 
+
+if(__name__ == "__main__"):
+#     compare_LOS_Rz("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/", 20)
+#     compare_EQData(35662, 2.0, "AUGD", "EQH", 0)
+#     debug_EQ()
+#     compare_ds("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/", 15)
+#     compare_ds_rel("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/", 15)
+    debug_calib("/tokp/work/sdenk/ECRad/ECRad_35662_CTCCTA_w_calib_ed8.mat")
+#     inspect_EQData(35186, 1.258, "AUGD", "EQH", 0)
+#     get_max_length_svec("/tokp/work/sdenk/ECRad_2/ECRad_data/")
+#     compare_rhop("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/", 15)
+#     compare_res_pos("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/")
+#     compare_topfiles("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/")
+#     compare_quant_on_LOS_rel("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/", 20)
+#     compare_topfiles("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/", 35662, 1.5, "AUGD", "IDE", 1)
+#     compare_topfiles("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/", 35662, 1.5, "AUGD", "IDE", 1)
+#     compare_topfiles("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/")
+#     debug_append_ECRadResults("/tokp/work/sdenk/ECRad_2/ECRad_35662_ECE_ed1.mat")
+#     compare_ECRad_results_ds(["/tokp/work/sdenk/ECRad_2/ECRad_35662_ECE_ed11.mat","/tokp/work/sdenk/ECRad_2/ECRad_35662_ECE_ed12.mat"], 1.5,  43)
+#     inspect_svec("/tokp/work/sdenk/ECRad_2/ECRad_data/", 3)
     # validate_theta_along_los("/ptmp1/work/sdenk/nssf/30406/1.38/", 1, 2)
     # debug_f_inter("/afs/ipp-garching.mpg.de/home/s/sdenk/F90/Ecfm_Model_new")
     # debug_f_inter("/ptmp1/work/sdenk/nssf/33585/3.00/OERT/ed_17/", 33585, 3.0, 7, "Ge", 1, 0.85, False, [])

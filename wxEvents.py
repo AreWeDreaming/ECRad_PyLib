@@ -13,6 +13,12 @@ import wx
 Unbound_EVT_NEW_STATUS = wx.NewEventType()  # Call This
 EVT_NEW_STATUS = wx.PyEventBinder(Unbound_EVT_NEW_STATUS, 1)  # Bind that
 
+Unbound_EVT_DIAGNOSTICS_LOADED = wx.NewEventType()  # Call This
+EVT_DIAGNOSTICS_LOADED = wx.PyEventBinder(Unbound_EVT_DIAGNOSTICS_LOADED, 1)  # Bind that
+
+Unbound_EVT_OTHER_RESULTS_LOADED = wx.NewEventType()  # Call This
+EVT_OTHER_RESULTS_LOADED = wx.PyEventBinder(Unbound_EVT_OTHER_RESULTS_LOADED, 1)  # Bind that
+
 Unbound_EVT_UPDATE = wx.NewEventType()  # Call This
 EVT_UPDATE = wx.PyEventBinder(Unbound_EVT_UPDATE, 1)  # Bind that
 
@@ -30,6 +36,9 @@ EVT_IDA_DATA_READY = wx.PyEventBinder(Unbound_EVT_IDA_DATA_READY , 1)
 
 Unbound_EVT_LOAD_CONFIG = wx.NewEventType()  # Call This
 EVT_LOAD_CONFIG = wx.PyEventBinder(Unbound_EVT_LOAD_CONFIG, 1)  # Bind that
+
+Unbound_EVT_LOAD_CONFIG_IDE = wx.NewEventType()  # Call This
+EVT_LOAD_CONFIG_IDE = wx.PyEventBinder(Unbound_EVT_LOAD_CONFIG_IDE, 1)  # Bind that
 
 Unbound_EVT_UPDATE_CONFIG = wx.NewEventType()  # Call This
 EVT_UPDATE_CONFIG = wx.PyEventBinder(Unbound_EVT_UPDATE_CONFIG , 1)
@@ -70,6 +79,21 @@ EVT_UNLOCK = wx.PyEventBinder(Unbound_EVT_UNLOCK, 1)
 class UpdateConfigEvt(wx.PyCommandEvent):
     def __init__(self, evtType, id):
         wx.PyCommandEvent.__init__(self, evtType, id)
+
+class UpdateDiagDataEvt(wx.PyCommandEvent):
+    def __init__(self, evtType, id):
+        wx.PyCommandEvent.__init__(self, evtType, id)
+        
+    def insertDiagData(self, DiagData):
+        self.DiagData = DiagData
+    
+class GenerticEvt(wx.PyCommandEvent):
+    def __init__(self, evtType, id):
+        wx.PyCommandEvent.__init__(self, evtType, id)
+        
+    def insertData(self, DiagData):
+        self.Data = DiagData
+
 
 class UpdateDataEvt(wx.PyCommandEvent):
     def __init__(self, evtType, id):

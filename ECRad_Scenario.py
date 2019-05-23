@@ -11,7 +11,8 @@ import sys
 from GlobalSettings import AUG, TCV
 import numpy as np
 from equilibrium_utils import EQDataSlice, special_points
-from Diags import Diag, ECRH_diag, ECI_diag, EXT_diag, TCV_diag
+from Diags import Diag, ECRH_diag, ECI_diag, EXT_diag
+from electron_distribution_utils import load_f_from_mat
 if(AUG):
     from ECRad_DIAG_AUG import DefaultDiagDict
 elif(TCV):
@@ -50,6 +51,9 @@ class ECRad_Scenario:
         self.EQ_ed = 0
         self.shot = 35662
         self.default_diag = "ECE"
+        self.data_source = "aug_database"
+        self.dist_obj = None
+        self.profile_dimension = 1
 
     def from_mat(self, mdict=None, path_in=None, load_plasma_dict=True):
         self.reset()
@@ -59,12 +63,16 @@ class ECRad_Scenario:
             else:
                 filename = path_in
             try:
-                mdict = loadmat(filename, chars_as_strings=True, squeeze_me=True)
+                mdict = loadmat(filename, chars_as_strings=True, squeeze_me=True, uint16_codec='ascii')
             except IOError as e:
                 print(e)
                 print("Error: " + filename + " does not exist")
                 return False
-        profile_dimension = mdict["profile_dimension"]
+            except TypeError as e:
+                print(e)
+                print("Error: File appears to be corrupted does not exist")
+                return False
+        self.profile_dimension = mdict["profile_dimension"]
         # Loading from .mat sometimes adds single entry arrays that we don't want
         at_least_1d_keys = ["diag", "time", "Diags_exp", "Diags_diag", "Diags_ed", "Extra_arg_1", "Extra_arg_2", "Extra_arg_3", \
                             "used_diags"]
@@ -72,10 +80,10 @@ class ECRad_Scenario:
                              "launch_z", "launch_tor_ang" , "launch_pol_ang", "launch_dist_focus", \
                              "launch_width", "launch_pol_coeff_X", "eq_special", "eq_special_complete"  ]
         at_least_3d_keys = ["eq_Psi", "eq_rhop", "eq_Br", "eq_Bt", "eq_Bz"]
-        if(profile_dimension == 1):
+        if(self.profile_dimension == 1):
             for key in ["rhop_prof", "Te", "ne"  ]:
                 at_least_2d_keys.append(key)
-        elif(profile_dimension == 2):
+        elif(self.profile_dimension == 2):
             for key in ["Te", "ne"  ]:
                 at_least_3d_keys.append(key)
         self.shot = mdict["shot"]
@@ -119,17 +127,9 @@ class ECRad_Scenario:
                                               int(mdict["Extra_arg_1"][i]), float(mdict["Extra_arg_2"][i]), bool(mdict["Extra_arg_3"][i]))})
             elif(diagname == "EXT"):
                 if("Ext_launch_pol" in mdict.keys()):
-                    self.used_diags_dict.update({diagname: EXT_diag(diagname, mdict["Diags_exp"][i], mdict["Diags_diag"][i], int(mdict["Diags_ed"][i]), \
-                                                                           mdict["Ext_launch_geo"], mdict["Ext_launch_pol"])})
+                    self.used_diags_dict.update({diagname: EXT_diag(diagname, mdict["Ext_launch_geo"], mdict["Ext_launch_pol"])})
                 else:
-                    self.used_diags_dict.update({diagname: EXT_diag(diagname, mdict["Diags_exp"][i], mdict["Diags_diag"][i], int(mdict["Diags_ed"][i]), \
-                                                                           mdict["Ext_launch_geo"], -1)})
-            elif(diagname == "VCE"):
-                if(AUG):
-                    self.used_diags_dict.update({diagname: TCV_diag(diagname, mdict["Diags_exp"][i], mdict["Diags_diag"][i], int(mdict["Diags_ed"][i]), \
-                                              mdict["Extra_arg_1"][i], mdict["Extra_arg_2"][i])})
-                else:
-                    self.used_diags_dict.update({diagname: Diag(diagname, mdict["Diags_exp"][i], mdict["Diags_diag"][i], int(mdict["Diags_ed"][i]))})
+                    self.used_diags_dict.update({diagname: EXT_diag(diagname, mdict["Ext_launch_geo"], -1)})
             else:
                 self.used_diags_dict.update({diagname: \
                         Diag(diagname, mdict["Diags_exp"][i], mdict["Diags_diag"][i], int(mdict["Diags_ed"][i]))})
@@ -147,10 +147,11 @@ class ECRad_Scenario:
                 self.ray_launch[-1]["width"] = mdict["launch_width"][itime]
                 self.ray_launch[-1]["pol_coeff_X"] = mdict["launch_pol_coeff_X"][itime]
                 self.ray_launch[-1]["diag_name"] = mdict["diag_name"][itime]
+            self.ray_launch = np.array(self.ray_launch)
             self.diags_set = True
         if(not load_plasma_dict):
             return
-        if(profile_dimension == 1):
+        if(self.profile_dimension == 1):
             self.plasma_dict["rhop_prof"] = mdict["rhop_prof"]
         self.plasma_dict["Te"] = mdict["Te"]
         self.plasma_dict["ne"] = mdict["ne"]
@@ -172,6 +173,10 @@ class ECRad_Scenario:
         for diag_key in self.avail_diags_dict:
             if(diag_key in self.used_diags_dict.keys()):
                 self.avail_diags_dict.update({diag_key: self.used_diags_dict[diag_key]})
+        if("data_source" in mdict.keys()):
+            self.data_source = mdict["data_source"]
+        else:
+            self.data_source = "aug_database"
         self.plasma_set = True
 
     def autosave(self):
@@ -199,9 +204,10 @@ class ECRad_Scenario:
         mdict["Extra_arg_2"] = []
         mdict["Extra_arg_3"] = []
         for diagname in self.used_diags_dict.keys():
-            mdict["Diags_exp"].append(self.used_diags_dict[diagname].exp)
-            mdict["Diags_diag"].append(self.used_diags_dict[diagname].diag)
-            mdict["Diags_ed"].append(self.used_diags_dict[diagname].ed)
+            if(hasattr(self.used_diags_dict[diagname], "exp")):
+                mdict["Diags_exp"].append(self.used_diags_dict[diagname].exp)
+                mdict["Diags_diag"].append(self.used_diags_dict[diagname].diag)
+                mdict["Diags_ed"].append(self.used_diags_dict[diagname].ed)
             if(diagname == "ECN" or diagname == "ECO"):
                 mdict["Extra_arg_1"].append(self.used_diags_dict[diagname].Rz_exp)
                 mdict["Extra_arg_2"].append(self.used_diags_dict[diagname].Rz_diag)
@@ -247,7 +253,7 @@ class ECRad_Scenario:
         mdict["time"] = self.plasma_dict["time"]
         mdict["Te"] = self.plasma_dict["Te"]
         mdict["ne"] = self.plasma_dict["ne"]
-        mdict["profile_dimension"] = len(self.plasma_dict["Te"][0].shape)
+        mdict["profile_dimension"] = self.profile_dimension
         if(mdict["profile_dimension"] == 1):
             mdict["rhop_prof"] = self.plasma_dict["rhop_prof"]
         mdict["eq_R"] = []
@@ -283,6 +289,7 @@ class ECRad_Scenario:
         mdict["eq_Bz"] = np.array(mdict["eq_Bz"])
         mdict["eq_special"] = np.array(mdict["eq_special"])
         mdict["vessel_bd"] = self.plasma_dict["vessel_bd"]
+        mdict["data_source"] = self.data_source
         if(filename is not None):
             try:
                 savemat(filename, mdict, appendmat=False)
@@ -296,3 +303,5 @@ class ECRad_Scenario:
         else:
             return True
 
+    def load_dist_obj(self, filename):
+        self.dist_obj = load_f_from_mat(filename, use_dist_prefix=True)

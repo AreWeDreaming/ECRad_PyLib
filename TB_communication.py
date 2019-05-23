@@ -14,10 +14,6 @@ from scipy.io import savemat
 if(AUG):
     from shotfile_handling_AUG import load_IDA_data, get_Vloop, get_RELAX_target_current, get_total_current, make_ext_data_for_testing_from_data
     from equilibrium_utils_AUG import EQData
-    from get_ECRH_config import load_all_ECRH, load_all_active_ECRH
-elif(TCV):
-    from shotfile_handling_TCV import load_IDA_data
-    from equilibrium_utils_TCV import EQData
 else:
     print('Neither AUG nor TCV selected')
     raise(ValueError('No system selected!'))
@@ -30,7 +26,6 @@ import shutil
 import wx
 from wxEvents import *
 from shutil import copyfile
-from plotting_configuration import *
 
 tb_path = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/torbeam_repo/TORBEAM/branches/lib-OUT/"
 
@@ -41,7 +36,7 @@ tb_path_itm = "/marconi_work/eufus_gw/work/g2sdenk/torbeam/lib-OUT/"
 
 def read_topfile(working_dir):
     topfile = open((os.path.join(working_dir, "topfile")), "r")
-    order = ["dummy", "dim", "flxsep", "R", "z", "Br", "Bt", "Bz", "psi"]
+    order = ["dummy", "dim", "flxsep", "R", "z", "Br", "Bt", "Bz", "Psi"]
     data_dict = {}
     for key in order:
         data_dict[key] = []
@@ -49,31 +44,30 @@ def read_topfile(working_dir):
     for line in topfile.readlines():
         parsed_line = np.fromstring(line, sep=" ")
         if(len(parsed_line) == 0):
+            if(iorder > 0):
+                data_dict[order[iorder]] = np.concatenate(data_dict[order[iorder]]).flatten()
             iorder += 1
         else:
             data_dict[order[iorder]].append(parsed_line)
+    data_dict[order[iorder]] = np.array(data_dict[order[iorder]]).flatten()
     m, n = data_dict["dim"]
     m = int(m)
     n = int(n)
-    Psi_sep = data_dict["flxsep"][-1]
-    R = np.array(data_dict["R"]).flatten()
-    z = np.array(data_dict["z"]).flatten()
-    Br = np.array(data_dict["Br"]).flatten().reshape((m, n))
-    Bt = np.array(data_dict["Bt"]).flatten().reshape((m, n))
-    Bz = np.array(data_dict["Bz"]).flatten().reshape((m, n))
-    Psi = np.array(data_dict["Psi"]).flatten().reshape((m, n))
-    plt.contour(R, z, Psi.T)
-    plt.sho()
-
-
+    data_dict["Psi_sep"] = data_dict["flxsep"][-1]
+    data_dict["R"] = data_dict["R"]
+    data_dict["z"] = data_dict["z"]
+    data_dict["Br"] = data_dict["Br"].reshape((n, m)).T
+    data_dict["Bt"] = data_dict["Bt"].reshape((n, m)).T
+    data_dict["Bz"] = data_dict["Bz"].reshape((n, m)).T
+    data_dict["Psi"] = data_dict["Psi"].reshape((n, m)).T
+    return data_dict
 
 def make_topfile(working_dir, shot, time, eq_exp, eq_diag, eq_ed, bt_vac_correction=1.005, copy_Te_ne=True):
     # Note this routine uses MBI-BTFABB for a correction of the toroidal magnetic field
     # Furthermore, an empirical vacuum BTF correction factor of bt_vac_correction is applied
     # This creates a topfile that is consistent with the magnetic field used in OERT
     print("Creating topfile for #{0:d} t = {1:1.2f}".format(shot, time))
-    columns = 8  # number of coloumns
-    columns -= 1
+    columns = 3  # number of coloumns
     EQ_obj = EQData(shot, EQ_exp=eq_exp, EQ_diag=eq_diag, EQ_ed=eq_ed, bt_vac_correction=bt_vac_correction)
     EQ_t = EQ_obj.GetSlice(time)
     print("Magnetic axis position: ", "{0:1.3f}".format(EQ_t.R_ax))
@@ -82,24 +76,25 @@ def make_topfile(working_dir, shot, time, eq_exp, eq_diag, eq_ed, bt_vac_correct
     topfile.write('   {0: 8n} {1: 8n}\n'.format(len(EQ_t.R), len(EQ_t.z)))
     topfile.write('Inside and Outside radius and psi_sep\n')
     topfile.write('   {0: 1.8E}  {1: 1.8E}  {2: 1.8E}'.format(EQ_t.R[0], EQ_t.R[-1], \
-        EQ_t.Psi_sep))  # 1.0000
+                                                              1.0))  # 1.0000
     # Normalize PSI
     topfile.write('\n')
     topfile.write('Radial grid coordinates\n')
     cnt = 0
     for i in range(len(EQ_t.R)):
         topfile.write("  {0: 1.8E}".format(EQ_t.R[i]))
-        if(cnt == columns):
+        if(cnt == columns - 1):
             topfile.write("\n")
             cnt = 0
         else:
             cnt += 1
-    topfile.write('\n')
+    if(cnt != 0):
+        topfile.write('\n')
     topfile.write('Vertical grid coordinates\n')
     cnt = 0
     for i in range(len(EQ_t.z)):
         topfile.write("  {0: 1.8E}".format(EQ_t.z[i]))
-        if(cnt == columns):
+        if(cnt == columns - 1):
             topfile.write("\n")
             cnt = 0
         else:
@@ -112,51 +107,51 @@ def make_topfile(working_dir, shot, time, eq_exp, eq_diag, eq_ed, bt_vac_correct
     B_r = EQ_t.Br.T  # in topfile R is the small index (i.e. second index in C) and z the large index (i.e. first index in C)
     B_t = EQ_t.Bt.T  # in topfile z comes first regardless of the arrangement
     B_z = EQ_t.Bz.T  # in topfile z comes first regardless of the arrangement
-    Psi = EQ_t.Psi.T  # in topfile z comes first regardless of the arrangement
-    if(cnt is not columns):
+    Psi = EQ_t.rhop.T**2  # in topfile z comes first regardless of the arrangement
+    if(cnt != 0):
         topfile.write('\n')
     topfile.write('B_r on grid\n')
     cnt = 0
     for i in range(len(B_r)):
         for j in range(len(B_r[i])):
             topfile.write("  {0: 1.8E}".format(B_r[i][j]))
-            if(cnt == columns):
+            if(cnt == columns - 1):
                 topfile.write("\n")
                 cnt = 0
             else:
                 cnt += 1
-    if(cnt is not columns):
+    if(cnt != 0):
         topfile.write('\n')
     topfile.write('B_t on grid\n')
     cnt = 0
     for i in range(len(B_t)):
         for j in range(len(B_t[i])):
             topfile.write("  {0: 1.8E}".format(B_t[i][j]))
-            if(cnt == columns):
+            if(cnt == columns - 1):
                 topfile.write("\n")
                 cnt = 0
             else:
                 cnt += 1
-    if(cnt is not columns):
+    if(cnt != 0):
         topfile.write('\n')
     cnt = 0
     topfile.write('B_z on grid\n')
     for i in range(len(B_z)):
         for j in range(len(B_z[i])):
             topfile.write("  {0: 1.8E}".format(B_z[i][j]))
-            if(cnt == columns):
+            if(cnt == columns - 1):
                 topfile.write("\n")
                 cnt = 0
             else:
                 cnt += 1
-    if(cnt is not columns):
+    if(cnt != 0):
         topfile.write('\n')
     cnt = 0
     topfile.write('Normalised psi on grid\n')
     for i in range(len(Psi)):
         for j in range(len(Psi[i])):
             topfile.write("  {0: 1.8E}".format(Psi[i][j]))
-            if(cnt == columns):
+            if(cnt == columns - 1):
                 topfile.write("\n")
                 cnt = 0
             else:

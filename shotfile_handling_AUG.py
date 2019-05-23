@@ -3,18 +3,17 @@ Created on Dec 9, 2015
 
 @author: sdenk
 '''
+from GlobalSettings import TCV, AUG, itm
 import numpy as np
 import sys
 import os
 # sys.path.append('/afs/ipp/home/g/git/python/repository/py_rep2.0/')
 # import kk
 import ctypes as ct
-from GlobalSettings import TCV, AUG, itm
 if(not itm):
     sys.path.append('/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib')
 else:
     sys.path.append('../lib')
-# import dd
 import dd
 from scipy.signal import medfilt, argrelmax
 root = "/afs/ipp-garching.mpg.de/home/s/sdenk/"
@@ -32,12 +31,19 @@ from scipy.integrate import simps
 from scipy.optimize import curve_fit
 from glob import glob
 from plotting_configuration import *
-from get_ECRH_config import get_ECRH_viewing_angles
 from scipy.stats import binned_statistic, t
 from scipy.signal import resample  # decimate
 from Diags import Diag
 from shutil import copyfile
 from data_processing import remove_mode
+AUG_profile_diags = ["IDA", "RMD", "CEC", "VTA", "CEZ", "COZ", "CUZ"]
+
+def shotfile_exists(shot, diag):
+    try:
+        sf = dd.shotfile(diagnostic=diag.diag, pulseNumber=shot, experiment=diag.exp, edition=diag.ed)
+        return True
+    except dd.PyddError:
+        return False
 
 def get_diag_data_no_calib_wrapper(shot, name, exp="AUGD", diag="None", ed=0):
     if(diag is None):
@@ -126,6 +132,15 @@ def smooth(y_arr, median=False):
             y_smooth = y_arr[0]
             std_dev = 0.0
     return y_smooth, std_dev
+
+def moving_average(time, signal, window):
+    step = np.mean(np.gradient(time))
+    N = np.int(np.floor(window / step))
+    if(N < 4):
+        print("Window too small for resolution of signal - returning original signal")
+        return time, signal
+    else:
+        return time[:len(time) - N + 1], np.convolve(signal, np.ones(N)/N, mode="valid")
 
 def get_diag_data_no_calib(diag, shot, preview=False, single_channel=0):
     print("Told to get " + diag.diag + " data")
@@ -301,7 +316,8 @@ def get_data_calib_entire_shot(diag, shot, ext_resonances=None, calib=None):
 
 
 def get_data_calib(diag, shot=0, time=None, eq_exp="AUGD", eq_diag="EQH", \
-                   eq_ed=0, calib=None, std_dev_calib=None, sys_dev_calib=None, ext_resonances=None, name="", t_smooth=None, median=True):
+                   eq_ed=0, calib=None, std_dev_calib=None, sys_dev_calib=None, \
+                   ext_resonances=None, name="", t_smooth=None, median=True):
     # Gets the data from all ECE diagnostics that have shotfiles
     # Returns std deviation in keV, rho poloidal resonance and Trad in keV
     if(t_smooth is None):
@@ -1108,7 +1124,7 @@ def get_last_edition_number(shot, exp, diag):
 def load_IDA_data(shot, timepoints=None, exp="AUGD", ed=0, double_entries_allowed=False):
     IDA_dict = { }
     IDA = dd.shotfile("IDA", pulseNumber=int(shot), experiment=exp, edition=ed)
-    IDA_dict["ed"] = ed
+    IDA_dict["ed"] = IDA.edition
     IDA_time = IDA.getTimeBase(\
                     "time", dtype=np.double)
     IDA_Te_mat = IDA.getSignalGroup(\
@@ -1149,6 +1165,13 @@ def load_IDA_data(shot, timepoints=None, exp="AUGD", ed=0, double_entries_allowe
             IDA_ECE_dat_mat = np.array([IDA_ECE_dat_mat])
             IDA_ECE_unc_mat = np.array([IDA_ECE_unc_mat])
             IDA_ECE_mod_mat = np.array([IDA_ECE_mod_mat])
+    if(IDA_ECE_data):
+        if(np.ndim(IDA_ECE_dat_mat) == 3):
+            IDA_ECE_dat_mat=np.swapaxes(IDA_ECE_dat_mat, 2, 1)
+            IDA_ECE_unc_mat=np.swapaxes(IDA_ECE_unc_mat, 2, 1)
+            IDA_ECE_dat_rhop_mat = np.zeros(IDA_ECE_dat_mat.shape)
+            for i in range(len(IDA_ECE_dat_mat.T)):
+                IDA_ECE_dat_rhop_mat[:,:,i] = IDA_ECE_rhop_mat
     Te_mat = []
     Te_up_mat = []
     Te_low_mat = []
@@ -1156,6 +1179,7 @@ def load_IDA_data(shot, timepoints=None, exp="AUGD", ed=0, double_entries_allowe
     rhop_mat = []
     ne_rhop_scale_mat = []
     ECE_rhop_mat = []
+    ECE_dat_rhop_mat = []
     ECE_dat_mat = []
     ECE_unc_mat = []
     ECE_mod_mat = []
@@ -1172,6 +1196,7 @@ def load_IDA_data(shot, timepoints=None, exp="AUGD", ed=0, double_entries_allowe
                 if(IDA_ECE_data):
                 # ne_rhop_scale_mat.append(IDA_ne_rhop_scal_mat[index])
                     ECE_rhop_mat.append(IDA_ECE_rhop_mat[index])
+                    ECE_dat_rhop_mat.append(IDA_ECE_dat_rhop_mat[index])
                     ECE_dat_mat.append(IDA_ECE_dat_mat[index])
                     ECE_unc_mat.append(IDA_ECE_unc_mat[index])
                     ECE_mod_mat.append(IDA_ECE_mod_mat[index])
@@ -1190,6 +1215,7 @@ def load_IDA_data(shot, timepoints=None, exp="AUGD", ed=0, double_entries_allowe
                 # ne_rhop_scale_mat.append(IDA_ne_rhop_scal_mat[index])
                 if(IDA_ECE_data):
                     ECE_rhop_mat.append(IDA_ECE_rhop_mat[index])
+                    ECE_dat_rhop_mat.append(IDA_ECE_dat_rhop_mat[index])
                     ECE_dat_mat.append(IDA_ECE_dat_mat[index])
                     ECE_unc_mat.append(IDA_ECE_unc_mat[index])
                     ECE_mod_mat.append(IDA_ECE_mod_mat[index])
@@ -1201,10 +1227,15 @@ def load_IDA_data(shot, timepoints=None, exp="AUGD", ed=0, double_entries_allowe
     rhop_mat = np.array(rhop_mat)
     ne_rhop_scale_mat = np.array(ne_rhop_scale_mat)
     ne_rhop_scale_mat[ne_rhop_scale_mat == 0] = 1
-    ECE_rhop_mat = np.array(ECE_rhop_mat)
-    ECE_dat_mat = np.array(ECE_dat_mat)
-    ECE_unc_mat = np.array(ECE_unc_mat)
-    ECE_mod_mat = np.array(ECE_mod_mat)
+    if(IDA_ECE_data):
+        ECE_rhop_mat = np.array(ECE_rhop_mat)
+        ECE_dat_rhop_mat = np.array(ECE_dat_rhop_mat)
+        ECE_dat_rhop_mat = np.reshape(ECE_dat_rhop_mat,(ECE_dat_rhop_mat.shape[0],ECE_dat_rhop_mat.shape[1] * ECE_dat_rhop_mat.shape[2]))
+        ECE_dat_mat = np.array(ECE_dat_mat)
+        ECE_dat_mat = np.reshape(ECE_dat_mat,(ECE_dat_mat.shape[0],ECE_dat_mat.shape[1] * ECE_dat_mat.shape[2]))
+        ECE_unc_mat = np.array(ECE_unc_mat)
+        ECE_unc_mat = np.reshape(ECE_unc_mat,(ECE_unc_mat.shape[0],ECE_unc_mat.shape[1] * ECE_unc_mat.shape[2]))
+        ECE_mod_mat = np.array(ECE_mod_mat)
     IDA_dict["Te"] = Te_mat
     IDA_dict["Te_up"] = Te_up_mat
     IDA_dict["Te_low"] = Te_low_mat
@@ -1215,12 +1246,14 @@ def load_IDA_data(shot, timepoints=None, exp="AUGD", ed=0, double_entries_allowe
     except:
         IDA_dict["ne_rhop_scale"] = np.zeros(len(IDA_dict["time"]))
         IDA_dict["ne_rhop_scale"][:] = 1.0  # ne_rhop_scale_mat
-    IDA_dict["ECE_rhop"] = ECE_rhop_mat
-    IDA_dict["ECE_dat"] = ECE_dat_mat
-    IDA_dict["ECE_unc"] = ECE_unc_mat
-    IDA_dict["ECE_mod"] = ECE_mod_mat
+    if(IDA_ECE_data):
+        IDA_dict["ECE_rhop"] = ECE_rhop_mat
+        IDA_dict["ECE_dat_rhop"] = ECE_dat_rhop_mat
+        IDA_dict["ECE_dat"] = ECE_dat_mat
+        IDA_dict["ECE_unc"] = ECE_unc_mat
+        IDA_dict["ECE_mod"] = ECE_mod_mat
     try:
-        IDA_dict["raytrace"] = IDA.getParameter('ece_par', 'raytrace').data
+        IDA_dict["raytrace"] = bool(IDA.getParameter('ece_par', 'raytrace').data)
     except:
         IDA_dict["raytrace"] = False
     try:
@@ -1627,7 +1660,6 @@ def test_FPC():
 #    # ax1.set_xlabel(r"$t\,[\mathrm{s}]$")
 #    plt.setp(ax1.get_xticklabels(), visible=False)
 #    ax1.set_ylabel(r"$U\,[\mathrm{V}]$")
-#    from get_ECRH_config import load_all_active_ECRH
 #    gy_list = load_all_active_ECRH(shot)
 #    for gy in gy_list:
 #        ax2.plot(gy.time, gy.PW / 1.e6)
@@ -1642,8 +1674,26 @@ def test_FPC():
     # plt.plot(t, raw[0], '+')
 
 
+def compare_IDE_to_MBI(shot):
+    IDF = dd.shotfile("IDF", int(shot), experiment="AUGD", edition=0)
+    MBI = dd.shotfile('MBI', int(shot))
+    B_IDE = IDF.getSignal("Btor")
+    time_IDE = IDF.getTimeBase("Btor")
+    B_MBI = MBI.getSignal("BTFABB")
+    time_MBI = MBI.getTimeBase("BTFABB")
+    IDE_spl = InterpolatedUnivariateSpline(time_IDE, B_IDE)
+    MBI_spl = InterpolatedUnivariateSpline(time_MBI, B_MBI)
+    t = np.linspace(max(np.min(time_IDE),np.min(time_MBI)), min(np.max(time_IDE),np.max(time_MBI)), 1000)
+    plt.plot(t, IDE_spl(t)/MBI_spl(t))
+#     plt.plot(time_IDE, B_IDE, label="IDE")
+#     plt.plot(time_MBI, B_MBI, "--", label="MBI")
+#     plt.legend()
+    plt.show()
+    
+
 if(__name__ == '__main__'):
-    print(get_RELAX_target_current(35662, 4.4, exp="AUGD", ed=0, smoothing=1.e-3))
+#     print(get_RELAX_target_current(35662, 4.4, exp="AUGD", ed=0, smoothing=1.e-3))
+    compare_IDE_to_MBI(35662)
 #    pass
 #     print(get_RELAX_target_current(33697, 4.8, exp="AUGD", ed=0, smoothing=1.e-3))
 #     print(get_RELAX_target_current(33705, 4.9, exp="AUGD", ed=0, smoothing=1.e-3))

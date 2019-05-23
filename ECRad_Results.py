@@ -4,10 +4,12 @@ Created on Dec 17, 2015
 @author: sdenk
 '''
 import numpy as np
+from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
 np.set_printoptions(threshold=10)
 import os
 from GlobalSettings import AUG, TCV
 from scipy.io import savemat, loadmat
+from scipy import constants as cnst
 from ECRad_Config import ECRad_Config
 from ECRad_Scenario import ECRad_Scenario
 from collections import OrderedDict as od
@@ -295,6 +297,35 @@ class ECRadResults:
                                 self.ray["NX"][-1][-1].append(Ray_file.T[15])
                                 self.ray["NcX"][-1][-1].append(Ray_file.T[16])
                                 self.ray["thetaX"][-1][-1].append(Ray_file.T[17])
+                                Bx = Ray_file.T[21]
+                                By = Ray_file.T[22]
+                                Bz = Ray_file.T[23]
+                                itime = np.argmin(np.abs(self.Scenario.time - time))
+                                omega = 2.0 * np.pi * self.Scenario.ray_launch["f"][itime][i]
+                                self.ray["YX"][-1][-1].append(cnst.e * np.sqrt(Bx**2 + By**2 + Bz**2) / \
+                                                              (cnst.m_e * omega))
+                                if(self.Scenario.profile_dimension == 2):
+                                    ne_spl = InterpolatedUnivariateSpline(self.Scenario.plasma_dict["rhop_prof"][itime], \
+                                                                          np.log(self.Scenario.plasma_dict["ne"][itime]), ext=1)
+                                    self.ray["XX"][-1][-1].append(cnst.e**2 * np.exp(ne_spl(self.ray["rhopX"][-1][-1][-1]))/ \
+                                                                  (cnst.m_e * cnst.epsilon_0))
+                                else:
+                                    ne_spl = RectBivariateSpline(self.Scenario.plasma_dict["R"][itime], \
+                                                                 self.Scenario.plasma_dict["z"][itime], \
+                                                                 np.log(self.Scenario.plasma_dict["ne"][itime]), ext=1)
+                                    R_ray = self.ray["R"][-1][-1][-1]
+                                    z_ray = self.ray["z"][-1][-1][-1]
+                                    R_ray[np.logical_or(R_ray > np.max(self.Scenario.plasma_dict["R"][itime]), \
+                                                        R_ray < np.min(self.Scenario.plasma_dict["R"][itime]) )] = \
+                                         np.max(self.Scenario.plasma_dict["R"][itime])
+                                    z_ray[np.logical_or(z_ray > np.max(self.Scenario.plasma_dict["z"][itime]), \
+                                                        z_ray < np.min(self.Scenario.plasma_dict["z"][itime]) )] = \
+                                         np.max(self.Scenario.plasma_dict["z"][itime])
+                                    self.ray["XX"][-1][-1].append(cnst.e**2 * np.exp(ne_spl(R_ray, z_ray, grid=False))/ \
+                                                                  (cnst.m_e * cnst.epsilon_0))
+                                    self.ray["XX"][-1][-1][-1][np.logical_or(R_ray >= np.max(self.Scenario.plasma_dict["R"][itime]), \
+                                                                             z_ray >= np.max(self.Scenario.plasma_dict["z"][itime]) )] = 0.0
+                                                                                
                     else:
                         try:
                             Ray_file = np.loadtxt(os.path.join(Ich_folder, "BPD_ray{0:03d}ch{1:03d}_X.dat".format(1, i + 1)))
@@ -319,6 +350,37 @@ class ECRadResults:
                             self.ray["NX"][-1].append(Ray_file.T[15])
                             self.ray["NcX"][-1].append(Ray_file.T[16])
                             self.ray["thetaX"][-1].append(Ray_file.T[17])
+                            Bx = Ray_file.T[21]
+                            By = Ray_file.T[22]
+                            Bz = Ray_file.T[23]
+                            itime = np.argmin(np.abs(self.Scenario.plasma_dict["time"] - time))
+                            omega = 2.0 * np.pi * self.Scenario.ray_launch[itime]["f"][i]
+                            self.ray["YX"][-1].append(cnst.e * np.sqrt(Bx**2 + By**2 + Bz**2) / \
+                                                          (cnst.m_e * omega))
+                            if(self.Scenario.profile_dimension == 1):
+                                ne_spl = InterpolatedUnivariateSpline(self.Scenario.plasma_dict["rhop_prof"][itime], \
+                                                                      np.log(self.Scenario.plasma_dict["ne"][itime]), ext=1)
+                                self.ray["XX"][-1].append(cnst.e**2 * np.exp(ne_spl(self.ray["rhopX"][-1][-1]))/ \
+                                                              (cnst.m_e * cnst.epsilon_0* omega**2))
+                            elif(self.Scenario.profile_dimension == 3):
+                                ne_spl = RectBivariateSpline(self.Scenario.plasma_dict["eq_data"][itime].R, \
+                                                             self.Scenario.plasma_dict["eq_data"][itime].z, \
+                                                             np.log(self.Scenario.plasma_dict["ne"][itime]))
+                                R_ray = self.ray["R"][-1][-1]
+                                z_ray = self.ray["z"][-1][-1]
+                                R_ray[np.logical_or(R_ray > np.max(self.Scenario.plasma_dict["eq_data"][itime].R), \
+                                                    R_ray < np.min(self.Scenario.plasma_dict["eq_data"][itime].R) )] = \
+                                     np.max(self.Scenario.plasma_dict["eq_data"][itime].R)
+                                z_ray[np.logical_or(z_ray > np.max(self.Scenario.plasma_dict["eq_data"][itime].z), \
+                                                    z_ray < np.min(self.Scenario.plasma_dict["eq_data"][itime].z) )] = \
+                                     np.max(self.Scenario.plasma_dict["eq_data"][itime].z)
+                                self.ray["XX"][-1].append(cnst.e**2 * np.exp(ne_spl(R_ray, z_ray, grid=False))/ \
+                                                              (cnst.m_e * cnst.epsilon_0 * omega**2))
+                                self.ray["XX"][-1][-1][np.logical_or(R_ray >= np.max(self.Scenario.plasma_dict["eq_data"][itime].R), \
+                                                                         z_ray >= np.max(self.Scenario.plasma_dict["eq_data"][itime].z) )] = 0.0
+                            else:
+                                print("Three dimensional profiles not supported for Stix parameters X and Y")
+                                break
             if("O" in self.modes):
                 try:
                     BDOP_O = np.loadtxt(os.path.join(Ich_folder, "BPDO{0:03d}.dat".format(i + 1)))
@@ -583,7 +645,7 @@ class ECRadResults:
         at_least_2d_keys = ["Trad", "Trad_comp", "tau", "tau_comp", \
                             "XTrad", "OTrad", "Xtau", "Otau", "X_mode_frac", \
                             "XTrad_comp", "OTrad_comp", "Xtau_comp", "Otau_comp", "X_mode_frac_comp", \
-                             "ne", "calib", "rel_dev", "Te", "rhop", "masked_time_points", \
+                             "ne", "calib", "rel_dev", "sys_dev", "Te", "rhop", "masked_time_points", \
                              "ECE_rhop", "ECE_dat", "eq_data", \
                              "eq_R", "eq_z", "diag_name", "launch_f", "launch_df", "launch_R", "launch_phi", \
                              "launch_z", "launch_tor_ang" , "launch_pol_ang", "launch_dist_focus", \
@@ -612,7 +674,9 @@ class ECRadResults:
                         mdict[key] = np.atleast_1d(mdict[key])
 #                        mdict[key] = np.array([mdict[key]])
                     elif(key in at_least_2d_keys):
-                        if(increase_diag_dim and not increase_time_dim and key not in ["calib", "rel_dev", "sys_dev", "masked_time_points"]):
+                        if(increase_diag_dim and not increase_time_dim and key not in ["calib", \
+                                                                                       "rel_dev", \
+                                                                                       "sys_dev"]):
                             if(len(self.Config.time) != len(mdict[key])):
                                 print("Unexpected length of key", key, len(mdict[key]), len(self.Config.time))
                                 raise IOError
@@ -621,10 +685,10 @@ class ECRadResults:
                                 for i in range(len(self.Config.time)):
                                     temp.append(np.array([mdict[key][i]]))
                                 mdict[key] = np.array(temp)
-                        elif(increase_time_dim and key in ["calib", "rel_dev", "sys_dev", "masked_time_points"]):
+                        elif(increase_diag_dim and key in ["calib", "rel_dev", "sys_dev", "masked_time_points"]):
                             for i in range(len(mdict[key])):  # Single time point multiple diagnostics to calibrate
                                 mdict[key][i] = np.array([mdict[key][i]])
-                        else:
+                        elif(key not in ["calib", "rel_dev", "sys_dev", "masked_time_points"]):
                             mdict[key] = np.atleast_2d(mdict[key])
                     elif(key in at_least_3d_keys):
                         if(increase_time_dim):
@@ -637,13 +701,14 @@ class ECRadResults:
                     print(key)
                     print(e)
         self.edition = mdict["edition"]
-        self.Config.working_dir = mdict["working_dir"]
         if(mdict["considered_modes"] == 1):
             self.modes = ["X"]
         elif(mdict["considered_modes"] == 2):
             self.modes = ["O"]
         elif(mdict["considered_modes"] == 3):
             self.modes = ["X", "O"]
+        if("comment" in mdict.keys()):
+            self.comment = mdict["comment"]
         self.time = mdict["time"]
         self.Trad = mdict["Trad"]
         self.tau = mdict["tau"]
@@ -682,8 +747,8 @@ class ECRadResults:
             if("calib_diags" in mdict.keys()  and len(mdict["calib"]) > 0):
                 if(len(mdict["calib_diags"]) == 1):
                     self.calib[mdict["calib_diags"][0]] = mdict["calib"][0]
-                    self.calib_mat[mdict["calib_diags"][0]] = mdict["calib_mat"][0]
-                    self.std_dev_mat[mdict["calib_diags"][0]] = mdict["std_dev_mat"][0]
+                    self.calib_mat[mdict["calib_diags"][0]] = mdict["calib_mat"][0].T
+                    self.std_dev_mat[mdict["calib_diags"][0]] = mdict["std_dev_mat"][0].T
                     self.rel_dev[mdict["calib_diags"][0]] = mdict["rel_dev"][0]
                     try:
                         self.sys_dev[mdict["calib_diags"][0]] = mdict["sys_dev"][0]
@@ -699,8 +764,8 @@ class ECRadResults:
                 else:
                     for i in range(len(mdict["calib_diags"])):
                         self.calib[mdict["calib_diags"][i]] = mdict["calib"][i]
-                        self.calib_mat[mdict["calib_diags"][i]] = mdict["calib_mat"][i]
-                        self.std_dev_mat[mdict["calib_diags"][i]] = mdict["std_dev_mat"][i]
+                        self.calib_mat[mdict["calib_diags"][i]] = mdict["calib_mat"][i].T
+                        self.std_dev_mat[mdict["calib_diags"][i]] = mdict["std_dev_mat"][i].T
                         self.rel_dev[mdict["calib_diags"][i]] = mdict["rel_dev"][i]
                         try:
                             self.sys_dev[mdict["calib_diags"][i]] = mdict["sys_dev"][i]
@@ -717,7 +782,7 @@ class ECRadResults:
             print("Error loading calibration factors - please recalculate")
         if(not self.Config.extra_output):
             self.init = True
-            return False
+            return True
         self.Trad_comp = mdict["Trad_comp"]
         self.tau_comp = mdict["tau_comp"]
         if(self.Config.considered_modes == 3):
@@ -865,6 +930,8 @@ class ECRadResults:
         mdict["edition"] = ed
         if(comment is not None):
             mdict["comment"] = comment
+        elif(hasattr(self, "comment")):
+            mdict["comment"] = self.comment
         mdict["time"] = self.time
         mdict["Trad"] = self.Trad
         mdict["tau"] = self.tau
@@ -966,12 +1033,21 @@ class ECRadResults:
             mdict["calib_diags"] = []
             for diag in self.calib.keys():
                 mdict["calib"].append(self.calib[diag])
-                mdict["calib_mat"] = self.calib_mat[diag]
-                mdict["std_dev_mat"].append(self.std_dev_mat[diag])
+                # Needs to be transposed to avoid numpy error related to the different channel count of the individual diagnostics
+                mdict["calib_mat"].append(self.calib_mat[diag].T)
+                mdict["std_dev_mat"].append(self.std_dev_mat[diag].T)
                 mdict["rel_dev"].append(self.rel_dev[diag])
                 mdict["sys_dev"].append(self.sys_dev[diag])
                 mdict["masked_time_points"].append(self.masked_time_points[diag])
                 mdict["calib_diags"].append(diag)
+            mdict["calib"] = np.array(mdict["calib"])
+            mdict["calib_mat"] = np.array(mdict["calib_mat"])
+            mdict["std_dev_mat"] = np.array(mdict["std_dev_mat"])
+            mdict["rel_dev"] = np.array(mdict["rel_dev"])
+            mdict["sys_dev"] = np.array(mdict["sys_dev"])
+            mdict["masked_time_points"] = np.array(mdict["masked_time_points"])
+            mdict["calib_diags"] = np.array(mdict["calib_diags"])
+            
         if(quasi_linear_beam is not None):
             try:
                 mdict["dist_rhot_prof"] = quasi_linear_beam.rhot

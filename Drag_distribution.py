@@ -5,7 +5,7 @@ Created on Oct 5, 2017
 '''
 
 import numpy as np
-import matplotlib.pyplot as plt
+from plotting_configuration import *
 from electron_distribution_utils import load_f_from_ASCII, export_fortran_friendly
 from scipy.interpolate import RectBivariateSpline, InterpolatedUnivariateSpline
 

@@ -4,7 +4,7 @@ Created on Jan 26, 2017
 @author: sdenk
 '''
 import numpy as np
-import matplotlib.pyplot as plt
+from plotting_configuration import *
 from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.optimize import least_squares
 from electron_distribution_utils import Gauss_norm

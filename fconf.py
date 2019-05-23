@@ -6,7 +6,7 @@ from matplotlib.ticker import ScalarFormatter, MaxNLocator
 from math import log10, floor
 from pylab import get_cmap
 import numpy as np
-import matplotlib.pyplot as plt
+from plotting_configuration import *
 from matplotlib.transforms import TransformedBbox, Affine2D
 # from IPython import embed
 PAD_INCHES = 0.1

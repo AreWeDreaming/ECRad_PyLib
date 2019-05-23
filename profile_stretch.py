@@ -4,7 +4,6 @@ Created on Aug 3, 2017
 @author: sdenk
 '''
 import numpy as np
-# import matplotlib.pyplot as plt
 from plotting_configuration import *
 
 def stretch_profiles(rhop, rhop_center, width, factor):
