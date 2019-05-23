@@ -190,6 +190,7 @@ class gyrotron(AUGLauncher):
         # Angles are given in degrees
         libECRH_obj = libECRH_wrapper(shot)
         self.error = 0
+        self.N =N
         if(N > 4):
             N_2 = N - 4
         else:
