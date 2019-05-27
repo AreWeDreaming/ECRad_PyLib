@@ -219,15 +219,12 @@ class EQDataExt:
 
     def get_B_on_axis(self, time):
         R_ax, z_ax = self.get_axis(time)
-        if(self.external_folder != '' or self.Ext_data):
-            cur_slice = self.GetSlice(time)
-            R = cur_slice.R
-            z = cur_slice.z
-            B_tot = np.sqrt(cur_slice.Br ** 2 + cur_slice.Bt ** 2 + cur_slice.Bz ** 2)
-            B_tot_spl = RectBivariateSpline(R, z, B_tot)
-            return B_tot_spl(R_ax, z_ax)
-        else:
-            print("Parent class EQData does not support shotfile handling - use AUG child instead")
+        cur_slice = self.GetSlice(time)
+        R = cur_slice.R
+        z = cur_slice.z
+        B_tot = np.sqrt(cur_slice.Br ** 2 + cur_slice.Bt ** 2 + cur_slice.Bz ** 2)
+        B_tot_spl = RectBivariateSpline(R, z, B_tot)
+        return B_tot_spl(R_ax, z_ax)
 
     def get_surface_area(self, time, rho):
         if(rho > 1.0):

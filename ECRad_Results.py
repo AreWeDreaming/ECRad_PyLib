@@ -1049,35 +1049,43 @@ class ECRadResults:
             mdict["calib_diags"] = np.array(mdict["calib_diags"])
             
         if(quasi_linear_beam is not None):
-            mdict["dist_rhot_prof"] = quasi_linear_beam.rhot
-            mdict["dist_rhop_prof"] = quasi_linear_beam.rhop
-            mdict["dist_PW_prof"] = quasi_linear_beam.PW * 1.e6
-            mdict["dist_j_prof"] = quasi_linear_beam.j * 1.e6
-            mdict["dist_PW_tot"] = quasi_linear_beam.PW_tot * 1.e6
-            mdict["dist_j_tot"] = quasi_linear_beam.j_tot * 1.e6
-            mdict["dist_rhot_1D_profs"] = dist_obj.rhot_1D_profs
-            mdict["dist_rhop_1D_profs"] = dist_obj.rhop_1D_profs
-            mdict["dist_Te_init"] = dist_obj.Te_init
-            mdict["dist_ne_init"] = dist_obj.ne_init
-            f = dist_obj.f
-            mdict["dist_u"] = dist_obj.u
-            mdict["dist_pitch"] = dist_obj.pitch
-            mdict["dist_f"] = f
+            try:
+                mdict["dist_rhot_prof"] = quasi_linear_beam.rhot
+                mdict["dist_rhop_prof"] = quasi_linear_beam.rhop
+                mdict["dist_PW_prof"] = quasi_linear_beam.PW * 1.e6
+                mdict["dist_j_prof"] = quasi_linear_beam.j * 1.e6
+                mdict["dist_PW_tot"] = quasi_linear_beam.PW_tot * 1.e6
+                mdict["dist_j_tot"] = quasi_linear_beam.j_tot * 1.e6
+                mdict["dist_rhot_1D_profs"] = dist_obj.rhot_1D_profs
+                mdict["dist_rhop_1D_profs"] = dist_obj.rhop_1D_profs
+                mdict["dist_Te_init"] = dist_obj.Te_init
+                mdict["dist_ne_init"] = dist_obj.ne_init
+                f = dist_obj.f
+                mdict["dist_u"] = dist_obj.u
+                mdict["dist_pitch"] = dist_obj.pitch
+                mdict["dist_f"] = f
+            except Exception as e:
+                print("Failed to write dist to mat")
+                print(e)
         if(linear_beam is not None):
-            mdict["wave_rhot_prof"] = linear_beam.rhot
-            mdict["wave_rhop_prof"] = linear_beam.rhop
-            mdict["wave_PW_prof"] = linear_beam.PW * 1.e6
-            mdict["wave_j_prof"] = linear_beam.j * 1.e6
-            mdict["wave_PW_tot"] = linear_beam.PW_tot * 1.e6
-            mdict["wave_j_tot"] = linear_beam.j_tot * 1.e6
-            mdict["wave_PW_beam"] = linear_beam.PW_beam
-            mdict["wave_j_beam"] = linear_beam.j_beam
-            for key in linear_beam.rays[0][0].keys():
-                mdict["wave_" + key] = []
-                for ibeam in range(len(linear_beam.rays)):
-                    mdict["wave_" + key].append([])
-                    for iray in range(len(linear_beam.rays[ibeam])):
-                        mdict["wave_" + key][-1].append(linear_beam.rays[ibeam][iray][key])
+            try:
+                mdict["wave_rhot_prof"] = linear_beam.rhot
+                mdict["wave_rhop_prof"] = linear_beam.rhop
+                mdict["wave_PW_prof"] = linear_beam.PW * 1.e6
+                mdict["wave_j_prof"] = linear_beam.j * 1.e6
+                mdict["wave_PW_tot"] = linear_beam.PW_tot * 1.e6
+                mdict["wave_j_tot"] = linear_beam.j_tot * 1.e6
+                mdict["wave_PW_beam"] = linear_beam.PW_beam
+                mdict["wave_j_beam"] = linear_beam.j_beam
+                for key in linear_beam.rays[0][0].keys():
+                    mdict["wave_" + key] = []
+                    for ibeam in range(len(linear_beam.rays)):
+                        mdict["wave_" + key].append([])
+                        for iray in range(len(linear_beam.rays[ibeam])):
+                            mdict["wave_" + key][-1].append(linear_beam.rays[ibeam][iray][key])
+            except Exception as e:
+                print("Failed to write wave to mat")
+                print(e)
         try:
             savemat(filename, mdict, appendmat=False)
             print("Successfully created: ", filename)

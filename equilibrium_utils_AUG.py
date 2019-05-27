@@ -24,7 +24,6 @@ from kk_local import KK
 vessel_bd_file = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/ECFM_Pylib/ASDEX_Upgrade_vessel.txt"
 import matplotlib.pyplot as plt
 from scipy.signal import medfilt
-
 def eval_R(x):
     return -x[0] ** 3
 
@@ -90,7 +89,7 @@ class EQData(EQDataExt):
             self.GQH = dd.shotfile("IDG", int(self.shot), experiment=self.EQ_exp, edition=self.EQ_ed)
         else:
             print("EQ diagnostic {0:s} not supported - only EQH and IDE are currently supported!".format(self.EQ_diag))
-        self.MBI_shot = dd.shotfile('MBI', int(self.shot))
+        self.MBI = dd.shotfile('MBI', int(self.shot))
         self.shotfile_ready = True
 
     def GetSlice(self, time):
@@ -239,7 +238,7 @@ class EQData(EQDataExt):
             output = self.KKobj.kkrzptfn(self.shot, time, R, z, exp=self.EQ_exp, diag=self.EQ_diag, ed=self.EQ_ed)
             return output.rho_t
 
-    def rhop_to_rot(self, time, rhop):
+    def rhop_to_rhot(self, time, rhop):
         if(self.external_folder != '' or self.Ext_data):
             print("Not yet implemented")
             raise ValueError("Not yet implemented")

@@ -3609,7 +3609,7 @@ class plotting_core:
             cmap = plt.cm.get_cmap("jet")
         cont1 = self.axlist_2[0].contourf(dist_obj.uxx, dist_obj.ull, dist_obj.f_cycl_log10[f_ind], levels=levels, cmap=cmap)  # ,norm = LogNorm()
         cont2 = self.axlist_2[0].contour(dist_obj.uxx, dist_obj.ull, dist_obj.f_cycl_log10[f_ind], levels=levels, colors='k',
-                            hold='on', alpha=0.25, linewidths=1)
+                                         hold='on', alpha=0.25, linewidths=1)
         self.axlist_2[0].set_ylabel(r"$u_{\Vert}$")
         self.axlist_2[0].set_xlabel(r"$u_{\perp}$")
         for c in cont2.collections:
