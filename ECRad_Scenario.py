@@ -19,7 +19,7 @@ elif(TCV):
     from ECRad_DIAG_TCV import DefaultDiagDict
 # THis class holds all the input data provided to ECRad with the exception of the ECRad configuration
 
-class ECRad_Scenario:
+class ECRadScenario:
     def __init__(self, noLoad=False):
         if(not noLoad):
             self.scenario_file = os.path.join(os.path.expanduser("~"), ".ECRad_GUI_last_scenario.mat")
@@ -49,6 +49,14 @@ class ECRad_Scenario:
         self.EQ_exp = "AUGD"
         self.EQ_diag = "EQH"
         self.EQ_ed = 0
+        if(AUG):
+            self.bt_vac_correction = 1.005
+        else:
+            self.bt_vac_correction = 1.000
+        self.ne_rhop_scale = 1.e0
+        self.Te_rhop_scale = 1.e0
+        self.Te_scale = 1.0
+        self.ne_scale = 1.0
         self.shot = 35662
         self.default_diag = "ECE"
         self.data_source = "aug_database"
@@ -92,6 +100,22 @@ class ECRad_Scenario:
         self.EQ_exp = mdict["EQ_exp"]
         self.EQ_diag = mdict["EQ_diag"]
         self.EQ_ed = mdict["EQ_ed"]
+        try:
+            self.bt_vac_correction = mdict["bt_vac_correction"]
+        except KeyError:
+            self.bt_vac_correction = 1.005
+        try:
+            self.Te_rhop_scale = mdict["Te_rhop_scale"]
+            self.ne_rhop_scale = mdict["ne_rhop_scale"]
+        except KeyError:
+            self.ne_rhop_scale = 1.e0
+            self.Te_rhop_scale = 1.e0
+        try:
+            self.Te_scale = mdict["Te_scale"]
+            self.ne_scale = mdict["ne_scale"]
+        except KeyError:
+            self.Te_scale = 1.0
+            self.ne_scale = 1.0
         increase_time_dim = False
         if(np.isscalar(mdict["time"])):
             self.plasma_dict["time"] = np.array([mdict["time"]])
@@ -162,7 +186,7 @@ class ECRad_Scenario:
                 spcl = special_points(entry[0], entry[1], entry[4], entry[2], entry[3], entry[5])
             else:
                 entry = mdict["eq_special"][i]
-                spcl = special_points(self, entry[0], 0.0, 0.0, 0.0, 0.0, entry[1])
+                spcl = special_points(0.0, 0.0, entry[0], 0.0, 0.0, entry[1])
             self.plasma_dict["eq_data"].append(EQDataSlice(self.plasma_dict["time"][i], \
                                                                   mdict["eq_R"][i], mdict["eq_z"][i], \
                                                                   mdict["eq_Psi"][i], mdict["eq_Br"][i], \
@@ -263,7 +287,9 @@ class ECRad_Scenario:
         mdict["eq_Br"] = []
         mdict["eq_Bt"] = []
         mdict["eq_Bz"] = []
-        mdict["eq_special_complete"] = []
+        mdict["bt_vac_correction"] = self.bt_vac_correction
+        if(self.plasma_dict["eq_data"][0].R_sep is not None):
+            mdict["eq_special_complete"] = []
         mdict["eq_special"] = []
         for i in range(len(self.plasma_dict["time"])):
             mdict["eq_R"].append(self.plasma_dict["eq_data"][i].R)
@@ -274,7 +300,8 @@ class ECRad_Scenario:
             mdict["eq_Bt"].append(self.plasma_dict["eq_data"][i].Bt)
             mdict["eq_Bz"].append(self.plasma_dict["eq_data"][i].Bz)
             mdict["eq_special"].append(self.plasma_dict["eq_data"][i].special)
-            mdict["eq_special_complete"].append(np.array([self.plasma_dict["eq_data"][i].R_ax, \
+            if(self.plasma_dict["eq_data"][i].R_sep is not None):
+                mdict["eq_special_complete"].append(np.array([self.plasma_dict["eq_data"][i].R_ax, \
                                                           self.plasma_dict["eq_data"][i].z_ax, \
                                                           self.plasma_dict["eq_data"][i].R_sep, \
                                                           self.plasma_dict["eq_data"][i].z_sep, \

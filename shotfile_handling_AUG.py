@@ -10,6 +10,7 @@ import os
 # sys.path.append('/afs/ipp/home/g/git/python/repository/py_rep2.0/')
 # import kk
 import ctypes as ct
+from __builtin__ import True
 if(not itm):
     sys.path.append('/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib')
 else:
@@ -20,9 +21,7 @@ root = "/afs/ipp-garching.mpg.de/home/s/sdenk/"
 from scipy.interpolate import RectBivariateSpline, splev, splrep, InterpolatedUnivariateSpline, interp1d, UnivariateSpline, interp1d
 from electron_distribution_utils import make_EField
 if(AUG):
-    from equilibrium_utils_AUG import EQData
-elif(TCV):
-    from equilibrium_utils_TCV import EQData
+    from equilibrium_utils_AUG import EQData,vessel_bd_file
 else:
     print('Neither AUG nor TCV selected')
     raise(ValueError('No system selected!'))
@@ -33,6 +32,7 @@ from glob import glob
 from plotting_configuration import *
 from scipy.stats import binned_statistic, t
 from scipy.signal import resample  # decimate
+from scipy.io import savemat
 from Diags import Diag
 from shutil import copyfile
 from data_processing import remove_mode
@@ -1437,6 +1437,48 @@ def make_ext_data_for_testing_grids(ext_data_folder, shot, times, eq_exp, eq_dia
         plt.show()
         index += 1
 
+def make_plasma_mat_for_testing(filename, shot, times, eq_exp, eq_diag, eq_ed, \
+                                bt_vac_correction=1.005, IDA_exp="AUGD", IDA_ed=0):
+    EQ_obj = EQData(shot, EQ_exp=eq_exp, EQ_diag=eq_diag, EQ_ed=eq_ed, bt_vac_correction=bt_vac_correction)
+    plasma_data = load_IDA_data(shot, timepoints=times, exp="AUGD", ed=IDA_ed)
+    mdict = {}
+    mdict["shot"] = shot
+    mdict["time"] = times
+    mdict["Te"] = plasma_data["Te"]
+    mdict["ne"] = plasma_data["ne"]
+    mdict["rhop_prof"] = plasma_data["rhop_prof"]
+    mdict["Psi_sep"] = []
+    mdict["Psi_ax"] = []
+    mdict["Psi"] = []
+    mdict["Br"] = []
+    mdict["Bt"] = []
+    mdict["Bz"] = []
+    vessel_bd = np.loadtxt(vessel_bd_file, skiprows=1)
+    mdict["vessel_bd"] = []
+    mdict["vessel_bd"].append(vessel_bd.T[0])
+    mdict["vessel_bd"].append(vessel_bd.T[1])
+    mdict["vessel_bd"] = np.array(mdict["vessel_bd"])
+    R_init = False
+    for time in plasma_data["time"]:
+        EQ_t = EQ_obj.GetSlice(time)
+        if(not R_init):
+            R_init = True
+            mdict["R"] = EQ_t.R
+            mdict["z"] = EQ_t.z
+        mdict["Psi_sep"].append(EQ_t.Psi_sep)
+        mdict["Psi_ax"].append(EQ_t.Psi_ax)
+        mdict["Psi"].append(EQ_t.Psi)
+        mdict["Br"].append(EQ_t.Br)
+        mdict["Bt"].append(EQ_t.Bt)
+        mdict["Bz"].append(EQ_t.Bz)
+    mdict["Psi_sep"] = np.array(mdict["Psi_sep"])
+    mdict["Psi_ax"] = np.array(mdict["Psi_ax"])
+    mdict["Psi"] = np.array(mdict["Psi"])
+    mdict["Br"] = np.array(mdict["Br"])
+    mdict["Bt"] = np.array(mdict["Bt"])
+    mdict["Bz"] = np.array(mdict["Bz"])
+    savemat(filename, mdict, appendmat=False)
+
 def export_ASDEX_Upgrade_grid(ext_data_folder, shot, times, eq_exp, eq_diag, eq_ed, \
                                     bt_vac_correction=1.005, IDA_exp="AUGD", IDA_ed=0, \
                                     offset=False):
@@ -1692,8 +1734,10 @@ def compare_IDE_to_MBI(shot):
     
 
 if(__name__ == '__main__'):
+    make_plasma_mat_for_testing("/tokp/work/sdenk/ECRad/32934.mat", 32934, [3.298], "AUGD", "EQH", 0, \
+                                bt_vac_correction=1.005, IDA_exp="AUGD", IDA_ed=0)
 #     print(get_RELAX_target_current(35662, 4.4, exp="AUGD", ed=0, smoothing=1.e-3))
-    compare_IDE_to_MBI(35662)
+#     compare_IDE_to_MBI(35662)
 #    pass
 #     print(get_RELAX_target_current(33697, 4.8, exp="AUGD", ed=0, smoothing=1.e-3))
 #     print(get_RELAX_target_current(33705, 4.9, exp="AUGD", ed=0, smoothing=1.e-3))

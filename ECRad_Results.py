@@ -11,13 +11,13 @@ from GlobalSettings import AUG, TCV
 from scipy.io import savemat, loadmat
 from scipy import constants as cnst
 from ECRad_Config import ECRad_Config
-from ECRad_Scenario import ECRad_Scenario
+from ECRad_Scenario import ECRadScenario
 from collections import OrderedDict as od
 
 class ECRadResults:
     def __init__(self):
         self.Config = ECRad_Config()
-        self.Scenario = ECRad_Scenario()
+        self.Scenario = ECRadScenario()
         self.reset()
 
     def reset(self):
