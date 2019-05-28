@@ -4249,7 +4249,7 @@ class plotting_core:
                             name=ray_label + r" peripheral ray", marker=":", color=(126.0 / 255, 0.e0, 126.0 / 255), \
                                  y_range_in=self.y_range_list[1], ax_flag="xy")
         else:
-            if(s_cold is not None):
+            if(s_cold is not None and s_cold > 0.0):
                 x_spl = InterpolatedUnivariateSpline(ray.s, ray.x)
                 y_spl = InterpolatedUnivariateSpline(ray.s, ray.y)
                 self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], data=[x_spl(s_cold), y_spl(s_cold)], \

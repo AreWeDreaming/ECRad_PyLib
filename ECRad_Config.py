@@ -74,11 +74,6 @@ class ECRad_Config:
             # 2 -> Only O
             # 3 -> Both
         self.mode_conv = mdict["mode_conv"]
-        self.Te_rhop_scale = mdict["Te_rhop_scale"]
-        try:
-            self.ne_rhop_scale = mdict["ne_rhop_scale"]
-        except KeyError:
-            self.ne_rhop_scale = 1.e0
         try:
             self.reflec_model = mdict["reflec_model"]
         except KeyError:
@@ -94,19 +89,9 @@ class ECRad_Config:
             self.reflec_O = mdict["reflec_O"]
         except KeyError:
             self.reflec_O = 0.95
-        try:
-            self.Te_scale = mdict["Te_scale"]
-            self.ne_scale = mdict["ne_scale"]
-        except KeyError:
-            self.Te_scale = 1.0
-            self.ne_scale = 1.0
         self.gene_obj = None
         self.Te_filename = "Te_file.dat"
         self.ne_filename = "ne_file.dat"
-        try:
-            self.bt_vac_correction = mdict["bt_vac_correction"]
-        except KeyError:
-            self.bt_vac_correction = 1.005
         try:
             self.R_shift = mdict["R_shift"]
         except KeyError:
@@ -164,14 +149,9 @@ class ECRad_Config:
         mdict["ratio_for_3rd_harm"] = self.ratio_for_3rd_harm
         mdict["considered_modes"] = self.considered_modes
         mdict["mode_conv"] = self.mode_conv
-        mdict["Te_rhop_scale"] = self.Te_rhop_scale
-        mdict["ne_rhop_scale"] = self.ne_rhop_scale
         mdict["reflec_model"] = self.reflec_model
         mdict["reflec_X"] = self.reflec_X
         mdict["reflec_O"] = self.reflec_O
-        mdict["Te_scale"] = self.Te_scale
-        mdict["ne_scale"] = self.ne_scale
-        mdict["bt_vac_correction"] = self.bt_vac_correction
         mdict["R_shift"] = self.R_shift
         mdict["z_shift"] = self.z_shift
         mdict["large_ds"] = self.large_ds
@@ -200,7 +180,7 @@ def provide_default_mdict():
     mdict["debug"] = False
     mdict["batch"] = True
     mdict["parallel"] = True
-    mdict["parallel_cores"] = 16
+    mdict["parallel_cores"] = 32
     mdict["wall_time"] = 2
     mdict["vmem"] = 32000
     mdict["raytracing"] = True
@@ -211,19 +191,14 @@ def provide_default_mdict():
     mdict["ratio_for_3rd_harm"] = 0.4
     mdict["considered_modes"] = 1
     mdict["mode_conv"] = 0.0
-    mdict["Te_rhop_scale"] = 1.0
-    mdict["ne_rhop_scale"] = 1.0
     mdict["reflec_model"] = 0
     mdict["reflec_X"] = 0.9
-    mdict["reflec_O"] = 0.92
+    mdict["reflec_O"] = 0.9
     mdict["IDA_exp"] = "AUGD"
     mdict["IDA_ed"] = 0
     mdict["EQ_exp"] = "AUGD"
     mdict["EQ_diag"] = "EQH"
     mdict["EQ_ed"] = 0
-    mdict["Te_scale"] = 1.0
-    mdict["ne_scale"] = 1.0
-    mdict["bt_vac_correction"] = 1.005
     mdict["default_diag"] = "ECE"
     mdict["R_shift"] = 0.0
     mdict["z_shift"] = 0.0

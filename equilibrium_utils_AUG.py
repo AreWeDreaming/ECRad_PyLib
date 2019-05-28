@@ -95,7 +95,7 @@ class EQData(EQDataExt):
         self.MBI = dd.shotfile('MBI', int(self.shot))
         self.shotfile_ready = True
 
-    def GetSlice(self, time):
+    def GetSlice(self, time, B_vac_correction=True):
         if(not self.shotfile_ready):
             self.init_read_from_shotfile()
         output = self.KKobj.kkeqpfm(self.shot, time, exp=self.EQ_exp, diag=self.EQ_diag, ed=self.EQ_ed,  m=65, n=129)
@@ -149,11 +149,12 @@ class EQData(EQDataExt):
         # print("R,z",pfm_dict["Ri"][ivR],pfm_dict["zj"][jvz])
         # print("Time of B was: ", magn_field.time)
         # print("WARNING DIAMAGNETIC FIELD HAS OPPOSITE SIGN!!!")
-        for j in range(len(z)):
-            # plt.plot(pfm_dict["Ri"],B_t[j], label = "EQH B")
-            Btok_eq = Btf0_eq * self.R0 / R  # vacuum toroidal field from EQH
-            Bdia = B_t.T[j] - Btok_eq  # subtract vacuum toroidal field from equilibrium to obtain diamagnetic field
-            B_t.T[j] = (Btok * self.bt_vac_correction) + Bdia  # add corrected vacuum toroidal field to be used
+        if(B_vac_correction):
+            for j in range(len(z)):
+                # plt.plot(pfm_dict["Ri"],B_t[j], label = "EQH B")
+                Btok_eq = Btf0_eq * R0 / R  # vacuum toroidal field from EQH
+                Bdia = B_t.T[j] - Btok_eq  # subtract vacuum toroidal field from equilibrium to obtain diamagnetic field
+                B_t.T[j] = (Btok * self.bt_vac_correction) + Bdia  # add corrected vacuum toroidal field to be used
 #         print(Btf0)
 #         print("Original magnetic field: {0:2.3f}".format(Btf0))
 #         print("New magnetic field: {0:2.3f}".format(Btf0 * self.bt_vac_correction))

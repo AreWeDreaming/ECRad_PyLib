@@ -802,10 +802,10 @@ def make_3DBDOP_cut(matfilename, shot, time, ch_list, m_list, dist, diag="EQH", 
             print("NO FILE")
             return
         itime = np.argmin(np.abs(Results.Scenario.plasma_dict["time"] - time))
-        rhop_Te = Results.Scenario.plasma_dict["rhop_prof"][itime]
-        Te = np.log(Results.Scenario.plasma_dict["Te"][itime])  # from IDA always positive definite
-        rhop_ne = Results.Scenario.plasma_dict["rhop_prof"][itime]
-        ne = np.log(Results.Scenario.plasma_dict["Te"][itime])  # from IDA always positive definite
+        rhop_Te = Results.Scenario.plasma_dict["rhop_prof"][itime] * Results.Scenario.Te_rhop_scale
+        Te = np.log(Results.Scenario.plasma_dict["Te"][itime] * Results.Scenario.Te_scale)  # from IDA always positive definite
+        rhop_ne = Results.Scenario.plasma_dict["rhop_prof"][itime] * Results.Scenario.ne_rhop_scale
+        ne = np.log(Results.Scenario.plasma_dict["Te"][itime] * Results.Scenario.ne_scale)  # from IDA always positive definite
         EqSlice = Results.Scenario.plasma_dict["eq_data"][itime]
         EQObj = EQDataExt(shot, bt_vac_correction=1.0, Ext_data=True)
         EQObj.insert_slices_from_ext(Results.Scenario.plasma_dict["time"], Results.Scenario.plasma_dict["eq_data"])

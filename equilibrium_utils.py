@@ -49,7 +49,7 @@ class special_points:
         self.psispx = psi_sep
 
 class EQDataSlice:
-    def __init__(self, time, R, z, Psi, Br, Bt, Bz, special=None, R_ax=None, Psi_sep=None, rhop=None, ripple=None):
+    def __init__(self, time, R, z, Psi, Br, Bt, Bz, special=None, Psi_ax = None, Psi_sep=None, rhop=None, ripple=None):
         self.time = time
         self.R = R
         self.z = z
@@ -67,12 +67,12 @@ class EQDataSlice:
             self.z_sep = special.zspx
             self.Psi_ax = special.psiaxis
             self.Psi_sep = special.psispx
-        elif(R_ax is not None and Psi_sep is not None):
-            self.R_ax = R_ax
+        elif(Psi_sep is not None and Psi_ax is not None):
+            self.Psi_ax = Psi_ax
             self.Psi_sep = Psi_sep
         else:
-            raise ValueError("Either special points or R_ax and Psi_sep must not be None")
-        self.special = np.array([self.R_ax, self.Psi_sep])
+            raise ValueError("Either special points or Psi_ax and Psi_sep must not be None")
+        self.special = np.array([self.Psi_ax, self.Psi_sep])
         self.ripple = ripple
 
 #        if(self.Psi_sep < self.Psi[self.Psi.shape[0] / 2][self.Psi.shape[1] / 2]):
@@ -125,23 +125,29 @@ class EQDataExt:
             for eq_slice in self.slices:
                 eq_slice.transpose_matrices()
 
-    def load_slices_from_mat(self, time, mdict):
+    def load_slices_from_mat(self, time, mdict, eq_prefix = False):
         self.times = copy.deepcopy(time)
         self.slices = []
         self.Ext_data = True
         for it in range(len(time)):
-            self.slices.append(EQDataSlice(self.times[it], mdict["R"], mdict["z"], mdict["Psi"][it], mdict["Br"][it], \
-                                           mdict["Bt"][it], mdict["Bz"][it], R_ax=0.0, \
+            if(eq_prefix):
+                self.slices.append(EQDataSlice(self.times[it], mdict["eq_R"][it], mdict["eq_z"][it], mdict["eq_Psi"][it], mdict["eq_Br"][it], \
+                                           mdict["eq_Bt"][it], mdict["eq_Bz"][it], Psi_ax=mdict["eq_special"][it][0], \
+                                           Psi_sep=mdict["eq_special"][it][1]))
+            else:
+                self.slices.append(EQDataSlice(self.times[it], mdict["R"], mdict["z"], mdict["Psi"][it], mdict["Br"][it], \
+                                           mdict["Bt"][it], mdict["Bz"][it], Psi_ax=mdict["Psi_ax"][it], \
                                            Psi_sep=mdict["Psi_sep"][it]))
-            R_ax, z_ax, Psi_ax = self.get_axis(self.times[it], get_Psi=True, force_no_load=True)
+            self.loaded = True
+            R_ax, z_ax = self.get_axis(self.times[it])
             self.slices[-1].R_ax = R_ax
             self.slices[-1].z_ax = z_ax
-            self.slices[-1].R_sep = -1.e0
-            self.slices[-1].z_sep = -1.e0
-            self.slices[-1].Psi_ax = Psi_ax
+            self.slices[-1].R_sep = None
+            self.slices[-1].z_sep = None
             self.slices[-1].rhop = np.sqrt((self.slices[-1].Psi - self.slices[-1].Psi_ax) / \
                                            (self.slices[-1].Psi_sep - self.slices[-1].Psi_ax))
-        self.loaded = True
+            if(np.any(np.isnan(self.slices[-1].rhop))):
+                raise ValueError("Some of the computed rho_pol values are NAN")
 
     def read_EQ_from_Ext(self):
         t = np.loadtxt(os.path.join(self.external_folder, "t"), ndmin=1)
@@ -202,10 +208,10 @@ class EQDataExt:
         psi_spl = RectBivariateSpline(R, z, Psi)
         indicies = np.unravel_index(np.argmin(Psi), Psi.shape)
         R_init = np.array([R[indicies[0]], z[indicies[1]]])
-        print(R_init)
+#         print(R_init)
         opt = minimize(eval_spline, R_init, args=[psi_spl], \
                  bounds=[[np.min(R), np.max(R)], [np.min(z), np.max(z)]])
-        print("Magnetic axis position: ", opt.x[0], opt.x[1])
+#         print("Magnetic axis position: ", opt.x[0], opt.x[1])
         if(get_Psi):
             return opt.x[0], opt.x[1], psi_spl(opt.x[0], opt.x[1])
         else:

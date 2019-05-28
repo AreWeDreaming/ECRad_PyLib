@@ -107,14 +107,14 @@ def compare_ECRad_results_R(result_file_list, time, ch, ir=1):
 def compare_EQData(shot, time, exp, diag, ed):
     EQ_obj = EQData(shot, EQ_exp=exp, EQ_diag=diag, EQ_ed=ed)
     EQEQU_obj = EQDataEQU(shot, EQ_exp=exp, EQ_diag=diag, EQ_ed=ed)
-    EQ_slice = EQ_obj.GetSlice(time)
-#     sliceEQU = EQEQU_obj.GetSlice(time)
-    quantname = "Psi"
+    EQ_slice = EQ_obj.GetSlice(time,B_vac_correction=False)
+    sliceEQU = EQEQU_obj.GetSlice(time,B_vac_correction=False)
+    quantname = "Bt"
     quant = getattr(EQ_slice, quantname)
-#     quantEQU = getattr(sliceEQU, quantname)
+    quantEQU = getattr(sliceEQU, quantname)
     levels = np.linspace(np.round(np.min(quant),1), np.round(np.max(quant)), 12)
     plt.contour(EQ_slice.R, EQ_slice.z, quant.T, levels = levels, colors="k",linestyles="-")
-#     plt.contour(sliceEQU.R, sliceEQU.z, quantEQU.T, levels = levels, colors="r", linestyles="--")
+    plt.contour(sliceEQU.R, sliceEQU.z, quantEQU.T, levels = levels, colors="r", linestyles="--")
     plt.show()
     plt.hold(True)
 
@@ -990,11 +990,11 @@ def debug_calib(resultfile):
 
 if(__name__ == "__main__"):
 #     compare_LOS_Rz("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/", 20)
-#     compare_EQData(35662, 2.0, "AUGD", "EQH", 0)
+    compare_EQData(35662, 2.0, "AUGD", "EQH", 0)
 #     debug_EQ()
 #     compare_ds("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/", 15)
 #     compare_ds_rel("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/", 15)
-    debug_calib("/tokp/work/sdenk/ECRad/ECRad_35662_CTCCTA_w_calib_ed8.mat")
+#     debug_calib("/tokp/work/sdenk/ECRad/ECRad_35662_CTCCTA_w_calib_ed8.mat")
 #     inspect_EQData(35186, 1.258, "AUGD", "EQH", 0)
 #     get_max_length_svec("/tokp/work/sdenk/ECRad_2/ECRad_data/")
 #     compare_rhop("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/", 15)

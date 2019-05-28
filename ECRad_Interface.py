@@ -122,13 +122,14 @@ def prepare_input_files(Config, Scenario, index, copy_dist=True):
         os.mkdir(ray_folder)
         print("Created folder " + ray_folder)
     write_diag_launch(ECRad_data_path, Scenario.ray_launch[index])
-    
-    if(Config.Te_scale != 1.0):
+    if(Scenario.Te_scale != 1.0):
         print("Te scale != 1 -> scaling Te for model")
-    if(Config.ne_scale != 1.0):
+    if(Scenario.ne_scale != 1.0):
         print("ne scale != 1 -> scaling ne for model")
+    if(Scenario.bt_vac_correction != 1.0):
+        print("Bt scale != 1 -> scaling Bt for model")
     if((Config.dstf != "Ge" and Config.dstf != "GB")):
-        success = make_ECRadInputFromPlasmaDict(ECRad_data_path, Scenario.plasma_dict, index)
+        success = make_ECRadInputFromPlasmaDict(ECRad_data_path, Scenario.plasma_dict, index, Scenario)
     input_file = open(os.path.join(ECRad_data_path, "ECRad.inp"), "w")
     if(Config.dstf == "GB"):
         input_file.write("Ge" + "\n")  # Model does not distinguish between Ge and GB
@@ -154,11 +155,8 @@ def prepare_input_files(Config, Scenario, index, copy_dist=True):
     input_file.write(str(Config.reflec_model) + "\n")
     input_file.write("{0:1.12E}".format(Config.reflec_X) + "\n")
     input_file.write("{0:1.12E}".format(Config.reflec_O) + "\n")
-    input_file.write("{0:1.12E}".format(Config.bt_vac_correction) + "\n")
     input_file.write(str(Config.considered_modes) + "\n")
     input_file.write("{0:1.12E}".format(Config.mode_conv) + "\n")
-    input_file.write("{0:1.12E}".format(Config.Te_rhop_scale) + "\n")
-    input_file.write("{0:1.12E}".format(Config.ne_rhop_scale) + "\n")
     input_file.write(str(Config.N_freq) + "\n")
     input_file.write(str(Config.N_ray) + "\n")
     input_file.write("{0:1.12E}".format(Config.large_ds) + "\n")
@@ -734,25 +732,25 @@ def load_plasma_from_mat(path):
     try:
         plasma_dict = {}
         # Loading from .mat sometimes adds single entry arrays that we don't want
-        at_least_1d_keys = ["t", "R", "z", "Psi_sep", "Psi_ax"]
-        at_least_2d_keys = ["rhop_prof", "rhop", "Te", "ne"]
+        at_least_1d_keys = ["time", "R", "z", "eq_R", "eq_z", "Psi_sep", "Psi_ax"]
+        at_least_2d_keys = ["rhop_prof", "rhop", "Te", "ne", "eq_special", "eq_R", "eq_z", "eq_special"]
         at_least_3d_keys = ["Psi", "Br", "Bt", "Bz"]
-        variable_names = at_least_1d_keys + at_least_2d_keys + at_least_3d_keys + ["shotnum"]
+        at_least_3d_keys += ["eq_Psi", "eq_Br", "eq_Bt", "eq_Bz"]
+        variable_names = at_least_1d_keys + at_least_2d_keys + at_least_3d_keys + ["shot"] + ["vessel_bd"] + ["bt_vac_correction"]
         # print(variable_names)
         try:
             mdict = loadmat(path, chars_as_strings=True, squeeze_me=True, variable_names=variable_names)
         except IOError:
             print("Error: " + path + " does not exist")
             raise IOError
-        print(mdict.keys())
-        plasma_dict["shot"] = mdict["shotnum"]
+        plasma_dict["shot"] = mdict["shot"]
         increase_diag_dim = False
         increase_time_dim = False
-        if(np.isscalar(mdict["t"])):
-            plasma_dict["time"] = np.array([mdict["t"]])
+        if(np.isscalar(mdict["time"])):
+            plasma_dict["time"] = np.array([mdict["time"]])
             increase_time_dim = True
         else:
-            plasma_dict["time"] = mdict["t"]
+            plasma_dict["time"] = mdict["time"]
         for key in mdict.keys():
             if(not key.startswith("_")):  # throw out the .mat specific information
                 try:
@@ -761,9 +759,6 @@ def load_plasma_from_mat(path):
                     elif(key in at_least_2d_keys):
                         if(increase_time_dim):
                             mdict[key] = np.array([mdict[key]])
-                        elif(increase_time_dim):
-                            for i in range(len(mdict[key])):
-                                mdict[key][i] = np.array([mdict[key][i]])
                         if(increase_diag_dim):
                             mdict[key] = np.array([mdict[key]])
                     elif(key in at_least_3d_keys):
@@ -772,27 +767,25 @@ def load_plasma_from_mat(path):
                 except Exception as e:
                     print(key)
                     print(e)
-        for key in at_least_3d_keys:
-            mdict[key] = np.swapaxes(mdict[key], 2, 0)
-            mdict[key] = np.swapaxes(mdict[key], 1, 2)
-        for key in at_least_2d_keys:
-            mdict[key] = np.swapaxes(mdict[key], 0, 1)
-        plasma_dict["Te"] = mdict["Te"] * 1.e3
+        plasma_dict["Te"] = mdict["Te"]
         plasma_dict["ne"] = mdict["ne"]
         if(len(plasma_dict["Te"][0].shape) == 1):
             if("rhop_prof" in mdict.keys()):
                 plasma_dict["rhop_prof"] = mdict["rhop_prof"]
             else:
                 plasma_dict["rhop_prof"] = mdict["rhop"]
-        plasma_dict["ne_rhop_scale"] = np.zeros(len(plasma_dict["time"]))
-        plasma_dict["ne_rhop_scale"][:] = 1.0
+        # External data should be delivered without additional scaling
+        # Otherwise it is not clear whether this means that the data should be scaled or is already scaled by this factor
         plasma_dict["ECE_rhop"] = []
         plasma_dict["ECE_dat"] = []
         plasma_dict["eq_data"] = []
         # TODO remove this place holder by a routine that does this for external equilibriae
-        plasma_dict["ECE_mod"] = []
-        EQ_obj = EQDataExt(mdict["shotnum"], external_folder=os.path.dirname(path), bt_vac_correction=1.0, Ext_data=True)
-        EQ_obj.load_slices_from_mat(plasma_dict["time"], mdict)
+        plasma_dict["ECE_mod"] = []     
+        EQ_obj = EQDataExt(mdict["shot"], external_folder=os.path.dirname(path), bt_vac_correction=1.0, Ext_data=True)
+        if("Bt" in mdict.keys()):
+            EQ_obj.load_slices_from_mat(plasma_dict["time"], mdict)
+        else:
+            EQ_obj.load_slices_from_mat(plasma_dict["time"], mdict,eq_prefix=True)
         plasma_dict["eq_data"] = EQ_obj.slices
         if("vessel_bd" not in mdict.keys()):
             try:
@@ -813,12 +806,18 @@ def load_plasma_from_mat(path):
         plasma_dict["eq_exp"] = "EXT"
         plasma_dict["eq_diag"] = "EXT"
         plasma_dict["eq_ed"] = 0
+        if("bt_vac_correction" in mdict.keys()):
+            plasma_dict["bt_vac_correction"] = mdict["bt_vac_correction"]
+        else:
+            plasma_dict["bt_vac_correction"] = 1.0
         return plasma_dict
     except IOError as e:
         print(e)
         print("Could not read external data")
         return None
     except ValueError as e:
+        print(e)
+        print("Could not read external data")
         return None
 
 def make_topfile(working_dir, shot, time, EQ_t):
@@ -918,7 +917,7 @@ def make_topfile(working_dir, shot, time, EQ_t):
     print("topfile successfully written to", os.path.join(working_dir, "topfile"))
     return 0
 
-def make_ECRadInputFromPlasmaDict(working_dir, plasma_dict, index):
+def make_ECRadInputFromPlasmaDict(working_dir, plasma_dict, index, Scenario):
     # In the topfile the dimensions of the matrices are z,R unlike in the GUI where it is R,z -> transpose the matrices here
     columns = 5  # number of coloumns
     columns -= 1
@@ -990,8 +989,8 @@ def make_ECRadInputFromPlasmaDict(working_dir, plasma_dict, index):
         topfile.write('\n')
     cnt = 0
     topfile.write('Normalised psi on grid\n')
-    for i in range(len(EQ.Psi.T)):
-        for j in range(len(EQ.Psi.T[i])):
+    for i in range(len(EQ.rhop.T)):
+        for j in range(len(EQ.rhop.T[i])):
             topfile.write("  {0: 1.8E}".format(EQ.rhop.T[i][j]**2))
             if(cnt == columns):
                 topfile.write("\n")
@@ -1000,10 +999,10 @@ def make_ECRadInputFromPlasmaDict(working_dir, plasma_dict, index):
                 cnt += 1
     topfile.flush()
     topfile.close()
-    ne = plasma_dict["ne"][index]
-    Te = plasma_dict["Te"][index]
+    ne = plasma_dict["ne"][index] * Scenario.ne_scale
+    Te = plasma_dict["Te"][index] * Scenario.Te_scale
     if(len(Te.shape) == 1):
-        rhop = plasma_dict["rhop_prof"][index]
+        rhop = plasma_dict["rhop_prof"][index] * Scenario.Te_rhop_scale
         Te_file = open(os.path.join(working_dir, "Te_file.dat"), "w")
         Te_tb_file = open(os.path.join(working_dir, "Te.dat"), "w")
         lines = 150
@@ -1022,6 +1021,7 @@ def make_ECRadInputFromPlasmaDict(working_dir, plasma_dict, index):
         Te_file.close()
         Te_tb_file.flush()
         Te_tb_file.close()
+        rhop = plasma_dict["rhop_prof"][index] * Scenario.ne_rhop_scale
         ne_file = open(os.path.join(working_dir, "ne_file.dat"), "w")
         ne_tb_file = open(os.path.join(working_dir, "ne.dat"), "w")
         lines = 150
@@ -1068,7 +1068,7 @@ def make_ECRadInputFromPlasmaDict(working_dir, plasma_dict, index):
         print("Te shape", Te.shape)
         for i in range(len(Te.T)):
             for j in range(len(Te.T[i])):
-                Te_ne_matfile.write("  {0: 1.8E}".format(Te.T[i][j]))
+                Te_ne_matfile.write("  {0: 1.8E}".format(Te.T[i][j] * Scenario.Te_scale))
                 if(cnt == columns):
                     Te_ne_matfile.write("\n")
                     cnt = 0
@@ -1080,7 +1080,7 @@ def make_ECRadInputFromPlasmaDict(working_dir, plasma_dict, index):
         cnt = 0
         for i in range(len(ne.T)):
             for j in range(len(ne.T[i])):
-                Te_ne_matfile.write("  {0: 1.8E}".format(ne.T[i][j]))
+                Te_ne_matfile.write("  {0: 1.8E}".format(ne.T[i][j]  * Scenario.ne_scale ))
                 if(cnt == columns):
                     Te_ne_matfile.write("\n")
                     cnt = 0

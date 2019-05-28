@@ -98,7 +98,7 @@ class EQData(EQDataExt):
         self.MBI_shot = dd.shotfile('MBI', int(self.shot))
         self.shotfile_ready = True
 
-    def GetSlice(self, time):
+    def GetSlice(self, time, B_vac_correction=True):
         if(not self.shotfile_ready):
             self.init_read_from_shotfile()
         R = self.equ.Rmesh
@@ -106,8 +106,8 @@ class EQData(EQDataExt):
         self.equ.read_scalars()
         dummy, time_index = self.equ._get_nearest_index(time)
         time_index = time_index[0]
-        special = special_points(self.equ.ssq["Rmag"][time_index], self.equ.ssq["Zmag"][time_index], self.equ.psi0[time_index], \
-                                 self.equ.ssq["Rxpo"][time_index], self.equ.ssq["Zxpo"][time_index], self.equ.psix[time_index])
+        psi_ax = self.equ.psi0[time_index]
+        psi_sep = self.equ.psix[time_index]
         self.equ.read_pfm()
         Psi = self.equ.pfm[:, :, time_index]
         self.R0 = 1.65  # Point for which BTFABB is defined
@@ -118,38 +118,30 @@ class EQData(EQDataExt):
         Bt_out = np.asscalar(Bt_out)
         Btf0_eq = Bt_out
         Btf0_eq = Btf0_eq * rv / R0
-        rhop = np.sqrt((Psi - special.psiaxis) / (special.psispx - special.psiaxis))
-        if(self.EQ_diag == "IDE"):
-            signal = self.IDF.getSignal("Btor", \
-                              tBegin=time - 5.e-5, tEnd=time + 5.e-5)
+        rhop = np.sqrt((Psi - psi_ax) / (psi_sep - psi_ax))
+        try:
+            signal = self.MBI_shot.getSignal("BTFABB", \
+                          tBegin=time - 5.e-5, tEnd=time + 5.e-5)
             if(not np.isscalar(signal)):
                 signal = np.mean(signal)
-            Btok = signal * R0 / R
             Btf0 = signal
-        else:
-            try:
-                signal = self.MBI_shot.getSignal("BTFABB", \
-                              tBegin=time - 5.e-5, tEnd=time + 5.e-5)
-                if(not np.isscalar(signal)):
-                    signal = np.mean(signal)
-                Btf0 = signal
-                Btok = Btf0 * R0 / R
-            except Exception as e:
-                print(e)
-                print("Could not find MBI data")
-                Btok = Btf0_eq * R0 / R
-                Btf0 = Btf0_eq
-        R_mesh, z_mesh = np.meshgrid(R, z)
-        Br, Bz, Bt = self.equ.rz2brzt(R_mesh.T, z_mesh.T, time)
-        Br = Br[0]
-        Bz = Bz[0]
-        Bt = Bt[0]
-
-
-# #         print(Btf0)
-# #         print("Original magnetic field: {0:2.3f}".format(Btf0))
-# #         print("New magnetic field: {0:2.3f}".format(Btf0 * self.bt_vac_correction))
-        return EQDataSlice(time, R, z, Psi, Br, Bt, Bz, special=special, rhop=rhop)
+            Btok = Btf0 * R0 / R
+        except Exception as e:
+            print(e)
+            print("Could not find MBI data")
+            Btok = Btf0_eq * R0 / R
+            Btf0 = Btf0_eq
+        B_r, B_z, B_t = self.equ.Bmesh(time) 
+        if(B_vac_correction):
+            for j in range(len(z)):
+                # plt.plot(pfm_dict["Ri"],B_t[j], label = "EQH B")
+                Btok_eq = Btf0_eq * R0 / R  # vacuum toroidal field from EQH
+                Bdia = B_t.T[j] - Btok_eq  # subtract vacuum toroidal field from equilibrium to obtain diamagnetic field
+                B_t.T[j] = (Btok * self.bt_vac_correction) + Bdia  # add corrected vacuum toroidal field to be used
+    # #         print(Btf0)
+    # #         print("Original magnetic field: {0:2.3f}".format(Btf0))
+    # #         print("New magnetic field: {0:2.3f}".format(Btf0 * self.bt_vac_correction))
+        return EQDataSlice(time, R, z, Psi, B_r, B_t, B_z, rhop=rhop, Psi_ax=psi_ax, Psi_sep=psi_sep )
 
     def map_Rz_to_rhot(self, time, R, z):
         if(self.external_folder != '' or self.Ext_data):
