@@ -15,6 +15,7 @@ else:
     sys.path.append('../lib')
 import dd
 import numpy as np
+from EQU import EQU
 from scipy.optimize import minimize
 from scipy.interpolate import RectBivariateSpline, InterpolatedUnivariateSpline
 from equilibrium_utils import EQDataExt, EQDataSlice, eval_spline, special_points
@@ -109,7 +110,7 @@ class EQData(EQDataExt):
                                  self.equ.ssq["Rxpo"][time_index], self.equ.ssq["Zxpo"][time_index], self.equ.psix[time_index])
         self.equ.read_pfm()
         Psi = self.equ.pfm[:, :, time_index]
-        R0 = 1.65  # Point for which BTFABB is defined
+        self.R0 = 1.65  # Point for which BTFABB is defined
         # Adapted from mod_eqi.f90 by R. Fischer
         rv = 2.40
         vz = 0.e0

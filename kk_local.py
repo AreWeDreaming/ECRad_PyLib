@@ -11,7 +11,7 @@ else:
     libso = 'lib'
 kklib = '/afs/ipp/aug/ads/'+libso+'/@sys/libkk8.so'
 if not os.path.isfile(kklib):
-    kklib = '/afs/ipp/aug/ads/'+libso+'/amd64_sles11/libkk8.so'
+    kklib = '/afs/ipp-garching.mpg.de/aug/ads/'+libso+'/amd64_sles11/libkk8x.so'
 libkk = ct.cdll.LoadLibrary(kklib)
 
 

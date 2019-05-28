@@ -4530,31 +4530,32 @@ class plotting_core:
                 print("Encountered zero max deposited power in beam no. {0:d}".format(beam_count))
                 multicolor = False
             else:
-                cmap = plt.cm.ScalarMappable(plt.Normalize(0.0, pw_max / 1.e3), "gist_rainbow")
+                cmap = plt.cm.ScalarMappable(plt.Normalize(0.0, pw_max / 1.e3), "inferno")
                 ray_pw = np.array(ray_pw)
                 cmap.set_array(ray_pw)
                 multicolor = True
             for ray in beam[::slicing]:
-                pw_ratio = np.max(ray["PW"]) / pw_max
-                print("Max power fraction for ray  no. {0:d}: {1:1.3e}".format((ray_count - 1) * slicing + 1, pw_ratio))
-                if(pw_ratio < 0.01):
-                    print("Less than 1% power in ray - skipping.")
-                    continue
+                if(multicolor):
+                    pw_ratio = np.max(ray["PW"]) / pw_max
+                    print("Max power fraction for ray  no. {0:d}: {1:1.3e}".format((ray_count - 1) * slicing + 1, pw_ratio))
+                    if(pw_ratio < 0.01):
+                        print("Less than 1% power in ray - skipping.")
+                        continue
+                    if(not np.all(np.isfinite(ray["PW"]))):
+                        print("Ray no. {0:d} has non-finite power".format(ray_count))
+                        print("Ray no. {0:d} skipped".format(ray_count))
+                        continue
                 print("Plotting beam {0:d} ray {1:d}".format(beam_count, (ray_count - 1) * slicing + 1))
                 i = 0
                 if(not (np.all(np.isfinite(ray["R"])) and np.all (np.isfinite(ray["z"])))):
                     print("Ray no. {0:d} has non-finite coordinates".format(ray_count))
                     print("Ray no. {0:d} skipped".format(ray_count))
                     continue
-                if(not np.all(np.isfinite(ray["PW"]))):
-                    print("Ray no. {0:d} has non-finite power".format(ray_count))
-                    print("Ray no. {0:d} skipped".format(ray_count))
-                    continue
-                i_start = 0
-                i_end = 1
                 x = ray["R"] * np.cos(ray["phi"])
                 y = ray["R"] * np.sin(ray["phi"])
                 if(multicolor):
+                    i_start = 0
+                    i_end = 1
                     while(i_end + 1 < len(ray["R"])):
                         while(np.abs((ray["PW"][i_start] - ray["PW"][i_end]) / pw_max) < 0.01 and i_end + 1 < len(ray["R"])):
                             i_end += 1
@@ -4563,7 +4564,7 @@ class plotting_core:
                         self.axlist_2[0].plot(x[i_start:i_end + 1], y[i_start:i_end + 1], color=color[0:3], alpha=color[3])
                         i_start = i_end
                 else:
-                    self.axlist[0].plot(ray["R"], ray["R"], color="b")
+                    self.axlist[0].plot(ray["R"], ray["z"], color="b")
                     self.axlist_2[0].plot(x, y, color="b")
                 ray_count += 1
             beam_count += 1
@@ -4584,9 +4585,10 @@ class plotting_core:
         print("Now rendering " + str(total_rays) + " rays - hold on a second!")
         self.axlist[0].set_aspect("equal")
         self.axlist_2[0].set_aspect("equal")
-        cb = self.fig.colorbar(cmap)
-        cb.set_label(r"$P_\mathrm{ray} [\si{\kilo\watt}]$")
-        cb2 = self.fig_2.colorbar(cmap)
+        if(multicolor):
+            cb = self.fig.colorbar(cmap)
+            cb.set_label(r"$P_\mathrm{ray} [\si{\kilo\watt}]$")
+            cb2 = self.fig_2.colorbar(cmap)
         self.axlist[0].set_xlim(0.7, 2.5)
         self.axlist[0].set_ylim(-1.75, 1.75)
         self.axlist_2[0].set_xlim(-2.3, 2.3)

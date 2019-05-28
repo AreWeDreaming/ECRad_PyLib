@@ -13,7 +13,6 @@ if(not itm):
     sys.path.append("/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib")
 import dd
 import numpy as np
-from EQU import EQU
 from scipy.optimize import minimize
 from scipy.interpolate import RectBivariateSpline, InterpolatedUnivariateSpline
 from equilibrium_utils import EQDataExt, EQDataSlice, eval_spline, special_points
@@ -22,8 +21,8 @@ from scipy import __version__ as scivers
 import scipy.optimize as scopt
 from kk_local import KK
 vessel_bd_file = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/ECFM_Pylib/ASDEX_Upgrade_vessel.txt"
-import matplotlib.pyplot as plt
 from scipy.signal import medfilt
+from map_equ import equ_map
 def eval_R(x):
     return -x[0] ** 3
 
@@ -76,7 +75,11 @@ class EQData(EQDataExt):
         EQDataExt.__init__(self, shot, external_folder, EQ_exp, EQ_diag, EQ_ed, bt_vac_correction, Ext_data)
 
     def init_read_from_shotfile(self):
-#         self.EQH = EQU()
+        self.equ = equ_map()
+        self.R0 = 1.65  # Point for which BTFABB is defined
+        if(not self.equ.Open(self.shot, diag=self.EQ_diag, exp=self.EQ_exp, ed=self.EQ_ed)):
+            self.state = -1
+            return
         self.KKobj = KK()
         self.KKobj.kkeqints(10)# No interpolation!
         self.state = 0
@@ -99,7 +102,7 @@ class EQData(EQDataExt):
         R = output.R
         z = output.z
         Psi = output.Psi
-        R0 = 1.65  # Point for which BTFABB is defined
+        
         B_r = np.zeros((len(R), len(z)))
         B_t = np.zeros((len(R), len(z)))
         B_z = np.zeros((len(R), len(z)))
@@ -110,7 +113,7 @@ class EQData(EQDataExt):
         magn_field_outside = self.KKobj.kkrzBrzt(self.shot, time, np.array([rv]), np.array([vz]), exp=self.EQ_exp, diag=self.EQ_diag, ed=self.EQ_ed)
         self.EQ_ed = magn_field_outside.ed
         Btf0_eq = magn_field_outside.bt[0]
-        Btf0_eq = Btf0_eq * rv / R0
+        Btf0_eq = Btf0_eq * rv / self.R0
         special_points = self.KKobj.kkeqpfx(self.shot, time, exp=self.EQ_exp, diag=self.EQ_diag, ed=self.EQ_ed)
         if(special_points.Rspx == 0.0):
             print("Limiter plasma detected overwriting psi_spx, R_spx and z_spx with psi_lim, R_lim and z_lim")
@@ -125,12 +128,12 @@ class EQData(EQDataExt):
                 Btf0 = np.median(MBI_signal[itime_MBI-99: itime_MBI+99]) # analogous to IDA
             else:
                 Btf0 = MBI_signal[itime_MBI]
-            Btok = Btf0 * R0 / R
+            Btok = Btf0 * self.R0 / R
             print("Btf0 vs. Btf0_eq", Btf0, Btf0_eq)
         except Exception as e:
             print(e)
             print("Could not find MBI data")
-            Btok = Btf0_eq * R0 / R
+            Btok = Btf0_eq * self.R0 / R
             Btf0 = Btf0_eq
         R_temp = np.zeros(len(z))
         for i in range(len(R)):
@@ -148,7 +151,7 @@ class EQData(EQDataExt):
         # print("WARNING DIAMAGNETIC FIELD HAS OPPOSITE SIGN!!!")
         for j in range(len(z)):
             # plt.plot(pfm_dict["Ri"],B_t[j], label = "EQH B")
-            Btok_eq = Btf0_eq * R0 / R  # vacuum toroidal field from EQH
+            Btok_eq = Btf0_eq * self.R0 / R  # vacuum toroidal field from EQH
             Bdia = B_t.T[j] - Btok_eq  # subtract vacuum toroidal field from equilibrium to obtain diamagnetic field
             B_t.T[j] = (Btok * self.bt_vac_correction) + Bdia  # add corrected vacuum toroidal field to be used
 #         print(Btf0)
