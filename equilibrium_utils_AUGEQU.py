@@ -77,7 +77,7 @@ def make_rhop_signed_axis(shot, time, R, rhop, f, f2=None, eq_exp='AUGD', eq_dia
 
 class EQData(EQDataExt):
     def __init__(self, shot, external_folder='', EQ_exp="AUGD", EQ_diag="EQH", EQ_ed=0, bt_vac_correction=1.005, Ext_data=False):
-        EQDataExt.__init__(self, shot, external_folder, EQ_exp, EQ_diag, EQ_ed, bt_vac_correction, Ext_data)
+        EQDataExt.__init__(self, shot, external_folder, EQ_exp, EQ_diag, EQ_ed, bt_vac_correction, Ext_data)        
 
     def init_read_from_shotfile(self):
         self.equ = equ_map()
@@ -170,6 +170,13 @@ class EQData(EQDataExt):
             if(not self.shotfile_ready):
                 self.init_read_from_shotfile()
             return self.equ.rho2rho(rhop, t_in=time, coord_out="Psi")
+        
+    def getQuantity(self, quant_name, rho, time):
+        pfl = self.equ.get_profile("PFL")
+        psi_in = self.rhop_to_Psi(time, rhop)
+        quant= self.equ.get_profile(quant_name)
+        quantspl = InterpolatedUnivariateSpline(pfl, quant)
+        return quantspl(psi_in)
 
     def add_ripple_to_slice(self, time, EQSlice):
         R, z = self.get_axis(time)
