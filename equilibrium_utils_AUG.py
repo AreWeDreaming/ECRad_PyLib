@@ -152,7 +152,7 @@ class EQData(EQDataExt):
         if(B_vac_correction):
             for j in range(len(z)):
                 # plt.plot(pfm_dict["Ri"],B_t[j], label = "EQH B")
-                Btok_eq = Btf0_eq * R0 / R  # vacuum toroidal field from EQH
+                Btok_eq = Btf0_eq * self.R0 / R  # vacuum toroidal field from EQH
                 Bdia = B_t.T[j] - Btok_eq  # subtract vacuum toroidal field from equilibrium to obtain diamagnetic field
                 B_t.T[j] = (Btok * self.bt_vac_correction) + Bdia  # add corrected vacuum toroidal field to be used
 #         print(Btf0)

@@ -239,7 +239,7 @@ class ECRadScenario:
             elif(diagname in ["CTC", "IEC", "CTA"]):
                 mdict["Extra_arg_1"].append("{0:n}".format(self.used_diags_dict[diagname].beamline))
                 mdict["Extra_arg_2"].append("{0:1.3f}".format(self.used_diags_dict[diagname].pol_coeff_X))
-                mdict["Extra_arg_3"].append(self.used_diags_dict[diagname].base_freq_140)
+                mdict["Extra_arg_3"].append(int(self.used_diags_dict[diagname].base_freq_140))
             elif(diagname == "EXT"):
                 launch_geo, pol = self.used_diags_dict[diagname].get_launch_geo()
                 mdict["Ext_launch_geo"] = launch_geo
@@ -277,6 +277,11 @@ class ECRadScenario:
         mdict["time"] = self.plasma_dict["time"]
         mdict["Te"] = self.plasma_dict["Te"]
         mdict["ne"] = self.plasma_dict["ne"]
+        mdict["bt_vac_correction"] = self.bt_vac_correction
+        mdict["Te_rhop_scale"] = self.Te_rhop_scale 
+        mdict["ne_rhop_scale"] = self.ne_rhop_scale
+        mdict["Te_scale"] = self.Te_scale
+        mdict["ne_scale"] = self.ne_scale
         mdict["profile_dimension"] = self.profile_dimension
         if(mdict["profile_dimension"] == 1):
             mdict["rhop_prof"] = self.plasma_dict["rhop_prof"]
@@ -332,3 +337,9 @@ class ECRadScenario:
 
     def load_dist_obj(self, filename):
         self.dist_obj = load_f_from_mat(filename, use_dist_prefix=True)
+        
+        
+    
+if(__name__ == "__main__"):
+    newScen = ECRadScenario(noLoad=True)
+    newScen.from_mat( path_in="/tokp/work/sdenk/ECRad/ECRad_35662_ECECTCCTA_ed2.mat")
