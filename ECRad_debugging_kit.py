@@ -62,7 +62,8 @@ def debug_append_ECRadResults(filename):
 def compare_ECRad_results(result_file_list, time, ch, ir=1):
     main_quant = "ray"
     subquantx = "sX"
-    subquanty = "rhopX"
+    subquanty = "abX"
+    factor = 1.0
     res = ECRadResults()
     fig = plt.figure()
     ax = fig.add_subplot(111)
@@ -70,10 +71,36 @@ def compare_ECRad_results(result_file_list, time, ch, ir=1):
         res.from_mat_file(result_file)
         itime = np.argmin(np.abs(time - res.time))
         if(res.Config.N_ray > 1):
-            ax.plot(getattr(res, main_quant)[subquantx][itime][ch - 1], np.rad2deg(1) * getattr(res, main_quant)[subquanty][itime][ch - 1][ir-1], marker)
+            ax.plot(getattr(res, main_quant)[subquantx][itime][ch - 1], np.rad2deg(1) * getattr(res, main_quant)[subquanty][itime][ch - 1][ir-1] * factor, marker)
         else:
-            ax.plot(getattr(res, main_quant)[subquantx][itime][ch - 1], np.rad2deg(1) * getattr(res, main_quant)[subquanty][itime][ch - 1], marker)
-        ax.vlines(res.resonance[subquantx[:-1] + "_cold"][itime][ch-1], 0 , 2000, linestyle=marker )
+            ax.plot(getattr(res, main_quant)[subquantx][itime][ch - 1], np.rad2deg(1) * getattr(res, main_quant)[subquanty][itime][ch - 1] * factor, marker)
+#         ax.vlines(res.resonance[subquantx[:-1] + "_cold"][itime][ch-1], 0 , 2000, linestyle=marker )
+#     ax.hlines(0.5, 0, 4)
+    plt.show()
+    
+def compare_ECRad_results_diff(primary_result_file, result_file_list, time, ch, ir=1):
+    main_quant = "ray"
+    subquantx = "sX"
+    subquanty = "abX"
+    factor = 1.0
+    prim_res = ECRadResults()
+    prim_res.from_mat_file(primary_result_file)
+    itime_prim = np.argmin(np.abs(time - prim_res.time))
+    if(prim_res.Config.N_ray > 1):
+        prim_res_quant = getattr(prim_res, main_quant)[subquanty][itime_prim][ch - 1][ir-1] * factor
+    else:
+        prim_res_quant = getattr(prim_res, main_quant)[subquanty][itime_prim][ch - 1] * factor
+    res = ECRadResults()
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    for result_file,marker in zip(result_file_list,["-", "--"]):
+        res.from_mat_file(result_file)
+        itime = np.argmin(np.abs(time - res.time))
+        if(res.Config.N_ray > 1):
+            ax.plot(getattr(res, main_quant)[subquantx][itime][ch - 1], prim_res_quant - getattr(res, main_quant)[subquanty][itime][ch - 1][ir-1] * factor, marker)
+        else:
+            ax.plot(getattr(res, main_quant)[subquantx][itime][ch - 1], prim_res_quant - getattr(res, main_quant)[subquanty][itime][ch - 1] * factor, marker)
+#         ax.vlines(res.resonance[subquantx[:-1] + "_cold"][itime][ch-1], 0 , 2000, linestyle=marker )
 #     ax.hlines(0.5, 0, 4)
     plt.show()
 
@@ -88,6 +115,18 @@ def compare_ECRad_results_ds(result_file_list, time, ch, ir=1):
         ax.plot(res.ray["sX"][itime][ch - 1], res.ray["BPDX"][itime][ch - 1] / np.max(res.ray["BPDX"][itime][ch - 1]), "+")
         ax.vlines(res.resonance["s_cold"][itime][ch-1], 0 , 1)
 #     ax.hlines(0.5, 0, 4)
+    plt.show()
+    
+def compare_ECRad_Trad(result_file_A, result_file_B, time):
+    res_A = ECRadResults()
+    res_B = ECRadResults()
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    res_A.from_mat_file(result_file_A)
+    res_B.from_mat_file(result_file_B)
+    itime_A = np.argmin(np.abs(time - res_A.time))
+    itime_B = np.argmin(np.abs(time - res_B.time))
+    ax.plot(res_A.resonance["rhop_cold"][itime_A], res_A.Trad[itime_A] - res_A.Trad[itime_B])
     plt.show()
     
 def compare_ECRad_results_R(result_file_list, time, ch, ir=1):
@@ -990,7 +1029,8 @@ def debug_calib(resultfile):
 
 if(__name__ == "__main__"):
 #     compare_LOS_Rz("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/", 20)
-    compare_EQData(35662, 2.0, "AUGD", "EQH", 0)
+#     compare_EQData(35662, 2.0, "AUGD", "IDE", 0)
+#     compare_ECRad_Trad("/tokp/work/sdenk/ECRad/ECRad_35662_ECECTCCTA_ed2.mat","/tokp/work/sdenk/ECRad/ECRad_35662_ECECTCCTA_ed3.mat", 6.95)
 #     debug_EQ()
 #     compare_ds("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/", 15)
 #     compare_ds_rel("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/", 15)
@@ -1005,7 +1045,8 @@ if(__name__ == "__main__"):
 #     compare_topfiles("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/", 35662, 1.5, "AUGD", "IDE", 1)
 #     compare_topfiles("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/")
 #     debug_append_ECRadResults("/tokp/work/sdenk/ECRad_2/ECRad_35662_ECE_ed1.mat")
-#     compare_ECRad_results_ds(["/tokp/work/sdenk/ECRad_2/ECRad_35662_ECE_ed11.mat","/tokp/work/sdenk/ECRad_2/ECRad_35662_ECE_ed12.mat"], 1.5,  43)
+#     compare_ECRad_results(["/tokp/work/sdenk/ECRad/ECRad_35662_ECECTCCTA_ed2.mat","/tokp/work/sdenk/ECRad/ECRad_35662_ECECTCCTA_ed7.mat"], 6.95,  100)
+    compare_ECRad_results_diff("/tokp/work/sdenk/ECRad/ECRad_35662_ECECTCCTA_ed2.mat", ["/tokp/work/sdenk/ECRad/ECRad_35662_ECECTCCTA_ed7.mat"], 6.95,  100)
 #     inspect_svec("/tokp/work/sdenk/ECRad_2/ECRad_data/", 3)
     # validate_theta_along_los("/ptmp1/work/sdenk/nssf/30406/1.38/", 1, 2)
     # debug_f_inter("/afs/ipp-garching.mpg.de/home/s/sdenk/F90/Ecfm_Model_new")

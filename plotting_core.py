@@ -1877,82 +1877,90 @@ class plotting_core:
             return self.fig, self.fig_2
         try:
             N_file = np.loadtxt(N_filename)
-            if(OERT):
-                if(len(N_file.T) == 5):
-                    rhop_split, N , R_axis = make_rhop_signed_axis(int(shotno), float(time), svec.T[1], svec.T[3], N_file.T[1], f2=None)
-                    for i in range(len(rhop_split)):
-                        if(i == 0):
-                            self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
-                                    self.y_range_list_2[0] , data=[rhop_split[i], N[i]], marker="--", color=(0.5, 0.0, 0.4), \
-                                    name=r"$N_\mathrm{OERT}$", ax_flag="N")
-                        else:
-                            self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
-                                    self.y_range_list_2[0] , data=[rhop_split[i], N[i]], marker="--", color=(0.5, 0.0, 0.4), ax_flag="N")
-                    rhop_split, N , R_axis = make_rhop_signed_axis(int(shotno), float(time), svec.T[1], svec.T[3], N_file.T[2], f2=None)
-                    for i in range(len(rhop_split)):
-                        if(i == 0):
-                            self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
-                                    self.y_range_list_2[0] , data=[rhop_split[i], N[i]], marker="-", color="blue", \
-                                    name=r"$N_\mathrm{cold}$", ax_flag="N")
-                        else:
-                            self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
-                                    self.y_range_list_2[0] , data=[rhop_split[i], N[i]], marker="-", color="blue", ax_flag="N")
-                    rhop_split, N , R_axis = make_rhop_signed_axis(int(shotno), float(time), svec.T[1], svec.T[3], N_file.T[3], f2=None)
-                    for i in range(len(rhop_split)):
-                        if(i == 0):
-                            self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
-                                    self.y_range_list_2[0] , data=[rhop_split[i], N[i]], marker="-.", color="red", \
-                                    name=r"$N_\mathrm{cor}$", ax_flag="N")
-                        else:
-                            self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
-                                    self.y_range_list_2[0] , data=[rhop_split[i], N[i]], marker="-.", color="red", ax_flag="N")
-                    rhop_split, N , R_axis = make_rhop_signed_axis(int(shotno), float(time), svec.T[1], svec.T[3], N_file.T[4], f2=None)
-                    for i in range(len(rhop_split)):
-                        if(i == 0):
-                            self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
-                                    self.y_range_list_2[0] , data=[rhop_split[i], N[i]], marker="--", color="black", \
-                                    name=r"$N_\mathrm{warm \, dispersion}$", ax_flag="N")
-                        else:
-                            self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
-                                    self.y_range_list_2[0] , data=[rhop_split[i], N[i]], marker="--", color="black", ax_flag="N")
-                else:  # to support older files
-                    self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
-                                self.y_range_list_2[0] , data=[N_file.T[0], N_file.T[1]], marker="-", color="blue", \
-                                name=r"$N_\mathrm{cold}$", ax_flag="N")
-                    self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
-                                self.y_range_list_2[0] , data=[N_file.T[0], N_file.T[2]], marker="-", color="red", \
-                                name=r"$N_\mathrm{cor}$", ax_flag="N")
-                    self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
-                                self.y_range_list_2[0] , data=[N_file.T[0], N_file.T[3]], marker="--", color="black", \
-                                name=r"$N_\mathrm{warm \, dispersion}$", ax_flag="N")  #  / np.sin(svec.T[6][1:len(svec.T[6])])
-            else:
-                rhop_split, N , R_axis = make_rhop_signed_axis(int(shotno), float(time), svec.T[1], svec.T[3], N_file.T[1], f2=None)
-                for i in range(len(rhop_split)):
-                    if(i == 0):
-                        self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
-                                self.y_range_list_2[0] , data=[rhop_split[i], N[i]], marker="-", color="blue", \
-                                name=r"$N_\mathrm{cold}$", ax_flag="N")
-                    else:
-                        self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
-                                self.y_range_list_2[0] , data=[rhop_split[i], N[i]], marker="-", color="blue", ax_flag="N")
-                rhop_split, N , R_axis = make_rhop_signed_axis(int(shotno), float(time), svec.T[1], svec.T[3], N_file.T[2], f2=None)
-                for i in range(len(rhop_split)):
-                    if(i == 0):
-                        self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
-                                self.y_range_list_2[0] , data=[rhop_split[i], N[i]], marker="-.", color="red", \
-                                name=r"$N_\mathrm{cor}$", ax_flag="N")
-                    else:
-                        self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
-                                self.y_range_list_2[0] , data=[rhop_split[i], N[i]], marker="-.", color="red", ax_flag="N")
-                rhop_split, N , R_axis = make_rhop_signed_axis(int(shotno), float(time), svec.T[1], svec.T[3], N_file.T[3], f2=None)
-                for i in range(len(rhop_split)):
-                    if(i == 0):
-                        self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
-                                self.y_range_list_2[0] , data=[rhop_split[i], N[i]], marker="--", color="black", \
-                                name=r"$N_\mathrm{warm \, dispersion}$", ax_flag="N")
-                    else:
-                        self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
-                                self.y_range_list_2[0] , data=[rhop_split[i], N[i]], marker="--", color="black", ax_flag="N")  #  / np.sin(svec.T[6][1:len(svec.T[6])])
+            self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
+                    self.y_range_list_2[0] , data=[svec.T[1][svec.T[3] > 0.0], N_file.T[1][svec.T[3] > 0.0]], marker="-", color="blue", \
+                    name=r"$N_\mathrm{cold}$", ax_flag="NR")
+            self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
+                    self.y_range_list_2[0] , data=[svec.T[1][svec.T[3] > 0.0], N_file.T[2][svec.T[3] > 0.0]], marker="-.", color="red", \
+                    name=r"$N_\mathrm{cor}$", ax_flag="NR")
+            self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
+                    self.y_range_list_2[0] , data=[svec.T[1][svec.T[3] > 0.0], N_file.T[3][svec.T[3] > 0.0]], marker="--", color="black", \
+                    name=r"$N_\mathrm{warm \, dispersion}$", ax_flag="NR")
+#                 if(len(N_file.T) == 5):
+#                     rhop_split, N , R_axis = make_rhop_signed_axis(int(shotno), float(time), svec.T[1], svec.T[3], N_file.T[1], f2=None)
+#                     for i in range(len(rhop_split)):
+#                         if(i == 0):
+#                             self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
+#                                     self.y_range_list_2[0] , data=[rhop_split[i], N[i]], marker="--", color=(0.5, 0.0, 0.4), \
+#                                     name=r"$N_\mathrm{OERT}$", ax_flag="N")
+#                         else:
+#                             self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
+#                                     self.y_range_list_2[0] , data=[rhop_split[i], N[i]], marker="--", color=(0.5, 0.0, 0.4), ax_flag="N")
+#                     rhop_split, N , R_axis = make_rhop_signed_axis(int(shotno), float(time), svec.T[1], svec.T[3], N_file.T[2], f2=None)
+#                     for i in range(len(rhop_split)):
+#                         if(i == 0):
+#                             self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
+#                                     self.y_range_list_2[0] , data=[rhop_split[i], N[i]], marker="-", color="blue", \
+#                                     name=r"$N_\mathrm{cold}$", ax_flag="N")
+#                         else:
+#                             self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
+#                                     self.y_range_list_2[0] , data=[rhop_split[i], N[i]], marker="-", color="blue", ax_flag="N")
+#                     rhop_split, N , R_axis = make_rhop_signed_axis(int(shotno), float(time), svec.T[1], svec.T[3], N_file.T[3], f2=None)
+#                     for i in range(len(rhop_split)):
+#                         if(i == 0):
+#                             self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
+#                                     self.y_range_list_2[0] , data=[rhop_split[i], N[i]], marker="-.", color="red", \
+#                                     name=r"$N_\mathrm{cor}$", ax_flag="N")
+#                         else:
+#                             self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
+#                                     self.y_range_list_2[0] , data=[rhop_split[i], N[i]], marker="-.", color="red", ax_flag="N")
+#                     rhop_split, N , R_axis = make_rhop_signed_axis(int(shotno), float(time), svec.T[1], svec.T[3], N_file.T[4], f2=None)
+#                     for i in range(len(rhop_split)):
+#                         if(i == 0):
+#                             self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
+#                                     self.y_range_list_2[0] , data=[rhop_split[i], N[i]], marker="--", color="black", \
+#                                     name=r"$N_\mathrm{warm \, dispersion}$", ax_flag="N")
+#                         else:
+#                             self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
+#                                     self.y_range_list_2[0] , data=[rhop_split[i], N[i]], marker="--", color="black", ax_flag="N")
+#                 else:  # to support older files
+#                     self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
+#                                 self.y_range_list_2[0] , data=[N_file.T[0], N_file.T[1]], marker="-", color="blue", \
+#                                 name=r"$N_\mathrm{cold}$", ax_flag="N")
+#                     self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
+#                                 self.y_range_list_2[0] , data=[N_file.T[0], N_file.T[2]], marker="-", color="red", \
+#                                 name=r"$N_\mathrm{cor}$", ax_flag="N")
+#                     self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
+#                                 self.y_range_list_2[0] , data=[N_file.T[0], N_file.T[3]], marker="--", color="black", \
+#                                 name=r"$N_\mathrm{warm \, dispersion}$", ax_flag="N")  #  / np.sin(svec.T[6][1:len(svec.T[6])])
+#             else:
+#                 rhop_split, N , R_axis = make_rhop_signed_axis(int(shotno), float(time), svec.T[1], svec.T[3], N_file.T[1], f2=None)
+#                 for i in range(len(rhop_split)):
+#                     if(i == 0):
+#                         self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
+#                                 self.y_range_list_2[0] , data=[rhop_split[i], N[i]], marker="-", color="blue", \
+#                                 name=r"$N_\mathrm{cold}$", ax_flag="N")
+#                     else:
+#                         self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
+#                                 self.y_range_list_2[0] , data=[rhop_split[i], N[i]], marker="-", color="blue", ax_flag="N")
+#                 rhop_split, N , R_axis = make_rhop_signed_axis(int(shotno), float(time), svec.T[1], svec.T[3], N_file.T[2], f2=None)
+#                 for i in range(len(rhop_split)):
+#                     if(i == 0):
+#                         self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
+#                                 self.y_range_list_2[0] , data=[rhop_split[i], N[i]], marker="-.", color="red", \
+#                                 name=r"$N_\mathrm{cor}$", ax_flag="N")
+#                     else:
+#                         self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
+#                                 self.y_range_list_2[0] , data=[rhop_split[i], N[i]], marker="-.", color="red", ax_flag="N")
+#                 rhop_split, N , R_axis = make_rhop_signed_axis(int(shotno), float(time), svec.T[1], svec.T[3], N_file.T[3], f2=None)
+#                 for i in range(len(rhop_split)):
+#                     if(i == 0):
+#                         self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
+#                                 self.y_range_list_2[0] , data=[rhop_split[i], N[i]], marker="--", color="black", \
+#                                 name=r"$N_\mathrm{warm \, dispersion}$", ax_flag="N")
+#                     else:
+#                         self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], \
+#                                 self.y_range_list_2[0] , data=[rhop_split[i], N[i]], marker="--", color="black", ax_flag="N")  #  / np.sin(svec.T[6][1:len(svec.T[6])])
         except IOError:
             print("No refractive index infomation found in: ", N_filename)
         self.create_legends("single")
@@ -4139,7 +4147,9 @@ class plotting_core:
         self.axlist[0].set_xlim(0.0, 6.0)
         return fig
 
-    def plot_ray(self, shot, time, ray, index=0, EQ_obj=False, H=True, R_cold=None, z_cold=None, s_cold=None, straight=False, eq_aspect_ratio=True):
+    def plot_ray(self, shot, time, ray, index=0, EQ_obj=False, H=True, R_cold=None, z_cold=None, \
+                 s_cold=None, straight=False, eq_aspect_ratio=True, R_other_list=[], z_other_list=[], \
+                 x_other_list = [], y_other_list = [], label_list=None):
         self.setup_axes("ray", "Ray", "Hamiltonian")
         # eqi = equ_map()
         equilibrium = True
@@ -4185,9 +4195,13 @@ class plotting_core:
         if(AUG):
             fconf.plt_vessel(self.axlist[0])
             fconf.plt_vessel(self.axlist[1], pol=False)
+        if(label_list  is None):
+            ECRad_main_label = r"ECRad ray"
+        else:
+            ECRad_main_label = label_list[0]
         if(np.iterable(ray)):
             self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[ray[0].R, ray[0].z], \
-                name=r"ECRad ray", marker="-", color=(0.e0, 126.0 / 255, 0.e0), \
+                name=ECRad_main_label, marker="-", color=(0.e0, 126.0 / 255, 0.e0), \
                      y_range_in=self.y_range_list[0], ax_flag="Rz")
             if(s_cold is not None):
                 x_spl = InterpolatedUnivariateSpline(ray[0].s, ray[0].x)
@@ -4196,7 +4210,7 @@ class plotting_core:
                             name=r"Cold resonance", marker="+", color=(0.e0, 126.0 / 255, 0.e0), \
                                  y_range_in=self.y_range_list[1], ax_flag="xy")
             self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], data=[ray[0].x, ray[0].y], \
-                        name=r"ECRad ray", marker="-", color=(0.e0, 126.0 / 255, 0.e0), \
+                        name=ECRad_main_label, marker="-", color=(0.e0, 126.0 / 255, 0.e0), \
                              y_range_in=self.y_range_list[1], ax_flag="xy")
             if(H):
                 self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], data=[ray[0].s, ray[0].H], \
@@ -4256,7 +4270,7 @@ class plotting_core:
                             name=r"Cold resonance", marker="+", color=(0.e0, 126.0 / 255, 0.e0), \
                                  y_range_in=self.y_range_list[1], ax_flag="xy")
             self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[ray.R, ray.z], \
-                    name=r"ECRad ray", marker="-", color=(0.e0, 126.0 / 255, 0.e0), \
+                    name=ECRad_main_label, marker="-", color=(0.e0, 126.0 / 255, 0.e0), \
                          y_range_in=self.y_range_list[0], ax_flag="Rz")
             if(H):
                 self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], data=[ray.s, ray.H], \
@@ -4280,7 +4294,7 @@ class plotting_core:
                         name=ray_label + r" peripheral ray", marker=":", color=(126.0 / 255, 0.e0, 126.0 / 255), \
                              y_range_in=self.y_range_list[0], ax_flag="Rz")
             self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], data=[ray.x, ray.y], \
-                        name=r"ECRad ray", marker="-", color=(0.e0, 126.0 / 255, 0.e0), \
+                        name=ECRad_main_label, marker="-", color=(0.e0, 126.0 / 255, 0.e0), \
                              y_range_in=self.y_range_list[1], ax_flag="xy")
             if(type(ray.x_tb) != int):
                 self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], data=[ray.x_tb, ray.y_tb], \
@@ -4293,6 +4307,22 @@ class plotting_core:
                     self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], data=[ray.x_tbp2, ray.y_tbp2], \
                             name=ray_label + r" peripheral ray", marker=":", color=(126.0 / 255, 0.e0, 126.0 / 255), \
                                  y_range_in=self.y_range_list[1], ax_flag="xy")
+        if(label_list is not None):
+            self.line_color_index[0] = 0
+            self.line_color_index[1] = 0
+            for R, z, x,y, label in zip(R_other_list, z_other_list, x_other_list, y_other_list, label_list[1:]):
+                self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[R, z], \
+                        name=label, marker="--", color=self.line_colors[self.line_color_index[0]], \
+                             y_range_in=self.y_range_list[0], ax_flag="Rz")
+                self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], data=[x, y], \
+                            name=label, marker="--", color=self.line_colors[self.line_color_index[1]], \
+                                 y_range_in=self.y_range_list[1], ax_flag="xy")
+                self.line_color_index[0] += 1
+                if(self.line_color_index[0] >= len(self.line_colors)):
+                    self.line_color_index[0] = 0
+                self.line_color_index[1] += 1
+                if(self.line_color_index[1] >= len(self.line_colors)):
+                    self.line_color_index[1] = 0
 #        if(EQ_obj == False and AUG == True):
 #            fconf.plt_vessel(self.axlist[1], pol=False)
 #            fconf.plt_eq_tor(self.axlist[1], int(shot), float(time))
@@ -5914,7 +5944,7 @@ class plotting_core:
                 leg = self.axlist[i].legend(lns_short, labs)
                 leg.draggable()
                 leg.get_frame().set_alpha(1.0)
-            if(len(self.axlist_2) > 9):
+            if(len(self.axlist_2) > 0):
                 for i in range(len(self.axlist_2)):
                     lns = self.axlist_2[i].get_lines()
                     labs = []
@@ -6702,6 +6732,15 @@ class plotting_core:
                 elif(ax_flag == "N"):
                     ax.set_ylabel(r"$N_\omega$")
                     ax.set_xlabel(r"\Huge$\rho_\mathrm{pol}$\normalsize")
+                    # ax.set_xlabel(r"$s \,\left[\si{\meter}\right]$")
+                    # ax.set_xlabel(r"$R \,\left[\si{\meter}\right]$")
+                    # y_range[1] *= 2.5
+                    # ax.set_xlim(min(x),max(x))
+                    if(vline is not None):
+                        ax.vlines(vline, -10 * np.abs(y_range[0]), 10 * y_range[1], linestyle='dotted')
+                elif(ax_flag == "NR"):
+                    ax.set_ylabel(r"$N_\omega$")
+                    ax.set_xlabel(r"$R$ [\si{\metre}]")
                     # ax.set_xlabel(r"$s \,\left[\si{\meter}\right]$")
                     # ax.set_xlabel(r"$R \,\left[\si{\meter}\right]$")
                     # y_range[1] *= 2.5

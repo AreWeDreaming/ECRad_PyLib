@@ -40,6 +40,15 @@ def compare_power_deops(filename):
 
 
 
+
+def B_plot(folder, shotno, time, comp_folder, ich, N_filename, mode):
+    fig1 = plt.figure()
+    fig2 = plt.figure()
+    pc_obj = plotting_core(fig1, fig2)
+    fig1, fig2 = pc_obj.B_plot(folder, shotno, time, comp_folder, ich, 1.65, os.path.join(folder, "ECRad_data","IchTB", N_filename), mode, True)
+    plt.show()
+
+
 def standard_overview_plot_w_CTA(shot):
     fig = plt.figure(figsize=(7.5, 8.5))
     fig_2 = plt.figure(figsize=(12.0, 8.49))
@@ -528,13 +537,14 @@ def profile_stiffness(shots, times, IDA_eds, IDA_exps="AUGD", EQ_exps="AUGD", EQ
 
 if(__name__ == "__main__"):
     pass
-    CTA = ECRH_diag("CTA", "AUGD", "CTA", 0, 6, 1.0, True, t_smooth=1.e-1)
-    t, s = get_diag_data_no_calib(CTA, 33705, preview=False, single_channel=25)
-    s = s[t > 4.85]
-    t = t[t > 4.85]
-    s = s[t < 4.95]
-    t = t[t < 4.95]
-    remove_mode(t, s, 2)
+    B_plot("/tokp/work/sdenk/ECRad/", 35322, 2.1684, None, 18, "Nch018_X.dat", "X")
+#     CTA = ECRH_diag("CTA", "AUGD", "CTA", 0, 6, 1.0, True, t_smooth=1.e-1)
+#     t, s = get_diag_data_no_calib(CTA, 33705, preview=False, single_channel=25)
+#     s = s[t > 4.85]
+#     t = t[t > 4.85]
+#     s = s[t < 4.95]
+#     t = t[t < 4.95]
+#     remove_mode(t, s, 2)
 #    profile_stiffness([33697, 34663, 33000], [4.80, 3.60, 6.01], [27, 8 , 0], IDA_exps=["SDENK", "SDENK", "AUGD"], EQ_exps=["AUGD", "AUGD", "AUGD"], EQ_diags=["IDE", "IDE", "EQH"], EQ_eds=[0, 0, 0])
 #    Te_B_plot(33705, 4.9, "SDENK", 6, "AUGD", "IDE", 0)
 #    CoreTrace(34661, 34663, 2.70, 6.25)

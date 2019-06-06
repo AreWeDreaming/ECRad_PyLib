@@ -13,7 +13,7 @@ from scipy import constants as cnst
 from ECRad_Config import ECRadConfig
 from ECRad_Scenario import ECRadScenario
 from collections import OrderedDict as od
-
+from ndarray_helper import ndarray_math_operation
 class ECRadResults:
     def __init__(self):
         self.Config = ECRadConfig()
@@ -1102,3 +1102,20 @@ class ECRadResults:
                 except TypeError:
                     pass
 
+    def extract_field(self, field):
+        if(field=="Trad"):
+            x = self.resonance["rhop_cold"]
+            y = self.Trad
+        elif(field =="RayXRz"):
+            x = ndarray_math_operation(self.ray["xX"]**2 + self.ray["yX"]**2, np.sqrt)
+            y = self.ray["zX"]
+        elif(field =="RayORz"):
+            x = ndarray_math_operation(self.ray["xO"]**2 + self.ray["yO"]**2, np.sqrt)
+            y = self.ray["zO"]
+        elif(field =="RayXxy"):
+            x = self.ray["xX"]
+            y = self.ray["yX"]
+        elif(field =="RayOxy"):
+            x = self.ray["xO"]
+            y = self.ray["yO"]
+        return x,y

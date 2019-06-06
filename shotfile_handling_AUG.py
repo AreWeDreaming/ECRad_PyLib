@@ -1252,6 +1252,12 @@ def load_IDA_data(shot, timepoints=None, exp="AUGD", ed=0, double_entries_allowe
         IDA_dict["ECE_dat"] = ECE_dat_mat
         IDA_dict["ECE_unc"] = ECE_unc_mat
         IDA_dict["ECE_mod"] = ECE_mod_mat
+    else:
+        IDA_dict["ECE_rhop"] = []
+        IDA_dict["ECE_dat_rhop"] = []
+        IDA_dict["ECE_dat"] = []
+        IDA_dict["ECE_unc"] = []
+        IDA_dict["ECE_mod"] = []
     try:
         IDA_dict["raytrace"] = bool(IDA.getParameter('ece_par', 'raytrace').data)
     except:
