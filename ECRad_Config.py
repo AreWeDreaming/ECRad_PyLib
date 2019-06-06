@@ -7,7 +7,7 @@ import sys
 from GlobalSettings import AUG, TCV
 import numpy as np
 
-class ECRad_Config:
+class ECRadConfig:
     def __init__(self, noLoad =False):
         self.default_config_file = os.path.join(os.path.expanduser("~"), ".ECRad_GUI_Default.mat")
         if(noLoad):
@@ -209,4 +209,4 @@ def provide_default_mdict():
     return mdict
 
 # InvokeECRad = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/Ecfm_Model_new/ecfm_model"
-# test_config = ECRad_Config()
+# test_config = ECRadConfig()

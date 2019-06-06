@@ -7,7 +7,7 @@ Created on Mar 30, 2017
 import sys
 from shotfile_handling_AUG import get_ECI_launch
 sys.path.append("../ECRad_Pylib")
-from ECRad_Config import ECRad_Config
+from ECRad_Config import ECRadConfig
 from GlobalSettings import AUG, TCV, itm
 from Diags import  Diag, ECRH_diag, ECI_diag, EXT_diag, TCV_diag, TCV_CCE_diag
 from ECRad_Interface import load_plasma_from_mat, prepare_input_file
@@ -58,7 +58,7 @@ def run_ECRad():
         print("Got the following args", args)
         return -1
     try:
-        Config = ECRad_Config()
+        Config = ECRadConfig()
         Config.from_mat_file(path=os.path.join(working_dir, "UserConfig.mat"))
     except IOError:
         print("Failed to load user config at : ")

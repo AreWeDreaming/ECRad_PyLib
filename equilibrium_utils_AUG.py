@@ -296,51 +296,6 @@ class EQData(EQDataExt):
         else:
             return R_conts, z_conts
 
-    def get_R_aus(self, time, rhop_in):
-        EQSlice = self.read_EQ_from_shotfile(time)
-        R = EQSlice.R
-        z = EQSlice.z
-        rhop = EQSlice.rhop
-        unwrap = False
-        if(np.isscalar(rhop_in)):
-            unwrap = True
-            R_LFS = np.zeros(1)
-            z_LFS = np.zeros(1)
-            rhop_in = np.array([rhop_in])
-        else:
-            R_LFS = np.zeros(len(rhop_in))
-            z_LFS = np.zeros(len(rhop_in))
-        constraints = {}
-        constraints["type"] = "eq"
-        constraints["fun"] = eval_rhop
-        rhop_spl = RectBivariateSpline(R, z, rhop)
-        constraints["args"] = [rhop_spl, rhop_in[0]]
-        options = {}
-        options['maxiter'] = 100
-        options['disp'] = False
-        R_ax, z_ax = self.get_axis(time)
-        x0 = np.array([R_ax, z_ax])
-        for i in range(len(rhop_in)):
-            constraints["args"][1] = rhop_in[i]
-            res = scopt.minimize(eval_R, x0, method='SLSQP', bounds=[[1.2, 2.3], [-1.0, 1.0]], \
-                                 constraints=constraints, options=options)
-            if(not res.success):
-                print("Error could not find R_aus for ", rhop_in[i])
-                print("Cause: ", res.message)
-                print("Falling back to axis position")
-                R_LFS[i] = R_ax
-                z_LFS[i] = z_ax
-                x0 = np.array([R_ax, z_ax])
-            else:
-                R_LFS[i] = res.x[0]
-                z_LFS[i] = res.x[1]
-                x0 = res.x
-#        plt.plot(R_LFS, z_LFS, "+r")
-#        cont = plt.contour(R, z, rhop.T, levels=np.linspace(0.0, 1.2, 13))
-#        plt.show()
-        if(unwrap):
-            return R_LFS[0], z_LFS[0]
-        return R_LFS, z_LFS
 
     def add_ripple_to_slice(self, time, EQSlice):
         R, z = self.get_axis(time)

@@ -9,10 +9,6 @@ if(not AUG or TCV):
 import sys
 import ctypes as ct
 import os
-if(not itm):
-    sys.path.append('/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib')
-else:
-    sys.path.append('../lib')
 import dd
 import numpy as np
 from EQU import EQU
@@ -83,6 +79,7 @@ class EQData(EQDataExt):
         self.equ = equ_map()
         self.state = 0
         if(not self.equ.Open(self.shot, diag=self.EQ_diag, exp=self.EQ_exp, ed=self.EQ_ed)):
+            print("Failed to open shotfile")
             self.state = -1
             return
         self.EQ_ed = self.equ.ed
@@ -106,8 +103,7 @@ class EQData(EQDataExt):
         self.equ.read_scalars()
         dummy, time_index = self.equ._get_nearest_index(time)
         time_index = time_index[0]
-        psi_ax = self.equ.psi0[time_index]
-        psi_sep = self.equ.psix[time_index]
+        special = special_points(self.equ.ssq['Rmag'][time_index], self.equ.ssq['Zmag'][time_index], self.equ.psi0[time_index], None, None, self.equ.psix[time_index])
         self.equ.read_pfm()
         Psi = self.equ.pfm[:, :, time_index]
         self.R0 = 1.65  # Point for which BTFABB is defined
@@ -117,31 +113,31 @@ class EQData(EQDataExt):
         Br_out, Bz_out, Bt_out = self.equ.rz2brzt(np.array([rv]), np.array([vz]), time)
         Bt_out = np.asscalar(Bt_out)
         Btf0_eq = Bt_out
-        Btf0_eq = Btf0_eq * rv / R0
-        rhop = np.sqrt((Psi - psi_ax) / (psi_sep - psi_ax))
+        Btf0_eq = Btf0_eq * rv / self.R0
+        rhop = np.sqrt((Psi - special.psiaxis) / (special.psispx - special.psiaxis))
         try:
             signal = self.MBI_shot.getSignal("BTFABB", \
                           tBegin=time - 5.e-5, tEnd=time + 5.e-5)
             if(not np.isscalar(signal)):
                 signal = np.mean(signal)
             Btf0 = signal
-            Btok = Btf0 * R0 / R
+            Btok = Btf0 *  self.R0 / R
         except Exception as e:
             print(e)
             print("Could not find MBI data")
-            Btok = Btf0_eq * R0 / R
+            Btok = Btf0_eq *  self.R0 / R
             Btf0 = Btf0_eq
         B_r, B_z, B_t = self.equ.Bmesh(time) 
         if(B_vac_correction):
             for j in range(len(z)):
                 # plt.plot(pfm_dict["Ri"],B_t[j], label = "EQH B")
-                Btok_eq = Btf0_eq * R0 / R  # vacuum toroidal field from EQH
+                Btok_eq = Btf0_eq * self.R0 / R  # vacuum toroidal field from EQH
                 Bdia = B_t.T[j] - Btok_eq  # subtract vacuum toroidal field from equilibrium to obtain diamagnetic field
                 B_t.T[j] = (Btok * self.bt_vac_correction) + Bdia  # add corrected vacuum toroidal field to be used
     # #         print(Btf0)
     # #         print("Original magnetic field: {0:2.3f}".format(Btf0))
     # #         print("New magnetic field: {0:2.3f}".format(Btf0 * self.bt_vac_correction))
-        return EQDataSlice(time, R, z, Psi, B_r, B_t, B_z, rhop=rhop, Psi_ax=psi_ax, Psi_sep=psi_sep )
+        return EQDataSlice(time, R, z, Psi, B_r, B_t, B_z, special=special, rhop=rhop )
 
     def map_Rz_to_rhot(self, time, R, z):
         if(self.external_folder != '' or self.Ext_data):
@@ -153,14 +149,19 @@ class EQData(EQDataExt):
             return self.equ.rz2rho(R, z, t_in=time, coord_out="rho_tor")
 
 
-    def rhop_to_rot(self, time, rhop):
+    def rhop_to_rhot(self, time, rhop):
         if(self.external_folder != '' or self.Ext_data):
             print("Not yet implemented")
             raise ValueError("Not yet implemented")
         else:
             if(not self.shotfile_ready):
                 self.init_read_from_shotfile()
-            return self.equ.rho2rho(rhop, t_in=time, coord_out="rho_tor")
+            rhot = self.equ.rho2rho(rhop, t_in=time, coord_out="rho_tor")
+            try:
+                i = len(time)
+                return rhot 
+            except TypeError:
+                return rhot[0] # equ routines always return arrays
 
     def rhop_to_Psi(self, time, rhop):
         if(self.external_folder != '' or self.Ext_data):
@@ -169,12 +170,31 @@ class EQData(EQDataExt):
         else:
             if(not self.shotfile_ready):
                 self.init_read_from_shotfile()
-            return self.equ.rho2rho(rhop, t_in=time, coord_out="Psi")
+            Psi = self.equ.rho2rho(rhop, t_in=time, coord_out="Psi")
+            try:
+                i = len(time)
+                return Psi 
+            except TypeError:
+                return Psi[0] # equ routines always return arrays
         
-    def getQuantity(self, quant_name, rho, time):
-        pfl = self.equ.get_profile("PFL")
+        
+    def getQuantity(self, rhop, quant_name, time):
+        dummy, time_index = self.equ._get_nearest_index(time)
+        time_index=time_index[0]
+        pfl = self.equ.get_profile("PFL")[time_index]
         psi_in = self.rhop_to_Psi(time, rhop)
-        quant= self.equ.get_profile(quant_name)
+        if(quant_name not in ['Vol', 'Area', 'Pres', 'Jpol', 'dVol', 'dArea', 'dPres', 'dJpol']):
+            quant= self.equ.get_profile(quant_name)
+        elif(quant_name in ['Vol', 'Area', 'Pres', 'Jpol']):
+            quant, dummy = self.equ.get_mixed(quant_name)
+        elif(quant_name in ['dVol', 'dArea', 'dPres', 'dJpol']):
+            dummy, quant = self.equ.get_mixed(quant_name[1:])
+        else:
+            print(quant_name + " not supported in get Quantity") 
+        quant = quant[time_index]
+        if(pfl[0] > pfl[-1]):
+            pfl = pfl[::-1]
+            quant = quant[::-1]
         quantspl = InterpolatedUnivariateSpline(pfl, quant)
         return quantspl(psi_in)
 
