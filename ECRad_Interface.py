@@ -41,7 +41,7 @@ def GetECRadExec(Config, Scenario, time):
         ECRadVers = ECRadPath
     if(parallel and Config.parallel_cores > 32):
         print("The maximum amount of cores for tokp submission is 32")
-        return
+        raise ValueError
     if(parallel):
         stacksize = 0
         cores  = Config.parallel_cores
@@ -109,7 +109,7 @@ def prepare_input_files(Config, Scenario, index, copy_dist=True):
         print("Failed to create ECRad_data folder in: ", working_dir)
         print("Please check that this folder exists and you have write permissions")
         return False
-    print("Created folder " + ECRad_data_path)
+    print("Created folder " + ECRad_data_path)#
     if(Config.dstf != "GB"):
         Ich_path = os.path.join(ECRad_data_path, "Ich" + Config.dstf)
     else:

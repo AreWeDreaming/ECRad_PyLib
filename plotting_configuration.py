@@ -64,6 +64,7 @@ plt.rcParams['ytick.minor.size'] = 6
 plt.rcParams['ytick.minor.width'] = 1
 plt.rcParams['lines.markeredgewidth'] = 2.5
 plt.rcParams['axes.linewidth'] = 3
+plt.rcParams["savefig.transparent"] = True
 default_x1 = 12.0
 default_y1 = 8.5
 default_x2 = 12.0

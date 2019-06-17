@@ -7,7 +7,7 @@ import sys
 from GlobalSettings import AUG, TCV
 import numpy as np
 
-class ECRad_Config:
+class ECRadConfig:
     def __init__(self, noLoad =False):
         self.default_config_file = os.path.join(os.path.expanduser("~"), ".ECRad_GUI_Default.mat")
         if(noLoad):

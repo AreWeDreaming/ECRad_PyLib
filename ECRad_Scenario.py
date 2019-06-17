@@ -85,7 +85,7 @@ class ECRadScenario:
         at_least_1d_keys = ["diag", "time", "Diags_exp", "Diags_diag", "Diags_ed", "Extra_arg_1", "Extra_arg_2", "Extra_arg_3", \
                             "used_diags"]
         at_least_2d_keys = ["eq_R", "eq_z", "diag_name", "launch_f", "launch_df", "launch_R", "launch_phi", \
-                             "launch_z", "launch_tor_ang" , "launch_pol_ang", "launch_dist_focus", \
+                             "launch_z", "launch_tor_ang" , "launch_pol_ang", "launch_dist_focus", "launch_diag_name", \
                              "launch_width", "launch_pol_coeff_X", "eq_special", "eq_special_complete"  ]
         at_least_3d_keys = ["eq_Psi", "eq_rhop", "eq_Br", "eq_Bt", "eq_Bz"]
         if(self.profile_dimension == 1):
@@ -148,7 +148,7 @@ class ECRadScenario:
                                               int(mdict["Extra_arg_1"][i]), float(mdict["Extra_arg_2"][i]), True)})
                 else:
                     self.used_diags_dict.update({diagname: ECRH_diag(diagname, mdict["Diags_exp"][i], mdict["Diags_diag"][i], int(mdict["Diags_ed"][i]), \
-                                              int(mdict["Extra_arg_1"][i]), float(mdict["Extra_arg_2"][i]), bool(mdict["Extra_arg_3"][i]))})
+                                              int(mdict["Extra_arg_1"][i]), float(mdict["Extra_arg_2"][i]), bool(int(mdict["Extra_arg_3"][i])))})
             elif(diagname == "EXT"):
                 if("Ext_launch_pol" in mdict.keys()):
                     self.used_diags_dict.update({diagname: EXT_diag(diagname, mdict["Ext_launch_geo"], mdict["Ext_launch_pol"])})
@@ -170,7 +170,10 @@ class ECRadScenario:
                 self.ray_launch[-1]["dist_focus"] = mdict["launch_dist_focus"][itime]
                 self.ray_launch[-1]["width"] = mdict["launch_width"][itime]
                 self.ray_launch[-1]["pol_coeff_X"] = mdict["launch_pol_coeff_X"][itime]
-                self.ray_launch[-1]["diag_name"] = mdict["diag_name"][itime]
+                try:
+                    self.ray_launch[-1]["diag_name"] = mdict["launch_diag_name"][itime]
+                except:
+                    self.ray_launch[-1]["diag_name"] = mdict["diag_name"][itime]
             self.ray_launch = np.array(self.ray_launch)
             self.diags_set = True
         if(not load_plasma_dict):
@@ -237,7 +240,7 @@ class ECRadScenario:
                 mdict["Extra_arg_2"].append(self.used_diags_dict[diagname].Rz_diag)
                 mdict["Extra_arg_3"].append(self.used_diags_dict[diagname].Rz_ed)
             elif(diagname in ["CTC", "IEC", "CTA"]):
-                mdict["Extra_arg_1"].append("{0:n}".format(self.used_diags_dict[diagname].beamline))
+                mdict["Extra_arg_1"].append("{0:d}".format(self.used_diags_dict[diagname].beamline))
                 mdict["Extra_arg_2"].append("{0:1.3f}".format(self.used_diags_dict[diagname].pol_coeff_X))
                 mdict["Extra_arg_3"].append(int(self.used_diags_dict[diagname].base_freq_140))
             elif(diagname == "EXT"):
@@ -251,7 +254,7 @@ class ECRadScenario:
                 mdict["Extra_arg_1"].append("None")
                 mdict["Extra_arg_2"].append("None")
                 mdict["Extra_arg_3"].append("None")
-        mdict["diag_name"] = []
+        mdict["launch_diag_name"] = []
         mdict["launch_R"] = []
         mdict["launch_phi"] = []
         mdict["launch_z"] = []
@@ -263,7 +266,7 @@ class ECRadScenario:
         mdict["launch_dist_focus"] = []
         mdict["launch_width"] = []
         for itime in range(len(self.plasma_dict["time"])):
-            mdict["diag_name"].append(self.ray_launch[itime]["diag_name"])
+            mdict["launch_diag_name"].append(self.ray_launch[itime]["diag_name"])
             mdict["launch_R"].append(self.ray_launch[itime]["R"])
             mdict["launch_phi"].append(self.ray_launch[itime]["phi"])
             mdict["launch_z"].append(self.ray_launch[itime]["z"])
