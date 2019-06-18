@@ -2852,7 +2852,9 @@ def remap_f_Maj(x, y, Fe, ipsi, ull, uxx, Fe_rem, freq_2X, B0, LUKE=False):
     for i in range(len(ull)):
         for j in range(len(uxx)):
             x_eq = np.sqrt(ull[i] ** 2 + uxx[j] ** 2)
-            if(LUKE):
+            if(x_eq == 0.0):
+                y_eq = 0.0
+            elif(LUKE):
                 y_eq = ull[i] / x_eq
             else:
                 mu = np.sqrt((ull[i] ** 2 + uxx[j] ** 2 * (xi - 1.) / xi) / (ull[i] ** 2 + uxx[j] ** 2))
@@ -3166,8 +3168,8 @@ class distribution:
         self.f_log[self.f_log < zero] = zero
         self.f_log10 = np.log10(self.f_log)
         self.f_log = np.log(self.f_log)
-        self.ull = np.linspace(-np.max(u), np.max(u), 100)
-        self.uxx = np.linspace(0, np.max(u), 100)
+        self.ull = np.linspace(-np.max(u), np.max(u), 151)
+        self.uxx = np.linspace(0, np.max(u), 75)
         self.f_cycl = np.zeros((len(self.rhop), len(self.ull), len(self.uxx)))
         self.f_cycl_log = np.zeros(self.f_cycl.shape)
         print("Remapping distribution hold on ...")

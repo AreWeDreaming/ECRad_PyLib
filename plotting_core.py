@@ -6566,7 +6566,7 @@ class plotting_core:
                     ax.set_ylabel(r"$\Delta T_\mathrm{rad}\,\left[\si{\percent}\right]$")
                 elif(ax_flag == "diag_trace"):
                         ax.set_xlabel(r"$t \,\left[\si{\second}\right]$")
-                        ax.set_ylabel(r"$c \left[\si{\milli\volt\per\second}\right]$")
+                        ax.set_ylabel(r"$c \left[\si{\milli\volt}\right]$")
                         if(vline is not None):
                             if(color is not None):
                                 ax.vlines(vline, -10 * np.abs(y_range[0]), 10 * y_range[1], linestyle='dotted', color=color)
@@ -6583,7 +6583,7 @@ class plotting_core:
                     ax.set_ylabel(r"cnt rate $  \left[\si{\kilo\hertz}\right]$")
                 elif(ax_flag == "Calib"):
                     ax.set_xlabel(r"$f \left[\si{\giga\hertz}\right]$")
-                    ax.set_ylabel(r"$c \left[\si{\kilo\electronvolt \per\volt\per\second}\right]$")
+                    ax.set_ylabel(r"$c \left[\si{\kilo\electronvolt \per\volt}\right]$")
                 elif(ax_flag == "Trad_trace"):
                         ax.set_xlabel(r"$t$ [s]")
                         ax.set_ylabel(r"$T_\mathrm{rad} \left[\si{\kilo\electronvolt}\right]$")
@@ -6591,7 +6591,7 @@ class plotting_core:
                             ax.vlines(vline, -10 * np.abs(y_range[0]), 10 * y_range[1], linestyle='dotted')
                 elif(ax_flag == "Calib_trace"):
                     ax.set_xlabel(r"$t\,[\mathrm{s}]$")
-                    ax.set_ylabel(r"$\vert c \vert \left[\si{\electronvolt \per \volt\per\second}\right]$")
+                    ax.set_ylabel(r"$\vert c \vert \left[\si{\electronvolt \per \volt}\right]$")
                 elif(ax_flag == "Grid"):
                     ax.set_xlabel(r"$\rho_\mathrm{pol}$")
                     ax.set_ylabel(r"index")
@@ -6603,7 +6603,7 @@ class plotting_core:
                     ax.set_ylabel(r"$c$ [keV/(V/s)]")
                 elif(ax_flag == "Calib_ch"):
                     ax.set_xlabel(r"ch no.")
-                    ax.set_ylabel(r"$c \left[\si{\electronvolt \per\volt\per\second}\right]$")
+                    ax.set_ylabel(r"$c \left[\si{\electronvolt \per\volt}\right]$")
                 elif(ax_flag == "Calib_dev"):
                     ax.set_xlabel(r"$f \left[\si{\giga\hertz}\right]$")
                     ax.set_ylabel(r"$\overline{c - \overline{c}} / N /\overline{c}\left[\si{\percent}\right]$")
@@ -6769,24 +6769,24 @@ class plotting_core:
                         ax.vlines(vline, -10 * np.abs(y_range[0]), 10 * y_range[1], linestyle='dotted')
                 elif(ax_flag == "Sig_vs_Trad"):
                     ax.set_xlabel(r"$T_\mathrm{rad,mod}$ [\si{\kilo\electronvolt}]")
-                    ax.set_ylabel(r"Sig [\si{\volt\per\second}]")
+                    ax.set_ylabel(r"Sig [\si{\volt}]")
                 elif(ax_flag == "Sig_vs_Trad_small"):
                     ax.set_xlabel(r"$T_\mathrm{rad,mod}$ [\si{\kilo\electronvolt}]")
-                    ax.set_ylabel(r"Sig [\si{\milli\volt\per\second}]")
+                    ax.set_ylabel(r"Sig [\si{\milli\volt}]")
                 elif(ax_flag == "V_vs_Trad"):
                     ax.set_xlabel(r"$T_\mathrm{rad,mod}$ [\si{\kilo\electronvolt}]")
-                    ax.set_ylabel(r"$V^*_\mathrm{diag}$  [\si{\volt\per\second}]")
+                    ax.set_ylabel(r"$V^*_\mathrm{diag}$  [\si{\volt}]")
                 elif(ax_flag == "V_vs_Trad_small"):
                     ax.set_xlabel(r"$T_\mathrm{rad,mod}$ [\si{\kilo\electronvolt}]")
-                    ax.set_ylabel(r"$V^*_\mathrm{diag}$  [\si{\milli\volt\per\second}]")
+                    ax.set_ylabel(r"$V^*_\mathrm{diag}$  [\si{\milli\volt}]")
                 elif(ax_flag == "Ang_vs_Trad"):
                     ax.set_xlabel(r"$T_\mathrm{rad,mod}$ \si{\kilo\electronvolt}")
                     ax.set_ylabel(r"$\theta_\mathrm{pol}$ [$^\circ$]")
                 elif(ax_flag == "Trad_vs_Sig"):
-                    ax.set_xlabel(r"Sig [\si{\volt\per\second}]")
+                    ax.set_xlabel(r"Sig [\si{\volt}]")
                     ax.set_ylabel(r"$T_\mathrm{rad,mod}$ [\si{\kilo\electronvolt}]")
                 elif(ax_flag == "Ang_vs_Sig"):
-                    ax.set_xlabel(r"Sig [\si{\volt\per\second}]")
+                    ax.set_xlabel(r"Sig [\si{\volt}]")
                     ax.set_ylabel(r"$\theta_\mathrm{pol}$ [$^\circ$]")
                 elif(ax_flag == "N_omega"):
                     ax.set_ylabel(r"$N_\omega$")

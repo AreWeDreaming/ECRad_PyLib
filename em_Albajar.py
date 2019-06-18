@@ -1075,7 +1075,9 @@ class em_abs_Alb:
         j = 0.e0
         N_abs, e = N_with_pol_vec(X, Y, svec.sin_theta, svec.cos_theta, mode)
         N_par = svec.cos_theta * N_abs
-        N_perp = svec.sin_theta * N_abs
+        N_perp = svec.sin_theta * N_abs # Note that we need an absolute value here, which is what is done in the Fortran version
+        # However, a negative sign of N_perp does not change the results at all.
+        # To avoid implementing the correctly signed N_perp consistenly we leave it here with the possibly negative sign for convenience
         if(N_par ** 2 >= 1.0 or N_abs <= 0.0 or N_abs > 1.0):
             return 0, 0
         m_0 = np.sqrt(1.e0 - N_par ** 2) * omega_bar
@@ -1196,6 +1198,8 @@ class em_abs_Alb:
             return 0.0, 0.0, 0.0, 0.0
         m_0 = np.sqrt(1.e0 - N_par ** 2) * omega_bar
         t = np.linspace(-1.0, 1.0, 60)
+        # Weights not needed atm
+        # t_weights = np.concatenate([[0.5 * (t[1] - t[0])], t[2:-1] - t[1:-2], 0.5 * (t[-1] - t[-2])])
         u_par = 1.e0 / np.sqrt(1.e0 - N_par ** 2) * (float(m) / m_0 * N_par + \
                            np.sqrt((float(m) / m_0) ** 2 - 1.e0) * t)
         u_perp_sq = ((float(m) / m_0) ** 2 - 1.e0) * (1.e0 - t ** 2)

@@ -50,10 +50,10 @@ class GlobalSettingsITM:
         if(os.getenv("SYS") == 'amd64_sles12'  or os.getenv("SYS") == 'amd64_sles15'):
             self.SLES12 = True
         self.Phoenix = "phoenix" in wx.PlatformInfo
-        ECRadFolder = "/marconi_work/eufus_gw/work/g2sdenk/ECRad/"
-        self.ECRadDevPath = os.path.join(ECRadFolder,os.environ['SYS'],"ECRaddb")
-        self.ECRadPath = os.path.join(ECRadFolder,os.environ['SYS'],"ECRad")
-        self.ECRadPathBSUB = os.path.join(ECRadFolder,"ECRad_submit.bsub")
+        self.ECRadRoot = "/marconi_work/eufus_gw/work/g2sdenk/ECRad/"
+        self.ECRadDevPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRaddb")
+        self.ECRadPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRad")
+        self.ECRadPathBSUB = os.path.join(self.ECRadRoot,"ECRad_submit.bsub")
         self.TB_path = "/marconi_work/eufus_gw/work/g2sdenk/torbeam/lib-OUT/"
         self.qos_function = qos_function_itm
         self.partition_function = partition_function_itm
@@ -68,10 +68,10 @@ class GlobalSettingsAUG:
         if(os.getenv("SYS") == 'amd64_sles12'  or os.getenv("SYS") == 'amd64_sles15'):
             self.SLES12 = True
         self.Phoenix = "phoenix" in wx.PlatformInfo
-        ECRadFolder = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/ECRad/"
-        self.ECRadDevPath = os.path.join(ECRadFolder,os.environ['SYS'],"ECRaddb")
-        self.ECRadPath = os.path.join(ECRadFolder,os.environ['SYS'],"ECRad")
-        self.ECRadPathBSUB = os.path.join(ECRadFolder,"ECRad_submit.bsub")
+        self.ECRadRoot ="/afs/ipp-garching.mpg.de/home/s/sdenk/F90/ECRad/"
+        self.ECRadDevPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRaddb")
+        self.ECRadPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRad")
+        self.ECRadPathBSUB = os.path.join(self.ECRadRoot,"ECRad_submit.bsub")
         self.TB_path = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/torbeam_repo/TORBEAM/branches/lib-OUT/"
         self.qos_function = qos_function_tok
         self.partition_function = partition_function_tok
