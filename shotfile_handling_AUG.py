@@ -15,11 +15,7 @@ from scipy.signal import medfilt, argrelmax
 root = "/afs/ipp-garching.mpg.de/home/s/sdenk/"
 from scipy.interpolate import RectBivariateSpline, splev, splrep, InterpolatedUnivariateSpline, interp1d, UnivariateSpline, interp1d
 from electron_distribution_utils import make_EField
-if(AUG):
-    from equilibrium_utils_AUG import EQData,vessel_bd_file
-else:
-    print('Neither AUG nor TCV selected')
-    raise(ValueError('No system selected!'))
+from equilibrium_utils_AUG import EQData,vessel_bd_file
 import scipy.constants as cnst
 from scipy.integrate import simps
 from scipy.optimize import curve_fit
