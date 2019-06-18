@@ -7,15 +7,8 @@ import numpy as np
 from matplotlib.colors import LogNorm
 from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
 import os
-from GlobalSettings import AUG, TCV
 from electron_distribution_utils import read_waves_mat_to_beam, read_dist_mat_to_beam
-if(AUG):
-    from equilibrium_utils_AUG import EQData
-elif(TCV):
-    from equilibrium_utils_TCV import EQData
-else:
-    print('Neither AUG nor TCV selected')
-    raise(ValueError('No system selected!'))
+from equilibrium_utils_AUG import EQData
 from scipy.io import loadmat
 from ECRad_Results import ECRadResults
 from plotting_configuration import *

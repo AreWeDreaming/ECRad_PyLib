@@ -7,12 +7,9 @@ from scipy.signal import medfilt
 import numpy as np
 import os
 from Fitting import make_fit
-from GlobalSettings import TCV, AUG
-if(AUG):
+from GlobalSettings import globalsettings
+if(globalsettings.AUG):
     from shotfile_handling_AUG import get_data_calib
-else:
-    print('Neither AUG nor TCV selected')
-    raise(ValueError('No system selected!'))
 
 def smooth(y_arr, median=False):
     if(median):

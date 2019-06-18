@@ -3,23 +3,17 @@ Created on Dec 9, 2015
 
 @author: sdenk
 '''
-from GlobalSettings import AUG, TCV, itm, ECRadDevPath, ECRadPath, ECRadPathBSUB
+from GlobalSettings import globalsettings
 import os
 import numpy as np
 import sys
 sys.path.append("../ECRad_Pylib")
 from Diags import Diag
-if(AUG):
+if(globalsettings.AUG):
     vessel_file = '../ECRad_Pylib/ASDEX_Upgrade_vessel.txt'
-if(TCV):
-    vessel_file = '../ECRad_Pylib/TCV_vessel.txt'
 from shutil import copy, copyfile, rmtree
 from scipy.io import loadmat
 import scipy.constants as cnst
-if(itm):
-    tb_path = "/marconi_work/eufus_gw/work/g2sdenk/torbeam/lib-OUT"
-else:
-    tb_path = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/torbeam"
 from equilibrium_utils import EQDataExt
 from electron_distribution_utils import export_gene_fortran_friendly, \
                                         export_gene_bimax_fortran_friendly, \
@@ -36,12 +30,12 @@ def GetECRadExec(Config, Scenario, time):
             print("No parallel version with debug symbols available at the moment")
             print("Falling back to single core")
             parallel = False
-        ECRadVers = ECRadDevPath
+        ECRadVers = globalsettings.ECRadDevPath
     else:
-        ECRadVers = ECRadPath
-    if(parallel and Config.parallel_cores > 32):
+        ECRadVers = globalsettings.ECRadPath
+    if(parallel and Config.parallel_cores > globalsettings.max_cores):
         print("The maximum amount of cores for tokp submission is 32")
-        return
+        raise ValueError
     if(parallel):
         stacksize = 0
         cores  = Config.parallel_cores
@@ -60,37 +54,14 @@ def GetECRadExec(Config, Scenario, time):
         os.environ['OMP_STACKSIZE'] = "{0:d}k".format(stacksize)
         launch_options_dict["IO"] = "-o {0:s} -e {1:s} ".format(os.path.join(Config.working_dir, "ECRad.stdout"), \
                                                                 os.path.join(Config.working_dir, "ECRad.stderr"))
-        if(parallel):
-            launch_options_dict["partition"] = "--partition=p.tok.openmp"
-            if(Config.wall_time <= 2):
-                launch_options_dict["qos"] = "--qos p.tok.openmp.2h"
-            elif(Config.wall_time <= 4):
-                launch_options_dict["qos"] = "--qos p.tok.openmp.4h"
-            elif(Config.wall_time <= 24):
-                launch_options_dict["qos"] = "--qos p.tok.openmp.24h"
-            else:
-                launch_options_dict["qos"] = "--qos p.tok.openmp.48h"
-            launch_options_dict["memory"] = "--mem-per-cpu={0:d}M".format(int(Config.vmem / Config.parallel_cores))
-            launch_options_dict["cpus"] = " --cpus-per-task={0:d}".format(cores)
-        else:
-            launch_options_dict["partition"] = "--partition=s.tok"
-            if(Config.wall_time <= 4):
-                launch_options_dict["qos"] = "--qos s.tok.short"
-            elif(Config.wall_time <= 36):
-                launch_options_dict["qos"] = "--qos s.tok.standard"
-            else:
-                launch_options_dict["qos"] = "--qos s.tok.long"
-            launch_options_dict["qos"] = "--qos s.tok.short"
-            if(Config.wall_time > 4):
-                launch_options_dict["qos"] = "--qos s.tok.standard"
-            if(Config.wall_time > 36):
-                launch_options_dict["qos"] = "--qos s.tok.long"
-            launch_options_dict["memory"] = "--mem-per-cpu={0:d}M".format(Config.vmem)
-            launch_options_dict["cpus"] = " --cpus-per-task={0:d}".format(cores)
+        launch_options_dict["partition"] = globalsettings.partition_function(cores, Config.wall_time)
+        launch_options_dict["qos"] = globalsettings.qos_function(cores, Config.wall_time)
+        launch_options_dict["memory"] = "--mem-per-cpu={0:d}M".format(int(Config.vmem / cores))
+        launch_options_dict["cpus"] = " --cpus-per-task={0:d}".format(cores)
         InvokeECRad = "sbatch"
         for key in launch_options_dict:
             InvokeECRad += " " + launch_options_dict[key]
-        InvokeECRad += " " + ECRadPathBSUB
+        InvokeECRad += " " + globalsettings.ECRadPathBSUB
     else:
         os.environ['OMP_NUM_THREADS'] = "{0:d}".format(cores)
         InvokeECRad = ECRadVers + " " + Config.working_dir

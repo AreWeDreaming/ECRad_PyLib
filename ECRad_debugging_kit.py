@@ -12,7 +12,6 @@ sys.path.append("/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib")
 sys.path.append("../ECRad_Pylib")
 # from kk_abock import kk as KKeqi
 # from kk_extra import kk_extra
-from GlobalSettings import AUG, TCV
 from Diags import ECRH_diag
 from EQU import EQU
 import dd

@@ -8,16 +8,12 @@ import numpy as np
 import sys
 vessel_file = '/afs/ipp-garching.mpg.de/home/s/sdenk/F90/ECRad_Pylib/ASDEX_Upgrade_vessel.txt'
 sys.path.append("../ECRad_Pylib")
-from GlobalSettings import AUG, TCV
 from subprocess import call
 from scipy.io import savemat
-if(AUG):
+from GlobalSettings import globalsettings
+if(globalsettings.AUG):
     from shotfile_handling_AUG import load_IDA_data, get_Vloop, get_RELAX_target_current, get_total_current, make_ext_data_for_testing_from_data
     from equilibrium_utils_AUG import EQData
-else:
-    print('Neither AUG nor TCV selected')
-    raise(ValueError('No system selected!'))
-import electron_distribution_utils as edu
 from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
 from scipy.optimize import minimize
 import scipy.constants as cnst
@@ -560,26 +556,13 @@ def make_TORBEAM_no_data_load(working_dir, shot, time, rho_prof, Te_prof, ne_pro
     if(not os.path.isdir(TB_out_dir)):
         os.mkdir(TB_out_dir)
     org_path = os.getcwd()
-    if(ITM):
-        tb_lib_path = tb_path_itm
-    else:
-        tb_lib_path = tb_path
+    tb_lib_path = globalsettings.TB_path
     os.chdir(TB_out_dir)
     mode = -1  # hard coded to X-mode
     prepare_TB_data_no_data_load(TB_out_dir, shot, time, rho_prof, Te_prof, ne_prof, R, z, psi, Br, Bt, Bz, psi_ax, psi_sep, ITM)
-#    copyfile(os.path.join(TB_out_dir, "Te.dat"), \
-#             os.path.join(tb_lib_path, "Te.dat".replace(",", "")))
-#    copyfile(os.path.join(TB_out_dir, "ne.dat"), \
-#             os.path.join(tb_lib_path, "ne.dat".replace(",", "")))
-#    copyfile(os.path.join(TB_out_dir, "topfile"), \
-#             os.path.join(tb_lib_path, "topfile".replace(",", "")))
     beam_index = 0
     for launch in launches:
         make_inbeam(TB_out_dir, launch, mode, time, 0, cyl=False, ITM=ITM, ITER=ITER, Z_eff=Z_eff)
-#        copyfile(os.path.join(TB_out_dir, "inbeam.dat"), \
-#             os.path.join(TB_out_dir, "inbeam{0:1d}.dat".format(beam_index + 1).replace(",", "")))
-#        copyfile(os.path.join(TB_out_dir, "inbeam.dat"), \
-#             os.path.join(tb_lib_path, "inbeam.dat"))
         try:
             call([os.path.join(tb_lib_path, "a.out"), ""])
         except OSError:
@@ -683,10 +666,7 @@ def prepare_TB_data_no_data_load(working_dir, shot, time, rho_prof, Te_prof, ne_
     ne_file.close()
 
 def make_inbeam(working_dir, launch, mode, time, inbeam_no=0, cyl=False, ITM=False, ITER=False, Z_eff=None):
-    if(ITM):
-        tb_lib_path = tb_path_itm
-    else:
-        tb_lib_path = tb_path
+    tb_lib_path = globalsettings.TB_path
     inbeam_file = open(os.path.join(tb_lib_path, "inbeam.dat"))
     inbeam_lines = inbeam_file.readlines()
     inbeam_file.close()

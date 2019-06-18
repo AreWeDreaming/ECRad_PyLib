@@ -6,7 +6,6 @@ Created on Apr 13, 2018
 import os
 import numpy as np
 import ctypes as ct
-from GlobalSettings import itm
 geo_los_path = "/afs/ipp-garching.mpg.de/home/e/eced/CEC_working/libece/" + os.environ["SYS"]
 if(not os.path.isdir(geo_los_path)):
     geo_los_path = "/afs/ipp-garching.mpg.de/home/e/eced/CEC_working/libece/amd64_sles15/"

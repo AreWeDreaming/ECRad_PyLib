@@ -13,14 +13,6 @@ import sys
 import os
 # sys.path.append('/afs/ipp/home/g/git/python/repository/py_rep2.0/')
 # import kk
-from GlobalSettings import TCV, AUG
-if(AUG):
-    from equilbrium_utils_AUG import EQData
-elif(TCV):
-    from equilibrium_utils_TCV import EQData
-else:
-    print('Neither AUG nor TCV selected')
-    raise(ValueError('No system selected!'))
 from glob import glob
 from plotting_configuration import *
 from scipy.signal import medfilt

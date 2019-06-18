@@ -6,23 +6,13 @@ Created on Mar 30, 2017
 
 import sys
 from shotfile_handling_AUG import get_ECI_launch
-sys.path.append("../ECRad_Pylib")
 from ECRad_Config import ECRadConfig
-from GlobalSettings import AUG, TCV, itm
 from Diags import  Diag, ECRH_diag, ECI_diag, EXT_diag, TCV_diag, TCV_CCE_diag
 from ECRad_Interface import load_plasma_from_mat, prepare_input_file
-if(AUG):
-    from equilibrium_utils_AUG import EQData
-    from shotfile_handling_AUG import load_IDA_data, get_diag_data_no_calib, get_freqs, get_divertor_currents, filter_CTA, get_data_calib, get_ECI_launch
-    from ECRad_DIAG_AUG import DefaultDiagDict
-    from get_ECRH_config import get_ECRH_viewing_angles
-elif(TCV):
-    from equilibrium_utils_TCV import EQData
-    from shotfile_handling_TCV import load_IDA_data, get_diag_data_no_calib, get_freqs, get_divertor_currents, filter_CTA, get_data_calib, make_CCE_diag_launch
-    from ECRad_DIAG_TCV import DefaultDiagDict
-else:
-    print('Neither AUG nor TCV selected')
-    raise(ValueError('No system selected!'))
+from equilibrium_utils_AUG import EQData
+from shotfile_handling_AUG import load_IDA_data, get_diag_data_no_calib, get_freqs, get_divertor_currents, filter_CTA, get_data_calib, get_ECI_launch
+from ECRad_DIAG_AUG import DefaultDiagDict
+from get_ECRH_config import get_ECRH_viewing_angles
 import numpy as np
 from ECRad_Results import ECRadResults
 import os

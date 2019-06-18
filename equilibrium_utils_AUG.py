@@ -3,14 +3,10 @@ Created on 29.04.2019
 
 @author: sdenk
 '''
-from GlobalSettings import AUG, TCV, itm, SLES12
-if(not AUG or TCV):
-    raise(ValueError('Using TCV equilibrium module even though AUG False and/or TCV True'))
 import sys
 import ctypes as ct
 import os
-if(not itm):
-    sys.path.append("/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib")
+sys.path.append("/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib")
 import dd
 import numpy as np
 from scipy.optimize import minimize

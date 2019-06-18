@@ -1,12 +1,8 @@
-from GlobalSettings import SLES12
 from matplotlib import use
 use('WXAgg')
 from matplotlib import pyplot as plt
 # plt.style.use('bmh')
-if(SLES12):
-    plot_mode = "Presentation"
-else:
-    plot_mode = "Presentation"  #  "Presentation"  "Article"
+plot_mode = "Presentation"  #  "Presentation"  "Article"
 if(plot_mode != "Software"):
     plt.rcParams['text.latex.preamble'] = [\
        r'\usepackage{siunitx}', \

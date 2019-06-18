@@ -9,7 +9,6 @@ from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
 from scipy.integrate import simps
 import os
 import scipy.constants as cnst
-from GlobalSettings import AUG, TCV
 import ECRad_Results
 try:
     import h5py
@@ -24,14 +23,6 @@ from electron_distribution_utils import read_svec_dict_from_file, load_f_from_AS
                                         find_cold_res, SynchrotonDistribution, get_0th_and_2nd_moment, remap_f_Maj, \
                                         g0_approx, g2_approx
 from scipy.optimize import fsolve
-# if(AUG):
-#    from equilibrium_utils_AUG import EQData
-#    from shotfile_handling_AUG import get_freqs, get_RMC_data_calib, get_data_calib
-# elif(TCV):
-#    from equilibrium_utils_TCV import EQData
-# else:
-#    print('Neither AUG nor TCV selected')
-#    raise(ValueError('No system selected!'))
 from Diags import Diag
 from em_Albajar import em_abs_Alb, distribution_interpolator, \
                        gene_distribution_interpolator, s_vec, \
@@ -44,11 +35,11 @@ from Fitting import make_fit
 from scipy.stats import linregress
 from scipy import odr
 from equilibrium_utils import EQDataExt
-from GlobalSettings import AUG, TCV
-if(AUG):
+from GlobalSettings import globalsettings
+if(globalsettings.AUG):
     from equilibrium_utils_AUG import EQData
-elif(TCV):
-    from equilibrium_utils_TCV import EQData
+else:
+    from equilibrium_utils import EQDataExt as EQData
 
 wave_folder = "/afs/ipp-garching.mpg.de/home/s/sdenk/Documentation/Data/DistData"
 

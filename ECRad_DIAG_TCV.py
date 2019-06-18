@@ -5,7 +5,6 @@ Created on Dec 16, 2015
 '''
 from collections import OrderedDict as od
 import numpy as np
-from GlobalSettings import *
 from Diags import EXT_diag, TCV_diag
 
 DefaultDiagDict = od()

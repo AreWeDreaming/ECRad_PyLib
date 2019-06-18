@@ -1,5 +1,4 @@
 # #-- General Modules--##
-from GlobalSettings import *
 import numpy as np
 from plotting_configuration import *
 from netCDF4 import Dataset

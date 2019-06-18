@@ -5,7 +5,6 @@ Created on Dec 16, 2015
 '''
 from collections import OrderedDict as od
 import numpy as np
-from GlobalSettings import *
 from Diags import Diag, ECI_diag, ECRH_diag, EXT_diag
 import getpass
 

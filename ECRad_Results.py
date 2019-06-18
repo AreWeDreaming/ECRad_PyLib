@@ -7,7 +7,6 @@ import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
 np.set_printoptions(threshold=10)
 import os
-from GlobalSettings import AUG, TCV
 from scipy.io import savemat, loadmat
 from scipy import constants as cnst
 from ECRad_Config import ECRadConfig
@@ -77,16 +76,6 @@ class ECRadResults:
         self.resonance["R_warm_secondary"] = []
         self.resonance["z_warm_secondary"] = []
         self.resonance["rhop_warm_secondary"] = []
-#        self.los["sX"] = []
-#        self.los["RX"] = []
-#        self.los["zX"] = []
-#        self.los["rhopX"] = []
-#        self.los["TeX"] = []
-#        self.los["sO"] = []
-#        self.los["RO"] = []
-#        self.los["zO"] = []
-#        self.los["rhopO"] = []
-#        self.los["TeO"] = []
         self.ray["sX"] = []
         self.ray["xX"] = []
         self.ray["yX"] = []
@@ -139,24 +128,7 @@ class ECRadResults:
         self.ray_launch["dist_focus"] = []
         self.ray_launch["width"] = []
         self.ray_launch["pol_coeff_X"] = []
-
-#    def parse_scenario(self, Scenario):
-#        self.Scenario = Scenario
-
-#    def parse_config(self, Config):
-#        self.Config = Config
-#        self.working_dir = Config.working_dir
-#        self.diag = None  # We grab this when we tidy up
-#        self.Config.dstf = Config.dstf
-#        if(self.Config.considered_modes == 1):
-#            self.modes = ["X"]
-#        elif(Config.considered_modes == 2):
-#            self.modes = ["O"]
-#        elif(self.Config.considered_modes == 3):
-#            self.modes = ["X", "O"]
-#        else:
-#            print("Only mode = 1, 2, 3 supported")
-#            print("Selected mode: ", Config.considered_modes)
+        self.comment = ""
 
     def append_new_results(self, time):
         # Open files first to check for any missing files
@@ -204,10 +176,7 @@ class ECRadResults:
         self.resonance["rhop_warm_secondary"].append(sres_rel_file.T[7])
         if(self.Config.dstf == "Th"):
             Ich_folder = "Ich" + self.Config.dstf
-            Trad_old_name = "TRadM_thrms.dat"
-        elif(self.Config.dstf == "TB"):
-            Ich_folder = "Ich" + self.Config.dstf
-            Trad_old_name = "TRadM_TBeam.dat"
+            Trad_old_name = "TRadM_Farina.dat"
         elif(self.Config.dstf == "Re"):
             Ich_folder = "Ich" + self.Config.dstf
             Trad_old_name = "TRadM_therm.dat"
@@ -647,7 +616,7 @@ class ECRadResults:
                             "XTrad_comp", "OTrad_comp", "Xtau_comp", "Otau_comp", "X_mode_frac_comp", \
                              "ne", "calib", "rel_dev", "sys_dev", "Te", "rhop", "masked_time_points", \
                              "ECE_rhop", "ECE_dat", "eq_data", \
-                             "eq_R", "eq_z", "diag_name", "launch_f", "launch_df", "launch_R", "launch_phi", \
+                             "eq_R", "eq_z", "launch_diag_name", "launch_f", "launch_df", "launch_R", "launch_phi", \
                              "launch_z", "launch_tor_ang" , "launch_pol_ang", "launch_dist_focus", \
                              "launch_width", "eq_special", "eq_special_complete"  ] + self.resonance.keys()
         at_least_3d_keys = self.BPD.keys()
@@ -665,7 +634,7 @@ class ECRadResults:
             increase_time_dim = True
         elif(len(mdict["time"]) == 1):
             increase_time_dim = True
-        if(np.isscalar(mdict["diag_name"])):
+        if(np.isscalar(mdict["launch_diag_name"])):
             increase_diag_dim = True
         for key in mdict.keys():
             if(not key.startswith("_")):  # throw out the .mat specific information

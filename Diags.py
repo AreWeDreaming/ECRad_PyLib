@@ -5,6 +5,8 @@ Created on Feb 2, 2017
 '''
 import numpy as np
 import os
+from collections import OrderedDict as od
+from scipy.io import loadmat
 
 class BasicDiag:
     def __init__(self, name):
@@ -246,6 +248,38 @@ class EXT_diag(BasicDiag):  #  Makes no sense to inherit properties we do not wa
         self.dist_focus = ray_launch[itime]["dist_focus"][mask]
         self.width = ray_launch[itime]["width"][mask]
         self.pol_coeff_X = ray_launch[itime]["pol_coeff_X"][mask]
+        
+    def set_from_mat(self, ray_launch_file):
+        mdict = loadmat(ray_launch_file, squeeze_me=True)
+        itime = 0 # Only first time point imported -> limitation of current ext diag
+        if(np.ndim(mdict["launch_f"]) == 1):
+            self.f = mdict["launch_f"]
+            self.df = mdict["launch_df"]
+            self.R = mdict["launch_R"]
+            self.phi = mdict["launch_phi"]
+            self.z = mdict["launch_z"]
+            self.theta_pol = mdict["launch_pol_ang"]
+            self.phi_tor = mdict["launch_tor_ang"]
+            self.dist_focus = mdict["launch_dist_focus"]
+            self.width = mdict["launch_width"]
+            self.pol_coeff_X = mdict["launch_pol_coeff_X"]
+        else:
+            self.f = mdict["launch_f"][0]
+            self.df = mdict["launch_df"][0]
+            self.R = mdict["launch_R"][0]
+            self.phi = mdict["launch_phi"][0]
+            self.z = mdict["launch_z"][0]
+            self.theta_pol = mdict["launch_pol_ang"][0]
+            self.phi_tor = mdict["launch_tor_ang"][0]
+            self.dist_focus = mdict["launch_dist_focus"][0]
+            self.width = mdict["launch_width"][0]
+            self.pol_coeff_X = mdict["launch_pol_coeff_X"][0]
+        self.N_ch = len(self.f)
+        self.N_freq = 1
+        self.N_ray = 1
+        self.waist_scale = 1.0
+        self.waist_shift = 0.0
+        
 
     def set_from_launch_geo(self, launch_geo, pol_coeff_X, append=False):
         if(append):
@@ -305,6 +339,26 @@ class EXT_diag(BasicDiag):  #  Makes no sense to inherit properties we do not wa
                 self.pol_coeff_X[:] = pol_coeff_X
             else:
                 self.pol_coeff_X = pol_coeff_X
+
+# Single entry diag dict with just EXT diag
+                
+DefaultDiagDict = od()
+launch_geo = np.zeros((13, 1))
+launch_geo[0, 0] = 140.e9
+launch_geo[1, 0] = 0.2e9
+launch_geo[2, 0] = 1
+launch_geo[3, 0] = 1
+launch_geo[4, 0] = 1.0
+launch_geo[5, 0] = 0.0
+launch_geo[6, 0] = 2.3
+launch_geo[7, 0] = 104.0
+launch_geo[8, 0] = 0.33
+launch_geo[9, 0] = -0.824
+launch_geo[10, 0] = -8.24
+launch_geo[11, 0] = 1.1850
+launch_geo[12, 0] = 0.0865
+DefaultDiagDict.update({"EXT":  EXT_diag("EXT", launch_geo)})                
+                
 # Deprecated
 # class TCV_CCE_diag(Diag):
 #    def __init__(self, name, exp, diag_str, ed, time, launch_geo, t_smooth=1.e-3):

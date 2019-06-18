@@ -3,9 +3,6 @@ Created on Jan 29, 2017
 
 @author: sdenk
 '''
-from GlobalSettings import AUG, TCV, itm, SLES12
-if(not AUG or TCV):
-    raise(ValueError('Using TCV equilibrium module even though AUG False and/or TCV True'))
 import sys
 import ctypes as ct
 import os

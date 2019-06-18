@@ -12,17 +12,11 @@ from glob import glob
 from matplotlib import cm
 import os
 from shutil import copyfile
-from GlobalSettings import AUG, TCV
-if(AUG):
+from GlobalSettings import globalsettings
+if(globalsettings.AUG):
     from equilibrium_utils_AUG import EQData, make_rhop_signed_axis
     from shotfile_handling_AUG import get_diag_data_no_calib, get_data_calib, load_IDA_data, get_shot_heating, get_NPA_data, get_ECE_spectrum, get_Thomson_data
     import fconf
-elif(TCV):
-    from equilibrium_utils_TCV import EQData, make_rhop_signed_axis
-    from shotfile_handling_AUG import get_diag_data_no_calib, get_data_calib, load_IDA_data, get_shot_heating, get_NPA_data, get_ECE_spectrum, get_Thomson_data
-else:
-    print('Neither AUG nor TCV selected')
-    raise(ValueError('No system selected!'))
 from Diags import Diag
 from electron_distribution_utils import read_svec_from_file, identify_LFS_channels, make_R_res, remap_rhop_R, get_B
 from electron_distribution_utils import make_f_beta, Maxwell2D, find_cold_res, find_rel_res, make_f, BiJuettner, multi_slope_simpl, Gauss_norm, get_Te_ne_R, weighted_emissivity
@@ -1540,7 +1534,7 @@ class plotting_core:
         # cb.ax.get_yaxis().set_major_locator(MaxNLocator(nbins = 3, steps=np.array([1.0,5.0,10.0])))
         cb.ax.get_yaxis().set_minor_locator(MaxNLocator(nbins=3, steps=np.array([z_min, z_max, 5])))
         cb.ax.minorticks_on()
-        if(AUG):
+        if(globalsettings.AUG):
             fconf.plt_vessel(self.axlist[0])
 #        steps = np.array([0.5, 1.0, 2.5, 5.0, 10.0])
 #        steps_y = steps
@@ -1569,7 +1563,7 @@ class plotting_core:
         except Exception as e:
             print(e)
             print("No ida.log found time of ECE data might be incorrect")
-        if(plot_rays and AUG):
+        if(plot_rays and globalsettings.AUG):
             self.plot_EQH_vessel(shotno, time, self.axlist[0])
         else:
             self.plot_sep(shotno, time, self.axlist[0])
@@ -3305,7 +3299,7 @@ class plotting_core:
     def plot_los(self, ax, y_range, shot, time, R_ray, z_ray, R_res, z_res, no_names=False, eq_diag=None, marker=r"-"):
         if(not no_names):
             base_str = "ECRad"
-            if(AUG and eq_diag is not None):
+            if(globalsettings.AUG and eq_diag is not None):
                 self.plot_EQ_vessel(shot, time, ax, eq_diag)
             ax, y_range = self.add_plot(ax, \
                           y_range, data=[R_ray , z_ray ], marker=marker, color=(0.0, 0.0, 0.0), \
@@ -3322,7 +3316,7 @@ class plotting_core:
                           ax_flag="Rz")
     @staticmethod
     def plot_EQH_vessel(shot, time, ax):
-        if(not AUG):
+        if(not globalsettings.AUG):
             raise(ValueError("The routine plot_EQH_vessel is AUG specific and AUG = False"))
         EQ_obj = EQData(shot, EQ_exp='AUGD', EQ_diag='EQH', EQ_ed=0)
         EQ_Slice = EQ_obj.GetSlice(time)
@@ -3337,7 +3331,7 @@ class plotting_core:
         ax.set_ylim(np.min(EQ_Slice.z), np.max(EQ_Slice.z))
 
     def plot_EQ_vessel(self, shot, time, ax, eq_diag):
-        if(not AUG):
+        if(not globalsettings.AUG):
             raise(ValueError("The routine plot_EQH_vessel is AUG specific and AUG = False"))
         EQ_obj = EQData(shot, EQ_exp=eq_diag.exp, EQ_diag=eq_diag.diag, EQ_ed=eq_diag.ed)
         EQ_Slice = EQ_obj.GetSlice(time)
@@ -3872,8 +3866,9 @@ class plotting_core:
                                                                          color=(0.0, 0.0, 1.0), marker="+", \
                                                                          y_range_in=self.y_range_list[2], ax_flag="Rz")
         self.axlist[2].set_aspect("equal")
-        self.axlist[2].set_xlim(0.7, 2.5)
-        self.axlist[2].set_ylim(-1.75, 1.75)
+        if(globalsettings.AUG):
+            self.axlist[2].set_xlim(0.7, 2.5)
+            self.axlist[2].set_ylim(-1.75, 1.75)
         for ax in self.axlist:
             ax.get_xaxis().set_major_locator(NLocator(nbins=4, prune='lower'))
             ax.get_xaxis().set_minor_locator(NLocator(nbins=8))
@@ -3884,7 +3879,8 @@ class plotting_core:
     def Plot_Rz_Res(self, shot, time, R_cold, z_cold, R_warm, z_warm, EQ_obj=False, \
                     Rays=None, tb_Rays=None, straight_Rays=None, \
                     R_warm_comp=None, z_warm_comp=None, \
-                    EQ_exp="AUGD", EQ_diag="EQH", EQ_ed=0, eq_aspect_ratio=True):
+                    EQ_exp="AUGD", EQ_diag="EQH", EQ_ed=0, eq_aspect_ratio=True, \
+                    vessel_bd=None):
         shotstr = "\#" + str(shot) + " t = " + "{0:2.3f}".format(time) + " s  "
         self.setup_axes("single", r"ECE cold res. and ray " + shotstr, "Toroidal angle")
         stop_at_axis = False
@@ -3985,12 +3981,17 @@ class plotting_core:
             levels=[1.0], linewidths=3, colors="b", linestyles="-")
         plt.clabel(CS, inline=1, fontsize=10)
         plt.clabel(CS2, inline=1, fontsize=12)
-        if(AUG):
+        if(globalsettings.AUG):
             fconf.plt_vessel(self.axlist[0])
+        elif(vessel_bd is not None):
+             self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
+                      self.y_range_list[0], data=[vessel_bd[0], vessel_bd[1]], marker="-", color=(0.0, 0.0, 0.0), \
+                      ax_flag="Rz")
         if(eq_aspect_ratio):
             self.axlist[0].set_aspect("equal")
-        self.axlist[0].set_xlim((0.8, 2.4))
-        self.axlist[0].set_ylim((-0.75, 1.0))
+        if(globalsettings.AUG):
+            self.axlist[0].set_xlim((0.8, 2.4))
+            self.axlist[0].set_ylim((-0.75, 1.0))
         self.create_legends("vessel")
         return self.fig
 
@@ -4149,7 +4150,7 @@ class plotting_core:
 
     def plot_ray(self, shot, time, ray, index=0, EQ_obj=False, H=True, R_cold=None, z_cold=None, \
                  s_cold=None, straight=False, eq_aspect_ratio=True, R_other_list=[], z_other_list=[], \
-                 x_other_list = [], y_other_list = [], label_list=None):
+                 x_other_list = [], y_other_list = [], label_list=None, vessel_bd=None):
         self.setup_axes("ray", "Ray", "Hamiltonian")
         # eqi = equ_map()
         equilibrium = True
@@ -4192,9 +4193,26 @@ class plotting_core:
             self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[R_cold, z_cold], \
                 name=r"Cold resonance", marker="+", color=(0.e0, 126.0 / 255, 0.e0), \
                      y_range_in=self.y_range_list[0], ax_flag="Rz")
-        if(AUG):
+        if(globalsettings.AUG):
             fconf.plt_vessel(self.axlist[0])
             fconf.plt_vessel(self.axlist[1], pol=False)
+        elif(vessel_bd is not None):
+            self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
+                      self.y_range_list[0], data=[vessel_bd[0], vessel_bd[1]], marker="-", color=(0.0, 0.0, 0.0), \
+                      ax_flag="Rz")
+            R_vessel_min = np.min(vessel_bd[0])
+            phi = np.linspace(0, np.pi * 2.0, 100)
+            x_vessel = R_vessel_min * np.cos(phi)
+            y_vessel = R_vessel_min * np.sin(phi)
+            self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], \
+                      self.y_range_list[1], data=[x_vessel, y_vessel], marker="-", color=(0.0, 0.0, 0.0), \
+                      ax_flag="xy")
+            R_vessel_max = np.max(vessel_bd[0])
+            x_vessel = R_vessel_max * np.cos(phi)
+            y_vessel = R_vessel_max * np.sin(phi)
+            self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], \
+                      self.y_range_list[1], data=[x_vessel, y_vessel], marker="-", color=(0.0, 0.0, 0.0), \
+                      ax_flag="xy")
         if(label_list  is None):
             ECRad_main_label = r"ECRad ray"
         else:
@@ -4330,9 +4348,11 @@ class plotting_core:
         if(eq_aspect_ratio):
             self.axlist[0].set_aspect("equal")
             self.axlist[1].set_aspect("equal")
-        self.axlist[0].set_xlim(0.7, 2.5)
-        self.axlist[0].set_ylim(-1.75, 1.75)
-        self.axlist[1].set_ylim(-1.0, 1.0)
+        if(globalsettings.AUG):
+            self.axlist[0].set_xlim(0.7, 2.5)
+            self.axlist[0].set_ylim(-1.75, 1.75)
+            self.axlist[1].set_xlim(-2.8, 2.8)
+            self.axlist[1].set_ylim(-2.8, 2.8)
         if(H):
             return self.fig, self.fig_2
         else:
@@ -4439,7 +4459,7 @@ class plotting_core:
         self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], data=[xl, yl], \
                 marker=":", color=color, \
                 y_range_in=self.y_range_list[1], ax_flag="xy")
-        if(AUG):
+        if(globalsettings.AUG):
             fconf.plt_vessel(self.axlist[1], pol=False)
             fconf.plt_eq_tor(self.axlist[1], int(shot), float(time))
         # self.create_legends("single")
@@ -4514,7 +4534,7 @@ class plotting_core:
         self.axlist_2[0].add_patch(pltCircle([0.0, 0.0], R_axis, edgecolor='b', facecolor='none', linestyle="-"))
         for i in range(len(tor_cont_list)):
             self.axlist_2[0].add_patch(pltCircle([0.0, 0.0], tor_cont_list[i], edgecolor='k', facecolor='none', linestyle="--"))
-        if(AUG):
+        if(globalsettings.AUG):
             fconf.plt_vessel(self.axlist[0])
             fconf.plt_vessel(self.axlist_2[0], pol=False)
         beam_count = 1
@@ -4651,7 +4671,7 @@ class plotting_core:
         self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], data=[Psi_grid, E_field], \
                         marker="-", color=[0, 0, 1.0], \
                         y_range_in=self.y_range_list_2[0], ax_flag="E_field")
-        if(AUG):
+        if(globalsettings.AUG):
             fconf.plt_vessel(self.axlist[0])
         self.axlist[0].set_aspect("equal")
         self.axlist[0].set_xlim(0.7, 2.5)
@@ -4728,7 +4748,7 @@ class plotting_core:
         self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], data=[ray.s, ray.N_cold], \
                     name=r"Ray $N_{\omega, \mathrm{disp}}$ ", marker="-.", color=(0.e0, 0.e0, 26.0 / 255), \
                          y_range_in=self.y_range_list_2[0], ax_flag="H")
-        if(AUG):
+        if(globalsettings.AUG):
             fconf.plt_vessel(self.axlist[1], pol=False)
             fconf.plt_eq_tor(self.axlist[1], int(shot), float(time))
         self.create_legends("single")

@@ -10,20 +10,15 @@ from glob import glob
 from matplotlib import cm
 import os
 from shutil import copyfile
-from GlobalSettings import AUG, TCV
 from data_processing import remove_mode
 from Diags import ECRH_diag
-if(AUG):
-    from equilibrium_utils_AUG import EQData, make_rhop_signed_axis
-    from shotfile_handling_AUG import get_diag_data_no_calib, get_data_calib, load_IDA_data, get_shot_heating, \
-                                      get_NPA_data, get_ECE_spectrum, get_Thomson_data, get_plasma_current, \
-                                      get_NPA_data, get_ECE_spectrum, \
-                                      get_Thomson_data, get_RMC_data_calib, get_data_calib_entire_shot, get_z_mag
-    import fconf
-    from get_ECRH_config import get_ECRH_viewing_angles
-else:
-    print('Neither AUG nor TCV selected')
-    raise(ValueError('No system selected!'))
+from equilibrium_utils_AUG import EQData, make_rhop_signed_axis
+from shotfile_handling_AUG import get_diag_data_no_calib, get_data_calib, load_IDA_data, get_shot_heating, \
+                                  get_NPA_data, get_ECE_spectrum, get_Thomson_data, get_plasma_current, \
+                                  get_NPA_data, get_ECE_spectrum, \
+                                  get_Thomson_data, get_RMC_data_calib, get_data_calib_entire_shot, get_z_mag
+import fconf
+from get_ECRH_config import get_ECRH_viewing_angles
 from Diags import Diag
 from plotting_configuration import *
 from plotting_core import plotting_core

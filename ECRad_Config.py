@@ -4,7 +4,6 @@ import getpass
 import os
 from scipy.io import loadmat, savemat
 import sys
-from GlobalSettings import AUG, TCV
 import numpy as np
 
 class ECRadConfig:

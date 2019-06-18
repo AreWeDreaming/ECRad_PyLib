@@ -3,18 +3,13 @@ Created on Dec 9, 2015
 
 @author: sdenk
 '''
-from GlobalSettings import TCV, AUG, itm
 import numpy as np
 import sys
 import os
 # sys.path.append('/afs/ipp/home/g/git/python/repository/py_rep2.0/')
 # import kk
 import ctypes as ct
-from __builtin__ import True
-if(not itm):
-    sys.path.append('/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib')
-else:
-    sys.path.append('../lib')
+sys.path.append('/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib')
 import dd
 from scipy.signal import medfilt, argrelmax
 root = "/afs/ipp-garching.mpg.de/home/s/sdenk/"

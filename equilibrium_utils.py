@@ -3,11 +3,8 @@ Created on Jan 29, 2017
 
 @author: sdenk
 '''
-from GlobalSettings import AUG, TCV, itm
 import sys
 import os
-if(not itm):
-    sys.path.append("/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib")
 import numpy as np
 from scipy.optimize import minimize
 from scipy.interpolate import RectBivariateSpline, InterpolatedUnivariateSpline

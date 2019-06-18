@@ -3,11 +3,7 @@ Created on Dec 10, 2015
 @author: sdenk
 '''
 import sys
-from GlobalSettings import itm, SLES12
-if(not itm):
-    sys.path.append('/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib/')
-else:
-    sys.path.append('../lib')
+sys.path.append('/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib/')
 import dd
 import os
 import ctypes as ct
@@ -18,6 +14,7 @@ if(SLES12):
     print("Warning libaug_ecrh which is not compiled for SLES12 has been loaded.")
     print("This may lead to runtime errors!")
 import datetime
+from ECRH_Launcher import ECRHLauncher
 # NOTE: Values not verified for ECRH III
 #       Swap of launcher 3 and 4 implemented in launcher class
 gy_pos_x = np.zeros(8, np.double)
@@ -154,7 +151,7 @@ class libECRH_wrapper:
         # print(theta_pol, phi_tor)
         return error, a, beta
 
-class AUGLauncher:
+class AUGLauncher(ECRHLauncher):
     def __init__(self, shot, N, view=False, view_140=True):  # N is the gyrotron number from 1-8
         # All units are SI units (i.e. m, W, Hz)
         # Angles are given in degrees

@@ -8,15 +8,17 @@ import getpass
 import os
 from scipy.io import loadmat, savemat
 import sys
-from GlobalSettings import AUG, TCV
+from GlobalSettings import globalsettings
 import numpy as np
 from equilibrium_utils import EQDataSlice, special_points
 from Diags import Diag, ECRH_diag, ECI_diag, EXT_diag
 from electron_distribution_utils import load_f_from_mat
-if(AUG):
+if(globalsettings.AUG):
     from ECRad_DIAG_AUG import DefaultDiagDict
-elif(TCV):
+elif(globalsettings.TCV):
     from ECRad_DIAG_TCV import DefaultDiagDict
+else:
+    from Diags import DefaultDiagDict
 # THis class holds all the input data provided to ECRad with the exception of the ECRad configuration
 
 class ECRadScenario:
@@ -49,7 +51,7 @@ class ECRadScenario:
         self.EQ_exp = "AUGD"
         self.EQ_diag = "EQH"
         self.EQ_ed = 0
-        if(AUG):
+        if(globalsettings.AUG):
             self.bt_vac_correction = 1.005
         else:
             self.bt_vac_correction = 1.000
@@ -61,7 +63,6 @@ class ECRadScenario:
         self.default_diag = "ECE"
         self.data_source = "aug_database"
         self.dist_obj = None
-        self.profile_dimension = 1
 
     def from_mat(self, mdict=None, path_in=None, load_plasma_dict=True):
         self.reset()
@@ -84,7 +85,7 @@ class ECRadScenario:
         # Loading from .mat sometimes adds single entry arrays that we don't want
         at_least_1d_keys = ["diag", "time", "Diags_exp", "Diags_diag", "Diags_ed", "Extra_arg_1", "Extra_arg_2", "Extra_arg_3", \
                             "used_diags"]
-        at_least_2d_keys = ["eq_R", "eq_z", "diag_name", "launch_f", "launch_df", "launch_R", "launch_phi", \
+        at_least_2d_keys = ["eq_R", "eq_z", "launch_diag_name", "launch_f", "launch_df", "launch_R", "launch_phi", \
                              "launch_z", "launch_tor_ang" , "launch_pol_ang", "launch_dist_focus", \
                              "launch_width", "launch_pol_coeff_X", "eq_special", "eq_special_complete"  ]
         at_least_3d_keys = ["eq_Psi", "eq_rhop", "eq_Br", "eq_Bt", "eq_Bz"]
@@ -247,7 +248,7 @@ class ECRadScenario:
                 launch_geo, pol = self.used_diags_dict[diagname].get_launch_geo()
                 mdict["Ext_launch_geo"] = launch_geo
                 mdict["Ext_launch_pol"] = pol
-            elif(diagname == "VCE" and AUG):
+            elif(diagname == "VCE" and globalsettings.AUG):
                 mdict["Extra_arg_1"].append("{0:1.3f}".format(self.used_diags_dict[diagname].R_scale))
                 mdict["Extra_arg_2"].append("{0:1.3f}".format(self.used_diags_dict[diagname].z_scale))
             else:

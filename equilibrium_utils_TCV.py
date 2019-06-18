@@ -3,11 +3,8 @@ Created on Jan 29, 2017
 
 @author: sdenk
 '''
-from GlobalSettings import AUG, TCV
 import numpy as np
 from equilibrium_utils import EQDataExt
-if(not TCV or AUG):
-    raise(ValueError('Using TCV equilibrium module even though TCV False and/or AUG True'))
 
 def get_current(nshot, tshot, npts):
     raise(ValueError('Routine get_current not available for TCV'))
