@@ -209,4 +209,4 @@ def provide_default_mdict():
     return mdict
 
 # InvokeECRad = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/Ecfm_Model_new/ecfm_model"
-# test_config = ECRad_Config()
+# test_config = ECRadConfig()

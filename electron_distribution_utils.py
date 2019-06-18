@@ -2593,25 +2593,32 @@ def get_R_aus(R, z, Psi, R_ax, z_ax, Psi_target):
     constraints["fun"] = eval_Psi
     psi_spl = RectBivariateSpline(R, z, Psi)
     constraints["args"] = [psi_spl, Psi_target[0]]
+    R_mid = np.copy(R)
+    z_mid = np.zeros(len(R))
+    z_mid[:] = z_ax
+    Psi_mid = psi_spl(R_mid,z_mid, grid=False)
     options = {}
     options['maxiter'] = 100
     options['disp'] = False
-    x0 = np.array([R_ax, z_ax])
     for i in range(len(Psi_target)):
+        psi_root_spl = InterpolatedUnivariateSpline(R_mid, Psi_mid - Psi_target[i])
+        roots = psi_root_spl.roots()
+        if(len(roots) > 0):
+            x0 = np.array([np.max(roots), z_ax])
+        else:
+            x0 = np.array([R_ax, z_ax])
         constraints["args"][1] = Psi_target[i]
-        res = scopt.minimize(eval_R, x0, method='SLSQP', bounds=[[1.2, 2.3], [-1.0, 1.0]], \
+        res = scopt.minimize(eval_R, x0, method='SLSQP', bounds=[[np.min(R), np.max(R)], [np.min(z), np.max(z)]], \
                              constraints=constraints, options=options)
         if(not res.success):
             print("Error could not find R_aus for ", Psi_target[i])
             print("Cause: ", res.message)
-            print("Falling back to axis position")
-            R_LFS[i] = R_ax
-            z_LFS[i] = z_ax
-            x0 = np.array([R_ax, z_ax])
+            print("Falling back to initial guess")
+            R_LFS[i] = x0[0]
+            z_LFS[i] = x0[1]
         else:
             R_LFS[i] = res.x[0]
             z_LFS[i] = res.x[1]
-            x0 = res.x
 #    plt.plot(R_LFS, z_LFS, "+r")
 #    cont = plt.contour(R, z, Psi.T, levels=Psi_grid)
 #    plt.show()

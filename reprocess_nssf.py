@@ -12,7 +12,7 @@ from ECRad_Interface import prepare_input_file
 import numpy as np
 import subprocess
 import shlex
-from ECRad_Config import ECRad_Config
+from ECRad_Config import ECRadConfig
 from ECRad_DIAG_AUG import DefaultDiagDict
 from shotfile_handling_AUG import load_IDA_data
 from shutil import copytree, rmtree, copyfile
