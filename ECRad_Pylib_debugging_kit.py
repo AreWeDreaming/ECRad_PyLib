@@ -4,6 +4,9 @@ Created on 09.05.2019
 @author: sdenk
 '''
 from ndarray_helper import ndarray_check_for_None
+from ECRad_Results import ECRadResults
+import glob
+import os
 # from kk_local import KK
 # from EQU import EQU
 # from plotting_configuration import *
@@ -30,6 +33,23 @@ from ndarray_helper import ndarray_check_for_None
 # #     plt.contour(output.R, output.z, output.Psi.T, linestyles="--", levels=levels, colors="r")
 #     plt.show()
 #     plt.hold(True)
+    
+
+def repair_ECRad_results(folder_in, folder_out=None):
+    # Allows to make bulk modification of result files using glob
+    # If folder_out is True it overwrites!
+    filelist = glob.glob(os.path.join(folder_in, "*.mat"))
+#     filelist = ['/tokp/work/sdenk/DRELAX_Results/ECRad_35662_ECECTACTC_run0208.mat']
+    cur_result = ECRadResults()
+    for filename in filelist:
+        cur_result.reset()
+        cur_result.from_mat_file(filename)
+        # Enter bulk modifcations here
+        cur_result.Scenario.used_diags_dict["CTC"].diag = "CTC"
+        if(folder_out is None):
+            cur_result.to_mat_file(filename)
+        else:
+            cur_result.to_mat_file(os.path.join(folder_out, os.path.basename(filename)))    
     
 def randomTests():
     mdict = {"key1":None, "key2":[None,None], "key3":[[None,None], [None,None]], "key4":[[[None], [None]]]}

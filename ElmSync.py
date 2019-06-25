@@ -1,3 +1,5 @@
+# This routine should be moved from the ECRad Pylib into a central AUG library
+
 """
 
     Routine for elm syncronization. It uses the augped approach.

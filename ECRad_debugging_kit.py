@@ -24,6 +24,7 @@ import matplotlib.patches as patches
 from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
 from scipy.integrate import simps
 from em_Albajar import em_abs_Alb, s_vec
+from distribution_io import load_f_from_ASCII
 from electron_distribution_utils import read_svec_dict_from_file, load_f_from_ASCII, \
                                         read_LUKE_data, read_Fe, Gauss_norm, \
                                         Gauss_not_norm, Juettner2D, Juettner2D_bidrift, multi_slope, \
@@ -471,67 +472,6 @@ def check_ray_bundle(working_dir, shotno, time, N_ray, channel=1, mode="X", tor_
     # ax.add_patch(patches.Rectangle(\
     #    (1.23, -0.55), 0.7, 1.33, fill=False, edgecolor="blue"))
     plt.show()
-
-def validate_B_along_los(ida_working_dir, ecfm_file1, ecfm_file2):
-    t = 2.4999
-    shot = 33147
-    kk = KKeqi(shotnumber=shot, experiment='AUGD', diagnostic='EQH', edition=0)
-    svec = np.loadtxt(ecfm_file1)
-    R_ecfm1 = svec.T[1]
-    z_ecfm1 = svec.T[2]
-    EQH = EQU()
-    if(not EQH.Load(shot, Experiment='AUGD', Diagnostic='EQH')):
-        print("No EQ?")
-        return
-    R_kk = EQH.getR(t)
-    z_kk = EQH.getz(t)
-    B_r = np.zeros((len(R_kk), len(z_kk)))
-    B_t = np.zeros((len(R_kk), len(z_kk)))
-    B_z = np.zeros((len(R_kk), len(z_kk)))
-    R_temp = np.zeros(len(z_kk))
-    for i in range(len(R_kk)):
-        R_temp[:] = R_kk[i]
-        magn_field = kk.get_B(t , R_temp , z_kk)
-        B_r[i] = magn_field['Br']
-        B_t[i] = magn_field['Bt']
-        B_z[i] = magn_field['Bz']
-    B_tot_kk = np.sqrt(B_r ** 2 + B_z ** 2 + B_t ** 2)
-    B_2d_spl = RectBivariateSpline(R_kk, z_kk, B_tot_kk, kx=3, ky=3)
-    B_los_kk = kk.get_B(t , R_ecfm1 , z_ecfm1)
-    z_spl = InterpolatedUnivariateSpline(R_ecfm1 , z_ecfm1)
-    B_tot_ecfm1 = svec.T[-1] * cnst.m_e / cnst.e * np.pi
-    svec2 = np.loadtxt(ecfm_file2)
-    R_ecfm2 = svec2.T[1]
-    z_ecfm2 = svec2.T[2]
-    B_tot_ecfm2 = svec2.T[-1] * cnst.m_e / cnst.e * np.pi
-    z_spl_2 = InterpolatedUnivariateSpline(R_ecfm2 , z_ecfm2)
-#    t_ida = np.loadtxt(os.path.join(ida_working_dir, "time_B_los"))
-#    it = np.argmin(np.abs(t_ida - 2.4991))
-#    print("Indices found", it)
-#    print("EQ Time is:", t_ida[it - 5:it + 5])
-#    R_ida = np.loadtxt(os.path.join(ida_working_dir, "R_los"))[it]
-#    B_ida = np.loadtxt(os.path.join(ida_working_dir, "B_los"))[it]
-    B_tot_ecfm1_spl = InterpolatedUnivariateSpline(R_ecfm1, B_tot_ecfm1)
-    B_tot_kk_spl = InterpolatedUnivariateSpline(R_ecfm1, np.sqrt(B_los_kk['Br'] ** 2 + B_los_kk['Bt'] ** 2 + B_los_kk['Bz'] ** 2))
-    B_tot_ecfm2_spl = InterpolatedUnivariateSpline(R_ecfm2, B_tot_ecfm2)
-#    plt.plot(R_ida[R_ida < 2.2], B_ida[R_ida < 2.2] / B_tot_ecfm1_spl(R_ida[R_ida < 2.2]) - 1, label=r"$B_\mathrm{ida} / B_\mathrm{ecfm} - 1$")
-#    plt.plot(R_ida[R_ida < 2.2], B_ida[R_ida < 2.2] / B_tot_kk_spl(R_ida[R_ida < 2.2]) - 1, "--", label=r"$B_\mathrm{ida} / B_\mathrm{kk} - 1$")
-#    plt.plot(R_ida[R_ida < 2.2], B_ida[R_ida < 2.2] / B_2d_spl(R_ida[R_ida < 2.2], z_spl(R_ida[R_ida < 2.2]), grid=False) - 1, ":", label=r"$B_\mathrm{ida} / B_\mathrm{2d-spl} - 1$")
-#    plt.plot(R_ecfm1[B_tot_ecfm1 != 0.0], B_tot_ecfm1[B_tot_ecfm1 != 0.0] / B_tot_kk_spl(R_ecfm1[B_tot_ecfm1 != 0.0]) - 1, "--", label=r"$B_\mathrm{ida} / B_\mathrm{kk} - 1$")
-#    plt.plot(R_ecfm1[B_tot_ecfm1 != 0.0], B_tot_ecfm1[B_tot_ecfm1 != 0.0] / B_2d_spl(R_ecfm1[B_tot_ecfm1 != 0.0], z_ecfm1[B_tot_ecfm1 != 0.0], grid=False) - 1, ":", label=r"$B_\mathrm{ida} / B_\mathrm{2d-spl} - 1$")
-#    plt.plot(R_ecfm1[B_tot_ecfm1 != 0.0], B_tot_kk_spl(R_ecfm1[B_tot_ecfm1 != 0.0]) - 1, "--", label=r"$B_\mathrm{ida} / B_\mathrm{kk} - 1$")
-#    plt.plot(R_ecfm1[B_tot_ecfm1 != 0.0], B_2d_spl(R_ecfm1[B_tot_ecfm1 != 0.0], z_ecfm1[B_tot_ecfm1 != 0.0], grid=False) - 1, ":", label=r"$B_\mathrm{ida} / B_\mathrm{2d-spl} - 1$")
-#    plt.plot(R_ida[R_ida < 2.2], B_ida[R_ida < 2.2] / B_tot_ecfm2_spl(R_ida[R_ida < 2.2]) - 1, "+", label=r"$B_\mathrm{ida} / B_\mathrm{ecfm}(\phi_\mathrm{tor} = 0) - 1$")
-    plt.plot(R_ecfm2[B_tot_ecfm2 > 0], B_tot_ecfm2[B_tot_ecfm2 > 0] / B_tot_ecfm1_spl(R_ecfm2[B_tot_ecfm2 > 0]) - 1, "+", label=r"$B_\mathrm{ida} / B_\mathrm{ecfm}(\phi_\mathrm{tor} = 0) - 1$")
-    plt.gca().set_ylim(0, 5)
-    plt.gca().set_ylim(-0.01, 0.01)
-    plt.gca().set_xlabel(r"$R$ [m]")
-    plt.gca().set_ylabel(r"$B_\mathrm{ida} / B_\mathrm{ecfm, 3D ripple} - 1$")
-    plt.legend()
-    plt.suptitle(r"$B_\mathrm{tot,IDA}$ vs. $B_\mathrm{tot,ECRad}$ including magnetic field ripple (3D)")
-    plt.figure()
-    plt.show()
-
 
 def validate_theta_along_los(ida_working_dir, ed, ch):
     ida_ecfm_data = os.path.join(ida_working_dir, "ecfm_data")

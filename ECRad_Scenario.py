@@ -12,7 +12,7 @@ from GlobalSettings import globalsettings
 import numpy as np
 from equilibrium_utils import EQDataSlice, special_points
 from Diags import Diag, ECRH_diag, ECI_diag, EXT_diag
-from electron_distribution_utils import load_f_from_mat
+from distribution_io import load_f_from_mat
 if(globalsettings.AUG):
     from ECRad_DIAG_AUG import DefaultDiagDict
 elif(globalsettings.TCV):

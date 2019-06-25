@@ -14,7 +14,6 @@ import dd
 from scipy.signal import medfilt, argrelmax
 root = "/afs/ipp-garching.mpg.de/home/s/sdenk/"
 from scipy.interpolate import RectBivariateSpline, splev, splrep, InterpolatedUnivariateSpline, interp1d, UnivariateSpline, interp1d
-from electron_distribution_utils import make_EField
 from equilibrium_utils_AUG import EQData,vessel_bd_file
 import scipy.constants as cnst
 from scipy.integrate import simps
@@ -1665,19 +1664,6 @@ def get_CXRS_prof(shot, time, diag):
     rhot = EQ_Slice.rhot
     R = EQ_Slice.R
     z = EQ_Slice.z
-
-def test_make_EField():
-    shot = 33697
-    eq_experiment = "AUGD"
-    eq_diag = "IDE"
-    time = 1.68
-    Eq = EQData(shot, eq_experiment, eq_diag, 0)
-    EQ_Slice = Eq.GetSlice(time)
-    Psi = EQ_Slice.Psi
-    R = EQ_Slice.R
-    z = EQ_Slice.z
-    V_loop = 0.4
-    make_EField(R, z, Psi, np.linspace(EQ_Slice.Psi_ax, EQ_Slice.Psi_sep, 40), V_loop)
 
 def test_FPC():
     FPC_shot = dd.shotfile("FPC", int(32028))

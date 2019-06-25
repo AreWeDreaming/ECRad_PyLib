@@ -1,3 +1,5 @@
+# Python wrapper for AUG radial ECE library
+# geo_los computes the Rz path of the ray
 '''
 Created on Apr 13, 2018
 

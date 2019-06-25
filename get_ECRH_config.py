@@ -10,9 +10,6 @@ import ctypes as ct
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline
 libECRH = np.ctypeslib.load_library("libaug_ecrh_setmirrors", '/afs/ipp-garching.mpg.de/home/e/ecrh/sys/amd64_sles11/')
-if(SLES12):
-    print("Warning libaug_ecrh which is not compiled for SLES12 has been loaded.")
-    print("This may lead to runtime errors!")
 import datetime
 from ECRH_Launcher import ECRHLauncher
 # NOTE: Values not verified for ECRH III
