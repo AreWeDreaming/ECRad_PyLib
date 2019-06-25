@@ -15,12 +15,14 @@ from shutil import copy, copyfile, rmtree
 from scipy.io import loadmat
 import scipy.constants as cnst
 from equilibrium_utils import EQDataExt
-from electron_distribution_utils import export_gene_fortran_friendly, \
-                                        export_gene_bimax_fortran_friendly, \
-                                        load_f_from_mat, export_fortran_friendly
+from em_Albajar import s_vec, em_abs_Alb
+from distribution_io import export_gene_fortran_friendly, \
+                            export_gene_bimax_fortran_friendly, \
+                            load_f_from_mat, export_fortran_friendly
 from scipy.interpolate import InterpolatedUnivariateSpline
 from Geometry_utils import get_Surface_area_of_torus
 from shutil import rmtree
+from TB_communication import make_topfile_no_data_load, make_Te_ne_files
 
 def GetECRadExec(Config, Scenario, time):
     # Determine OMP stacksize
@@ -574,131 +576,6 @@ def make_hedgehog_launch(working_dir, f, df, R, phi, z):
     launch_file.flush()
     launch_file.close()
 
-#Used for deprecated feature of advanced reclections 
-# def make_vessel_plasma_ratio(index, Config):
-#     if(Config.Ext_plasma):
-#         EQ_obj = EQData(Config.shot, external_folder=None, bt_vac_correction=Config.bt_vac_correction)
-#         EQ_obj.insert_slices_from_ext(Config.time[index], Config.plasma_dict["eq_data"][index])
-#         R_vessel = Config.plasma_dict["vessel_bd"][0]
-#         z_vessel = Config.plasma_dict["vessel_bd"][0]
-#         raise ValueError("Not implemented yet for ExtPlasmas")
-#     else:
-#         EQ_obj = EQData(Config.shot, EQ_exp=Config.EQ_exp, EQ_diag=Config.EQ_diag, EQ_ed=Config.EQ_ed, bt_vac_correction=Config.bt_vac_correction)
-#         vessel_data = np.loadtxt(vessel_file, skiprows=1)
-#         R_vessel = vessel_data.T[0]
-#         z_vessel = vessel_data.T[1]
-#     A_torus = get_Surface_area_of_torus(R_vessel, z_vessel)
-#     A_plasma = EQ_obj.get_surface_area(Config.time[index], 0.99)
-#     print("Wall surface area", A_torus)
-#     print("Plasma surface area", A_plasma)
-#     return A_torus / A_plasma
-
-# def make_reflec_Trad(index, Config, f_reflec, Trad_X_reflec, tau_X_reflec, Trad_O_reflec, tau_O_reflec):
-#     # Currently broken  DO NOT USE !!!
-#     # Simplified improved wall reflection model - no mode conversion (adapted from W. H. M. Clark, 1983, Plasma Phys. 23 1501
-#     ECRad_data_path = os.path.join(Config.working_dir, "ECRad_data", "")
-#     vessel_plasma_ratio = make_vessel_plasma_ratio(index, Config)
-#     if(Config.considered_modes == 1):
-#         Trad_X_reflected = Trad_X_reflec / (vessel_plasma_ratio * (1.e0 - Config.reflec_X) + (1.0 - np.exp(-tau_X_reflec)))
-#         Trad_X_reflec_file = open(os.path.join(ECRad_data_path, "X_reflec_Trad.dat"), "w")
-#         Trad_X_reflec_file.write("{0: 5d}\n".format(len(Trad_X_reflected)))
-#         for i in range(len(Trad_X_reflec)):
-#             print("tau_reflect - T_rad X reflected / Trad_X {0:1.3f} - {1:1.3f}".format(tau_X_reflec[i], Trad_X_reflected[i] / Trad_X_reflec[i]))
-#             Trad_X_reflec_file.write("{0: 1.10E} {1: 1.10E}\n".format(f_reflec[i], Trad_X_reflected[i] * 1.e3))  # keV -> eV
-#         Trad_X_reflec_file.flush()
-#         Trad_X_reflec_file.close()
-#     elif(Config.considered_modes == 2):
-#         Trad_O_reflected = Trad_O_reflec / (vessel_plasma_ratio * (1.e0 - Config.reflec_O) + (1.0 - np.exp(-tau_O_reflec)))
-#         Trad_O_reflec_file = open(os.path.join(ECRad_data_path, "O_reflec_Trad.dat"), "w")
-#         Trad_O_reflec_file.write("{0: 5d}\n".format(len(Trad_O_reflected)))
-#         for i in range(len(Trad_O_reflec)):
-#             Trad_O_reflec_file.write("{0: 1.10E} {1: 1.10E}\n".format(f_reflec[i], Trad_O_reflected[i] * 1.e3))  # keV -> eV
-#         Trad_O_reflec_file.flush()
-#         Trad_O_reflec_file.close()
-#     else:
-#         Trad_X_reflected = Trad_X_reflec / (vessel_plasma_ratio * (1.e0 - Config.reflec_X) + (1.0 - np.exp(-tau_X_reflec)))
-#         Trad_O_reflected = Trad_O_reflec / (vessel_plasma_ratio * (1.e0 - Config.reflec_O) + (1.0 - np.exp(-tau_O_reflec)))
-#         Trad_X_mix = (1.0 - Config.mode_conv) * Trad_X_reflected + Config.mode_conv * Trad_O_reflected
-#         Trad_O_mix = (1.0 - Config.mode_conv) * Trad_O_reflected + Config.mode_conv * Trad_X_reflected
-#         Trad_X_reflec_file = open(os.path.join(ECRad_data_path, "X_reflec_Trad.dat"), "w")
-#         Trad_X_reflec_file.write("{0: 5d}\n".format(len(Trad_X_mix)))
-#         for i in range(len(Trad_X_mix)):
-#             print("tau_reflect - T_rad X reflected / Trad_X {0:1.3f} - {1:1.3f}".format(tau_X_reflec[i], Trad_X_mix[i] / Trad_X_reflec[i]))
-#             Trad_X_reflec_file.write("{0: 1.10E} {1: 1.10E}\n".format(f_reflec[i], Trad_X_mix[i] * 1.e3))  # keV -> eV
-#         Trad_X_reflec_file.flush()
-#         Trad_X_reflec_file.close()
-#         Trad_O_reflec_file = open(os.path.join(ECRad_data_path, "O_reflec_Trad.dat"), "w")
-#         Trad_O_reflec_file.write("{0: 5d}\n".format(len(Trad_O_mix)))
-#         for i in range(len(Trad_O_mix)):
-#             Trad_O_reflec_file.write("{0: 1.10E} {1: 1.10E}\n".format(f_reflec[i], Trad_O_mix[i] * 1.e3))  # keV -> eV
-#         Trad_O_reflec_file.flush()
-#         Trad_O_reflec_file.close()
-
-def load_and_validate_external_plasma(ECRadConfig):
-    try:
-        plasma_dict = {}
-        ext_data_folder = os.path.join(ECRadConfig.working_dir, "Ext_data")
-        time = np.loadtxt(os.path.join(ext_data_folder, "t"), dtype=np.double, ndmin=1)
-        plasma_dict["Te"] = []
-        plasma_dict["ne"] = []
-        plasma_dict["rhop"] = []
-        plasma_dict["ne_rhop_scale"] = np.zeros(len(time))
-        plasma_dict["ne_rhop_scale"][:] = 1.0
-        plasma_dict["ECE_rhop"] = []
-        plasma_dict["ECE_dat"] = []
-        plasma_dict["eq_data"] = []
-        # TODO remove this place holder by a routine that does this for external equilibriae
-        index = 0
-        plasma_dict["ECE_mod"] = []
-        EQ_obj = EQDataExt(ECRadConfig.shot, external_folder=ext_data_folder, bt_vac_correction=ECRadConfig.bt_vac_correction)
-        for t in time:
-            plasma_dict["eq_data"].append(EQ_obj.read_EQ_from_Ext_single_slice(t, index))
-            Te_data = np.loadtxt(os.path.join(ext_data_folder, "Te{0:d}".format(index)))
-            ne_data = np.loadtxt(os.path.join(ext_data_folder, "ne{0:d}".format(index)))
-            if(not ECRadConfig.Ext_Grid):
-                plasma_dict["Te"].append(Te_data.T[1])
-                plasma_dict["rhop"].append(Te_data.T[0])
-                plasma_dict["ne"].append(ne_data.T[1])
-                if(not np.all(ne_data.T[0] == Te_data.T[0])):
-                    print("ERROR: The rhoploidal axis for both Te and ne have to be identical")
-                    raise(IOError)
-            else:
-                plasma_dict["rhop"].append([])
-                plasma_dict["Te"].append(Te_data.T)  # Right alignement for topfile
-                plasma_dict["ne"].append(ne_data.T)
-            plasma_dict["ECE_mod"].append([])
-            index += 1
-        plasma_dict["Te"] = np.array(plasma_dict["Te"])
-        plasma_dict["rhop"] = np.array(plasma_dict["rhop"])
-        plasma_dict["eq_data"] = np.array(plasma_dict["eq_data"])
-        plasma_dict["rhop"] = np.array(plasma_dict["rhop"])
-        plasma_dict["ne"] = np.array(plasma_dict["ne"])
-        plasma_dict["RwallX"] = ECRadConfig.reflec_X  # default in IDA -> make this an input quantity
-        plasma_dict["RwallO"] = ECRadConfig.reflec_O  # default in IDA -> make this an input quantity
-        try:
-            plasma_dict["vessel_bd"] = np.loadtxt(os.path.join(ext_data_folder, "Ext_vessel.bd"), skiprows=1).T
-        except IOError:
-            print("External vessel file not found - falling back to default file located at: ", vessel_file)
-            plasma_dict["vessel_bd"] = np.loadtxt(os.path.join(vessel_file), skiprows=1).T
-        if(len(plasma_dict["vessel_bd"][0]) < 40 or len(plasma_dict["vessel_bd"][0]) > 80):
-            s = np.linspace(0.0, 1.0, len(plasma_dict["vessel_bd"][0]))
-            R_spl = InterpolatedUnivariateSpline(s, plasma_dict["vessel_bd"][0])
-            z_spl = InterpolatedUnivariateSpline(s, plasma_dict["vessel_bd"][1])
-            s_short = np.linspace(0.0, 1.0, 60)
-            plasma_dict["vessel_bd"] = np.array([R_spl(s_short), z_spl(s_short)])
-        if(not ECRadConfig.Ext_Grid):
-            plasma_dict["eq_diag"] = "Ext"
-            ECRadConfig.EQ_diag = "Ext"
-        else:
-            plasma_dict["eq_diag"] = "E2D"
-            ECRadConfig.EQ_diag = "E2D"
-        plasma_dict["eq_ed"] = 0
-        return time, plasma_dict
-    except IOError as e:
-        print(e)
-        print("Could not read external data")
-        return None, None
-
 def load_plasma_from_mat(path):
     try:
         plasma_dict = {}
@@ -791,390 +668,20 @@ def load_plasma_from_mat(path):
         print("Could not read external data")
         return None
 
-def make_topfile(working_dir, shot, time, EQ_t):
-    # Note this routine uses MBI-BTFABB for a correction of the toroidal magnetic field
-    # Furthermore, an empirical vacuum BTF correction factor of bt_vac_correction is applied
-    # This creates a topfile that is consistent with the magnetic field used in OERT
-    print("Creating topfile for #{0:d} t = {1:1.2f}".format(shot, time))
-    columns = 8  # number of coloumns
-    columns -= 1
-    print("Magnetic axis position: ", "{0:1.3f}".format(EQ_t.R_ax))
-    topfile = open(os.path.join(working_dir, "topfile"), "w")
-    topfile.write('Number of radial and vertical grid points in AUGD:EQH:{0:5n}: {1:1.4f}\n'.format(shot, time))
-    topfile.write('   {0: 8n} {1: 8n}\n'.format(len(EQ_t.R), len(EQ_t.z)))
-    topfile.write('Inside and Outside radius and psi_sep\n')
-    topfile.write('   {0: 1.8E}  {1: 1.8E}  {2: 1.8E}'.format(EQ_t.R[0], EQ_t.R[-1], \
-        EQ_t.Psi_sep))  # 1.0000
-    # Normalize PSI
-    topfile.write('\n')
-    topfile.write('Radial grid coordinates\n')
-    cnt = 0
-    for i in range(len(EQ_t.R)):
-        topfile.write("  {0: 1.8E}".format(EQ_t.R[i]))
-        if(cnt == columns):
-            topfile.write("\n")
-            cnt = 0
-        else:
-            cnt += 1
-    topfile.write('\n')
-    topfile.write('Vertical grid coordinates\n')
-    cnt = 0
-    for i in range(len(EQ_t.z)):
-        topfile.write("  {0: 1.8E}".format(EQ_t.z[i]))
-        if(cnt == columns):
-            topfile.write("\n")
-            cnt = 0
-        else:
-            cnt += 1
-    # ivR = np.argmin(np.abs(pfm_dict["Ri"] - rv))
-    # jvz = np.argmin(np.abs(pfm_dict["zj"] - vz))
-    # plt.plot(pfm_dict["Ri"],B_t[0], "^", label = "EQH B")
-    # print("BTFABB correction",Btf0, Btf0_eq )
-    # print("R,z",pfm_dict["Ri"][ivR],pfm_dict["zj"][jvz])
-    B_r = EQ_t.Br.T  # in topfile R is the small index (i.e. second index in C) and z the large index (i.e. first index in C)
-    B_t = EQ_t.Bt.T  # in topfile z comes first regardless of the arrangement
-    B_z = EQ_t.Bz.T  # in topfile z comes first regardless of the arrangement
-    Psi = EQ_t.Psi.T  # in topfile z comes first regardless of the arrangement
-    if(cnt != columns):
-        topfile.write('\n')
-    topfile.write('B_r on grid\n')
-    cnt = 0
-    for i in range(len(B_r)):
-        for j in range(len(B_r[i])):
-            topfile.write("  {0: 1.8E}".format(B_r[i][j]))
-            if(cnt == columns):
-                topfile.write("\n")
-                cnt = 0
-            else:
-                cnt += 1
-    if(cnt != columns):
-        topfile.write('\n')
-    topfile.write('B_t on grid\n')
-    cnt = 0
-    for i in range(len(B_t)):
-        for j in range(len(B_t[i])):
-            topfile.write("  {0: 1.8E}".format(B_t[i][j]))
-            if(cnt == columns):
-                topfile.write("\n")
-                cnt = 0
-            else:
-                cnt += 1
-    if(cnt != columns):
-        topfile.write('\n')
-    cnt = 0
-    topfile.write('B_z on grid\n')
-    for i in range(len(B_z)):
-        for j in range(len(B_z[i])):
-            topfile.write("  {0: 1.8E}".format(B_z[i][j]))
-            if(cnt == columns):
-                topfile.write("\n")
-                cnt = 0
-            else:
-                cnt += 1
-    if(cnt != columns):
-        topfile.write('\n')
-    cnt = 0
-    topfile.write('Normalised psi on grid\n')
-    for i in range(len(Psi)):
-        for j in range(len(Psi[i])):
-            topfile.write("  {0: 1.8E}".format(Psi[i][j]))
-            if(cnt == columns):
-                topfile.write("\n")
-                cnt = 0
-            else:
-                cnt += 1
-    topfile.flush()
-    topfile.close()
-    print("topfile successfully written to", os.path.join(working_dir, "topfile"))
-    return 0
-
 def make_ECRadInputFromPlasmaDict(working_dir, plasma_dict, index, Scenario):
     # In the topfile the dimensions of the matrices are z,R unlike in the GUI where it is R,z -> transpose the matrices here
     columns = 5  # number of coloumns
     columns -= 1
     EQ = plasma_dict["eq_data"][index]
-    print("Magnetic axis position: ", "{0:1.3f}".format(EQ.special[0]))
-    topfile = open(os.path.join(working_dir, "topfile"), "w")
-    topfile.write('Number of radial and vertical grid points:\n')
-    topfile.write('   {0: 8d} {1: 8d}\n'.format(len(EQ.R), len(EQ.z)))
-    topfile.write('Inside and Outside radius, psi_sep \n')
-    topfile.write('   {0: 1.8E}  {1: 1.8E}  {2: 1.8E}'.format(EQ.R[0], EQ.R[-1], 1.0))
-    topfile.write('\n')
-    topfile.write('Radial grid coordinates\n')
-    cnt = 0
-    for i in range(len(EQ.R)):
-        topfile.write("  {0: 1.8E}".format(EQ.R[i]))
-        if(cnt == columns):
-            topfile.write("\n")
-            cnt = 0
-        else:
-            cnt += 1
-    if(cnt != 0):
-        topfile.write('\n')
-    topfile.write('Vertical grid coordinates\n')
-    cnt = 0
-    for j in range(len(EQ.z)):
-        topfile.write("  {0: 1.8E}".format(EQ.z[j]))
-        if(cnt == columns):
-            topfile.write("\n")
-            cnt = 0
-        else:
-            cnt += 1
-    if(cnt != 0):
-        topfile.write('\n')
-    topfile.write('B_r on grid\n')
-    cnt = 0
-    for i in range(len(EQ.Br.T)):
-        for j in range(len(EQ.Br.T[i])):
-            topfile.write("  {0: 1.8E}".format(EQ.Br.T[i][j]))
-            if(cnt == columns):
-                topfile.write("\n")
-                cnt = 0
-            else:
-                cnt += 1
-    if(cnt != 0):
-        topfile.write('\n')
-    topfile.write('B_t on grid\n')
-    cnt = 0
-    for i in range(len(EQ.Bt.T)):
-        for j in range(len(EQ.Bt.T[i])):
-            topfile.write("  {0: 1.8E}".format(EQ.Bt.T[i][j]))
-            if(cnt == columns):
-                topfile.write("\n")
-                cnt = 0
-            else:
-                cnt += 1
-    if(cnt != 0):
-        topfile.write('\n')
-    cnt = 0
-    topfile.write('B_z on grid\n')
-    for i in range(len(EQ.Bz.T)):
-        for j in range(len(EQ.Bz.T[i])):
-            topfile.write("  {0: 1.8E}".format(EQ.Bz.T[i][j]))
-            if(cnt == columns):
-                topfile.write("\n")
-                cnt = 0
-            else:
-                cnt += 1
-    if(cnt != 0):
-        topfile.write('\n')
-    cnt = 0
-    topfile.write('Normalised psi on grid\n')
-    for i in range(len(EQ.rhop.T)):
-        for j in range(len(EQ.rhop.T[i])):
-            topfile.write("  {0: 1.8E}".format(EQ.rhop.T[i][j]**2))
-            if(cnt == columns):
-                topfile.write("\n")
-                cnt = 0
-            else:
-                cnt += 1
-    topfile.flush()
-    topfile.close()
-    ne = plasma_dict["ne"][index] * Scenario.ne_scale
-    Te = plasma_dict["Te"][index] * Scenario.Te_scale
-    if(len(Te.shape) == 1):
-        rhop = plasma_dict["rhop_prof"][index] * Scenario.Te_rhop_scale
-        Te_file = open(os.path.join(working_dir, "Te_file.dat"), "w")
-        Te_tb_file = open(os.path.join(working_dir, "Te.dat"), "w")
-        lines = 150
-        Te_file.write("{0: 7d}".format(lines) + "\n")
-        Te_tb_file.write("{0: 7d}".format(lines) + "\n")
-        Te_spline = InterpolatedUnivariateSpline(rhop, Te, k=1)
-        rhop_short = np.linspace(np.min(rhop), np.max(rhop), lines)
-        for i in range(len(rhop_short)):
-            try:
-                Te_file.write("{0: 1.12E} {1: 1.12E}".format(rhop_short[i], Te_spline(rhop_short[i]).item()) + "\n")
-                Te_tb_file.write("{0: 1.12E} {1: 1.12E}".format(rhop_short[i], Te_spline(rhop_short[i]).item() / 1.e03) + "\n")
-            except ValueError:
-                print(rhop_short[i], Te_spline(rhop_short[i]))
-                raise(ValueError)
-        Te_file.flush()
-        Te_file.close()
-        Te_tb_file.flush()
-        Te_tb_file.close()
-        rhop = plasma_dict["rhop_prof"][index] * Scenario.ne_rhop_scale
-        ne_file = open(os.path.join(working_dir, "ne_file.dat"), "w")
-        ne_tb_file = open(os.path.join(working_dir, "ne.dat"), "w")
-        lines = 150
-        ne_file.write("{0: 7d}".format(lines) + "\n")
-        ne_tb_file.write("{0: 7d}".format(lines) + "\n")
-        ne_spline = InterpolatedUnivariateSpline(rhop, ne, k=1)
-        rhop_short = np.linspace(np.min(rhop), np.max(rhop), lines)
-        for i in range(len(rhop_short)):
-            ne_file.write("{0: 1.12E} {1: 1.12E}".format(rhop_short[i], ne_spline(rhop_short[i]).item()) + "\n")
-            ne_tb_file.write("{0: 1.12E} {1: 1.12E}".format(rhop_short[i], ne_spline(rhop_short[i]).item() / 1.e19) + "\n")
-        ne_file.flush()
-        ne_file.close()
-        ne_tb_file.flush()
-        ne_tb_file.close()
-    else:
-        Te_ne_matfile = open(os.path.join(working_dir, "Te_ne_matfile"), "w")
-        Te_ne_matfile.write('Number of radial and vertical grid points: \n')
-        Te_ne_matfile.write('   {0: 8d} {1: 8d}\n'.format(len(EQ.R), len(EQ.z)))
-        Te_ne_matfile.write('Radial grid coordinates\n')
-        cnt = 0
-        for i in range(len(EQ.R)):
-            Te_ne_matfile.write("  {0: 1.8E}".format(EQ.R[i]))
-            if(cnt == columns):
-                Te_ne_matfile.write("\n")
-                cnt = 0
-            else:
-                cnt += 1
-        if(cnt != 0):
-            Te_ne_matfile.write('\n')
-        Te_ne_matfile.write('Vertical grid coordinates\n')
-        cnt = 0
-        for j in range(len(EQ.z)):
-            Te_ne_matfile.write("  {0: 1.8E}".format(EQ.z[j]))
-            if(cnt == columns):
-                Te_ne_matfile.write("\n")
-                cnt = 0
-            else:
-                cnt += 1
-        if(cnt != 0):
-            Te_ne_matfile.write('\n')
-        Te_ne_matfile.write('Te on grid\n')
-        cnt = 0
-        print("EQ.Bz shape", EQ.Bz.shape)
-        print("Te shape", Te.shape)
-        for i in range(len(Te.T)):
-            for j in range(len(Te.T[i])):
-                Te_ne_matfile.write("  {0: 1.8E}".format(Te.T[i][j] * Scenario.Te_scale))
-                if(cnt == columns):
-                    Te_ne_matfile.write("\n")
-                    cnt = 0
-                else:
-                    cnt += 1
-        if(cnt != 0):
-            Te_ne_matfile.write('\n')
-        Te_ne_matfile.write('ne on grid\n')
-        cnt = 0
-        for i in range(len(ne.T)):
-            for j in range(len(ne.T[i])):
-                Te_ne_matfile.write("  {0: 1.8E}".format(ne.T[i][j]  * Scenario.ne_scale ))
-                if(cnt == columns):
-                    Te_ne_matfile.write("\n")
-                    cnt = 0
-                else:
-                    cnt += 1
-    return True
+    return make_topfile_from_ext_data(working_dir, Scenario.shot, plasma_dict["time"][index], EQ, plasma_dict["rhop_prof"][index], \
+                               plasma_dict["Te"][index], plasma_dict["ne"][index], \
+                               grid=len(plasma_dict["Te"][index].shape) == 2)
 
 def make_topfile_from_ext_data(working_dir, shot, time, EQ, rhop, Te, ne, grid=False):
-    columns = 5  # number of coloumns
-    columns -= 1
-    print("Magnetic axis position: ", "{0:1.3f}".format(EQ.special[0]))
-    topfile = open(os.path.join(working_dir, "topfile"), "w")
-    topfile.write('Number of radial and vertical grid points in AUGD:EQH:{0:5d}: {1:1.4f}\n'.format(shot, time))
-    topfile.write('   {0: 8d} {1: 8d}\n'.format(len(EQ.R), len(EQ.z)))
-    topfile.write('Inside and Outside radius and psi_sep\n')
-    topfile.write('   {0: 1.8E}  {1: 1.8E}  {2: 1.8E}'.format(EQ.R[0], EQ.R[-1], \
-        EQ.special[1]))
-    topfile.write('\n')
-    topfile.write('Radial grid coordinates\n')
-    cnt = 0
-    for i in range(len(EQ.R)):
-        topfile.write("  {0: 1.8E}".format(EQ.R[i]))
-        if(cnt == columns):
-            topfile.write("\n")
-            cnt = 0
-        else:
-            cnt += 1
-    if(cnt != 0):
-        topfile.write('\n')
-    topfile.write('Vertical grid coordinates\n')
-    cnt = 0
-    for j in range(len(EQ.z)):
-        topfile.write("  {0: 1.8E}".format(EQ.z[j]))
-        if(cnt == columns):
-            topfile.write("\n")
-            cnt = 0
-        else:
-            cnt += 1
-    if(cnt != 0):
-        topfile.write('\n')
-    topfile.write('B_r on grid\n')
-    cnt = 0
-    for i in range(len(EQ.Br)):
-        for j in range(len(EQ.Br[i])):
-            topfile.write("  {0: 1.8E}".format(EQ.Br[i][j]))
-            if(cnt == columns):
-                topfile.write("\n")
-                cnt = 0
-            else:
-                cnt += 1
-    if(cnt != 0):
-        topfile.write('\n')
-    topfile.write('B_t on grid\n')
-    cnt = 0
-    for i in range(len(EQ.Bt)):
-        for j in range(len(EQ.Bt[i])):
-            topfile.write("  {0: 1.8E}".format(EQ.Bt[i][j]))
-            if(cnt == columns):
-                topfile.write("\n")
-                cnt = 0
-            else:
-                cnt += 1
-    if(cnt != 0):
-        topfile.write('\n')
-    cnt = 0
-    topfile.write('B_z on grid\n')
-    for i in range(len(EQ.Bz)):
-        for j in range(len(EQ.Bz[i])):
-            topfile.write("  {0: 1.8E}".format(EQ.Bz[i][j]))
-            if(cnt == columns):
-                topfile.write("\n")
-                cnt = 0
-            else:
-                cnt += 1
-    if(cnt != 0):
-        topfile.write('\n')
-    cnt = 0
-    topfile.write('Normalised psi on grid\n')
-    for i in range(len(EQ.Psi)):
-        for j in range(len(EQ.Psi[i])):
-            topfile.write("  {0: 1.8E}".format(EQ.Psi[i][j]))
-            if(cnt == columns):
-                topfile.write("\n")
-                cnt = 0
-            else:
-                cnt += 1
-    topfile.flush()
-    topfile.close()
-    print("topfile successfully written to", os.path.join(working_dir, "topfile"))
-    if(not grid):
-        print("Copying Te and ne profile")
-        Te_file = open(os.path.join(working_dir, "Te_file.dat"), "w")
-        Te_tb_file = open(os.path.join(working_dir, "Te.dat"), "w")
-        lines = 150
-        Te_file.write("{0: 7d}".format(lines) + "\n")
-        Te_tb_file.write("{0: 7d}".format(lines) + "\n")
-        Te_spline = InterpolatedUnivariateSpline(rhop, Te, k=1)
-        rhop_short = np.linspace(np.min(rhop), np.max(rhop), lines)
-        for i in range(len(rhop_short)):
-            try:
-                Te_file.write("{0: 1.12E} {1: 1.12E}".format(rhop_short[i], Te_spline(rhop_short[i]).item()) + "\n")
-                Te_tb_file.write("{0: 1.12E} {1: 1.12E}".format(rhop_short[i], Te_spline(rhop_short[i]).item() / 1.e03) + "\n")
-            except ValueError:
-                print(rhop_short[i], Te_spline(rhop_short[i]))
-                raise(ValueError)
-        Te_file.flush()
-        Te_file.close()
-        Te_tb_file.flush()
-        Te_tb_file.close()
-        ne_file = open(os.path.join(working_dir, "ne_file.dat"), "w")
-        ne_tb_file = open(os.path.join(working_dir, "ne.dat"), "w")
-        lines = 150
-        ne_file.write("{0: 7d}".format(lines) + "\n")
-        ne_tb_file.write("{0: 7d}".format(lines) + "\n")
-        ne_spline = InterpolatedUnivariateSpline(rhop, ne, k=1)
-        rhop_short = np.linspace(np.min(rhop), np.max(rhop), lines)
-        for i in range(len(rhop_short)):
-            ne_file.write("{0: 1.12E} {1: 1.12E}".format(rhop_short[i], ne_spline(rhop_short[i]).item()) + "\n")
-            ne_tb_file.write("{0: 1.12E} {1: 1.12E}".format(rhop_short[i], ne_spline(rhop_short[i]).item() / 1.e19) + "\n")
-        ne_file.flush()
-        ne_file.close()
-        ne_tb_file.flush()
-        ne_tb_file.close()
+    if(grid==False):
+        make_topfile_no_data_load(working_dir, shot, time, EQ.R, EQ.z, EQ.Psi, EQ.Br, \
+                                  EQ.Bt, EQ.Bz, EQ.Psi_ax, EQ.Psi_sep) # Routine does the transposing!
+        make_Te_ne_files(working_dir, rhop, Te, ne)
     else:
         print("Copying Te and ne matrix")
         Te_ne_matfile = open(os.path.join(working_dir, "Te_ne_matfile"), "w")
@@ -1182,6 +689,8 @@ def make_topfile_from_ext_data(working_dir, shot, time, EQ, rhop, Te, ne, grid=F
         Te_ne_matfile.write('   {0: 8d} {1: 8d}\n'.format(len(EQ.R), len(EQ.z)))
         Te_ne_matfile.write('Radial grid coordinates\n')
         cnt = 0
+        columns = 8  # number of coloumns
+        columns -= 1 # to actually get x columns the variable has to have the value X - 1
         for i in range(len(EQ.R)):
             Te_ne_matfile.write("  {0: 1.8E}".format(EQ.R[i]))
             if(cnt == columns):
@@ -1208,7 +717,7 @@ def make_topfile_from_ext_data(working_dir, shot, time, EQ, rhop, Te, ne, grid=F
         print("Te shape", Te.shape)
         for i in range(len(Te)):
             for j in range(len(Te[i])):
-                Te_ne_matfile.write("  {0: 1.8E}".format(Te[i][j]))
+                Te_ne_matfile.write("  {0: 1.8E}".format(Te.T[i][j])) # also transpose here
                 if(cnt == columns):
                     Te_ne_matfile.write("\n")
                     cnt = 0
@@ -1220,13 +729,90 @@ def make_topfile_from_ext_data(working_dir, shot, time, EQ, rhop, Te, ne, grid=F
         cnt = 0
         for i in range(len(ne)):
             for j in range(len(ne[i])):
-                Te_ne_matfile.write("  {0: 1.8E}".format(ne[i][j]))
+                Te_ne_matfile.write("  {0: 1.8E}".format(ne.T[i][j])) # also transpose here
                 if(cnt == columns):
                     Te_ne_matfile.write("\n")
                     cnt = 0
                 else:
                     cnt += 1
     return 0
+
+def read_svec_dict_from_file(folder, ich, mode="X"):  # ch no. starts from 1
+    # ich is here channel nummer - i.e. channel 1 is the first channel -> add + 1 if ich comes from loop
+    if(mode == "O"):
+        ch_filename = os.path.join(folder, "chOdata{0:0>3}.dat".format(ich))
+        mode = -1
+    else:
+        ch_filename = os.path.join(folder, "chdata{0:0>3}.dat".format(ich))
+        mode = +1
+    try:
+        svec_block = np.loadtxt(ch_filename)
+    except ValueError as e:
+        print(e)
+        print("Channel ", ich)
+        return
+    freqs = np.loadtxt(os.path.join(folder, "f_ECE.dat"))
+    svec = {}
+    svec["s"] = svec_block.T[0][svec_block.T[3] != -1.0]
+    svec["R"] = svec_block.T[1][svec_block.T[3] != -1.0]
+    svec["z"] = svec_block.T[2][svec_block.T[3] != -1.0]
+    svec["rhop"] = svec_block.T[3][svec_block.T[3] != -1.0]
+    svec["ne"] = svec_block.T[4][svec_block.T[3] != -1.0]
+    svec["Te"] = svec_block.T[5][svec_block.T[3] != -1.0]
+    svec["theta"] = svec_block.T[6][svec_block.T[3] != -1.0]
+    Abs_obj = em_abs_Alb()
+    svec["freq_2X"] = svec_block.T[-1][svec_block.T[3] != -1.0]
+    svec["N_abs"] = []
+    for i in range(len(svec["s"])):
+        svec_cur = s_vec(svec["rhop"][i], svec["Te"][i], svec["ne"][i], svec["freq_2X"][i], svec["theta"][i])
+        N = Abs_obj.refr_index(svec_cur, freqs[ich - 1] * 2.0 * np.pi, mode)
+        svec["N_abs"].append(N)
+    svec["N_abs"] = np.array(svec["N_abs"])
+    return svec, freqs[ich - 1]
+
+def read_ray_dict_from_file(folder, dist, ich, mode="X", iray=1):
+    if(mode == "O"):
+        ray_filename = os.path.join(folder, "Ich" + dist, "BPD_ray{0:03d}ch{1:03d}_O.dat".format(iray, ich))
+    else:
+        ray_filename = os.path.join(folder, "Ich" + dist, "BPD_ray{0:03d}ch{1:03d}_X.dat".format(iray, ich))
+    ray_data = np.loadtxt(ray_filename)
+    ray_dict = {}
+    ray_dict["s"] = ray_data.T[0][ray_data.T[4] != -1.0]
+    ray_dict["x"] = ray_data.T[1][ray_data.T[4] != -1.0]
+    ray_dict["y"] = ray_data.T[2][ray_data.T[4] != -1.0]
+    ray_dict["z"] = ray_data.T[3][ray_data.T[4] != -1.0]
+    ray_dict["rhop"] = ray_data.T[4][ray_data.T[4] != -1.0]
+    ray_dict["BPD"] = ray_data.T[5][ray_data.T[4] != -1.0]
+    ray_dict["BPD_second"] = ray_data.T[6][ray_data.T[4] != -1.0]
+    ray_dict["N_ray"] = ray_data.T[9][ray_data.T[4] != -1.0]
+    ray_dict["N_cold"] = ray_data.T[10][ray_data.T[4] != -1.0]
+    ray_dict["theta"] = ray_data.T[11][ray_data.T[4] != -1.0]
+    if(len(ray_data[0]) <= 12):
+        spl = InterpolatedUnivariateSpline(ray_dict["s"], ray_dict["x"])
+        ray_dict["Nx"] = spl.derivative(1)(ray_dict["s"])
+        spl = InterpolatedUnivariateSpline(ray_dict["s"], ray_dict["y"])
+        ray_dict["Ny"] = spl.derivative(1)(ray_dict["s"])
+        spl = InterpolatedUnivariateSpline(ray_dict["s"], ray_dict["z"])
+        ray_dict["Nz"] = spl.derivative(1)(ray_dict["s"])
+        norm = ray_dict["N_ray"] / np.sqrt(ray_dict["Nx"] ** 2 + ray_dict["Ny"] ** 2 + ray_dict["Nz"] ** 2)
+        ray_dict["Nx"] *= norm
+        ray_dict["Ny"] *= norm
+        ray_dict["Nz"] *= norm
+        ray_dict["Bx"] = None
+        ray_dict["By"] = None
+        ray_dict["Bz"] = None
+    else:
+        ray_dict["Nx"] = ray_data.T[12][ray_data.T[4] != -1.0]
+        ray_dict["Ny"] = ray_data.T[13][ray_data.T[4] != -1.0]
+        ray_dict["Nz"] = ray_data.T[14][ray_data.T[4] != -1.0]
+        ray_dict["Bx"] = ray_data.T[15][ray_data.T[4] != -1.0]
+        ray_dict["By"] = ray_data.T[16][ray_data.T[4] != -1.0]
+        ray_dict["Bz"] = ray_data.T[17][ray_data.T[4] != -1.0]
+#    plt.plot(ray_dict["s"], np.sqrt(ray_dict["Nx"] ** 2 + ray_dict["Ny"] ** 2 + ray_dict["Nz"] ** 2), "-")
+#    plt.plot(ray_dict["s"], ray_dict["N_ray"], "--")
+#    plt.show()
+    return ray_dict
+
 
 if(__name__ == "__main__"):
     # print(get_ECE_launch_info(31539, Diag("ECE", "AUGD", "RMD", 0)))

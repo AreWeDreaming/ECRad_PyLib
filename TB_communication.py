@@ -28,7 +28,48 @@ tb_path = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/torbeam_repo/TORBEAM/branch
 tb_path_itm = "/marconi_work/eufus_gw/work/g2sdenk/torbeam/lib-OUT/"
 # "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/torbeam/"
 #
-
+class Ray:
+    def __init__(self, s, x, y, z, H, N, N_cold, Te=0, ne=0, Y=0, X=0, x_tb=0, y_tb=0, z_tb=0, \
+                                                                       x_tbp1=0, y_tbp1=0, z_tbp1=0, \
+                                                                       x_tbp2=0, y_tbp2=0, z_tbp2=0):
+        self.s = s  # can either be 1D or 2D depending on the number of rays (first dimension)
+#        print("s", s)
+        self.x = x
+#        print("x", x)
+        self.y = y
+#        print("y", y)
+        self.z = z
+#        print("z", z)
+        self.R = np.sqrt(x ** 2 + y ** 2)
+        self.phi = np.arctan(y / x) * 180.0 / np.pi
+        self.x_tb = x_tb
+        self.y_tb = y_tb
+        self.z_tb = z_tb
+        self.x_tbp1 = x_tbp1
+        self.y_tbp1 = y_tbp1
+        self.z_tbp1 = z_tbp1
+        self.x_tbp2 = x_tbp2
+        self.y_tbp2 = y_tbp2
+        self.z_tbp2 = z_tbp2
+        self.R_tb = 0
+        self.phi_tb = 0
+        self.R_tbp1 = 0
+        self.phi_tbp1 = 0
+        self.R_tbp2 = 0
+        self.phi_tbp2 = 0
+        if(type(x_tb) != int):
+            self.R_tb = np.sqrt(x_tb ** 2 + y_tb ** 2)
+            self.phi_tb = np.arctan(y / x) * 180.0 / np.pi
+            if(type(x_tbp1) != int):
+                self.R_tbp1 = np.sqrt(x_tbp1 ** 2 + y_tbp1 ** 2)
+                self.phi_tbp1 = np.arctan(y_tbp1 / x_tbp1) * 180.0 / np.pi
+                self.R_tbp2 = np.sqrt(x_tbp2 ** 2 + y_tbp2 ** 2)
+                self.phi_tbp2 = np.arctan(y_tbp2 / x_tbp2) * 180.0 / np.pi
+        self.H = H
+        self.N = N
+        self.N_cold = N_cold
+        self.Y = Y
+        self.X = X
 
 def read_topfile(working_dir):
     topfile = open((os.path.join(working_dir, "topfile")), "r")
@@ -174,7 +215,7 @@ def make_topfile_no_data_load(working_dir, shot, time, R, z, Psi, Br, Bt, Bz, Ps
         columns = 8  # number of coloumns
         columns -= 1
     topfile = open(os.path.join(working_dir, "topfile"), "w")
-    topfile.write('Number of radial and vertical grid points in AUGD:EQH:{0:5n}: {1:1.4f}\n'.format(shot, time))
+    topfile.write('Number of radial and vertical grid points for discharge :{0:5d}: {1:1.4f}\n'.format(shot, time))
     topfile.write('   {0: 8n} {1: 8n}\n'.format(len(R), len(z)))
     topfile.write('Inside and Outside radius and psi_sep\n')
     topfile.write('   {0: 1.8E}  {1: 1.8E}  {2: 1.8E}'.format(R[0], R[-1], 1.0))
@@ -189,7 +230,8 @@ def make_topfile_no_data_load(working_dir, shot, time, R, z, Psi, Br, Bt, Bz, Ps
             cnt = 0
         else:
             cnt += 1
-    topfile.write('\n')
+    if(cnt is not columns and cnt is not 0):
+        topfile.write('\n')
     topfile.write('Vertical grid coordinates\n')
     cnt = 0
     for i in range(len(z)):
@@ -199,6 +241,8 @@ def make_topfile_no_data_load(working_dir, shot, time, R, z, Psi, Br, Bt, Bz, Ps
             cnt = 0
         else:
             cnt += 1
+    if(cnt is not columns and cnt is not 0):
+        topfile.write('\n')
     # ivR = np.argmin(np.abs(pfm_dict["Ri"] - rv))
     # jvz = np.argmin(np.abs(pfm_dict["zj"] - vz))
     # plt.plot(pfm_dict["Ri"],B_t[0], "^", label = "EQH B")
@@ -259,6 +303,42 @@ def make_topfile_no_data_load(working_dir, shot, time, R, z, Psi, Br, Bt, Bz, Ps
     topfile.close()
     print("topfile successfully written to", os.path.join(working_dir, "topfile"))
     return 0
+
+def make_Te_ne_files(working_dir, rhop, Te, ne):
+    # makes Te and ne files for TORBEAM and ECRad
+    Te_file = open(os.path.join(working_dir, "Te_file.dat"), "w")
+    Te_tb_file = open(os.path.join(working_dir, "Te.dat"), "w")
+    lines = 150
+    Te_file.write("{0: 7d}".format(lines) + "\n")
+    Te_tb_file.write("{0: 7d}".format(lines) + "\n")
+    Te_spline = InterpolatedUnivariateSpline(rhop, Te, k=1)
+    rhop_short = np.linspace(np.min(rhop), np.max(rhop), lines)
+    for i in range(len(rhop_short)):
+        try:
+            Te_file.write("{0: 1.12E} {1: 1.12E}".format(rhop_short[i], Te_spline(rhop_short[i]).item()) + "\n")
+            Te_tb_file.write("{0: 1.12E} {1: 1.12E}".format(rhop_short[i], Te_spline(rhop_short[i]).item() / 1.e03) + "\n")
+        except ValueError:
+            print(rhop_short[i], Te_spline(rhop_short[i]))
+            raise(ValueError)
+    Te_file.flush()
+    Te_file.close()
+    Te_tb_file.flush()
+    Te_tb_file.close()
+    ne_file = open(os.path.join(working_dir, "ne_file.dat"), "w")
+    ne_tb_file = open(os.path.join(working_dir, "ne.dat"), "w")
+    lines = 150
+    ne_file.write("{0: 7d}".format(lines) + "\n")
+    ne_tb_file.write("{0: 7d}".format(lines) + "\n")
+    ne_spline = InterpolatedUnivariateSpline(rhop, ne, k=1)
+    rhop_short = np.linspace(np.min(rhop), np.max(rhop), lines)
+    for i in range(len(rhop_short)):
+        ne_file.write("{0: 1.12E} {1: 1.12E}".format(rhop_short[i], ne_spline(rhop_short[i]).item()) + "\n")
+        ne_tb_file.write("{0: 1.12E} {1: 1.12E}".format(rhop_short[i], ne_spline(rhop_short[i]).item() / 1.e19) + "\n")
+    ne_file.flush()
+    ne_file.close()
+    ne_tb_file.flush()
+    ne_tb_file.close()
+
 
 def make_topfile_from_ext_data(working_dir, shot, time, EQ, rhop, Te, ne, grid=False):
     columns = 5  # number of coloumns

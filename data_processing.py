@@ -1,16 +1,14 @@
-from plotting_configuration import *
-import numpy as np
-from scipy import fftpack
-from scipy.signal import find_peaks_cwt
-from Diags import ECRH_diag
-from Fitting import make_fit, eval_func
-
 '''
-Created on Jan 17, 2019
+Created on Jun 19, 2019
 
 @author: sdenk
 '''
-
+import numpy as np
+from scipy.signal import medfilt
+from scipy import fftpack
+from Fitting import make_fit
+# Can be used to filter modes from data
+# Useful to reduce systematic uncertainties in calibration of discharges with modes
 def remove_mode(t, s, harmonics=None, mode_width=100.0, low_freq=100.0):
     # Fourier filters the strongest mode and its harmonics
     s_fft = fftpack.rfft(s)
@@ -49,5 +47,15 @@ def remove_mode(t, s, harmonics=None, mode_width=100.0, low_freq=100.0):
 #    plt.show()
     return filtered_sig, mode_height, mode_phase
 
-
-
+def smooth(y_arr, median=False):
+    if(median):
+#        kernel_size = int(len(y_arr) / 10.e0)
+#        if(kernel_size % 2 == 0):
+#            kernel_size -= 1
+        y_median = medfilt(y_arr)
+        y_smooth = np.mean(y_median)
+        std_dev = np.std(y_median, ddof=1)
+    else:
+        y_smooth = np.mean(y_arr)
+        std_dev = np.std(y_arr, ddof=1)
+    return y_smooth, std_dev

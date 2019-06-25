@@ -77,4 +77,4 @@ class GlobalSettingsAUG:
         self.partition_function = partition_function_tok
         self.max_cores = 32
         
-globalsettings = GlobalSettingsITM()
+globalsettings = GlobalSettingsAUG()

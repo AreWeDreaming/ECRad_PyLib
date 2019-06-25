@@ -28,6 +28,9 @@ warm_plasma = False
 eps0 = cnst.epsilon_0
 dstf_comp = "Th"
 
+# Implementation of the Albajar absorption coefficient analog to the Fortran implementation in ECRad
+# Verified with Solve_rad_transp up to 5th running digit
+
 
 def N_with_pol_vec(X, Y, sin_theta, cos_theta, mode):
 # Calculates the cold refractive index and the polarization vector

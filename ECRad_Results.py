@@ -634,7 +634,8 @@ class ECRadResults:
         at_least_3d_keys[at_least_3d_keys.index("rhopO")] = "BPDrhopO"
         at_least_3d_keys += self.ray.keys() + ["ray_BPDX", "ray_BPDO", "ray_BPD_secondX", "ray_BPD_secondO", "ray_emX", "ray_emO", \
                                                "ray_abX", "ray_abO", "ray_TX", "ray_TO", "ray_em_secondX", "ray_em_secondO", \
-                                               "ray_absecondX", "ray_absecondO", "ray_TsecondX", "ray_TsecondO", "freq_weights", "ray_weights"]
+                                               "ray_absecondX", "ray_absecondO", "ray_TsecondX", "ray_TsecondO", "freq_weights", \
+                                               "ray_weights"]
         at_least_3d_keys += ["std_dev_mat", "calib_mat"]
         self.Config.from_mat_file(mdict=mdict)
         self.Scenario.from_mat(mdict=mdict, load_plasma_dict=True)
@@ -771,6 +772,9 @@ class ECRadResults:
         try:
             self.weights["freq"] = mdict["freq_weights"]
             self.weights["ray"] = mdict["ray_weights"]
+            if(self.Config.N_ray == 1):
+                for key in self.weights.keys():
+                    self.weights[key] = self.weights[key].reshape((len(self.time), len(self.weights[key][0]), 1))
         except:
             self.weights["freq"] = None
             self.weights["ray"] = None

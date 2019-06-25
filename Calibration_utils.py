@@ -3,26 +3,20 @@ Created on Dec 29, 2015
 
 @author: sdenk
 '''
-from scipy.signal import medfilt
 import numpy as np
-import os
 from Fitting import make_fit
 from GlobalSettings import globalsettings
 if(globalsettings.AUG):
     from shotfile_handling_AUG import get_data_calib
+#from plotting_configuration import *
+from data_processing import smooth
 
-def smooth(y_arr, median=False):
-    if(median):
-#        kernel_size = int(len(y_arr) / 10.e0)
-#        if(kernel_size % 2 == 0):
-#            kernel_size -= 1
-        y_median = medfilt(y_arr)
-        y_smooth = np.mean(y_median)
-        std_dev = np.std(y_median, ddof=1)
-    else:
-        y_smooth = np.mean(y_arr)
-        std_dev = np.std(y_arr, ddof=1)
-    return y_smooth, std_dev
+'''
+Created on Jan 17, 2019
+
+@author: sdenk
+'''
+
 
 def calibrate(shot, timepoints, Trad_matrix, diag, smoothing, masked_channels=None):
     if(masked_channels is None):
