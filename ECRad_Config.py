@@ -152,7 +152,6 @@ class ECRadConfig:
         mdict["large_ds"] = self.large_ds
         mdict["small_ds"] = self.small_ds
         mdict["max_points_svec"] = self.max_points_svec
-        mdict["Relax_dir"] = self.Relax_dir
         if(write_mat):
             try:
                 savemat(path, mdict, appendmat=False)
@@ -180,7 +179,7 @@ def provide_default_mdict():
     mdict["vmem"] = 32000
     mdict["raytracing"] = True
     mdict["ripple"] = True
-    mdict["weak_rel"] = False
+    mdict["weak_rel"] = True
     mdict["N_freq"] = 1
     mdict["N_ray"] = 1
     mdict["ratio_for_3rd_harm"] = 0.4
