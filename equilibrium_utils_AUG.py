@@ -6,6 +6,7 @@ Created on Jan 29, 2017
 import sys
 import ctypes as ct
 import os
+sys.path.append('/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib')
 import dd
 import numpy as np
 from scipy.optimize import minimize
