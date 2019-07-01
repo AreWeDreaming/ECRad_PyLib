@@ -910,8 +910,7 @@ def get_shot_heating(shot):
 
 def get_plasma_current(shot):
     FPC = dd.shotfile('FPC', int(shot))
-    signal = FPC.getSignal(\
-                      "IpiFP") * 1.e-6
+    signal = FPC.getSignal("IpiFP") * 1.e-6
     t = FPC.getTimeBase("IpiFP")
     return t, signal
 
