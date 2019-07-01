@@ -927,8 +927,8 @@ class ECRadResults:
         elif(self.comment is not None):
             mdict["comment"] = self.comment
         mdict["ECRad_git_tag"] = np.loadtxt(os.path.join(globalsettings.ECRadRoot, "id"),dtype=np.str)
-        mdict["ECRadGUI_git_tag"]= np.loadtxt("id",dtype=np.str)
-        mdict["ECRadPylib_git_tag"] = np.loadtxt("../ECRad_Pylib/id",dtype=np.str)
+        mdict["ECRadGUI_git_tag"]= np.loadtxt(os.path.join(globalsettings.ECRadGUIRoot, "id"),dtype=np.str)
+        mdict["ECRadPylib_git_tag"] = np.loadtxt(os.path.join(globalsettings.ECRadPylibRoot, "id"),dtype=np.str)
         mdict["time"] = self.time
         mdict["Trad"] = self.Trad
         mdict["tau"] = self.tau
