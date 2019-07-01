@@ -30,7 +30,7 @@ home = '/afs/ipp-garching.mpg.de/home/s/sdenk/'
 # Very much overcomplicated - sorry I did not know any better
 
 class plotting_core:
-    def __init__(self, fig, fig_2=None, title=True):
+    def __init__(self, fig, fig_2=None, title=False):
         self.fig = fig
         self.fig_2 = fig_2
         self.reset(title)
@@ -338,6 +338,54 @@ class plotting_core:
 #        self.axlist[0].get_xaxis().set_minor_locator(MaxNLocator(nbins=6, steps=steps / 4.0))
 #        self.axlist[0].get_yaxis().set_major_locator(MaxNLocator(nbins=3, steps=steps_y))
 #        self.axlist[0].get_yaxis().set_minor_locator(MaxNLocator(nbins=6, steps=steps_y / 4.0)
+
+    def B_plot(self, Result, itime, ich, mode_str, ray_launch, N_ray):
+        self.setup_axes("single", "Frequencies")
+        if(N_ray == 1):
+            mask = Result.ray["rhop" + mode_str][itime][ich] > 0
+            R = np.sqrt(Result.ray["x" + mode_str][itime][ich][mask]**2 + \
+                        Result.ray["y" + mode_str][itime][ich][mask]**2)
+            freq = np.zeros(len(R))
+            freq[:] = ray_launch[itime]["f"][ich] / 1.e9
+            f_c_1 = Result.ray["Y" + mode_str][itime][ich][mask] * freq
+            f_p = np.sqrt(Result.ray["X" + mode_str][itime][ich][mask]) * freq
+        else:
+            mask = Result.ray["rhop" + mode_str][itime][ich][0] > 0
+            R = np.sqrt(Result.ray["x" + mode_str][itime][ich][0][mask]**2 + \
+                        Result.ray["y" + mode_str][itime][ich][0][mask]**2)
+            freq = np.zeros(len(R))
+            freq[:] = ray_launch[itime]["f"][ich] / 1.e9
+            f_c_1 = Result.ray["Y" + mode_str][itime][ich][0][mask] * freq
+            f_p = np.sqrt(Result.ray["X" + mode_str][itime][ich][0][mask]) * freq
+        f_c_2 = f_c_1 * 2.0
+        f_c_3 = f_c_1 * 3.0
+        f_R = f_c_1 * (np.sqrt(1.0 + 4.0 * (f_p * 2.0 * np.pi) ** 2 / (f_c_1 * 2.0 * np.pi) ** 2) + 1.0) / 2.0
+        self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[R, f_c_1], \
+                    name=r"$f_\mathrm{c}$", marker="--", color=(0.4, 0.4, 0.0), \
+                         y_range_in=self.y_range_list[0], ax_flag="f")
+        self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[R, f_c_2], \
+                name=r"$2 f_\mathrm{c}$", marker="-", color=(0.2, 0.6, 0.0), \
+                     y_range_in=self.y_range_list[0], ax_flag="f")
+        self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[R, f_p], \
+                    name=r"$f_\mathrm{p}$", marker=":", color=(0.2, 0.0, 0.6), \
+                         y_range_in=self.y_range_list[0], ax_flag="f")
+        self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[R, f_c_3], \
+                    name=r"$3 f_\mathrm{c}$", marker="--", color=(0.0, 0.4, 0.4), \
+                         y_range_in=self.y_range_list[0], ax_flag="f")
+        self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[R, freq], \
+                    name=r"$f_\mathrm{ECE}$", marker="-", color=(0.0, 0.0, 0.0), \
+                         y_range_in=self.y_range_list[0], ax_flag="f")
+        self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[R, f_R], \
+                    name=r"$f_\mathrm{R}$", marker=":", color=(0.6, 0.0, 0.3), \
+                         y_range_in=self.y_range_list[0], ax_flag="f")
+        self.model_color_index = 0
+        for n, color in zip(range(1, 4),[(0.4, 0.4, 0.0), (0.2, 0.6, 0.0), (0.0, 0.4, 0.4)]):
+            spl = InterpolatedUnivariateSpline(R, f_c_1 * n - freq)
+            R_res = spl.roots()
+            if(len(R_res) > 0):
+                self.axlist[0].vlines(R_res, self.y_range_list[0][0], self.y_range_list[0][1], linestyle='dotted', color=color)
+        self.create_legends("single")
+        return self.fig
 
     def diag_calib_summary(self, diag, file_list):
         self.setup_axes("single", "Calibration factors for diagn. " + diag, r"Rel. mean scatter for diagn. " + diag)

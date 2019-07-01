@@ -538,9 +538,8 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
     ne_spline = InterpolatedUnivariateSpline(rhop_ne, ne)
     print("Position of magn. axus", R_ax, z_ax)
     if(mat_for_waves_and_distribution is not None):
-        waves_dist_mat_filename = mat_for_waves_and_distribution
-        mat = loadmat(waves_dist_mat_filename, squeeze_me=True)
-        dist_obj = load_f_from_mat(waves_dist_mat_filename, use_dist_prefix=True)
+        mat = loadmat(mat_for_waves_and_distribution, squeeze_me=True)
+        dist_obj = load_f_from_mat(mat_for_waves_and_distribution, use_dist_prefix=True)
         if(include_ECRH):
             linear_beam = read_waves_mat_to_beam(mat, EqSlice, use_wave_prefix=True)
             quasi_linear_beam = read_dist_mat_to_beam(mat, use_dist_prefix=True)
