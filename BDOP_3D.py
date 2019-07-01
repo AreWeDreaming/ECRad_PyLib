@@ -46,14 +46,15 @@ def make_f_inter(dist, EQObj, working_dir=None, dist_obj=None, time=None):
         return f_inter, None # None will be replaced with f_inter based on thermal distribution
 
 
-def make_3DBDOP_for_ray(result, time, ch, ir, m, B_ax, f_inter=None):
+def make_3DBDOP_for_ray(result, time, ch, ir, m, B_ax, f_inter=None, N_pnts=100):
     # Currently only supported for non-Gene distributions
     dist = result.Config.dstf
-    svec, freq, Trad, T = load_data_for_3DBDOP(result, time, dist, ch, ir=ir)
-    return BDOP_3D(svec, freq, Trad, T, f_inter, dist, B_ax, m=m, only_contribution=True, steps=50)
+    svec, freq, Trad, T, BPD = load_data_for_3DBDOP(result, time, dist, ch, ir=ir, get_BPD=True)
+    s = distribute_points(svec["s"], BPD, N_pnts)
+    return BDOP_3D(s, svec, freq, Trad, T, f_inter, dist, B_ax, m=m)
     
 
-def load_data_for_3DBDOP(Results, time, dist, ch, ir=1):
+def load_data_for_3DBDOP(Results, time, dist, ch, ir=1, get_BPD=False):
     ich = ch - 1
     itime_Scenario = np.argmin(np.abs(Results.Scenario.plasma_dict["time"] - time))
     freq = Results.Scenario.ray_launch[itime_Scenario]["f"][ich]
@@ -89,18 +90,50 @@ def load_data_for_3DBDOP(Results, time, dist, ch, ir=1):
             raise ValueError("WARNING THERE IS NO TRANSMIVITY DATA AVAILABLE")
         elif(Results.Config.N_ray == 1):
             T = Results.ray["TX"][itime][ich]
+            if(get_BPD):
+                BPD = Results.ray["BPDX"][itime][ich]
         else:
             T = Results.ray["TX"][itime][ich][ray_index]
+            if(get_BPD):
+                BPD = Results.ray["BPDX"][itime][ich][ray_index]
     else:
         T = Results.ray["T_secondX"][itime][ich][ray_index]
+        if(get_BPD):
+                BPD = Results.ray["BPD_secondX"][itime][ich][ray_index]
     T = T[svec["rhop"] != -1.0]
+    if(get_BPD):
+        BPD = BPD[svec["rhop"] != -1.0]
     svec["rhop"] = svec["rhop"][svec["rhop"] != -1.0]
     svec["ne"][svec["ne"] < 1.e15] = 1.e15
     svec["Te"][svec["Te"] < 2.e-2] = 2.e-2
-    return svec, freq, Trad, T
+    if(get_BPD):
+        return svec, freq, Trad, T, BPD
+    else:
+        return svec, freq, Trad, T
+
+def distribute_points(x, weight, N_pnts):
+    # Distributes N_pnts amounts of points such that the point density is 
+    # weighted according to weight
+    weight_spl = InterpolatedUnivariateSpline(x, weight)
+    weight_internal = np.copy(weight)
+    weight_internal /= weight_spl.integral(x[0], x[-1]) # Normalize
+    cum_weight_spl = InterpolatedUnivariateSpline(x, weight_internal).antiderivative(1)
+    cum_weight = cum_weight_spl(x)
+    x_weighted = []
+    func_points = np.linspace(cum_weight_spl(x[0]), cum_weight_spl(x[-1]), N_pnts)
+    for val in func_points:
+        if(val not in cum_weight):
+            spl = InterpolatedUnivariateSpline(x, cum_weight - val)
+            x_weighted.append(spl.roots()[0])
+        else:
+            x_weighted.append(x[val == cum_weight][0])
+    return np.array(x_weighted)
+#     plt.plot(x, weight, "^")
+#     plt.plot(x_weighted, weight_spl(x_weighted), "+")
+#     plt.show()
 
 class BDOP_3D:
-    def __init__(self, svec, freq, Trad, T, f_inter, dist, B_ax, m=2, only_contribution=False, steps=2000, s_important=[], f_inter_scnd=None):
+    def __init__(self, s, svec, freq, Trad, T, f_inter, dist, B_ax, m=2, f_inter_scnd=None):
         rhop_max = 1.02
         u_par_max = 2.0
         if(dist in ["Re", "ReComp"]):
@@ -114,13 +147,6 @@ class BDOP_3D:
         self.f_inter = f_inter
         if(dist == "Ge"):
             B0 = self.f_inter.B0
-        stride = 1
-        if(only_contribution):
-            mask = np.logical_and(T >= np.min(T) + (np.max(T) - np.min(T)) * 1.e-6, \
-                                      T <= np.max(T) - (np.max(T) - np.min(T)) * 1.e-6)
-            for key in svec.keys():
-                svec[key] = svec[key][mask]
-            T = T[mask]
         # Already did this msot likely, but doesnt hurt tp do it again
         for key in svec.keys():
             if(key != "rhop"):
@@ -159,10 +185,6 @@ class BDOP_3D:
         freq_2X_spl = InterpolatedUnivariateSpline(svec["s"], svec["freq_2X"])
         theta_spl = InterpolatedUnivariateSpline(svec["s"], svec["theta"])
         T_spl = InterpolatedUnivariateSpline(svec["s"], T)
-        s_initial = np.linspace(np.min(svec["s"]), np.max(svec["s"]), steps)
-        s = np.copy(s_initial)
-        s = np.concatenate([s, s_important])
-        s = np.sort(s)
         for i in range(len(s)):
             R = R_spl(s[i])
             rhop = rhop_spl(s[i])
@@ -180,8 +202,7 @@ class BDOP_3D:
                         self.zeta[-1] = 1.0
             elif(dist == "Ge"):
                 self.zeta.append(np.pi * freq_2X * cnst.m_e / (cnst.e * B0))
-            if(em_abs_Alb_obj.is_resonant(rhop, Te, ne, \
-                                     freq_2X, theta, freq, m)):
+            if(em_abs_Alb_obj.is_resonant(rhop, Te, ne, freq_2X, theta, freq, m)):
                 x, y, spline = self.f_inter.get_spline(rhop, Te)
                 dist_inter_slice = distribution_interpolator(x, y, spline)
                 if(dist == "Ge"):
@@ -274,7 +295,7 @@ class BDOP_3D:
         self.f_back = np.array(self.f_back)
 
 class PowerDepo_3D:
-    def __init__(self, freq, ray, f_inter, dist, B_ax, EqSlice, Te_spl, ne_spl, m=2, only_contribution=False, steps=2000, s_important=[], f_inter_scnd=None):
+    def __init__(self, freq, ray, f_inter, dist, B_ax, EqSlice, Te_spl, ne_spl, m=2, only_s_important=False, only_contribution=False, steps=2000, s_important=[], f_inter_scnd=None):
         if(dist in ["Re", "ReComp"]):
             dist_mode = "ext"
             res_dist = dist.replace("Comp", "")
@@ -291,6 +312,7 @@ class PowerDepo_3D:
             print("dist not supported", dist)
         self.m = m
         self.only_contribution = only_contribution
+        self.only_s_important = only_s_important
         self.f_inter = f_inter
         self.u_par_limit = 2.0
         self.freq = freq
@@ -345,9 +367,12 @@ class PowerDepo_3D:
         self.x_old = R * np.cos(phi)
         self.y_old = R * np.sin(phi)
         self.P = 1.0
-        s = np.copy(self.s_init)
-        s = np.concatenate([s, s_important])
-        s = np.sort(s)
+        if(self.only_s_important):
+            s = np.copy(s_important)
+        else:
+            s = np.copy(self.s_init)
+            s = np.concatenate([s, s_important])
+            s = np.sort(s)
         for i in range(1, len(s)):
             ds = s[i] - s[i - 1]
             if(self.only_contribution):
@@ -498,6 +523,7 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
     fig.text(0.025, 0.95, "a)")
     fig.text(0.55, 0.95, "b)")
     BDOP_list = []
+    use_fit_for_s_important = False
     itime = np.argmin(np.abs(Results.Scenario.plasma_dict["time"] - time))
     rhop_Te = Results.Scenario.plasma_dict["rhop_prof"][itime] * Results.Scenario.Te_rhop_scale
     Te = np.log(Results.Scenario.plasma_dict["Te"][itime] * Results.Scenario.Te_scale)  # from IDA always positive definite
@@ -535,9 +561,9 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
     s_BPD_list = []
     s_BPD_dict = {}
     rhop_BPD_dict = {}
-    distribution_rhop = None
     ECRH_colors = ["magenta", "red"]
-    for ich, m_ch in zip(ch_list, m_list):
+    for ch, m_ch in zip(ch_list, m_list):
+        ich = ch - 1
         if(ich in ch_done_list):
             R_BPD_list.append(R_BPD_dict[str(ich)])
             s_BPD_list.append(s_BPD_dict[str(ich)])
@@ -547,6 +573,7 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
         ray_list = []
         ray_BPD_spl_list = []
         iray = 2
+        steps_in_plasma = 0
         if(Results.Config.N_ray == 1):
             ray_dict = {}
             ray_dict["s"] = Results.ray["sX"][itime][ich]
@@ -569,6 +596,7 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
             ray_dict["Nx"] *= norm
             ray_dict["Ny"] *= norm
             ray_dict["Nz"] *= norm
+            steps_in_plasma = len(ray_dict["rhop"][ray_dict["rhop"] >= 0.0])
             ray_list.append(dict(ray_dict))
             ray_BPD_spl_list.append(InterpolatedUnivariateSpline(ray_list[-1]["s"], ray_list[-1]["BPD"]))
         else:
@@ -594,6 +622,8 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
                 ray_dict["Nx"] *= norm
                 ray_dict["Ny"] *= norm
                 ray_dict["Nz"] *= norm
+                if(steps_in_plasma < len(ray_dict["rhop"][ray_dict["rhop"] >= 0.0])):
+                    steps_in_plasma = len(ray_dict["rhop"][ray_dict["rhop"] >= 0.0])
                 ray_list.append(dict(ray_dict))
                 ray_BPD_spl_list.append(InterpolatedUnivariateSpline(ray_list[-1]["s"], ray_list[-1]["BPD"]))
         BPD_ray_dict = ray_list[0]  # Central ray
@@ -606,7 +636,7 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
         R_BPD_ray = np.sqrt(BPD_ray_dict["x"] ** 2 + BPD_ray_dict["y"] ** 2)
         R_spl = InterpolatedUnivariateSpline(s_ray, R_BPD_ray)
         rhop_spl = InterpolatedUnivariateSpline(s_ray, rhop_BPD_ray)
-        n_rhop = 120
+        n_rhop = steps_in_plasma
         rhop_binned = np.linspace(0.0, 1.0, n_rhop)
         BPD_binned = np.zeros(n_rhop)
         BPD_ch_binned = np.zeros(n_rhop)
@@ -616,28 +646,50 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
                 root_spl_ray = InterpolatedUnivariateSpline(ray["s"], ray["rhop"] - rhop_binned[i])
                 for root in root_spl_ray.roots():
                     BPD_ch_binned[i] += ray_BPD_spl(root) * ray_weight
-        s_BPD_max = s_ray[np.argmax(BPD_ray)]
-        sigma_BPD_ray_spl = InterpolatedUnivariateSpline(s_ray, BPD_ray * (s_ray - s_BPD_max) ** 2)
-        sigma_guess = np.sqrt(sigma_BPD_ray_spl.integral(s_ray[0], s_ray[-1]) / BPD_ray_spl.integral(s_ray[0], s_ray[-1]))
-        beta0 = np.array([np.max(BPD_ray), s_BPD_max, sigma_guess])
-        data = odr.Data(s_ray, BPD_ray)
-        mdl = odr.Model(func)
-        ODR = odr.ODR(data, mdl, beta0)
-        output = ODR.run()
-        beta = output.beta
-        max_shift = np.abs(s_BPD_max - beta[1]) / sigma_guess
-        print(max_shift)
-        if(max_shift > 0.2):
-            print("Discarding fit results cause BPD seems very skewed -> initial guess most likely more accurate")
-            beta = beta0
         BPD_POI = []
         BPD_POI_rhop = []
-        s_important = [s_BPD_max, s_BPD_max + beta[2], s_BPD_max - beta[2]]
+        s_BPD_max = s_ray[np.argmax(BPD_ray)]
+        if(use_fit_for_s_important):
+            # Fit a gaussian to get the 3 radial points for the 3D BPD cuts
+            sigma_BPD_ray_spl = InterpolatedUnivariateSpline(s_ray, BPD_ray * (s_ray - s_BPD_max) ** 2)
+            sigma_guess = np.sqrt(sigma_BPD_ray_spl.integral(s_ray[0], s_ray[-1]) / BPD_ray_spl.integral(s_ray[0], s_ray[-1]))
+            beta0 = np.array([np.max(BPD_ray), s_BPD_max, sigma_guess])
+            data = odr.Data(s_ray, BPD_ray)
+            mdl = odr.Model(func)
+            ODR = odr.ODR(data, mdl, beta0)
+            output = ODR.run()
+            beta = output.beta
+            max_shift = np.abs(s_BPD_max - beta[1]) / sigma_guess
+            print(max_shift)
+            if(max_shift > 0.2):
+                print("Discarding fit results cause BPD seems very skewed -> initial guess most likely more accurate")
+                beta = beta0
+            s_important = [s_BPD_max, s_BPD_max + beta[2], s_BPD_max - beta[2]]
+        else:
+            # Use the integral of the birthplace distribution to determine a pseudo sigma 
+            # analogous to the normal distribution
+            s_important =  []
+            # Compute norm, since BPD is normalized only in s
+            BPD_int_spl = InterpolatedUnivariateSpline(rhop_binned, BPD_ch_binned).antiderivative(1)
+            BPD_norm = BPD_int_spl(rhop_binned[-1])    
+            for cum_BPD_val in [0.5 - 0.31731, 0.5, 0.5 + 0.31731]:# Confidence interval
+                root_spl = InterpolatedUnivariateSpline(rhop_binned, BPD_int_spl(rhop_binned)/BPD_norm - cum_BPD_val)
+                roots_cum_BPD = root_spl.roots()
+                if(len(roots_cum_BPD) != 1):
+                    print("Found " + str(len(root_spl)) + " roots when looking for rhop where BPD at ", cum_BPD_val)
+                    print("Discarding this value")
+                else:
+                    rhop_BPD_root_spl = InterpolatedUnivariateSpline(s_ray, rhop_BPD_ray - roots_cum_BPD)
+                    s_roots = rhop_BPD_root_spl.roots()
+                    i_s_closest = np.argmin(np.abs(s_roots - s_BPD_max))
+                    s_important.append(s_roots[i_s_closest])
         for s in s_important:
             BPD_POI.append(R_spl(s))
             BPD_POI_rhop.append(rhop_spl(s))
-            if(distribution_rhop is None):
-                distribution_rhop = np.abs(rhop_spl(s_BPD_max))
+        if(len(s_important) > 1):
+            distribution_rhop = np.abs(rhop_spl(s_important[1])) # Always the second s important
+        else:
+            distribution_rhop = np.abs(rhop_spl(s_important[0]))
         R_BPD_list.append(BPD_POI)
         R_BPD_dict[str(ich)] = BPD_POI
         rhop_BPD_dict[str(ich)] = BPD_POI_rhop
@@ -650,10 +702,9 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
         else:
             ax_depo.plot(rhop_binned, BPD_ch_binned / np.max(BPD_ch_binned), label="BPD", linestyle="-", color="blue")  # for channel {0:d}".format(ich)
     f_inter, f_inter_scnd = make_f_inter(dist, EQObj, dist_obj=dist_obj, time=time)
-    for ich, m_ch, s_important in zip(ch_list, m_list, s_BPD_list):
-        svec, freq, Trad, T, = load_data_for_3DBDOP(Results, time, dist, ich)
-        BDOP_list.append(BDOP_3D(svec, freq, Trad, T, f_inter, dist, B_ax, m=m_ch, only_contribution=only_contribution, steps=500, \
-                                 s_important=s_important, f_inter_scnd=f_inter_scnd))
+    for ch, m_ch, s_important in zip(ch_list, m_list, s_BPD_list):
+        svec, freq, Trad, T, = load_data_for_3DBDOP(Results, time, dist, ch) # expects channel number not channel index
+        BDOP_list.append(BDOP_3D(s_important, svec, freq, Trad, T, f_inter, dist, B_ax, m=m_ch, f_inter_scnd=f_inter_scnd))
         m = cm.ScalarMappable(cmap=plt.cm.get_cmap("winter"))
         m.set_array(np.linspace(0.0, 1.0, 20))
         cmaps.append(m)
@@ -733,7 +784,12 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
     mdict["BPD_facecolors"] = []
     mdict["is_ecrh_list"] = []
     got_f = False
+    found_one_cut = False
     for BDOP, cmap, s_list in zip(BDOP_list, cmaps, s_BPD_list):
+        if(len(BDOP.s) == 0):
+            print("No BPD values computed, this is not supposed to happen ..., skpping 3D BPD slices...")
+            continue
+        found_one_cut = True
         BDOP_s = np.mean(BDOP.s, axis=1)
         for s_max in s_list:
             i_s = np.argmin(np.abs(BDOP_s - s_max))
@@ -782,6 +838,7 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
         cont2 = ax_reso.contourf(u_perp_dist, u_par_dist, f.T, levels=levels,
                                  hold='on', cmap=cm.get_cmap("plasma"))
     else:
+        f[f < 1.e-20] = 1.e-20
         f = np.log10(f)
         levels = np.linspace(-13.0, 5.0, 20)
         cont2 = ax_reso.contour(u_perp_dist, u_par_dist, f.T, levels=levels, colors='k',
@@ -794,23 +851,26 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
     if(Teweight):
         cb_dist = fig.colorbar(cont2, pad=0.15, ticks=[0.0, 0.5, 1.0])
         cb_dist.set_label(r"$f_\mathrm{MJ} u_\perp^2 / \gamma f_0$")
-    cb = fig.colorbar(cmaps[0], ticks=[0.0, 0.5, 1.0])
-    cb.set_label(r"$D_\omega [\si{{a.u.}}]$")
-    ax_reso.set_xlim(u_perp_range[0], u_perp_range[1])
-    ax_reso.set_ylim(u_par_range[0], u_par_range[1])
-    ax_reso.set_ylabel(r"$u_\parallel$")
-    ax_reso.set_xlabel(r"$u_\perp$")
-    ax_reso.get_xaxis().set_major_locator(MaxNLocator(nbins=3, steps=steps))
-    ax_reso.get_xaxis().set_minor_locator(MaxNLocator(nbins=6, steps=steps / 2.0))
-    ax_reso.get_yaxis().set_major_locator(MaxNLocator(nbins=4, steps=steps))
-    ax_reso.get_yaxis().set_minor_locator(MaxNLocator(nbins=8, steps=steps / 2.0))
-    ax_reso.set_aspect("equal")
-    plt.tight_layout()
+    if(found_one_cut):
+        cb = fig.colorbar(cmaps[0], ticks=[0.0, 0.5, 1.0])
+        cb.set_label(r"$D_\omega [\si{{a.u.}}]$")
+        ax_reso.set_xlim(u_perp_range[0], u_perp_range[1])
+        ax_reso.set_ylim(u_par_range[0], u_par_range[1])
+        ax_reso.set_ylabel(r"$u_\parallel$")
+        ax_reso.set_xlabel(r"$u_\perp$")
+        ax_reso.get_xaxis().set_major_locator(MaxNLocator(nbins=3, steps=steps))
+        ax_reso.get_xaxis().set_minor_locator(MaxNLocator(nbins=6, steps=steps / 2.0))
+        ax_reso.get_yaxis().set_major_locator(MaxNLocator(nbins=4, steps=steps))
+        ax_reso.get_yaxis().set_minor_locator(MaxNLocator(nbins=8, steps=steps / 2.0))
+        ax_reso.set_aspect("equal")
+        plt.tight_layout()
     return fig
     
 if(__name__ == "__main__"):
-    make_3DBDOP_cut_standalone("/tokp/work/sdenk/ECRad/ECRad_35662_ECECTACTC_ed7.mat", 4.40, [81], [2], "Re", \
-                    include_ECRH=True, m_ECRH_list=[2], only_contribution=True, \
-                    ECRH_freq=105.e9, mat_for_waves_and_distribution = \
-                    "/tokp/work/sdenk/ECRad/ECRad_35662_ECECTACTC_ed9.mat")  # 
+    x = np.linspace(0,1,30)
+    distribute_points(x, 0.2 + 5 * np.exp(-(x-0.5)**2 / 0.05**2), 30)
+#     make_3DBDOP_cut_standalone("/tokp/work/sdenk/ECRad/ECRad_35662_ECECTACTC_ed7.mat", 4.40, [81], [2], "Re", \
+#                     include_ECRH=True, m_ECRH_list=[2], only_contribution=True, \
+#                     ECRH_freq=105.e9, mat_for_waves_and_distribution = \
+#                     "/tokp/work/sdenk/ECRad/ECRad_35662_ECECTACTC_ed9.mat")  # 
 
