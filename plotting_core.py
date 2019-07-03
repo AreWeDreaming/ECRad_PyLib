@@ -262,50 +262,57 @@ class plotting_core:
         self.create_legends("Te_no_ne" + twinx)
         return self.fig
 
-    def plot_tau(self, time, rhop, tau, tau_comp, rhop_IDA, Te_IDA, dstf, model_2=True):
+    def plot_tau(self, time, rhop, tau, tau_comp, rhop_IDA, Te_IDA, dstf, model_2, use_tau):
         if(plot_mode == "Software"):
             self.setup_axes("twinx", r"$\tau_{\omega}$, $T_{e}$ ", r"Optical depth $\tau_\omega$")
         else:
             self.setup_axes("twinx", r"$\tau_{\omega}$, $T_\mathrm{e}$", \
                             r"Optical depth $\tau_\omega$")
         mathrm = r"\mathrm"
-        if(dstf == "Mx"):
-            dist_simpl = r"M"
-            dist = r"MJ"
-            dist = r"[" + dist + r"]"
-        elif(dstf == "TB"):
+        if(dstf == "Th"):
             dist_simpl = r"Fa"
-            dist = r"Alb"
-            dist = r"[" + dist + r"]"
-        elif(dstf == "Th"):
-            dist_simpl = r"Hu"
             dist = r"Alb"
             dist = r"[" + dist + r"]"
         elif(dstf == "Re"):
-            dist_simpl = r"Fa"
+            dist_simpl = r"Th"
             dist = r"RELAX"
             dist = r"[" + dist + r"]"
         if(len(dist_simpl) > 0):
             dist_simpl = r"[" + dist_simpl + r"]"
         ax_flag = "T_rho"
+        quant_name = "T"
+        if(use_tau):
+            ax_flag = "tau"
+            quant_name = r"\tau"
         if(model_2 and tau_comp is not None):
-            self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
-                data=[rhop, np.exp(-tau_comp)], \
-                name=r"$T_" + mathrm + "{mod}" + dist_simpl + r"$", \
-                marker="s", color=(126.0 / 255, 0.0, 126.0 / 255), \
-                y_range_in=self.y_range_list[0], ax_flag=ax_flag)
-        self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
-            data=[rhop, np.exp(-tau)], \
-            name=r"$T_" + mathrm + "{mod}" + dist + r"$", \
-            marker="v", color=(126.0 / 255, 126.0 / 255, 0.e0), \
-            y_range_in=self.y_range_list[0], ax_flag=ax_flag)
+            if(not use_tau):
+                val = np.exp(-tau_comp)
+            else:
+                val = tau_comp
+            self.axlist[0], self.y_range_list[0] = \
+                self.add_plot(self.axlist[0], \
+                              data=[rhop, val], \
+                              name=r"$" + quant_name + "_" + mathrm + "{mod}" + dist_simpl + r"$", \
+                              marker="s", color=(126.0 / 255, 0.0, 126.0 / 255), \
+                              y_range_in=self.y_range_list[0], ax_flag=ax_flag)
+        if(not use_tau):
+            val = np.exp(-tau)
+        else:
+            val = tau
+        self.axlist[0], self.y_range_list[0] = \
+            self.add_plot(self.axlist[0], \
+                          data=[rhop, val], \
+                          name=r"$T_" + mathrm + "{mod}" + dist + r"$", \
+                          marker="v", color=(126.0 / 255, 126.0 / 255, 0.e0), \
+                          y_range_in=self.y_range_list[0], ax_flag=ax_flag)
         self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], data=[ rhop_IDA, Te_IDA], \
             name=r"$T_" + mathrm + "{e}$", coloumn=1, marker="-", color=(0.0, 0.0, 0.0), \
                  y_range_in=self.y_range_list[1], y_scale=1.0, ax_flag="Te")  # \times 100$
         self.create_legends("BDP")
         if(len(rhop_IDA) > 0):
             self.axlist[0].set_xlim(0.0, 1.05 * np.max([np.max(rhop_IDA), np.max(rhop)]))
-        self.axlist[0].set_ylim(0.0, 1.00)
+        if(not use_tau):
+            self.axlist[0].set_ylim(0.0, 1.00)
         return self.fig, self.fig_2
 
     def plot_1D_cpo(self, x, y, shot, time, x_info, y_info):
@@ -3044,8 +3051,9 @@ class plotting_core:
             ax.set_yscale('log')
         if(y_range_in is not None):
             if(y_error is not None):
-                ymax = np.nanmax([y_range_in[1], np.nanmax(y[np.abs(y) != np.inf] + y_error[np.abs(y_error) != np.inf])])
-                ymin = np.nanmin([y_range_in[0], np.nanmin(y[np.abs(y) != np.inf] - y_error[np.abs(y_error) != np.inf])])
+                mask = np.logical_or(np.abs(y) != np.inf,np.abs(y_error) != np.inf)
+                ymax = np.nanmax([y_range_in[1], np.nanmax(y[mask] + y_error[mask])])
+                ymin = np.nanmin([y_range_in[0], np.nanmin(y[mask] - y_error[mask])])
             else:
                 ymax = np.nanmax([y_range_in[1], np.nanmax(y[np.abs(y) != np.inf])])
                 ymin = np.nanmin([y_range_in[0], np.nanmin(y[np.abs(y) != np.inf])])

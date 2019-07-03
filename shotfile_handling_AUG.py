@@ -795,19 +795,24 @@ def get_ECRH_PW(shot, diag, exp, ed):
 def get_ECE_launch_params(shot, diag):
     CEC = dd.shotfile(diag.diag, int(shot), \
                        experiment=diag.exp, edition=diag.ed)
-    ECE_launch_dict = {}
-    ECE_launch_dict["f"] = np.array(CEC.getParameter('parms-A', 'f').data)
-    available = np.array(CEC.getParameter('parms-A', 'AVAILABL').data, dtype=np.int)
-    ECE_launch_dict["df"] = np.array(CEC.getParameter('parms-A', 'df').data)
-    ECE_launch_dict["waveguide"] = np.zeros(len(ECE_launch_dict["f"]), dtype=np.int)
-    ifgroup = np.array(CEC.getParameter('parms-A', 'IFGROUP').data)
-    wg = np.array(CEC.getParameter('METHODS', 'WAVEGUID').data)
-    ECE_launch_dict["z_lens"] = float(CEC.getParameter('METHODS', 'ZLENS').data) * 1.e-2  # cm -> m
-    for i in range(len(ifgroup)):
-        ECE_launch_dict["waveguide"][i] = wg[ifgroup[i] - 1]
-    ECE_launch_dict["f"] = ECE_launch_dict["f"][available == 1]
-    ECE_launch_dict["df"] = ECE_launch_dict["df"][available == 1]
-    ECE_launch_dict["waveguide"] = ECE_launch_dict["waveguide"][available == 1]
+    try:
+        ECE_launch_dict = {}
+        ECE_launch_dict["f"] = np.array(CEC.getParameter('parms-A', 'f').data)
+        available = np.array(CEC.getParameter('parms-A', 'AVAILABL').data, dtype=np.int)
+        ECE_launch_dict["df"] = np.array(CEC.getParameter('parms-A', 'df').data)
+        ECE_launch_dict["waveguide"] = np.zeros(len(ECE_launch_dict["f"]), dtype=np.int)
+        ifgroup = np.array(CEC.getParameter('parms-A', 'IFGROUP').data)
+        wg = np.array(CEC.getParameter('METHODS', 'WAVEGUID').data)
+        ECE_launch_dict["z_lens"] = float(CEC.getParameter('METHODS', 'ZLENS').data) * 1.e-2  # cm -> m
+        for i in range(len(ifgroup)):
+            ECE_launch_dict["waveguide"][i] = wg[ifgroup[i] - 1]
+        ECE_launch_dict["f"] = ECE_launch_dict["f"][available == 1]
+        ECE_launch_dict["df"] = ECE_launch_dict["df"][available == 1]
+        ECE_launch_dict["waveguide"] = ECE_launch_dict["waveguide"][available == 1]
+    except dd.PyddError as e:
+        print("Failed to read " + diag.diag + " shotfile.")
+        print("Is this an old shotfile?")
+        raise IOError("Shofile read failed")
     return ECE_launch_dict
 
 

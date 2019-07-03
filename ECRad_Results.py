@@ -25,7 +25,6 @@ class ECRadResults:
         self.status = 0
         self.edition = 0
         self.init = False
-        self.comment = None
         # Edition of this result
         # Remains zero until the result is saved
         # Time of the results, should be identical to self.Scenario.plasma_dict["time"]
@@ -640,40 +639,17 @@ class ECRadResults:
         self.Config.from_mat_file(mdict=mdict)
         self.Scenario.from_mat(mdict=mdict, load_plasma_dict=True)
         increase_time_dim = False
-        increase_diag_dim = False
         if(np.isscalar(mdict["time"])):
             increase_time_dim = True
         elif(len(mdict["time"]) == 1):
             increase_time_dim = True
-        try:
-            if(np.isscalar(mdict["diag_name"])):
-                increase_diag_dim = True
-        except KeyError:
-            if(np.isscalar(mdict["launch_diag_name"])):
-                increase_diag_dim = True
         for key in mdict.keys():
             if(not key.startswith("_")):  # throw out the .mat specific information
                 try:
                     if(key in at_least_1d_keys and np.isscalar(mdict[key])):
                         mdict[key] = np.atleast_1d(mdict[key])
-#                        mdict[key] = np.array([mdict[key]])
                     elif(key in at_least_2d_keys):
-                        if(increase_diag_dim and not increase_time_dim and key not in ["calib", \
-                                                                                       "rel_dev", \
-                                                                                       "sys_dev"]):
-                            if(len(self.Config.time) != len(mdict[key])):
-                                print("Unexpected length of key", key, len(mdict[key]), len(self.Config.time))
-                                raise IOError
-                            else:
-                                temp = []
-                                for i in range(len(self.Config.time)):
-                                    temp.append(np.array([mdict[key][i]]))
-                                mdict[key] = np.array(temp)
-                        elif(increase_diag_dim and key in ["calib", "rel_dev", "sys_dev", "masked_time_points"]):
-                            for i in range(len(mdict[key])):  # Single time point multiple diagnostics to calibrate
-                                mdict[key][i] = np.array([mdict[key][i]])
-                        elif(key not in ["calib", "rel_dev", "sys_dev", "masked_time_points"]):
-                            mdict[key] = np.atleast_2d(mdict[key])
+                        mdict[key] = np.atleast_2d(mdict[key])
                     elif(key in at_least_3d_keys):
                         if(increase_time_dim):
                             if(key == "std_dev_mat" or key == "calib_mat"):
@@ -681,6 +657,8 @@ class ECRadResults:
                                     mdict[key][i] = np.array([mdict[key][i]])
                             else:
                                 mdict[key] = np.array([mdict[key]])
+                        elif(key == "std_dev_mat" or key == "calib_mat"):
+                            mdict[key] = np.atleast_3d([mdict[key]])
                 except Exception as e:
                     print(key)
                     print(e)
@@ -693,6 +671,16 @@ class ECRadResults:
             self.modes = ["X", "O"]
         if("comment" in mdict.keys()):
             self.comment = mdict["comment"]
+            try:
+                if(type(self.comment) == np.ndarray):
+                    if(len(self.comment) > 0):
+                        self.comment = self.comment[0]
+                    else:
+                        self.comment =  ""
+            except Exception as e:
+                print("Failed to parse comment")
+                print(e)
+                self.comment = ""
         self.time = mdict["time"]
         self.Trad = mdict["Trad"]
         self.tau = mdict["tau"]

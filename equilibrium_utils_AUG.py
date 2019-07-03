@@ -28,6 +28,18 @@ def eval_rhop(x, spl, rhop_target):
     else:
         return (spl(x[0], x[1], grid=False) - rhop_target) ** 2
 
+def check_Bt_vac_source(shot):
+    try:
+        MBI_shot = dd.shotfile('MBI', int(shot))
+    except:
+        print("No MBI shotfile. No Bt source!")
+        return False, 1.0
+    try:
+        signal = MBI_shot.getSignal("BTFABB")
+        return True, 1.005
+    except:
+        return True, 1.01
+
 def make_rhop_signed_axis(shot, time, R, rhop, f, f2=None, eq_exp='AUGD', eq_diag='EQH', eq_ed=0, external_folder=''):
     eq_obj = EQData(shot, external_folder=external_folder, eq_exp=eq_exp, eq_diag=eq_diag, eq_ed=eq_ed)
     R_ax, z_ax = eq_obj.get_axis(time)
