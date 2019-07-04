@@ -56,7 +56,7 @@ def ElmSync(time, nshot, syncSetting=None,
         if (jelm_nearest == 0. or jelm_nearest == 1) and \
                 np.abs(delta_t_nearest) > max_dt_elm_cycle:
             if Debug:
-                print 'Warning! No ELM data for t = ', t_signal, ' s'
+                print('Warning! No ELM data for t = ', t_signal, ' s')
             good_jtime.append(jt)
             jt += 1
             continue
@@ -66,7 +66,7 @@ def ElmSync(time, nshot, syncSetting=None,
                 good_jtime.append(jt)
                 jt += 1
                 if Debug:
-                    print 't = ', t_signal, ' s accepted!'
+                    print('t = ', t_signal, ' s accepted!')
                 continue
             if t_signal > (t_beg_ELM[jelm_nearest] + dt_elm) and\
                 t_signal > (t_beg_ELM[jelm_nearest + 1] + t_end) and\
@@ -74,7 +74,7 @@ def ElmSync(time, nshot, syncSetting=None,
                 good_jtime.append(jt)
                 jt += 1
                 if Debug:
-                    print 't = ', t_signal, ' s accepted!'
+                    print('t = ', t_signal, ' s accepted!')
                 continue
         if delta_t_nearest < 0. and \
             t_signal > (t_beg_ELM[jelm_nearest - 1] + dt_elm) and\
@@ -83,10 +83,10 @@ def ElmSync(time, nshot, syncSetting=None,
             good_jtime.append(jt)
             jt += 1
             if Debug:
-                print 't = ', t_signal, ' s accepted!'
+                print('t = ', t_signal, ' s accepted!')
             continue
         if Debug:
-            print 't = ', t_signal, ' s discard!'
+            print('t = ', t_signal, ' s discard!')
         jt += 1
     good_jtime = np.array(good_jtime)
     if plot:

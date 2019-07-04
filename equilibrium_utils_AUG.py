@@ -14,6 +14,7 @@ from scipy.interpolate import RectBivariateSpline, InterpolatedUnivariateSpline
 from equilibrium_utils import EQDataExt, EQDataSlice, eval_spline, special_points
 from Geometry_utils import get_contour, get_Surface_area_of_torus, get_arclength, get_av_radius
 from scipy import __version__ as scivers
+from get_ECRH_config import get_ECRH_viewing_angles
 import scipy.optimize as scopt
 from map_equ import equ_map
 vessel_bd_file = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/ECRad_Pylib/ASDEX_Upgrade_vessel.txt"

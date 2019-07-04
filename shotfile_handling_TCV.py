@@ -18,6 +18,7 @@ from plotting_configuration import *
 from scipy.signal import medfilt
 from Diags import Diag
 from scipy.io import loadmat
+from get_ECRH_config import get_ECRH_viewing_angles
 # TODO import matlab.engine "matlab"
 
 

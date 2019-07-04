@@ -101,4 +101,4 @@ class GlobalSettingsAUGEXT:
         self.partition_function = partition_function_tok
         self.max_cores = 32
         
-globalsettings = GlobalSettingsAUGEXT()
+globalsettings = GlobalSettingsAUG()

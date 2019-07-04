@@ -8,23 +8,14 @@ import sys
 import os
 # sys.path.append('/afs/ipp/home/g/git/python/repository/py_rep2.0/')
 # import kk
-import ctypes as ct
-from TB_communication import read_topfile
-from equilibrium_utils import EQDataExt, EQDataSlice
 sys.path.append('/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib')
 import dd
 from scipy.signal import medfilt, argrelmax
 root = "/afs/ipp-garching.mpg.de/home/s/sdenk/"
 from scipy.interpolate import RectBivariateSpline, splev, splrep, InterpolatedUnivariateSpline, interp1d, UnivariateSpline, interp1d
-from equilibrium_utils_AUG import EQData,vessel_bd_file
+from equilibrium_utils_AUG import EQData
 import scipy.constants as cnst
-from scipy.integrate import simps
-from scipy.optimize import curve_fit
-from glob import glob
 from plotting_configuration import *
-from scipy.stats import binned_statistic, t
-from scipy.signal import resample  # decimate
-from scipy.io import savemat
 from Diags import Diag
 from shutil import copyfile
 from data_processing import remove_mode

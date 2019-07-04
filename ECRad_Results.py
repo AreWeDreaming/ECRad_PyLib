@@ -12,7 +12,6 @@ from scipy.io import savemat, loadmat
 from scipy import constants as cnst
 from ECRad_Config import ECRadConfig
 from ECRad_Scenario import ECRadScenario
-from collections import OrderedDict as od
 from ndarray_helper import ndarray_math_operation, ndarray_check_for_None
 class ECRadResults:
     def __init__(self):
