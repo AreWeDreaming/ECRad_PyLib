@@ -459,9 +459,15 @@ class plotting_core:
 
     def diag_calib_avg(self, diag, freq, calib, rel_dev, title):
         self.setup_axes("single", title, r"Rel. mean scatter for diagn. " + diag.name)
+        mask = np.abs(rel_dev * 100.0) > 0.2
+        print("Not plotting the following channels due to more than 20% statistical uncertainty")
+        print(np.array(range(1, len(calib) + 1))[np.logical_not(mask)])
+        print("Not plotting the following channels since their calibration factor is more than 20 times larger than median of the calibration factors of all channels")
+        print(np.array(range(1, len(calib) + 1))[np.abs(calib) > np.median(np.abs(calib)) * 20])
+        mask[np.abs(calib) > np.median(np.abs(calib)) * 20] = False
         self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
-            data=[freq * 1.e-9, calib], \
-            y_error=calib * rel_dev / 100.e0, \
+            data=[freq[mask], calib[mask]], \
+            y_error=calib[mask] * rel_dev[mask] / 100.e0, \
             name=title, marker="+", \
                  y_range_in=self.y_range_list[0], ax_flag="Calib")
         self.create_legends("errorbar")
@@ -469,9 +475,15 @@ class plotting_core:
 
     def diag_calib_slice(self, diag, freq, calib, std_dev, title):
         self.setup_axes("single", title, r"Rel. mean scatter for diagn. " + diag.name)
+        mask = np.abs(std_dev) > 0.2 * calib
+        print("Not plotting the following channels due to more than 20% statistical uncertainty")
+        print(np.array(range(1, len(calib) + 1))[np.logical_not(mask)])
+        print("Not plotting the following channels since their calibration factor is more than 20 times larger than median of the calibration factors of all channels")
+        print(np.array(range(1, len(calib) + 1))[np.abs(calib) > np.median(np.abs(calib)) * 20])
+        mask[np.abs(calib) > np.median(np.abs(calib)) * 20] = False
         self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
-            data=[freq * 1.e-9, calib], \
-            y_error=std_dev, \
+            data=[freq[mask], calib[mask]], \
+            y_error=std_dev[mask], \
             name=title, marker="+", \
                  y_range_in=self.y_range_list[0], ax_flag="Calib")
         self.create_legends("errorbar")
