@@ -9,6 +9,8 @@ import os
 # sys.path.append('/afs/ipp/home/g/git/python/repository/py_rep2.0/')
 # import kk
 import ctypes as ct
+from TB_communication import read_topfile
+from equilibrium_utils import EQDataExt, EQDataSlice
 sys.path.append('/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib')
 import dd
 from scipy.signal import medfilt, argrelmax
@@ -1436,48 +1438,6 @@ def make_ext_data_for_testing_grids(ext_data_folder, shot, times, eq_exp, eq_dia
         plt.contourf(EQ_t.R, EQ_t.z, Te, levels=np.linspace(0, 5000, 30))
         plt.show()
         index += 1
-
-def make_plasma_mat_for_testing(filename, shot, times, eq_exp, eq_diag, eq_ed, \
-                                bt_vac_correction=1.005, IDA_exp="AUGD", IDA_ed=0):
-    EQ_obj = EQData(shot, EQ_exp=eq_exp, EQ_diag=eq_diag, EQ_ed=eq_ed, bt_vac_correction=bt_vac_correction)
-    plasma_data = load_IDA_data(shot, timepoints=times, exp="AUGD", ed=IDA_ed)
-    mdict = {}
-    mdict["shot"] = shot
-    mdict["time"] = times
-    mdict["Te"] = plasma_data["Te"]
-    mdict["ne"] = plasma_data["ne"]
-    mdict["rhop_prof"] = plasma_data["rhop_prof"]
-    mdict["Psi_sep"] = []
-    mdict["Psi_ax"] = []
-    mdict["Psi"] = []
-    mdict["Br"] = []
-    mdict["Bt"] = []
-    mdict["Bz"] = []
-    vessel_bd = np.loadtxt(vessel_bd_file, skiprows=1)
-    mdict["vessel_bd"] = []
-    mdict["vessel_bd"].append(vessel_bd.T[0])
-    mdict["vessel_bd"].append(vessel_bd.T[1])
-    mdict["vessel_bd"] = np.array(mdict["vessel_bd"])
-    R_init = False
-    for time in plasma_data["time"]:
-        EQ_t = EQ_obj.GetSlice(time)
-        if(not R_init):
-            R_init = True
-            mdict["R"] = EQ_t.R
-            mdict["z"] = EQ_t.z
-        mdict["Psi_sep"].append(EQ_t.Psi_sep)
-        mdict["Psi_ax"].append(EQ_t.Psi_ax)
-        mdict["Psi"].append(EQ_t.Psi)
-        mdict["Br"].append(EQ_t.Br)
-        mdict["Bt"].append(EQ_t.Bt)
-        mdict["Bz"].append(EQ_t.Bz)
-    mdict["Psi_sep"] = np.array(mdict["Psi_sep"])
-    mdict["Psi_ax"] = np.array(mdict["Psi_ax"])
-    mdict["Psi"] = np.array(mdict["Psi"])
-    mdict["Br"] = np.array(mdict["Br"])
-    mdict["Bt"] = np.array(mdict["Bt"])
-    mdict["Bz"] = np.array(mdict["Bz"])
-    savemat(filename, mdict, appendmat=False)
 
 def export_ASDEX_Upgrade_grid(ext_data_folder, shot, times, eq_exp, eq_diag, eq_ed, \
                                     bt_vac_correction=1.005, IDA_exp="AUGD", IDA_ed=0, \

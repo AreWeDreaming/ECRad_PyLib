@@ -127,20 +127,12 @@ class plotting_core:
             self.setup_axes("Te_no_ne" + twinx, r"$T_\mathrm{rad}$, $T_\mathrm{e}$", \
                             r"Optical depth $\tau_\omega$")
         mathrm = r"\mathrm"
-        if(dstf == "Mx"):
-            dist_simpl = r"M"
-            dist = r"MJ"
-            dist = r"[" + dist + r"]"
-        elif(dstf == "TB"):
+        if(dstf == "Th"):
             dist_simpl = r"Fa"
-            dist = r"Alb"
-            dist = r"[" + dist + r"]"
-        elif(dstf == "Th"):
-            dist_simpl = r"Hu"
             dist = r"Alb"
             dist = r"[" + dist + r"]"
         elif(dstf == "Re"):
-            dist_simpl = r"Fa"
+            dist_simpl = r"Th"
             dist = r"RELAX"
             dist = r"[" + dist + r"]"
         elif(dstf == "Ge"):
@@ -258,7 +250,7 @@ class plotting_core:
             if(self.diag_color_index[0] > len(self.diag_colors)):
                 print("Warning too many diagnostics to plot - ran out of unique colors")
                 self.diag_color_index[0] = 0
-            
+        self.axlist[0].set_xlim(0.0, np.max(rhop[mask]) * 1.05)
         self.create_legends("Te_no_ne" + twinx)
         return self.fig
 
@@ -350,6 +342,7 @@ class plotting_core:
         self.setup_axes("single", "Frequencies")
         if(N_ray == 1):
             mask = Result.ray["rhop" + mode_str][itime][ich] > 0
+            s = Result.ray["s" + mode_str][itime][ich][mask]
             R = np.sqrt(Result.ray["x" + mode_str][itime][ich][mask]**2 + \
                         Result.ray["y" + mode_str][itime][ich][mask]**2)
             freq = np.zeros(len(R))
@@ -358,6 +351,7 @@ class plotting_core:
             f_p = np.sqrt(Result.ray["X" + mode_str][itime][ich][mask]) * freq
         else:
             mask = Result.ray["rhop" + mode_str][itime][ich][0] > 0
+            s = Result.ray["s" + mode_str][itime][ich][0][mask]
             R = np.sqrt(Result.ray["x" + mode_str][itime][ich][0][mask]**2 + \
                         Result.ray["y" + mode_str][itime][ich][0][mask]**2)
             freq = np.zeros(len(R))
@@ -387,10 +381,11 @@ class plotting_core:
                          y_range_in=self.y_range_list[0], ax_flag="f")
         self.model_color_index = 0
         for n, color in zip(range(1, 4),[(0.4, 0.4, 0.0), (0.2, 0.6, 0.0), (0.0, 0.4, 0.4)]):
-            spl = InterpolatedUnivariateSpline(R, f_c_1 * n - freq)
-            R_res = spl.roots()
-            if(len(R_res) > 0):
-                self.axlist[0].vlines(R_res, self.y_range_list[0][0], self.y_range_list[0][1], linestyle='dotted', color=color)
+            R_spl = InterpolatedUnivariateSpline(s, R)
+            fc_spl = InterpolatedUnivariateSpline(s, f_c_1 * n - freq)
+            s_res = fc_spl.roots()
+            if(len(s_res) > 0):
+                self.axlist[0].vlines(R_spl(s_res), self.y_range_list[0][0], self.y_range_list[0][1], linestyle='dotted', color=color)
         self.create_legends("single")
         return self.fig
 

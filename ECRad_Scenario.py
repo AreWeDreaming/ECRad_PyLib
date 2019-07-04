@@ -10,7 +10,7 @@ from scipy.io import loadmat, savemat
 import sys
 from GlobalSettings import globalsettings
 import numpy as np
-from equilibrium_utils import EQDataSlice, special_points
+from equilibrium_utils import EQDataSlice, special_points, EQDataExt
 from Diags import Diag, ECRH_diag, ECI_diag, EXT_diag
 from distribution_io import load_f_from_mat
 if(globalsettings.AUG):
@@ -342,8 +342,6 @@ class ECRadScenario:
     def load_dist_obj(self, filename):
         self.dist_obj = load_f_from_mat(filename, use_dist_prefix=True)
         
-        
-    
 if(__name__ == "__main__"):
     newScen = ECRadScenario(noLoad=True)
     newScen.from_mat( path_in="/tokp/work/sdenk/ECRad/ECRad_35662_ECECTCCTA_ed2.mat")
