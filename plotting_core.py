@@ -459,8 +459,8 @@ class plotting_core:
 
     def diag_calib_avg(self, diag, freq, calib, rel_dev, title):
         self.setup_axes("single", title, r"Rel. mean scatter for diagn. " + diag.name)
-        mask = np.abs(rel_dev * 100.0) > 0.2
-        print("Not plotting the following channels due to more than 20% statistical uncertainty")
+        mask = np.abs(rel_dev * 100.0) > 1.0
+        print("Not plotting the following channels due to more than 100% statistical uncertainty")
         print(np.array(range(1, len(calib) + 1))[np.logical_not(mask)])
         print("Not plotting the following channels since their calibration factor is more than 20 times larger than median of the calibration factors of all channels")
         print(np.array(range(1, len(calib) + 1))[np.abs(calib) > np.median(np.abs(calib)) * 20])
@@ -471,12 +471,13 @@ class plotting_core:
             name=title, marker="+", \
                  y_range_in=self.y_range_list[0], ax_flag="Calib")
         self.create_legends("errorbar")
+        self.fig.tight_layout()
         return self.fig, self.fig_2
 
     def diag_calib_slice(self, diag, freq, calib, std_dev, title):
         self.setup_axes("single", title, r"Rel. mean scatter for diagn. " + diag.name)
-        mask = np.abs(std_dev) > 0.2 * calib
-        print("Not plotting the following channels due to more than 20% statistical uncertainty")
+        mask = np.abs(std_dev) < calib
+        print("Not plotting the following channels due to more than 100% statistical uncertainty")
         print(np.array(range(1, len(calib) + 1))[np.logical_not(mask)])
         print("Not plotting the following channels since their calibration factor is more than 20 times larger than median of the calibration factors of all channels")
         print(np.array(range(1, len(calib) + 1))[np.abs(calib) > np.median(np.abs(calib)) * 20])
@@ -487,6 +488,7 @@ class plotting_core:
             name=title, marker="+", \
                  y_range_in=self.y_range_list[0], ax_flag="Calib")
         self.create_legends("errorbar")
+        self.fig.tight_layout()
         return self.fig, self.fig_2
 
 
@@ -3146,37 +3148,37 @@ class plotting_core:
                                 ax.vlines(vline, -10 * np.abs(y_range[0]), 10 * y_range[1], linestyle='dotted')
                 elif(ax_flag == "Calib"):
                     ax.set_xlabel(r"$f$ [GHz]")
-                    ax.set_ylabel(r"$c$ [keV/(V/s)]")
+                    ax.set_ylabel(r"$c$ [keV/(V)]")
                 elif(ax_flag == "Calib_trace"):
                     ax.set_xlabel(r"$t$ [s]")
-                    ax.set_ylabel(r"$c$ [eV/(V/s)]")
+                    ax.set_ylabel(r"$c$ [eV/(V)]")
                 elif(ax_flag == "Sig_vs_Trad"):
                     ax.set_xlabel(r"$T_\mathrm{rad,mod}$ [keV]")
-                    ax.set_ylabel(r"Sig [V/s]")
+                    ax.set_ylabel(r"Sig [V]")
                 elif(ax_flag == "V_vs_Trad"):
                     ax.set_xlabel(r"$T_\mathrm{rad,mod}$ [keV]")
-                    ax.set_ylabel(r"$V^*_\mathrm{diag}$ [V/s]")
+                    ax.set_ylabel(r"$V^*_\mathrm{diag}$ [V]")
                 elif(ax_flag == "V_vs_Trad_small"):
                     ax.set_xlabel(r"$T_\mathrm{rad,mod}$ [keV]")
-                    ax.set_ylabel(r"$V^*_\mathrm{diag}$ [mV/s]")
+                    ax.set_ylabel(r"$V^*_\mathrm{diag}$ [mV]")
                 elif(ax_flag == "Sig_vs_Trad_small"):
                     ax.set_xlabel(r"$T_\mathrm{rad,mod}$ [keV]")
-                    ax.set_ylabel(r"Sig [mV/s]")
+                    ax.set_ylabel(r"Sig [mV]")
                 elif(ax_flag == "Sig_vs_time"):
                     ax.set_xlabel(r"$t$ [s]")
-                    ax.set_ylabel(r"Sig [V/s]")
+                    ax.set_ylabel(r"Sig [V]")
                 elif(ax_flag == "Sig_vs_Trad"):
-                    ax.set_xlabel(r"Sig [V/s]")
+                    ax.set_xlabel(r"Sig [V]")
                     ax.set_ylabel(r"$T_\mathrm{rad,mod}$ [keV]")
                 elif(ax_flag == "Ang_vs_Trad"):
                     ax.set_xlabel(r"$T_\mathrm{rad,mod}$ [keV]")
                     ax.set_ylabel(r"$\theta_\mathrm{pol}$ [$^\circ$]")
                 elif(ax_flag == "Ang_vs_Sig"):
-                    ax.set_xlabel(r"Sig [V/s]")
+                    ax.set_xlabel(r"Sig [V]")
                     ax.set_ylabel(r"$\theta_\mathrm{pol}$ [$^\circ$]")
                 elif(ax_flag == "calib_vs_launch"):
                     ax.set_xlabel(r"$\theta_\mathrm{pol}$ [$^\circ$]")
-                    ax.set_ylabel(r"$c$ [keV/(V/s)]")
+                    ax.set_ylabel(r"$c$ [keV/(V)]")
                 elif(ax_flag == "Rz"):
                     ax.set_xlabel(r"$R$ [m]")
                     ax.set_ylabel(r"$z$ [m]")

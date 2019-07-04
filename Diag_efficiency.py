@@ -145,9 +145,10 @@ def current_weight(DistWaveFile):
     plt.gca().set_aspect("equal")
 #     plt.show()
 if(__name__ == "__main__"):
+    fig = plt.figure()
     #current_weight("/tokp/work/sdenk/ECRad/ECRad_35662_ECECTACTC_ed9.mat")
-    current_weight("/tokp/work/sdenk/DRELAX_Results/ECRad_35662_ECECTACTC_run0207.mat")
-    diag_weight("/tokp/work/sdenk/ECRad/ECRad_35662_ECECTACTC_ed7.mat", 4.4, 81, \
-                "/tokp/work/sdenk/ECRad/ECRad_35662_ECECTACTC_ed9.mat")
+    current_weight("/tokp/work/sdenk/DRELAX_Results/ECRad_35662_ECECTACTC_run0209.mat")
+#     diag_weight_stand_alone("/tokp/work/sdenk/ECRad/ECRad_35662_ECECTACTC_ed7.mat", 4.4, 81, \
+#                 "/tokp/work/sdenk/ECRad/ECRad_35662_ECECTACTC_ed9.mat")
     plt.show()
     
