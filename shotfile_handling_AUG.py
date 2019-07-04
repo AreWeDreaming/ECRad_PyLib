@@ -894,16 +894,42 @@ def get_ECI_launch(diag, shot):
 
 def get_shot_heating(shot):
     data = []
-    ECS = dd.shotfile('ECS', int(shot))
-    NIS = dd.shotfile('NIS', int(shot))
-    signal = ECS.getSignal(\
+    try:
+        ECS = dd.shotfile('ECS', int(shot))
+        signal = ECS.getSignal(\
                       "PECRH") * 1.e-6
-    t = ECS.getTimeBase("PECRH")
-    data.append([t, signal])
-    signal = NIS.getSignal(\
+        t = ECS.getTimeBase("PECRH")
+        data.append([t, signal])
+    except:
+        print("No ECRH shot file for current shot")
+        print("Setting ECRH power to zero")
+        t = np.linspace(0.0, 10.0, 10000)
+        signal = np.zeros(len(t))
+        data.append([t, signal])
+    try:
+        NIS = dd.shotfile('NIS', int(shot))
+        signal = NIS.getSignal(\
                       "PNI") * 1.e-6
-    t = NIS.getTimeBase("PNI")
-    data.append([t, signal ])
+        t = NIS.getTimeBase("PNI")
+        data.append([t, signal ])
+    except:
+        print("No NBI shot file for current shot")
+        print("Setting NBI power to zero")
+        t = np.linspace(0.0, 10.0, 10000)
+        signal = np.zeros(len(t))
+        data.append([t, signal])
+    try:
+        ICP = dd.shotfile('ICP', int(shot))
+        signal = NIS.getSignal(\
+                      "Picr") * 1.e-6
+        t = NIS.getTimeBase("Picr")
+        data.append([t, signal ])
+    except:
+        print("No ICRH shot file for current shot")
+        print("Setting ICRH power to zero")
+        t = np.linspace(0.0, 10.0, 10000)
+        signal = np.zeros(len(t))
+        data.append([t, signal])
     return data
 
 def get_plasma_current(shot):

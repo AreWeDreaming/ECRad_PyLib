@@ -527,13 +527,24 @@ class ECRadResults:
             increase_time_dim = True
         elif(len(mdict["time"]) == 1):
             increase_time_dim = True
+        increase_diag_dim = False
+        try:
+            if(len(np.unique(mdict["diag_name"])) == 1):
+                increase_diag_dim = True
+        except KeyError:
+            if(len(np.unique(mdict["launch_diag_name"])) == 1):
+                increase_diag_dim = True
         for key in mdict.keys():
             if(not key.startswith("_")):  # throw out the .mat specific information
                 try:
                     if(key in at_least_1d_keys and np.isscalar(mdict[key])):
                         mdict[key] = np.atleast_1d(mdict[key])
                     elif(key in at_least_2d_keys):
-                        mdict[key] = np.atleast_2d(mdict[key])
+                        if(key in ["calib", "rel_dev", "sys_dev"]):
+                            if(increase_diag_dim):
+                                mdict[key] = np.array(mdict[key])
+                        else:
+                            mdict[key] = np.atleast_2d(mdict[key])
                     elif(key in at_least_3d_keys):
                         if(increase_time_dim):
                             if(key == "std_dev_mat" or key == "calib_mat"):
@@ -541,7 +552,7 @@ class ECRadResults:
                                     mdict[key][i] = np.array([mdict[key][i]])
                             else:
                                 mdict[key] = np.array([mdict[key]])
-                        elif(key == "std_dev_mat" or key == "calib_mat"):
+                        elif((key == "std_dev_mat" or key == "calib_mat") and increase_diag_dim):
                             mdict[key] = np.atleast_3d([mdict[key]])
                 except Exception as e:
                     print(key)

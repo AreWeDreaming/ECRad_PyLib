@@ -512,8 +512,8 @@ class plotting_core:
                 data=[result.time[result.masked_time_points[diag]], Trad.T[ch]], \
                 color=color, marker="--",  name=label_Trad, y_range_in=self.y_range_list[1], ax_flag="Trad_trace")
             if(extra_info):
-                heating_labels = [r"$P_\mathrm{ECRH}$", r"$P_\mathrm{NBI}$"]
-                heating_color = ["blue", "red"]
+                heating_labels = [r"$P_\mathrm{ECRH}$", r"$P_\mathrm{NBI}$", r"$P_\mathrm{ICRH}$"]
+                heating_color = ["blue", "red", "green"]
                 for i, P_trace in enumerate(heating_array):
                     if(np.sum(P_trace[1]) > 1.e-3):
                         self.axlist[2], self.y_range_list[2] = self.add_plot(self.axlist[2], \
