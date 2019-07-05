@@ -300,7 +300,8 @@ def get_data_calib_entire_shot(diag, shot, ext_resonances=None, calib=None):
 
 def get_data_calib(diag, shot=0, time=None, eq_exp="AUGD", eq_diag="EQH", \
                    eq_ed=0, calib=None, std_dev_calib=None, sys_dev_calib=None, \
-                   ext_resonances=None, name="", t_smooth=None, median=True):
+                   ext_resonances=None, name="", t_smooth=None, median=True, \
+                   aux_diag=None):
     # Gets the data from all ECE diagnostics that have shotfiles
     # Returns std deviation in keV, rho poloidal resonance and Trad in keV
     if(t_smooth is None):
@@ -324,7 +325,7 @@ def get_data_calib(diag, shot=0, time=None, eq_exp="AUGD", eq_diag="EQH", \
     sys_dev_data = []
     if(diag.diag == "RMD"):
         try:
-            diag_shotfile = dd.shotfile("RMD", int(shot), experiment=diag.exp, edition=int(diag.ed))
+            diag_shotfile = dd.shotfile(diag.diag, int(shot), experiment=diag.exp, edition=int(diag.ed))
         except:
             try:
                 print("Warning no RMD shotfile found - falling back to CEC")
@@ -336,7 +337,7 @@ def get_data_calib(diag, shot=0, time=None, eq_exp="AUGD", eq_diag="EQH", \
                 return None, None
     elif(diag.diag == "CEC"):
         try:
-            diag_shotfile = dd.shotfile("CEC", int(shot), experiment=diag.exp, edition=diag.ed)
+            diag_shotfile = dd.shotfile(diag.diag, int(shot), experiment=diag.exp, edition=diag.ed)
         except:
             try:
                 print("Warning no CEC shotfile found - trying RMD")
@@ -363,23 +364,34 @@ def get_data_calib(diag, shot=0, time=None, eq_exp="AUGD", eq_diag="EQH", \
     elif(diag.name == "ECI"):
         try:
             diag_shotfile = dd.shotfile(diag.diag, int(shot), experiment=diag.exp, edition=diag.ed)
-            diag_aux_shotfile = dd.shotfile("RZO", int(shot), experiment='ECEI', edition=0)
+            diag_aux_shotfile = dd.shotfile(diag.Rz_diag, int(shot), experiment=diag.Rz_exp, edition=diag.Rz_ed)
         except Exception as e:
             print("Could not open shotfile for " + diag.exp + " " + diag.diag + " ed " + str(diag.ed))
             print("reason", e)
             return None, None
     elif(diag.name == "ECO"):
         try:
-            diag_shotfile = dd.shotfile("TDI", int(shot), experiment=diag.exp, edition=diag.ed)
-            diag_aux_shotfile = dd.shotfile("RZO", int(shot), experiment='ECEI', edition=0)
+            diag_shotfile = dd.shotfile(diag.diag, int(shot), experiment=diag.exp, edition=diag.ed)
+            diag_aux_shotfile = dd.shotfile(diag.Rz_diag, int(shot), experiment=diag.Rz_exp, edition=diag.Rz_ed)
         except Exception as e:
             print("Could not open shotfile for " + diag.exp + " " + diag.diag + " ed " + str(diag.ed))
             print("reason", e)
             return None, None
     elif(diag.name == "ECN"):
         try:
-            diag_shotfile = dd.shotfile("TDI", int(shot), experiment=diag.exp, edition=diag.ed)
-            diag_aux_shotfile = dd.shotfile("RZN", int(shot), experiment='ECEI', edition=0)
+            diag_shotfile = dd.shotfile(diag.diag, int(shot), experiment=diag.exp, edition=diag.ed)
+            diag_aux_shotfile = dd.shotfile(diag.Rz_diag, int(shot), experiment=diag.Rz_exp, edition=diag.Rz_ed)
+        except Exception as e:
+            print("Could not open shotfile for " + diag.exp + " " + diag.diag + " ed " + str(diag.ed))
+            print("reason", e)
+            return None, None
+    elif(diag.name == "ECE" and diag.diag == "RMC"):
+        try:
+            if(aux_diag is None):
+                print("To load RMC data aux_diag must be provided to get_data_calib")
+                raise(ValueError)
+            diag_shotfile = dd.shotfile(diag.diag, int(shot), experiment=diag.exp, edition=diag.ed)
+            diag_aux_shotfile = dd.shotfile(aux_diag.diag, int(shot), experiment=aux_diag.exp, edition=aux_diag.ed)
         except Exception as e:
             print("Could not open shotfile for " + diag.exp + " " + diag.diag + " ed " + str(diag.ed))
             print("reason", e)
@@ -484,6 +496,11 @@ def get_data_calib(diag, shot=0, time=None, eq_exp="AUGD", eq_diag="EQH", \
             print("Could not read signal for either Sig2, Sig3 or Sig4")
             print(e)
             return None, None
+    elif(diag.diag == "RMC"):
+        avail = diag_aux_shotfile.getParameter('parms-A', 'AVAILABL', dtype=np.float64).data
+        signals = (np.concatenate((diag_shotfile('Trad-A1', dtype=np.float64).data, \
+                                  diag_shotfile('Trad-A2', dtype=np.float64).data), axis=1)[:, avail==1]).T
+        diag_time = diag_shotfile.getTimeBase('Trad-A1')
     else:
         print("Error diag", diag.diag, " is unknown")
         return None, None

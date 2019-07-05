@@ -13,6 +13,7 @@ import numpy as np
 from equilibrium_utils import EQDataSlice, special_points, EQDataExt
 from Diags import Diag, ECRH_diag, ECI_diag, EXT_diag
 from distribution_io import load_f_from_mat
+from __builtin__ import True
 if(globalsettings.AUG):
     from ECRad_DIAG_AUG import DefaultDiagDict
 elif(globalsettings.TCV):
@@ -149,8 +150,16 @@ class ECRadScenario:
                     self.used_diags_dict.update({diagname: ECRH_diag(diagname, mdict["Diags_exp"][i], mdict["Diags_diag"][i], int(mdict["Diags_ed"][i]), \
                                               int(mdict["Extra_arg_1"][i]), float(mdict["Extra_arg_2"][i]), True)})
                 else:
-                    self.used_diags_dict.update({diagname: ECRH_diag(diagname, mdict["Diags_exp"][i], mdict["Diags_diag"][i], int(mdict["Diags_ed"][i]), \
-                                              int(mdict["Extra_arg_1"][i]), float(mdict["Extra_arg_2"][i]), bool(int(mdict["Extra_arg_3"][i])))})
+                    try:
+                        self.used_diags_dict.update({diagname: ECRH_diag(diagname, mdict["Diags_exp"][i], mdict["Diags_diag"][i], int(mdict["Diags_ed"][i]), \
+                                                  int(mdict["Extra_arg_1"][i]), float(mdict["Extra_arg_2"][i]), bool(int(mdict["Extra_arg_3"][i])))})
+                    except ValueError:
+                        if(mdict["Extra_arg_3"][i] == "True"):
+                            extra_arg_3 = True
+                        else:
+                            extra_arg_3 = False
+                        self.used_diags_dict.update({diagname: ECRH_diag(diagname, mdict["Diags_exp"][i], mdict["Diags_diag"][i], int(mdict["Diags_ed"][i]), \
+                                                  int(mdict["Extra_arg_1"][i]), float(mdict["Extra_arg_2"][i]), extra_arg_3)})
             elif(diagname == "EXT"):
                 if("Ext_launch_pol" in mdict.keys()):
                     self.used_diags_dict.update({diagname: EXT_diag(diagname, mdict["Ext_launch_geo"], mdict["Ext_launch_pol"])})

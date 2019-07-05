@@ -22,6 +22,7 @@ from wxEvents import ThreadFinishedEvt, Unbound_EVT_DONE_PLOTTING
 import wx
 from colorsys import hls_to_rgb
 from distribution_functions import Juettner2D
+from __builtin__ import False
 non_therm_dist_Relax = True
 home = '/afs/ipp-garching.mpg.de/home/s/sdenk/'
 
@@ -495,8 +496,16 @@ class plotting_core:
     def calib_evolution(self, diag, ch, ECRad_result_list, heating_array=None, time_ne = None, ne=None):
         self.title = False
         extra_info = heating_array is not None and time_ne is not None and  ne is not None
+        plot_power = False
         if(extra_info):
-            self.setup_axes("twinx_double", "\"+\" = $c$, \"-\" = $T_\mathrm{rad,mod}$  " + diag, r"Rel. mean scatter for diagn. " + diag)
+            for i, P_trace in enumerate(heating_array):
+                if(np.any(P_trace[1] > 1.e-3)):
+                    plot_power = True
+        if(extra_info):
+            if(plot_power):
+                self.setup_axes("twinx_double", "\"+\" = $c$, \"-\" = $T_\mathrm{rad,mod}$  " + diag, r"Rel. mean scatter for diagn. " + diag)
+            else:
+                self.setup_axes("twinx_double_single_second", "\"+\" = $c$, \"-\" = $T_\mathrm{rad,mod}$  " + diag, r"Rel. mean scatter for diagn. " + diag)
         else:
             self.setup_axes("twinx", "\"+\" = $c$, \"-\" = $T_\mathrm{rad,mod}$  " + diag, r"Rel. mean scatter for diagn. " + diag)
         # \"--\" $= T_\mathrm{e}$
@@ -529,15 +538,15 @@ class plotting_core:
                 heating_labels = [r"$P_\mathrm{ECRH}$", r"$P_\mathrm{NBI}$", r"$P_\mathrm{ICRH}$"]
                 heating_color = ["blue", "red", "green"]
                 for i, P_trace in enumerate(heating_array):
-                    if(np.sum(P_trace[1]) > 1.e-3):
-                        self.axlist[2], self.y_range_list[2] = self.add_plot(self.axlist[2], \
+                    if(np.any(P_trace[1] > 1.e-3)):
+                        self.axlist[3], self.y_range_list[3] = self.add_plot(self.axlist[3], \
                                                                              data=[P_trace[0], P_trace[1]], \
                                                                              color=heating_color[i], marker="-",  name=heating_labels[i],\
-                                                                             y_range_in=self.y_range_list[2], ax_flag="P_trace")
-                self.axlist[3], self.y_range_list[3] = self.add_plot(self.axlist[3], \
+                                                                             y_range_in=self.y_range_list[3], ax_flag="P_trace")
+                self.axlist[2], self.y_range_list[2] = self.add_plot(self.axlist[2], \
                                                                      data=[time_ne, ne / 1.e19], \
                                                                      color="black", marker="--",  name=r"$n_\mathrm{e}$", \
-                                                                     y_range_in=self.y_range_list[3], ax_flag="ne_trace")
+                                                                     y_range_in=self.y_range_list[2], ax_flag="ne_trace")
             i += 1
 #         self.axlist[1].set_ylim(0.0, self.y_range_list[1][1])
         self.axlist[0].set_ylim(0.0, self.y_range_list[0][1])
@@ -546,7 +555,11 @@ class plotting_core:
                 transform=self.axlist[0].transAxes,
                 color='black', fontsize=plt.rcParams['axes.titlesize'])
         if(extra_info):
-            self.create_legends("errorbar_double_twinx")
+            if(plot_power):
+                self.create_legends("errorbar_double_twinx")
+            else:
+                self.create_legends("errorbar_double_twinx_single_second")
+            self.axlist[0].get_xaxis().set_visible(False)
         else:
             self.create_legends("errorbar_twinx")
         return self.fig
@@ -2008,6 +2021,26 @@ class plotting_core:
             self.twinx_array = [True, True]
             self.x_share_list = [None, 0, 0, 0]
             self.y_share_list = [None, None, None, None]  # Note the twinx axes!
+            self.twinx_y_share = [None, None, None, None]
+            self.y_range_list = []
+            self.layout_2 = [1, 1, 1]
+            self.grid_locations_2 = [[0, 0]]
+            self.twinx_array_2 = [False]
+            self.x_share_list_2 = [None]
+            self.y_share_list_2 = [None]  # Note the twinx axes!
+            self.y_range_listv = []
+            steps = np.array([1.0, 5.0, 10.0])
+            steps_y = steps
+            steps_2 = steps
+            steps_2_y = steps_y
+            self.gridspec = plt.GridSpec(self.layout[1], self.layout[2])
+            self.gridspec_2 = plt.GridSpec(self.layout_2[1], self.layout_2[2])
+        elif(mode == "twinx_double_single_second"):
+            self.layout = [2, 2, 1]
+            self.grid_locations = [[0, 0], [1, 0]]
+            self.twinx_array = [True, False]
+            self.x_share_list = [None, 0, 0]
+            self.y_share_list = [None, None, None]  # Note the twinx axes!
             self.twinx_y_share = [None, None, None]
             self.y_range_list = []
             self.layout_2 = [1, 1, 1]
@@ -2574,6 +2607,18 @@ class plotting_core:
 #                    labs.append(lns[l].get_label())
 #                    lns_short.append(lns[l])
 #            leg = self.axlist[0].legend(lns_short, labs)
+        elif(mode == "errorbar_double_twinx_single_second"):
+            handles_primary, labels_primary = self.axlist[0].get_legend_handles_labels()
+            handles_twinx, labels_twinx = self.axlist[1].get_legend_handles_labels()
+            handles = handles_primary + handles_twinx
+            labels = labels_primary + labels_twinx
+            leg = self.axlist[0].legend(handles, labels)
+            leg.get_frame().set_alpha(1.0)
+            leg.draggable()
+            handles, labels = self.axlist[2].get_legend_handles_labels()
+            leg2 = self.axlist[2].legend(handles, labels)
+            leg2.get_frame().set_alpha(1.0)
+            leg2.draggable()
         elif(mode == "only_axis_1"):
             for i in range(len(self.axlist) - 1):
                 lns = self.axlist[i].get_lines()
@@ -3251,7 +3296,7 @@ class plotting_core:
                             else:
                                 ax.vlines(vline, -10 * np.abs(y_range[0]), 10 * y_range[1], linestyle='dotted')
                 elif(ax_flag == "ne_trace"):
-                    ax.set_xlabel(r"$t / \mathrm{s}$")
+                    ax.set_xlabel(r"$t [\mathrm{s}]$")
                     ax.set_ylabel(r"$n_\mathrm{e}\left[\SI{1.e19}{\per\cubic\metre}\right]$")
                 elif(ax_flag == "P_trace"):
                     ax.set_xlabel(r"$t \si{\second}$")
