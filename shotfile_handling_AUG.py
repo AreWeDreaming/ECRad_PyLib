@@ -881,16 +881,25 @@ def get_ECI_launch(diag, shot):
         print("Error when trying to read diag " + diag.Rz_diag + \
               " exp. " + diag.Rz_exp + " ed. " + str(diag.Rz_ed))
         return None
-    ECI_dict = {}
-    ECI_dict["x"] = np.array(ECI.getParameter('BEAMS', 'x').data)
-    ECI_dict["y"] = np.array(ECI.getParameter('BEAMS', 'y').data)
-    ECI_dict["z"] = np.array(ECI.getParameter('BEAMS', 'z').data)
-    ECI_dict["tor_ang"] = np.array(ECI.getParameter('BEAMS', 'tor_ang').data)
-    ECI_dict["pol_ang"] = np.array(ECI.getParameter('BEAMS', 'pol_ang').data)
-    ECI_dict["freq_ECI_in"] = np.array(ECI.getParameter('PAR', 'freq').data) * 1.e9
-    ECI_dict["dist_foc"] = np.array(ECI.getParameter('BEAMS', 'dist_foc').data)
-    ECI_dict["w"] = np.array(ECI.getParameter('BEAMS', 'w').data)
-    return ECI_dict
+    ECEI_data = {}
+    ECI_launch_dict = {}
+    for key in ['freq', 'x', "y", "z", "tor_ang", "pol_ang", "dist_foc", "w"]:
+    # Load shotfile data
+        if(key is not "freq"):
+            ECEI_data[key] = np.array(ECI.getParameter('BEAMS', key).data)
+        else:
+            ECEI_data[key] = np.array(ECI.getParameter('PAR', key).data) * 1.e9
+    for key in ['freq', 'x', "y", "z", "tor_ang", "pol_ang", "dist_foc", "w"]:
+    # Store the launch data in a one dimensional array with one entry for each channel (i.e. len = len(freq) * len(x)
+        ECI_launch_dict[key] = []
+        for i_LOS, quant in enumerate(ECEI_data["x"]):
+            for i_FREQ, freq in enumerate(ECEI_data["freq"]):
+                if(key is "freq"):
+                    ECI_launch_dict[key].append(ECEI_data[key][i_FREQ])
+                else:
+                    ECI_launch_dict[key].append(ECEI_data[key][i_LOS])
+        ECI_launch_dict[key] = np.array(ECI_launch_dict[key])
+    return ECI_launch_dict
 
 def get_shot_heating(shot):
     data = []

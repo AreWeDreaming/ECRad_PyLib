@@ -360,15 +360,15 @@ def get_diag_launch(shot, time, used_diag_dict, gy_dict=None, ECI_dict=None):
             if(ECI_dict is None):
                 raise ValueError("ECI_dict has to present if diag.name is ECN or ECO!")
             phi_ECE = (8.5e0) * 22.5 / 180.0 * np.pi
-            launch["f"] = np.copy(ECI_dict["freq_ECI_in"])
+            launch["f"] = np.copy(ECI_dict["freq"])
             launch["df"] = np.zeros(len(launch["f"]))
             launch["R"] = np.copy(np.sqrt(ECI_dict["x"] ** 2 + ECI_dict["y"] ** 2))
             launch["phi"] = np.copy(np.rad2deg(np.arctan2(ECI_dict["y"], ECI_dict["x"]) + phi_ECE))
             launch["z"] = np.copy(ECI_dict["z"])
             launch["theta_pol"] = np.copy(ECI_dict["pol_ang"])
             launch["phi_tor"] = np.copy(ECI_dict["tor_ang"])
-            launch["width"][:] = np.copy(ECI_dict["w"])
-            launch["dist_focus"][:] = np.copy(ECI_dict["dist_foc"])
+            launch["width"] = np.copy(ECI_dict["w"])
+            launch["dist_focus"] = np.copy(ECI_dict["dist_foc"])
 #            R_curv = np.copy(ECI_dict["dist_foc"])  # This is a curvature radius !
 #            dist_foc = (launch["f"] ** 2 * np.pi ** 2 * R_curv * launch["width"] ** 4) / (cnst.c ** 2 * R_curv ** 2 + launch["f"] ** 2 * np.pi ** 2 * launch["width"] ** 4)
 #            launch["dist_focus"][:] = dist_foc

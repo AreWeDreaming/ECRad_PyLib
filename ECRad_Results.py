@@ -542,7 +542,7 @@ class ECRadResults:
                     elif(key in at_least_2d_keys):
                         if(key in ["calib", "rel_dev", "sys_dev"]):
                             if(increase_diag_dim):
-                                mdict[key] = np.array(mdict[key])
+                                mdict[key] = np.array([mdict[key]])
                         else:
                             mdict[key] = np.atleast_2d(mdict[key])
                     elif(key in at_least_3d_keys):

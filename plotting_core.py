@@ -1104,11 +1104,6 @@ class plotting_core:
                     vessel_bd=None):
         shotstr = "\#" + str(shot) + " t = " + "{0:2.3f}".format(time) + " s  "
         self.setup_axes("single", r"ECE cold res. and ray " + shotstr, "Toroidal angle")
-        stop_at_axis = False
-        if(stop_at_axis):
-            if(EQ_obj == False):
-                EQ_obj = EQData(shot, EQ_exp=EQ_exp, EQ_diag=EQ_diag, EQ_ed=EQ_ed)
-            R, z = EQ_obj.get_axis(float(time))
         if(Rays is not None):
             if(not np.isscalar(Rays[0][0][0])):  # multiple rays stored
                 for i in range(len(Rays)):
@@ -1116,37 +1111,17 @@ class plotting_core:
         if(Rays is not None):
             if(tb_Rays is not None or straight_Rays is not None):
                 i_axis = len(Rays[0][1])
-                if(stop_at_axis):
-                    i_axis = 0
-                    for i in range(len(Rays[0][0])):
-                        i_axis = i
-                        if(Rays[0][0][::-1][i] < R):
-                            break
                 self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                       self.y_range_list[0], data=[ Rays[0][0][:i_axis] , Rays[0][1][:i_axis] ], marker="-", color="blue", \
                       name=r"Rays according to ECRad", ax_flag="Rz")
             else:
                 i_axis = len(Rays[0][1])
-                if(stop_at_axis):
-                    i_axis = 0
-                    for i in range(len(Rays[0][0])):
-                        i_axis = i
-                        if(Rays[0][0][::-1][i] < R):
-                            break
                 self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                       self.y_range_list[0], data=[ Rays[0][0][:i_axis] , Rays[0][1][:i_axis] ], marker="-", color="blue", \
                       ax_flag="Rz")
             for ray in Rays[1:len(Rays) - 1]:
                 try:
-                    i_axis = len(Rays[0][::-1])
-                    if(stop_at_axis):
-                        i_axis = 0
-                        for i in range(len(ray[0])):
-                            i_axis = i
-                            if(ray[0][::-1][i] < R):
-                                break
-                    else:
-                        i_axis = len(ray[0])
+                    i_axis = len(ray[0])
                     self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                       self.y_range_list[0], data=[ray[0][::-1][:i_axis] , ray[1][::-1][:i_axis] ], marker="-", color="blue", \
                       ax_flag="Rz")
@@ -1183,16 +1158,7 @@ class plotting_core:
                       name=r"Cold res. pos.", \
                       ax_flag="Rz")
         equilibrium = True
-        if(equilibrium and EQ_obj == False):
-            if(EQ_exp and EQ_ed is not None and EQ_diag is not None):
-                EQ_obj = EQData(shot, EQ_exp=EQ_exp, EQ_diag=EQ_diag, EQ_ed=EQ_ed)
-            else:
-                EQ_obj = EQData(shot, EQ_exp='AUGD', EQ_diag='EQH', EQ_ed=0)
-            EQ_Slice = EQ_obj.GetSlice(time)
-            R = EQ_Slice.R
-            z = EQ_Slice.z
-            rhop = EQ_Slice.rhop
-        else:
+        if(equilibrium and EQ_obj):
             R = EQ_obj.slices[np.argmin(np.abs(EQ_obj.times - time))].R
             z = EQ_obj.slices[np.argmin(np.abs(EQ_obj.times - time))].z
             rhop = EQ_obj.slices[np.argmin(np.abs(EQ_obj.times - time))].rhop
