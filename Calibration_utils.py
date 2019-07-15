@@ -18,10 +18,9 @@ Created on Jan 17, 2019
 '''
 
 
-def calibrate(shot, timepoints, Trad_matrix, diag, smoothing, masked_channels=None):
+def calibrate(shot, timepoints, Trad_matrix, calib_diag, aux_diag, masked_channels=None):
     if(masked_channels is None):
         masked_channels = np.zeros(len(Trad_matrix[0]), dtype=np.bool)
-    t_smooth = 1.e-3
     median = True
     calib_mat = []
     std_dev_mat = []
@@ -31,9 +30,10 @@ def calibrate(shot, timepoints, Trad_matrix, diag, smoothing, masked_channels=No
     ext_resonances_dummy = np.zeros(Trad_matrix.shape)
     calib_dummy[:] = 1.e0  # calibration 1.0
     ext_resonances_dummy[:, :] = 0.e0
-    std_dev_data, data = get_data_calib(diag=diag, shot=shot, time=timepoints, \
+    std_dev_data, data = get_data_calib(diag=calib_diag, shot=shot, time=timepoints, \
                    calib=calib_dummy, std_dev_calib=std_dev_dummy, \
-                   ext_resonances=ext_resonances_dummy, t_smooth=t_smooth, median=median)
+                   ext_resonances=ext_resonances_dummy, \
+                   t_smooth=calib_diag.t_smooth, median=median, aux_diag = aux_diag)
     std_dev_data = std_dev_data[0]
     # Retrieves std deviation and signal from the diagnostic
     ch_cnt = len(Trad_matrix[0])

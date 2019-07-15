@@ -20,11 +20,7 @@ if(globalsettings.AUG):
         globalsettings.AUG = False
 from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
 from scipy.optimize import minimize
-import scipy.constants as cnst
 from plotting_configuration import *
-import shutil
-import wx
-from wxEvents import *
 from shutil import copyfile
 
 tb_path = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/torbeam_repo/TORBEAM/branches/lib-OUT/"
@@ -102,111 +98,6 @@ def read_topfile(working_dir):
     data_dict["Bz"] = data_dict["Bz"].reshape((n, m)).T
     data_dict["Psi"] = data_dict["Psi"].reshape((n, m)).T
     return data_dict
-
-def make_topfile(working_dir, shot, time, eq_exp, eq_diag, eq_ed, bt_vac_correction=1.005, copy_Te_ne=True):
-    # Note this routine uses MBI-BTFABB for a correction of the toroidal magnetic field
-    # Furthermore, an empirical vacuum BTF correction factor of bt_vac_correction is applied
-    # This creates a topfile that is consistent with the magnetic field used in OERT
-    print("Creating topfile for #{0:d} t = {1:1.2f}".format(shot, time))
-    columns = 3  # number of coloumns
-    EQ_obj = EQData(shot, EQ_exp=eq_exp, EQ_diag=eq_diag, EQ_ed=eq_ed, bt_vac_correction=bt_vac_correction)
-    EQ_t = EQ_obj.GetSlice(time)
-    print("Magnetic axis position: ", "{0:1.3f}".format(EQ_t.R_ax))
-    topfile = open(os.path.join(working_dir, "topfile"), "w")
-    topfile.write('Number of radial and vertical grid points in AUGD:EQH:{0:5n}: {1:1.4f}\n'.format(shot, time))
-    topfile.write('   {0: 8n} {1: 8n}\n'.format(len(EQ_t.R), len(EQ_t.z)))
-    topfile.write('Inside and Outside radius and psi_sep\n')
-    topfile.write('   {0: 1.8E}  {1: 1.8E}  {2: 1.8E}'.format(EQ_t.R[0], EQ_t.R[-1], \
-                                                              1.0))  # 1.0000
-    # Normalize PSI
-    topfile.write('\n')
-    topfile.write('Radial grid coordinates\n')
-    cnt = 0
-    for i in range(len(EQ_t.R)):
-        topfile.write("  {0: 1.8E}".format(EQ_t.R[i]))
-        if(cnt == columns - 1):
-            topfile.write("\n")
-            cnt = 0
-        else:
-            cnt += 1
-    if(cnt != 0):
-        topfile.write('\n')
-    topfile.write('Vertical grid coordinates\n')
-    cnt = 0
-    for i in range(len(EQ_t.z)):
-        topfile.write("  {0: 1.8E}".format(EQ_t.z[i]))
-        if(cnt == columns - 1):
-            topfile.write("\n")
-            cnt = 0
-        else:
-            cnt += 1
-    # ivR = np.argmin(np.abs(pfm_dict["Ri"] - rv))
-    # jvz = np.argmin(np.abs(pfm_dict["zj"] - vz))
-    # plt.plot(pfm_dict["Ri"],B_t[0], "^", label = "EQH B")
-    # print("BTFABB correction",Btf0, Btf0_eq )
-    # print("R,z",pfm_dict["Ri"][ivR],pfm_dict["zj"][jvz])
-    B_r = EQ_t.Br.T  # in topfile R is the small index (i.e. second index in C) and z the large index (i.e. first index in C)
-    B_t = EQ_t.Bt.T  # in topfile z comes first regardless of the arrangement
-    B_z = EQ_t.Bz.T  # in topfile z comes first regardless of the arrangement
-    Psi = EQ_t.rhop.T**2  # in topfile z comes first regardless of the arrangement
-    if(cnt != 0):
-        topfile.write('\n')
-    topfile.write('B_r on grid\n')
-    cnt = 0
-    for i in range(len(B_r)):
-        for j in range(len(B_r[i])):
-            topfile.write("  {0: 1.8E}".format(B_r[i][j]))
-            if(cnt == columns - 1):
-                topfile.write("\n")
-                cnt = 0
-            else:
-                cnt += 1
-    if(cnt != 0):
-        topfile.write('\n')
-    topfile.write('B_t on grid\n')
-    cnt = 0
-    for i in range(len(B_t)):
-        for j in range(len(B_t[i])):
-            topfile.write("  {0: 1.8E}".format(B_t[i][j]))
-            if(cnt == columns - 1):
-                topfile.write("\n")
-                cnt = 0
-            else:
-                cnt += 1
-    if(cnt != 0):
-        topfile.write('\n')
-    cnt = 0
-    topfile.write('B_z on grid\n')
-    for i in range(len(B_z)):
-        for j in range(len(B_z[i])):
-            topfile.write("  {0: 1.8E}".format(B_z[i][j]))
-            if(cnt == columns - 1):
-                topfile.write("\n")
-                cnt = 0
-            else:
-                cnt += 1
-    if(cnt != 0):
-        topfile.write('\n')
-    cnt = 0
-    topfile.write('Normalised psi on grid\n')
-    for i in range(len(Psi)):
-        for j in range(len(Psi[i])):
-            topfile.write("  {0: 1.8E}".format(Psi[i][j]))
-            if(cnt == columns - 1):
-                topfile.write("\n")
-                cnt = 0
-            else:
-                cnt += 1
-    topfile.flush()
-    topfile.close()
-    print("topfile successfully written to", os.path.join(working_dir, "topfile"))
-    if(copy_Te_ne):
-        print("Copying Te and ne")
-        copyfile(os.path.join(working_dir, "Te_file.dat"), \
-                 os.path.join(working_dir, "Te.dat"))
-        copyfile(os.path.join(working_dir, "ne_file.dat"), \
-                 os.path.join(working_dir, "ne.dat"))
-    return 0
 
 def make_topfile_no_data_load(working_dir, shot, time, R, z, Psi, Br, Bt, Bz, Psi_ax, Psi_sep, ITM=False):
     # Note this routine uses MBI-BTFABB for a correction of the toroidal magentic field
@@ -513,128 +404,6 @@ def make_topfile_from_ext_data(working_dir, shot, time, EQ, rhop, Te, ne, grid=F
                     cnt += 1
     return 0
 
-def make_WKBEAM_file(filename, data_dict, key):
-    WKBEAM_file = open(filename, "w")
-    WKBEAM_file.write("{0:d} {1:d}\n".format(len(data_dict["R_new"]), len(data_dict["z_new"])))
-    for i in range(len(data_dict["R_new"])):
-        WKBEAM_file.write("{0:3.7e} ".format(data_dict["R_new"][i]))
-    WKBEAM_file.write("\n")
-    for i in range(len(data_dict["z_new"])):
-        WKBEAM_file.write("{0:3.7e} ".format(data_dict["z_new"][i]))
-    WKBEAM_file.write("\n")
-    for i in range(len(data_dict["z_new"])):
-        for j in range(len(data_dict["R_new"])):
-            WKBEAM_file.write("{0:3.7e} ".format(data_dict[key].T[i][j]))
-        WKBEAM_file.write("\n")
-    WKBEAM_file.flush()
-    WKBEAM_file.close()
-
-# def smooth_2D_profile(folder, filename, index):
-#    if("Te" in filename):
-#        level = 100
-#    else:
-#        level = np.log(1.e18)
-#    keys = ["R", "z", filename]
-#    data_dict = {}
-#    for key in keys:
-#        data_dict[key] = np.loadtxt(os.path.join(folder, key + "{0:n}".format(index))).T
-#    cs = plt.contour(data_dict["R"], data_dict["z"], data_dict[filename], levels=level)
-#    p = cs.collections[0].get_paths()[0]
-#    v = p.vertices
-#    R_c = v[:,0]
-#    z_c = v[:,1]
-#    for i in range(len(z_c)):
-
-
-def make_input_data_for_WKBEAM(folder, index):
-    keys = ["R", "z", "Br", "Bt", "Bz", "ne", "Te", "Psi"]
-    data_dict = {}
-    for key in keys:
-        data_dict[key] = np.loadtxt(os.path.join(folder, key + "{0:n}".format(index))).T
-    data_dict["R"] *= 1.e2
-    data_dict["z"] *= 1.e2
-    data_dict["R_new"] = np.linspace(np.min(data_dict["R"]), 370, 200)
-    data_dict["z_new"] = np.linspace(np.min(data_dict["z"]), np.max(data_dict["z"]), 400)
-    for key in keys:
-        if(key == "Br"):
-            Br_spl = RectBivariateSpline(data_dict["R"], data_dict["z"], data_dict["Br"].T)
-            data_dict["Br"] = Br_spl(data_dict["R_new"], data_dict["z_new"])
-            make_WKBEAM_file(os.path.join(folder, "B_V_x.txt"), data_dict, key)
-        elif(key == "Bt"):
-            Bt_spl = RectBivariateSpline(data_dict["R"], data_dict["z"], data_dict["Bt"].T)
-            data_dict["Bt"] = Bt_spl(data_dict["R_new"], data_dict["z_new"])
-            make_WKBEAM_file(os.path.join(folder, "B_Tbc_y.txt"), data_dict, key)
-        elif(key == "Bz"):
-            Bz_spl = RectBivariateSpline(data_dict["R"], data_dict["z"], data_dict["Bz"].T)
-            data_dict["Bz"] = Bz_spl(data_dict["R_new"], data_dict["z_new"])
-        elif(key == "Psi"):
-            Psi_spl = RectBivariateSpline(data_dict["R"], data_dict["z"], data_dict["Psi"].T)
-            data_dict["Psi"] = Psi_spl(data_dict["R_new"], data_dict["z_new"])
-            make_WKBEAM_file(os.path.join(folder, "B_V_z.txt"), data_dict, key)
-        elif(key == "ne"):
-            ne_spl = RectBivariateSpline(data_dict["R"], data_dict["z"], np.log(data_dict["ne"].T))
-            data_dict["ne"] = np.exp(ne_spl(data_dict["R_new"], data_dict["z_new"]))
-            make_WKBEAM_file(os.path.join(folder, "ne.txt"), data_dict, key)
-        elif(key == "Te"):
-            Te_spl = RectBivariateSpline(data_dict["R"], data_dict["z"], np.log(data_dict["Te"]).T)
-            data_dict["Te"] = np.exp(Te_spl(data_dict["R_new"], data_dict["z_new"]))
-            make_WKBEAM_file(os.path.join(folder, "Te.txt"), data_dict, key)
-    np.savetxt(os.path.join(folder, "R{0:n}".format(index)), data_dict["R_new"] / 100)
-    np.savetxt(os.path.join(folder, "z{0:n}".format(index)), data_dict["z_new"] / 100)
-    np.savetxt(os.path.join(folder, "Br{0:n}".format(index)), data_dict["Br"])
-    np.savetxt(os.path.join(folder, "Bt{0:n}".format(index)), data_dict["Bt"])
-    np.savetxt(os.path.join(folder, "Bz{0:n}".format(index)), data_dict["Bz"])
-    np.savetxt(os.path.join(folder, "ne{0:n}".format(index)), data_dict["ne"])
-    np.savetxt(os.path.join(folder, "Te{0:n}".format(index)), data_dict["Te"])
-    np.savetxt(os.path.join(folder, "Psi{0:n}".format(index)), data_dict["Psi"])
-    fig1 = plt.figure()
-    plt.contourf(data_dict["R_new"] / 100, data_dict["z_new"] / 100, data_dict["ne"].T * 1.e-19, levels=np.linspace(0, 8.0, 30))
-    fig2 = plt.figure()
-    plt.contourf(data_dict["R_new"] / 100, data_dict["z_new"] / 100, data_dict["Te"].T * 1.e-3, levels=np.linspace(0, 1.5, 30))
-    plt.show()
-# make_input_data_for_WKBEAM("/ptmp1/work/sdenk/ECRad4/Ext_data/", 0)
-
-
-# read_EQ_from_ext_data("/ptmp1/work/sdenk/ECRad/Ext_data/", 6.00000048, 0, 1.005)
-
-
-def make_all_TORBEAM_rays_thread(args):
-    working_dir = str(args[0])
-    ECRad_data_dir = os.path.join(working_dir, "ECRad_data")
-    shot = int(args[1])
-    time = float(args[2])
-    eq_exp = args[3]
-    eq_diag = args[4]
-    eq_ed = args[5]
-    ray_launch = args[6]
-    t_index = int(args[7])
-    mode = int(args[8])
-    plasma = args[9]
-    host = args[10]
-    bt_vac_correction = args[11]
-    N_ray = args[12]
-    prepare_TB_data(ECRad_data_dir, shot, time, eq_exp, eq_diag, eq_ed, t_index, mode, plasma, copy_Te_ne=False, bt_vac_correction=bt_vac_correction)
-#    copyfile(os.path.join(ECRad_data_dir, "Te.dat"), \
-#                 os.path.join(tb_path, "Te.dat"))
-#    copyfile(os.path.join(ECRad_data_dir, "ne.dat"), \
-#             os.path.join(tb_path, "ne.dat"))
-#    copyfile(os.path.join(ECRad_data_dir, "topfile"), \
-#             os.path.join(tb_path, "topfile"))
-    make_all_TORBEAM_rays(ECRad_data_dir, shot, time, eq_exp, eq_diag, ray_launch, t_index, mode, plasma, N_ray)
-    evt_out_2 = ThreadFinishedEvt(Unbound_EVT_THREAD_FINISHED, host.GetId())
-    wx.PostEvent(host, evt_out_2)
-
-def make_LUKE_data_no_data_load(working_dir, shot, time, rho_prof, Te_prof, ne_prof, R, z, psi, Br, Bt, Bz, psi_ax, psi_sep, launches):
-    LUKE_dir = os.path.join(working_dir, "{0:d}_{1:1.2f}_gy21_input".format(shot, time))
-    if(not os.path.isdir(LUKE_dir)):
-        os.mkdir(LUKE_dir)
-    mode = -1  # hard coded to X-mode
-    prepare_TB_data_no_data_load(LUKE_dir, shot, time, rho_prof, Te_prof, ne_prof, R, z, psi, Br, Bt, Bz, psi_ax, psi_sep)
-    inbeam_index = 0
-    for launch in launches:
-        make_inbeam(LUKE_dir, launch, mode, time, inbeam_index, cyl=True)
-        inbeam_index += 1
-
 def make_TORBEAM_no_data_load(working_dir, shot, time, rho_prof, Te_prof, ne_prof, R, z, psi, Br, Bt, Bz, psi_ax, psi_sep, launches, ITM=False, ITER=False, Z_eff=None):
     TB_out_dir = os.path.join(working_dir, "{0:d}_{1:1.3f}_rays".format(shot, time))
     if(not os.path.isdir(TB_out_dir)):
@@ -683,47 +452,6 @@ def make_TORBEAM_no_data_load(working_dir, shot, time, rho_prof, Te_prof, ne_pro
         print("TORBEAM: Beam " + str(beam_index + 1) + "/" + str(len(launches)) + " complete")
         beam_index += 1
     os.chdir(org_path)
-
-def make_LUKE_data(working_dir, shot, time, t_index, plasma, eq_exp, eq_diag, eq_ed, bt_vac_correction):
-    LUKE_dir = os.path.join(working_dir, "{0:d}_{1:1.2f}_gy21_input".format(shot, time[t_index]))
-    if(not os.path.isdir(LUKE_dir)):
-        os.mkdir(LUKE_dir)
-    mode = -1  # hard coded to X-mode
-    prepare_TB_data(LUKE_dir, shot, time[t_index], eq_exp, eq_diag, eq_ed, t_index, mode, plasma, copy_Te_ne=False, bt_vac_correction=bt_vac_correction)
-    gy_list = load_all_ECRH(shot)
-    inbeam_index = 0
-    for gy in gy_list:
-        if(gy.avail):
-            if(gy.PW[np.argmin(np.abs(gy.time - time[t_index]))] > 1.0):
-                launch_set = launch()
-                launch_set.parse_gy(gy, time[t_index])
-                make_inbeam(LUKE_dir, launch_set, mode, time[t_index], inbeam_index, cyl=True)
-                inbeam_index += 1
-
-def prepare_TB_data(working_dir, shot, time, eq_exp, eq_diag, eq_ed, t_index, mode, plasma, copy_Te_ne=False, bt_vac_correction=1.005):
-    if(eq_exp == "Ext" or eq_exp == "ext" or eq_exp == "EXT"):
-        make_topfile_from_ext_data(working_dir, shot, time, \
-                                   plasma["eq_data"][t_index], plasma["rhop"][t_index], \
-                                   plasma["Te"][t_index], plasma["ne"][t_index], bt_vac_correction)
-        return
-    if(make_topfile(working_dir, shot, time, eq_exp, eq_diag, eq_ed, copy_Te_ne=copy_Te_ne, bt_vac_correction=bt_vac_correction)) is not 0:
-        return
-    TeSpline = InterpolatedUnivariateSpline(plasma["rhop"][t_index], plasma["Te"][t_index] / 1.e3, k=1)  # linear interpolation to avoid overshoot
-    neSpline = InterpolatedUnivariateSpline(plasma["rhop"][t_index], plasma["ne"][t_index] / 1.e19, k=1)  # linear interpolation to avoid overshoot
-    npts = 150  # Maximum TORBEAM can handle
-    rhop = np.linspace(0.0, 1.06, npts)
-    Te_file = open(os.path.join(working_dir, "Te.dat"), "w")
-    Te_file.write("{0: 7n}\n".format(npts))
-    Te_remapped = TeSpline(rhop)
-    for i in range(npts):
-        Te_file.write("{0: 1.12E} {1: 1.12E}\n".format(rhop[i], Te_remapped[i]))
-    Te_file.close()
-    ne_file = open(os.path.join(working_dir, "ne.dat"), "w")
-    ne_file.write("{0: 7n}\n".format(npts))
-    ne_remapped = neSpline(rhop)
-    for i in range(npts):
-        ne_file.write("{0: 1.12E} {1: 1.12E}\n".format(rhop[i], ne_remapped[i]))
-    ne_file.close()
 
 def prepare_TB_data_no_data_load(working_dir, shot, time, rho_prof, Te_prof, ne_prof, R, z, psi, Br, Bt, Bz, psi_ax, psi_sep, ITM=False):
     if(make_topfile_no_data_load(working_dir, shot, time, R, z, psi, Br, Bt, Bz, psi_ax, psi_sep, ITM) is not 0):
@@ -886,153 +614,6 @@ def make_inbeam(working_dir, launch, mode, time, inbeam_no=0, cyl=False, ITM=Fal
     inbeam_file.flush()
     inbeam_file.close()
 
-def make_all_TORBEAM_rays(working_dir, shot, time, eq_exp, eq_diag, ray_launch, t_index, mode, plasma, N_ray=1):
-    # shot = int(sys.argv[1])
-    # time = float(sys.argv[2])
-#    diag = sys.argv[3]
-#    mode = sys.argv[4]
-#    job = sys.argv[5]
-#    scope = sys.argv[6]
-    org_path = os.getcwd()
-    os.chdir(working_dir)
-    ray_out_path = os.path.join(working_dir, "ray")
-    if(not os.path.isdir(ray_out_path)):
-        os.mkdir(ray_out_path)
-    for ich in range(len(np.squeeze(ray_launch["f"][t_index][::N_ray]))):
-        launch_set = launch()
-        if(ray_launch["width"] is None):
-            launch_set.parse_custom(ray_launch["f"][t_index][::N_ray][ich], ray_launch["x"][t_index][::N_ray][ich], \
-                                    ray_launch["y"][t_index][::N_ray][ich], ray_launch["z"][t_index][::N_ray][ich],
-                                    ray_launch["tor_ang"][t_index][::N_ray][ich], ray_launch["pol_ang"][t_index][::N_ray][ich])
-        else:
-            launch_set.parse_custom(ray_launch["f"][t_index][::N_ray][ich], ray_launch["x"][t_index][::N_ray][ich], \
-                                    ray_launch["y"][t_index][::N_ray][ich], ray_launch["z"][t_index][::N_ray][ich],
-                                    ray_launch["tor_ang"][t_index][::N_ray][ich], ray_launch["pol_ang"][t_index][::N_ray][ich],
-                                    ray_launch["width"][t_index][::N_ray][ich], ray_launch["dist_focus"][t_index][::N_ray][ich])
-        make_inbeam(working_dir, launch_set, mode, time, cyl=True)
-        try:
-            call([os.path.join(tb_path, "a.out"), ""])
-        except OSError:
-            print("Weird OS error")
-            os.chdir(org_path)
-            return
-        copyfile(os.path.join(working_dir, "t1_LIB.dat"), \
-             os.path.join(ray_out_path, "ray_ch_R{0:04d}tb.dat".format(ich + 1)))
-        copyfile(os.path.join(working_dir, "t1tor_LIB.dat"), \
-             os.path.join(ray_out_path, "ray_ch_x{0:04d}tb.dat".format(ich + 1)))
-        try:
-            infile = os.path.join(working_dir, "fort.41")
-            lines = infile.readlines()
-            infile.close()
-            outfile = open(os.path.join(ray_out_path, "beam_{0:d}_detail_tb.dat".format(ich + 1)), "w")
-            header = " "
-            quants = ["s [m]", "R [m]", "z [m]", "phi [deg]", "rho_p", \
-                      "n_e [1.e19 m^-3]", "T_e [keV]", "B_r [T]", \
-                      "B_t [T]", "B_z [T]", "N", "N_par", "k_im [m-1]", \
-                      "P/P_0", "dIds [A/m]", "(dP/ds)/P"]
-            for quant in quants:
-                header += "{0:12s} ".format(quant)
-            outfile.write(header)
-            for line in lines:
-                outfile.write(line)
-            outfile.flush()
-            outfile.close()
-        except IOError:
-            print("No detailed output from torbeam")
-        print("TORBEAM: Channel " + str(ich + 1) + "/" + str(len(ray_launch["f"][t_index][::N_ray])) + " complete")
-    os.chdir(org_path)
-# make_ext_data_for_testing_grids("/ptmp1/work/sdenk/ECRad3/Ext_data", 30839, np.array([2.5]), "AUGD", "EQH", 0)
-# make_ext_data_for_testing("/ptmp1/work/sdenk/ECRad2/Ext_data", 33698, np.array([1.06]), "AUGD", "EQH", 0)
-
-def make_LUKE_input_mat(working_dir, shot, times, IDA_exp="AUGD", IDA_ed=0, EQ_exp="AUGD", EQ_diag="EQH", EQ_ed=0, bt_vac_correction=1.005):
-    index = 0
-    EQ_obj = EQData(shot, EQ_exp=EQ_exp, EQ_diag=EQ_diag, EQ_ed=EQ_ed, bt_vac_correction=bt_vac_correction)
-    plasma_data = load_IDA_data(shot, timepoints=times, exp="AUGD", ed=0)
-    gy_list = load_all_active_ECRH(shot)
-    mdict = {}
-    mdict["t"] = []
-    mdict["Psi_sep"] = []
-    mdict["Psi_ax"] = []
-    mdict["R_ax"] = []
-    mdict["z_ax"] = []
-    mdict["R_sep"] = []
-    mdict["z_sep"] = []
-    mdict["R"] = []
-    mdict["z"] = []
-    mdict["Psi"] = []
-    mdict["rhop"] = []
-    mdict["Br"] = []
-    mdict["Bt"] = []
-    mdict["Bz"] = []
-    mdict["rhop_prof"] = []
-    mdict["Te_prof"] = []
-    mdict["ne_prof"] = []
-    mdict["I_p"] = []
-    if(EQ_diag == "IDE"):
-        mdict["I_p_cor"] = []
-    mdict["Vloop"] = []
-    for i_gy in range(len(gy_list)):
-        mdict["freq_gy{0:d}".format(i_gy + 1)] = []
-        mdict["mode_gy{0:d}".format(i_gy + 1)] = []
-        mdict["pol_angle_gy{0:d}".format(i_gy + 1)] = []
-        mdict["tor_angle_gy{0:d}".format(i_gy + 1)] = []
-        mdict["x_gy{0:d}".format(i_gy + 1)] = []
-        mdict["y_gy{0:d}".format(i_gy + 1)] = []
-        mdict["z_gy{0:d}".format(i_gy + 1)] = []
-        mdict["curv_y_gy{0:d}".format(i_gy + 1)] = []
-        mdict["curv_z_gy{0:d}".format(i_gy + 1)] = []
-        mdict["width_y_gy{0:d}".format(i_gy + 1)] = []
-        mdict["width_z_gy{0:d}".format(i_gy + 1)] = []
-        mdict["PW_gy{0:d}".format(i_gy + 1)] = []
-    for time in plasma_data["time"]:
-        EQ_t = EQ_obj.GetSlice(time)
-        mdict["t"].append(time)
-        mdict["Psi_sep"].append(EQ_t.Psi_sep)
-        mdict["Psi_ax"].append(EQ_t.Psi_ax)
-        mdict["R_ax"].append(EQ_t.R_ax)
-        mdict["z_ax"].append(EQ_t.z_ax)
-        mdict["R_sep"].append(EQ_t.R_sep)
-        mdict["z_sep"].append(EQ_t.z_sep)
-        mdict["R"].append(EQ_t.R)
-        mdict["z"].append(EQ_t.z)
-        mdict["Psi"].append(EQ_t.Psi)
-        mdict["rhop"].append(EQ_t.rhop)
-        mdict["Br"].append(EQ_t.Br)
-        mdict["Bt"].append(EQ_t.Bt)
-        mdict["Bz"].append(EQ_t.Bz)
-        mdict["rhop_prof"].append(plasma_data["rhop"][index])
-        mdict["Te_prof"].append(plasma_data["Te"][index])
-        mdict["ne_prof"].append(plasma_data["ne"][index])
-        if(EQ_diag == "IDE"):
-            mdict["I_p_cor"].append(get_RELAX_target_current(shot, time, exp=EQ_exp, ed=EQ_ed, smoothing=1.e-3))
-            mdict["I_p"].append(get_total_current(shot, time, exp=EQ_exp, diag="IDG", ed=0, smoothing=1.e-3))
-        else:
-            mdict["I_p"].append(get_total_current(shot, time, exp=EQ_exp, diag="FPC", ed=0, smoothing=1.e-3))
-        mdict["Vloop"].append(get_Vloop(shot, time, exp="AUGD", ed=0, smoothing=1.e-2))
-        i_gy = 0
-        for gy in gy_list:
-            mdict["freq_gy{0:d}".format(i_gy + 1)].append(gy.f)
-            mdict["mode_gy{0:d}".format(i_gy + 1)].append(-1)  # Just X mode for now
-            if(np.isscalar(gy.theta_pol)):
-                mdict["pol_angle_gy{0:d}".format(i_gy + 1)].append(-gy.theta_pol)
-                mdict["tor_angle_gy{0:d}".format(i_gy + 1)].append(-gy.phi_tor)
-            else:
-                mdict["pol_angle_gy{0:d}".format(i_gy + 1)].append(-gy.theta_pol[np.argmin(np.abs(gy.time - time))])
-                mdict["tor_angle_gy{0:d}".format(i_gy + 1)].append(-gy.phi_tor[np.argmin(np.abs(gy.time - time))])
-            mdict["x_gy{0:d}".format(i_gy + 1)].append(gy.x)
-            mdict["y_gy{0:d}".format(i_gy + 1)].append(gy.y)
-            mdict["z_gy{0:d}".format(i_gy + 1)].append(gy.z)
-            mdict["curv_y_gy{0:d}".format(i_gy + 1)].append(gy.curv_y)
-            mdict["curv_z_gy{0:d}".format(i_gy + 1)].append(gy.curv_z)
-            mdict["width_y_gy{0:d}".format(i_gy + 1)].append(gy.width_y)
-            mdict["width_z_gy{0:d}".format(i_gy + 1)].append(gy.width_z)
-            mdict["PW_gy{0:d}".format(i_gy + 1)].append(gy.PW[np.argmin(np.abs(gy.time - time))])
-            i_gy += 1
-        index += 1
-    savemat(os.path.join(working_dir, "LUKE_data_shot_{0:d}".format(shot)), mdict)
-    print("Successfully created", os.path.join(working_dir, "LUKE_data_shot_{0:d}".format(shot)))
-
-
 def load_TB_beam_details(filename):
     # Note: All TB inputs with lenght units are expected to be in "m" !
     # Note: All output is converted to "m"
@@ -1060,7 +641,8 @@ def eval_Psi(params, args):
     Psi_spl = args[0]
     return Psi_spl(params[0], params[1], grid=False)
 
-def make_Ext_data_from_TB_files(path, outpath, write_stuff=True):
+def make_mdict_from_TB_files(path, eq_only=False):
+    mdict = {}
     tb_file = open(path)
     cur_line = tb_file.readline()
     cur_line = np.fromstring(tb_file.readline(), dtype=np.int, sep=" ")
@@ -1068,14 +650,13 @@ def make_Ext_data_from_TB_files(path, outpath, write_stuff=True):
     n = cur_line[1]
     cur_line = tb_file.readline()
     cur_line = np.fromstring(tb_file.readline(), dtype=np.float, sep=" ")
-    Psi_sep = cur_line[-1]
-    data_dict = {}
-    data_dict["R"] = []
-    data_dict["z"] = []
-    data_dict["Br"] = []
-    data_dict["Bt"] = []
-    data_dict["Bz"] = []
-    data_dict["Psi"] = []
+    mdict["Psi_sep"] = cur_line[-1]
+    mdict["R"] = []
+    mdict["z"] = []
+    mdict["Br"] = []
+    mdict["Bt"] = []
+    mdict["Bz"] = []
+    mdict["Psi"] = []
     for key in ["R", "z", "Br", "Bt", "Bz", "Psi"]:
         # Descriptor
         line = tb_file.readline()
@@ -1088,68 +669,48 @@ def make_Ext_data_from_TB_files(path, outpath, write_stuff=True):
         else:
             elemt_cnt = m * n
             reshape = (n, m)
-        while len(data_dict[key]) < elemt_cnt:
+        while len(mdict[key]) < elemt_cnt:
             line = tb_file.readline()
             noms = np.fromstring(line, dtype=np.float, sep=" ")
             if(len(noms) == 0):
                 print(line)
-                print(len(np.array(data_dict[key]).flatten()), elemt_cnt)
+                print(len(np.array(mdict[key]).flatten()), elemt_cnt)
                 raise IOError
             else:
                 for num in noms:
-                    data_dict[key].append(num)
-        data_dict[key] = np.array(data_dict[key]).reshape(reshape).T
-    if(Psi_sep < data_dict["Psi"][m / 2][n / 2]):
-        data_dict["Psi"] *= -1.0
-        Psi_sep *= -1.0
-    Psi_spl = RectBivariateSpline(data_dict["R"], data_dict["z"], data_dict["Psi"])
-    res = minimize(eval_Psi, [np.mean(data_dict["R"]), 0.0], args=[Psi_spl], bounds=[[np.min(data_dict["R"]), \
-                                                                                      np.max(data_dict["R"])], \
-                                                                                     [np.min(data_dict["z"]), \
-                                                                                      np.max(data_dict["z"])]])
+                    mdict[key].append(num)
+        mdict[key] = np.array(mdict[key]).reshape(reshape).T
+    if(mdict["Psi_sep"] < mdict["Psi"][m / 2][n / 2]):
+        mdict["Psi"] *= -1.0
+        mdict["Psi_sep"] *= -1.0
+    Psi_spl = RectBivariateSpline(mdict["R"], mdict["z"], mdict["Psi"])
+    res = minimize(eval_Psi, [np.mean(mdict["R"]), 0.0], args=[Psi_spl], bounds=[[np.min(mdict["R"]), \
+                                                                                      np.max(mdict["R"])], \
+                                                                                     [np.min(mdict["z"]), \
+                                                                                      np.max(mdict["z"])]])
     R_ax = res.x[0]
     z_ax = res.x[1]
-    Psi_ax = Psi_spl(R_ax, z_ax)
-    if(np.min(data_dict["Psi"]) - Psi_ax < 0.0):
-        Psi_ax = np.min(data_dict["Psi"])
-    rhop = np.sqrt((data_dict["Psi"] - Psi_ax) / (Psi_sep - Psi_ax))
-#    print(R_ax, z_ax, Psi_spl(R_ax, z_ax, grid=False))
-#    plt.contourf(R, z, Bt.T, levels=np.linspace(0.0, 8.0, 30))  # np.sqrt(Psi.T)
-    cs = plt.contour(data_dict["R"], data_dict["z"], np.sqrt(rhop.T), levels=[1.2])  #
-    p = cs.collections[0].get_paths()[0]
-    v = p.vertices
-    R_wall = v[:, 0]
-    z_wall = v[:, 1]
-    if(not os.path.isdir(outpath)):
-        os.mkdir(outpath)
-    np.savetxt(os.path.join(outpath, "Ext_vessel.bd"), np.array([R_wall, z_wall]).T)
-    plt.contour(data_dict["R"], data_dict["z"], rhop.T, levels=np.linspace(0.1, 1.2, 12), linestyle="--")
-    plt.contour(data_dict["R"], data_dict["z"], rhop.T, levels=[1.0], linestyle="-")
-    plt.plot(R_ax, z_ax, "x")
-    plt.plot(R_wall, z_wall, "+")
-    plt.show()
-    n_prof = np.fromstring(tb_file.readline(), dtype=np.int, sep=" ")[0]
-    print(n_prof)
-    rhop_prof = []
-    Te = []
-    ne = []
-    for i in range(n_prof):
-        cur_line = np.fromstring(tb_file.readline(), dtype=np.float, sep=" ")
-        rhop_prof.append(cur_line[0])
-        ne.append(cur_line[1])
-        Te.append(cur_line[2])
-    rhop = np.array(rhop)
-    ne = np.array(ne) * 1.e19
-    Te = np.array(Te) * 1.e3
-    fig = plt.figure()
-    plt.plot(rhop_prof, Te)
-    fig = plt.figure()
-    plt.plot(rhop_prof, ne)
-    plt.show()
-    if(write_stuff):
-        make_ext_data_for_testing_from_data(outpath, 1, [60.0], data_dict["R"], data_dict["z"], \
-                                        data_dict["Br"], data_dict["Bt"], data_dict["Bz"], data_dict["Psi"], \
-                                        R_ax, z_ax, 0.0, 1.0, rhop, ne, Te)
+    mdict["Psi_ax"] = Psi_spl(R_ax, z_ax)
+    if(np.min(mdict["Psi"]) - mdict["Psi_ax"] < 0.0):
+        mdict["Psi_ax"] = np.min(mdict["Psi"])
+#     plt.contour(mdict["R"], mdict["z"], mdict["rhop"].T, levels=np.linspace(0.1, 1.2, 12), linestyle="--")
+#     plt.contour(mdict["R"], mdict["z"], mdict["rhop"].T, levels=[1.0], linestyle="-")
+#     plt.plot(R_ax, z_ax, "x")
+#     plt.show()
+    if(not eq_only):
+        n_prof = np.fromstring(tb_file.readline(), dtype=np.int, sep=" ")[0]
+        mdict["rhop_prof"] = []
+        mdict["Te"] = []
+        mdict["ne"] = []
+        for i in range(n_prof):
+            cur_line = np.fromstring(tb_file.readline(), dtype=np.float, sep=" ")
+            mdict["rhop_prof"].append(cur_line[0])
+            mdict["Te"].append(cur_line[1])
+            mdict["ne"].append(cur_line[2])
+    for key in mdict.keys():
+        if(key not in ["R", "z"]):
+            mdict[key] = np.array([mdict[key]]) #equlibrium entries is expected to have time as first dimension
+    return mdict
 
 class launch:
     def __init__(self):

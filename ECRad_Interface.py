@@ -356,71 +356,19 @@ def get_diag_launch(shot, time, used_diag_dict, gy_dict=None, ECI_dict=None):
                 launch["theta_pol"][:] = -gy_dict[str(used_diag_dict[diag].beamline)].theta_pol[np.argmin(np.abs(gy_dict[str(used_diag_dict[diag].beamline)].time - time))]  # TORBEAM convention
             launch["width"][:] = gy_dict[str(used_diag_dict[diag].beamline)].width_y
             launch["dist_focus"][:] = gy_dict[str(used_diag_dict[diag].beamline)].curv_y
-#            R_curv = gy_dict[str(used_diag_dict[diag].beamline)].curv_y
-#            dist_foc = (launch["f"] ** 2 * np.pi ** 2 * R_curv * launch["width"] ** 4) / (cnst.c ** 2 * R_curv ** 2 + launch["f"] ** 2 * np.pi ** 2 * launch["width"] ** 4)
-#            launch["dist_focus"][:] = dist_foc
-#        if(used_diag_dict[diag].name == "VCE"):
-#            launch["f"] = np.array([104.9, 106.6, 108.1, 109.8, 111.3, 112.9, \
-#                              133.5, 136.4, 139.3, 141.9, 144.9, 147.5]) * 1.e9
-#            launch["df"] = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, \
-#                                  0.2, 0.2, 0.2, 0.2, 0.2, 0.2 ]) * 1.e9
-#            launch["R"] = np.zeros(len(launch["f"]))
-#            launch["phi"] = np.zeros(len(launch["f"]))
-#            launch["z"] = np.zeros(len(launch["f"]))
-#            launch["theta_pol"] = np.zeros(len(launch["f"]))
-#            launch["phi_tor"] = np.zeros(len(launch["f"]))
-#            launch["dist_focus"] = np.zeros(len(launch["f"]))
-#            launch["width"] = np.zeros(len(launch["f"]))
-#            if(AUG):
-#                launch["R"][:] = 0.88 * used_diag_dict[diag].R_scale
-#                launch["phi"][:] = 0.0
-#                launch["z"][:] = 0.99 * used_diag_dict[diag].z_scale
-#            else:
-#                launch["R"][:] = 0.88
-#                launch["phi"][:] = 0.0
-#                launch["z"][:] = 0.99
-#            launch["phi_tor"][:] = 1.e-1
-#            launch["theta_pol"][:] = 90.e0
-#            launch["width"][:] = 0.03e0  # assuming a very parallel beam
-#            launch["dist_focus"][:] = 10.0
-#        if(used_diag_dict[diag].diag == "LCE" or used_diag_dict[diag].diag == "UCE"):
-#            launch["f"] = np.array([67.6, 69.1, 70.5, 72. , 73.4, 74.9, 76.3, 77.8,
-#                              79.2, 80.7, 82.2, 85.5, 86.9, 88.4, 89.8, 91.3,
-#                              92.7, 94.2, 95.7, 97.1, 98.6, 100. , 101.5]) * 1.e9
-#            launch["df"] = np.zeros(len(launch["f"]))
-#            launch["R"] = np.zeros(len(launch["f"]))
-#            launch["phi"] = np.zeros(len(launch["f"]))
-#            launch["z"] = np.zeros(len(launch["f"]))
-#            launch["theta_pol"] = np.zeros(len(launch["f"]))
-#            launch["phi_tor"] = np.zeros(len(launch["f"]))
-#            launch["dist_focus"] = np.zeros(len(launch["f"]))
-#            launch["width"] = np.zeros(len(launch["f"]))
-#            launch["df"][:] = 0.75e9
-#            launch["R"][:] = 1.15
-#            launch["phi"][:] = 0.0
-#            if(used_diag_dict[diag].diag == "LCE"):
-#                launch["z"][:] = 0.e0
-#                launch["width"][:] = 0.0351e0
-#                launch["dist_focus"][:] = -0.33e0  # Beam is not focused
-#            else:
-#                launch["z"][:] = 0.21e0
-#                launch["width"][:] = 0.0211e0
-#                launch["dist_focus"][:] = -0.257e0  # Beam is not focused
-#            launch["phi_tor"][:] = 1.e-1
-#            launch["theta_pol"][:] = 0.e0
         if(diag == "ECN" or diag == "ECO"):
             if(ECI_dict is None):
                 raise ValueError("ECI_dict has to present if diag.name is ECN or ECO!")
             phi_ECE = (8.5e0) * 22.5 / 180.0 * np.pi
-            launch["f"] = np.copy(ECI_dict["freq_ECI_in"])
+            launch["f"] = np.copy(ECI_dict["freq"])
             launch["df"] = np.zeros(len(launch["f"]))
             launch["R"] = np.copy(np.sqrt(ECI_dict["x"] ** 2 + ECI_dict["y"] ** 2))
             launch["phi"] = np.copy(np.rad2deg(np.arctan2(ECI_dict["y"], ECI_dict["x"]) + phi_ECE))
             launch["z"] = np.copy(ECI_dict["z"])
             launch["theta_pol"] = np.copy(ECI_dict["pol_ang"])
             launch["phi_tor"] = np.copy(ECI_dict["tor_ang"])
-            launch["width"][:] = np.copy(ECI_dict["w"])
-            launch["dist_focus"][:] = np.copy(ECI_dict["dist_foc"])
+            launch["width"] = np.copy(ECI_dict["w"])
+            launch["dist_focus"] = np.copy(ECI_dict["dist_foc"])
 #            R_curv = np.copy(ECI_dict["dist_foc"])  # This is a curvature radius !
 #            dist_foc = (launch["f"] ** 2 * np.pi ** 2 * R_curv * launch["width"] ** 4) / (cnst.c ** 2 * R_curv ** 2 + launch["f"] ** 2 * np.pi ** 2 * launch["width"] ** 4)
 #            launch["dist_focus"][:] = dist_foc
@@ -439,19 +387,6 @@ def get_diag_launch(shot, time, used_diag_dict, gy_dict=None, ECI_dict=None):
             launch["dist_focus"] = np.copy(used_diag_dict[diag].dist_focus)
             launch["width"] = np.copy(used_diag_dict[diag].width)
             launch["pol_coeff_X"] = np.copy(used_diag_dict[diag].pol_coeff_X)
-#        if(used_diag_dict[diag].diag == "CCE"):
-#            if(type(time) != float):
-#                time = float(time)
-#            launch_geo = used_diag_dict[diag].get_launch_geo(time)
-#            launch["f"] = np.copy(launch_geo[0])
-#            launch["df"] = np.copy(launch_geo[1])
-#            launch["R"] = np.copy(launch_geo[2])
-#            launch["phi"] = np.copy(launch_geo[3])
-#            launch["z"] = np.copy(launch_geo[4])
-#            launch["phi_tor"] = np.copy(launch_geo[5])
-#            launch["theta_pol"] = np.copy(launch_geo[6])
-#            launch["width"] = np.copy(launch_geo[7])
-#            launch["dist_focus"] = np.copy(launch_geo[8])
         if("pol_coeff_X" not in launch.keys()):
             launch["pol_coeff_X"] = np.zeros(len(launch["f"]))
             launch["pol_coeff_X"][:] = -1  # Means that ECRad will compute the X-mode fraction

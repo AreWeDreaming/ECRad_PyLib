@@ -14,6 +14,7 @@ from scipy.interpolate import RectBivariateSpline, InterpolatedUnivariateSpline
 from equilibrium_utils import EQDataExt, EQDataSlice, eval_spline, special_points
 from Geometry_utils import get_contour, get_Surface_area_of_torus, get_arclength, get_av_radius
 from scipy import __version__ as scivers
+from get_ECRH_config import get_ECRH_viewing_angles
 import scipy.optimize as scopt
 from map_equ import equ_map
 vessel_bd_file = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/ECRad_Pylib/ASDEX_Upgrade_vessel.txt"
@@ -27,6 +28,18 @@ def eval_rhop(x, spl, rhop_target):
         return (spl.ev(x[0], x[1]) - rhop_target) ** 2
     else:
         return (spl(x[0], x[1], grid=False) - rhop_target) ** 2
+
+def check_Bt_vac_source(shot):
+    try:
+        MBI_shot = dd.shotfile('MBI', int(shot))
+    except:
+        print("No MBI shotfile. No Bt source!")
+        return False, 1.0
+    try:
+        signal = MBI_shot.getSignal("BTFABB")
+        return True, 1.005
+    except:
+        return True, 1.01
 
 def make_rhop_signed_axis(shot, time, R, rhop, f, f2=None, eq_exp='AUGD', eq_diag='EQH', eq_ed=0, external_folder=''):
     eq_obj = EQData(shot, external_folder=external_folder, eq_exp=eq_exp, eq_diag=eq_diag, eq_ed=eq_ed)

@@ -62,7 +62,6 @@ def diag_weight(fig, Results, time_point, ch, DistWaveFile=None):
     n= 80
     if(dist_obj is None):
         # Estimate grid for thermal distribution assuming X-mode
-        BPD_ch = Results.BPD["BPDX"][itime][ch - 1]
         rhop_Te_signed = np.concatenate([- Results.Scenario.plasma_dict["rhop_prof"][itime][::-1][:-1], Results.Scenario.plasma_dict["rhop_prof"][itime]])
         Te_signed_rhop = np.concatenate([Results.Scenario.plasma_dict["Te"][itime][::-1][:-1], Results.Scenario.plasma_dict["Te"][itime]])
         Te_spl = InterpolatedUnivariateSpline(rhop_Te_signed, Te_signed_rhop)
@@ -146,9 +145,10 @@ def current_weight(DistWaveFile):
     plt.gca().set_aspect("equal")
 #     plt.show()
 if(__name__ == "__main__"):
+    fig = plt.figure()
     #current_weight("/tokp/work/sdenk/ECRad/ECRad_35662_ECECTACTC_ed9.mat")
-    current_weight("/tokp/work/sdenk/DRELAX_Results/ECRad_35662_ECECTACTC_run0207.mat")
-    diag_weight("/tokp/work/sdenk/ECRad/ECRad_35662_ECECTACTC_ed7.mat", 4.4, 81, \
-                "/tokp/work/sdenk/ECRad/ECRad_35662_ECECTACTC_ed9.mat")
+    current_weight("/tokp/work/sdenk/DRELAX_Results/ECRad_35662_ECECTACTC_run0209.mat")
+#     diag_weight_stand_alone("/tokp/work/sdenk/ECRad/ECRad_35662_ECECTACTC_ed7.mat", 4.4, 81, \
+#                 "/tokp/work/sdenk/ECRad/ECRad_35662_ECECTACTC_ed9.mat")
     plt.show()
     

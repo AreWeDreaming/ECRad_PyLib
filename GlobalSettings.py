@@ -43,7 +43,7 @@ def partition_function_itm(cores, wall_time):
 
 class GlobalSettingsITM:
     def __init__(self):
-        self.AUG = True  # True  -> Start with True, set it to false if we run into problems
+        self.AUG = False  # True  -> Start with True, set it to false if we run into problems
         self.TCV = False # Not fully supported -> needs some work
         self.root = os.path.expanduser("~/")
         self.SLES12 = False
@@ -51,6 +51,8 @@ class GlobalSettingsITM:
             self.SLES12 = True
         self.Phoenix = "phoenix" in wx.PlatformInfo
         self.ECRadRoot = "/gss_efgw_work/work/g2sdenk/ECRad/"
+        self.ECRadPylibRoot = "../ECRad_Pylib/"
+        self.ECRadGUIRoot = "../ECRad_GUI/"
         self.ECRadDevPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRaddb")
         self.ECRadPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRad")
         self.ECRadPathBSUB = os.path.join(self.ECRadRoot,"ECRad_submit.bsub")
@@ -71,6 +73,28 @@ class GlobalSettingsAUG:
             self.SLES12 = True
         self.Phoenix = "phoenix" in wx.PlatformInfo
         self.ECRadRoot ="/afs/ipp-garching.mpg.de/home/s/sdenk/F90/ECRad/"
+        self.ECRadPylibRoot = "../ECRad_Pylib/"
+        self.ECRadGUIRoot = "../ECRad_GUI/"
+        self.ECRadDevPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRaddb")
+        self.ECRadPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRad")
+        self.ECRadPathBSUB = os.path.join(self.ECRadRoot,"ECRad_submit.bsub")
+        self.TB_path = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/torbeam_repo/TORBEAM/branches/lib-OUT/"
+        self.qos_function = qos_function_tok
+        self.partition_function = partition_function_tok
+        self.max_cores = 32
+        
+class GlobalSettingsAUGEXT:
+    def __init__(self):
+        self.AUG = False  # True  -> Start with True, set it to false if we run into problems
+        self.TCV = False # Not fully supported -> needs some work
+        self.root = os.path.expanduser("~/")
+        self.SLES12 = False
+        if(os.getenv("SYS") == 'amd64_sles12'  or os.getenv("SYS") == 'amd64_sles15'):
+            self.SLES12 = True
+        self.Phoenix = "phoenix" in wx.PlatformInfo
+        self.ECRadRoot ="/afs/ipp-garching.mpg.de/home/s/sdenk/F90/ECRad/"
+        self.ECRadPylibRoot = "../ECRad_Pylib/"
+        self.ECRadGUIRoot = "../ECRad_GUI/"
         self.ECRadDevPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRaddb")
         self.ECRadPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRad")
         self.ECRadPathBSUB = os.path.join(self.ECRadRoot,"ECRad_submit.bsub")

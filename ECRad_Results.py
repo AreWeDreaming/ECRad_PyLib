@@ -12,7 +12,6 @@ from scipy.io import savemat, loadmat
 from scipy import constants as cnst
 from ECRad_Config import ECRadConfig
 from ECRad_Scenario import ECRadScenario
-from collections import OrderedDict as od
 from ndarray_helper import ndarray_math_operation, ndarray_check_for_None
 
 
@@ -27,7 +26,6 @@ class ECRadResults:
         self.status = 0
         self.edition = 0
         self.init = False
-        self.comment = None
         # Edition of this result
         # Remains zero until the result is saved
         # Time of the results, should be identical to self.Scenario.plasma_dict["time"]
@@ -499,121 +497,6 @@ class ECRadResults:
         self.sys_dev[diag.name] = sys_dev
         self.masked_time_points[diag.name] = masked_time_points
 
-#     def calib_from_mat_file(self, filename):
-#         variable_names = ["time", "Diags_exp", "Diags_diag", "Diags_ed", "Extra_arg_1", "Extra_arg_2", "Extra_arg_3", \
-#                           "used_diags" , "calib_diags", "shot", "edition", "working_dir", "calib", "rel_dev", "sys_dev", \
-#                           "std_dev_mat", "calib_mat", "masked_time_points", "dstf", "considered_modes", "Trad", "Trad_comp", "IDA_exp", "IDA_ed", \
-#                           "diag", "rhop_warm", "raytracing", "extra_output", "N_freq", "N_ray", \
-#                           "ripple", "weak_rel", "reflec", "mode_conv", "Te_rhop_scale", "IDA_exp", "IDA_ed", "EQ_exp", "EQ_diag", \
-#                           "EQ_ed", "bt_vac_correction", "ratio_for_3rd_harm", "s_cold", "R_cold", "z_cold",
-#                           "rhop_cold"]
-#         mdict = loadmat(filename, chars_as_strings=True, variable_names=variable_names, squeeze_me=True)
-#         if(mdict is None):
-#             print("Failed to load .mat file")
-#             return False
-#         # Loading from .mat sometimes adds single entry arrays that we don't want
-#         at_least_1d_keys = ["calib_diags"]
-#         at_least_2d_keys = ["Trad", "Trad_comp", "tau", "tau_comp", \
-#                              "ne", "calib", "rel_dev", "sys_dev", "masked_time_points"] + self.resonance.keys()
-#         at_least_3d_keys = self.BPD.keys()
-#         at_least_3d_keys[at_least_3d_keys.index("rhopX")] = "BPDrhopX"
-#         at_least_3d_keys[at_least_3d_keys.index("rhopO")] = "BPDrhopO"
-#         at_least_3d_keys += self.ray.keys()
-# #        for i in range(len(at_least_3d_keys)):
-# #            at_least_3d_keys[i] = "LOS-" + at_least_3d_keys[i]
-#         at_least_2d_keys += ["std_dev_mat", "calib_mat"]
-#         increase_time_dim = False
-#         increase_diag_dim = False
-#         self.Config.from_mat_file(mdict)
-#         self.Scenario.from_mat(mdict=mdict, load_plasma_dict=False)
-#         if(np.isscalar(mdict["time"])):
-#             increase_time_dim = True
-#         if(np.isscalar(mdict["used_diags"])):
-#             increase_diag_dim = True
-#         for key in mdict.keys():
-#             if(not key.startswith("_")):  # throw out the .mat specific information
-#                 try:
-#                     if(key in at_least_1d_keys and np.isscalar(mdict[key])):
-#                         mdict[key] = np.atleast_1d(mdict[key])
-#                     elif(key in at_least_2d_keys):
-#                         if(increase_time_dim and key not in ["calib", "rel_dev", "sys_dev", "masked_time_points"]):
-#                             mdict[key] = np.array([mdict[key]])
-#                         elif(increase_time_dim):
-#                             for i in range(len(mdict[key])):
-#                                 mdict[key][i] = np.array([mdict[key][i]])
-#                         if(increase_diag_dim and key in ["calib", "rel_dev", "sys_dev", "masked_time_points"]):
-#                             mdict[key] = np.array([mdict[key]])
-#                     elif(key in at_least_3d_keys):
-#                         if(increase_time_dim):
-#                             if(key == "std_dev_mat" or key == "calib_mat"):
-#                                 for i in range(len(mdict[key])):
-#                                     mdict[key][i] = np.array([mdict[key][i]])
-#                             else:
-#                                 mdict[key] = np.array([mdict[key]])
-#                         if(increase_diag_dim and key == "std_dev_mat" or key == "calib_mat"):
-#                             mdict[key] = np.array([mdict[key]])
-#                 except Exception as e:
-#                     print(key)
-#                     print(e)
-#         self.edition = mdict["edition"]
-#         self.Config.working_dir = mdict["working_dir"]
-#         self.resonance["s_cold"] = mdict["s_cold"]
-#         self.resonance["R_cold"] = mdict["R_cold"]
-#         self.resonance["z_cold"] = mdict["z_cold"]
-#         self.resonance["rhop_cold"] = mdict["rhop_cold"]
-#         if(self.Config.extra_output):
-#             self.resonance["rhop_warm"] = mdict["rhop_warm"]
-#         self.Trad = mdict["Trad"]
-#         self.time = mdict["time"]
-#         if(self.Config.extra_output):
-#             self.Trad_comp = mdict["Trad_comp"]
-#         if(mdict["considered_modes"] == 1):
-#             self.modes = ["X"]
-#         elif(mdict["considered_modes"] == 2):
-#             self.modes = ["O"]
-#         elif(mdict["considered_modes"] == 3):
-#             self.modes = ["X", "O"]
-#         if("calib_diags" in mdict.keys()):
-#             if(len(mdict["calib_diags"]) == 1):
-#                 self.calib[mdict["calib_diags"][0]] = mdict["calib"][0]
-#                 self.calib_mat[mdict["calib_diags"][0]] = mdict["calib_mat"]
-#                 if(len(self.Config.time) != 1 and len(mdict["std_dev_mat"]) == 1 and \
-#                         len(mdict["std_dev_mat"][0]) == len(self.Config.time)):
-#                     # Due to an error in previous version this is necessary
-#                     self.std_dev_mat[mdict["calib_diags"][0]] = mdict["std_dev_mat"][0]
-#                 else:
-#                     self.std_dev_mat[mdict["calib_diags"][0]] = mdict["std_dev_mat"]
-#                 self.rel_dev[mdict["calib_diags"][0]] = mdict["rel_dev"][0]
-#                 try:
-#                     self.sys_dev[mdict["calib_diags"][0]] = mdict["sys_dev"][0]
-#                 except KeyError:
-#                     print("No systematic errors in .mat file")
-#                     self.sys_dev[mdict["calib_diags"][0]] = np.zeros(self.rel_dev[mdict["calib_diags"][0]].shape)
-#                 try:
-#                     self.masked_time_points[mdict["calib_diags"][0]] = np.bool8(mdict["masked_time_points"][0])
-#                 except KeyError:
-#                     print("Masked time points for calibration not specified")
-#                     self.masked_time_points[mdict["calib_diags"][0]] = np.zeros(self.Config.time.shape, dtype=np.bool8)
-#                     self.masked_time_points[mdict["calib_diags"][0]][:] = True
-#             else:
-#                 for i in range(len(mdict["calib_diags"])):
-#                     self.calib[mdict["calib_diags"][i]] = mdict["calib"][i]
-#                     self.calib_mat[mdict["calib_diags"][i]] = mdict["calib_mat"][i]
-#                     self.std_dev_mat[mdict["calib_diags"][i]] = mdict["std_dev_mat"][i]
-#                     self.rel_dev[mdict["calib_diags"][i]] = mdict["rel_dev"][i]
-#                     try:
-#                         self.sys_dev[mdict["calib_diags"][i]] = mdict["sys_dev"][i]
-#                     except KeyError:
-#                         print("No systematic errors in .mat file")
-#                         self.sys_dev[mdict["calib_diags"][i]] = np.zeros(self.rel_dev[mdict["calib_diags"][i]].shape)
-#                     try:
-#                         self.masked_time_points[mdict["calib_diags"][i]] = np.bool8(mdict["masked_time_points"][i])
-#                     except KeyError:
-#                         print("Masked time points for calibration not specified")
-#                         self.masked_time_points[mdict["calib_diags"][i]] = np.zeros(self.Config.time.shape, dtype=np.bool8)
-#                         self.masked_time_points[mdict["calib_diags"][i]][:] = True
-#         self.init = True
-
     def from_mat_file(self, filename):
         try:
             mdict = loadmat(filename, chars_as_strings=True, squeeze_me=True)
@@ -642,39 +525,27 @@ class ECRadResults:
         self.Config.from_mat_file(mdict=mdict)
         self.Scenario.from_mat(mdict=mdict, load_plasma_dict=True)
         increase_time_dim = False
-        increase_diag_dim = False
         if(np.isscalar(mdict["time"])):
             increase_time_dim = True
         elif(len(mdict["time"]) == 1):
             increase_time_dim = True
+        increase_diag_dim = False
         try:
-            if(np.isscalar(mdict["diag_name"])):
+            if(len(np.unique(mdict["diag_name"])) == 1):
                 increase_diag_dim = True
         except KeyError:
-            if(np.isscalar(mdict["launch_diag_name"])):
+            if(len(np.unique(mdict["launch_diag_name"])) == 1):
                 increase_diag_dim = True
         for key in mdict.keys():
             if(not key.startswith("_")):  # throw out the .mat specific information
                 try:
                     if(key in at_least_1d_keys and np.isscalar(mdict[key])):
                         mdict[key] = np.atleast_1d(mdict[key])
-#                        mdict[key] = np.array([mdict[key]])
                     elif(key in at_least_2d_keys):
-                        if(increase_diag_dim and not increase_time_dim and key not in ["calib", \
-                                                                                       "rel_dev", \
-                                                                                       "sys_dev"]):
-                            if(len(self.Config.time) != len(mdict[key])):
-                                print("Unexpected length of key", key, len(mdict[key]), len(self.Config.time))
-                                raise IOError
-                            else:
-                                temp = []
-                                for i in range(len(self.Config.time)):
-                                    temp.append(np.array([mdict[key][i]]))
-                                mdict[key] = np.array(temp)
-                        elif(increase_diag_dim and key in ["calib", "rel_dev", "sys_dev", "masked_time_points"]):
-                            for i in range(len(mdict[key])):  # Single time point multiple diagnostics to calibrate
-                                mdict[key][i] = np.array([mdict[key][i]])
-                        elif(key not in ["calib", "rel_dev", "sys_dev", "masked_time_points"]):
+                        if(key in ["calib", "rel_dev", "sys_dev"]):
+                            if(increase_diag_dim):
+                                mdict[key] = np.array([mdict[key]])
+                        else:
                             mdict[key] = np.atleast_2d(mdict[key])
                     elif(key in at_least_3d_keys):
                         if(increase_time_dim):
@@ -683,6 +554,8 @@ class ECRadResults:
                                     mdict[key][i] = np.array([mdict[key][i]])
                             else:
                                 mdict[key] = np.array([mdict[key]])
+                        elif((key == "std_dev_mat" or key == "calib_mat") and increase_diag_dim):
+                            mdict[key] = np.atleast_3d([mdict[key]])
                 except Exception as e:
                     print(key)
                     print(e)
@@ -695,6 +568,16 @@ class ECRadResults:
             self.modes = ["X", "O"]
         if("comment" in mdict.keys()):
             self.comment = mdict["comment"]
+            try:
+                if(type(self.comment) == np.ndarray):
+                    if(len(self.comment) > 0):
+                        self.comment = self.comment[0]
+                    else:
+                        self.comment =  ""
+            except Exception as e:
+                print("Failed to parse comment")
+                print(e)
+                self.comment = ""
         self.time = mdict["time"]
         self.Trad = mdict["Trad"]
         self.tau = mdict["tau"]
@@ -929,7 +812,6 @@ class ECRadResults:
         elif(self.comment is not None):
             mdict["comment"] = self.comment
         mdict["ECRad_git_tag"] = np.loadtxt(os.path.join(globalsettings.ECRadRoot, "id"),dtype=np.str)
-        globalsettings
         try:
             mdict["ECRadGUI_git_tag"] =  np.loadtxt(os.path.join(globalsettings.GUI_folder, "id"),dtype=np.str)
         except IOError:

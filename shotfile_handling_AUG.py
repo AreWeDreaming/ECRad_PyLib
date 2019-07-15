@@ -8,21 +8,14 @@ import sys
 import os
 # sys.path.append('/afs/ipp/home/g/git/python/repository/py_rep2.0/')
 # import kk
-import ctypes as ct
 sys.path.append('/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib')
 import dd
 from scipy.signal import medfilt, argrelmax
 root = "/afs/ipp-garching.mpg.de/home/s/sdenk/"
 from scipy.interpolate import RectBivariateSpline, splev, splrep, InterpolatedUnivariateSpline, interp1d, UnivariateSpline, interp1d
-from equilibrium_utils_AUG import EQData,vessel_bd_file
+from equilibrium_utils_AUG import EQData
 import scipy.constants as cnst
-from scipy.integrate import simps
-from scipy.optimize import curve_fit
-from glob import glob
 from plotting_configuration import *
-from scipy.stats import binned_statistic, t
-from scipy.signal import resample  # decimate
-from scipy.io import savemat
 from Diags import Diag
 from shutil import copyfile
 from data_processing import remove_mode
@@ -307,7 +300,8 @@ def get_data_calib_entire_shot(diag, shot, ext_resonances=None, calib=None):
 
 def get_data_calib(diag, shot=0, time=None, eq_exp="AUGD", eq_diag="EQH", \
                    eq_ed=0, calib=None, std_dev_calib=None, sys_dev_calib=None, \
-                   ext_resonances=None, name="", t_smooth=None, median=True):
+                   ext_resonances=None, name="", t_smooth=None, median=True, \
+                   aux_diag=None):
     # Gets the data from all ECE diagnostics that have shotfiles
     # Returns std deviation in keV, rho poloidal resonance and Trad in keV
     if(t_smooth is None):
@@ -331,7 +325,7 @@ def get_data_calib(diag, shot=0, time=None, eq_exp="AUGD", eq_diag="EQH", \
     sys_dev_data = []
     if(diag.diag == "RMD"):
         try:
-            diag_shotfile = dd.shotfile("RMD", int(shot), experiment=diag.exp, edition=int(diag.ed))
+            diag_shotfile = dd.shotfile(diag.diag, int(shot), experiment=diag.exp, edition=int(diag.ed))
         except:
             try:
                 print("Warning no RMD shotfile found - falling back to CEC")
@@ -343,7 +337,7 @@ def get_data_calib(diag, shot=0, time=None, eq_exp="AUGD", eq_diag="EQH", \
                 return None, None
     elif(diag.diag == "CEC"):
         try:
-            diag_shotfile = dd.shotfile("CEC", int(shot), experiment=diag.exp, edition=diag.ed)
+            diag_shotfile = dd.shotfile(diag.diag, int(shot), experiment=diag.exp, edition=diag.ed)
         except:
             try:
                 print("Warning no CEC shotfile found - trying RMD")
@@ -370,23 +364,34 @@ def get_data_calib(diag, shot=0, time=None, eq_exp="AUGD", eq_diag="EQH", \
     elif(diag.name == "ECI"):
         try:
             diag_shotfile = dd.shotfile(diag.diag, int(shot), experiment=diag.exp, edition=diag.ed)
-            diag_aux_shotfile = dd.shotfile("RZO", int(shot), experiment='ECEI', edition=0)
+            diag_aux_shotfile = dd.shotfile(diag.Rz_diag, int(shot), experiment=diag.Rz_exp, edition=diag.Rz_ed)
         except Exception as e:
             print("Could not open shotfile for " + diag.exp + " " + diag.diag + " ed " + str(diag.ed))
             print("reason", e)
             return None, None
     elif(diag.name == "ECO"):
         try:
-            diag_shotfile = dd.shotfile("TDI", int(shot), experiment=diag.exp, edition=diag.ed)
-            diag_aux_shotfile = dd.shotfile("RZO", int(shot), experiment='ECEI', edition=0)
+            diag_shotfile = dd.shotfile(diag.diag, int(shot), experiment=diag.exp, edition=diag.ed)
+            diag_aux_shotfile = dd.shotfile(diag.Rz_diag, int(shot), experiment=diag.Rz_exp, edition=diag.Rz_ed)
         except Exception as e:
             print("Could not open shotfile for " + diag.exp + " " + diag.diag + " ed " + str(diag.ed))
             print("reason", e)
             return None, None
     elif(diag.name == "ECN"):
         try:
-            diag_shotfile = dd.shotfile("TDI", int(shot), experiment=diag.exp, edition=diag.ed)
-            diag_aux_shotfile = dd.shotfile("RZN", int(shot), experiment='ECEI', edition=0)
+            diag_shotfile = dd.shotfile(diag.diag, int(shot), experiment=diag.exp, edition=diag.ed)
+            diag_aux_shotfile = dd.shotfile(diag.Rz_diag, int(shot), experiment=diag.Rz_exp, edition=diag.Rz_ed)
+        except Exception as e:
+            print("Could not open shotfile for " + diag.exp + " " + diag.diag + " ed " + str(diag.ed))
+            print("reason", e)
+            return None, None
+    elif(diag.name == "ECE" and diag.diag == "RMC"):
+        try:
+            if(aux_diag is None):
+                print("To load RMC data aux_diag must be provided to get_data_calib")
+                raise(ValueError)
+            diag_shotfile = dd.shotfile(diag.diag, int(shot), experiment=diag.exp, edition=diag.ed)
+            diag_aux_shotfile = dd.shotfile(aux_diag.diag, int(shot), experiment=aux_diag.exp, edition=aux_diag.ed)
         except Exception as e:
             print("Could not open shotfile for " + diag.exp + " " + diag.diag + " ed " + str(diag.ed))
             print("reason", e)
@@ -491,6 +496,11 @@ def get_data_calib(diag, shot=0, time=None, eq_exp="AUGD", eq_diag="EQH", \
             print("Could not read signal for either Sig2, Sig3 or Sig4")
             print(e)
             return None, None
+    elif(diag.diag == "RMC"):
+        avail = diag_aux_shotfile.getParameter('parms-A', 'AVAILABL', dtype=np.float64).data
+        signals = (np.concatenate((diag_shotfile('Trad-A1', dtype=np.float64).data, \
+                                  diag_shotfile('Trad-A2', dtype=np.float64).data), axis=1)[:, avail==1]).T
+        diag_time = diag_shotfile.getTimeBase('Trad-A1')
     else:
         print("Error diag", diag.diag, " is unknown")
         return None, None
@@ -795,19 +805,24 @@ def get_ECRH_PW(shot, diag, exp, ed):
 def get_ECE_launch_params(shot, diag):
     CEC = dd.shotfile(diag.diag, int(shot), \
                        experiment=diag.exp, edition=diag.ed)
-    ECE_launch_dict = {}
-    ECE_launch_dict["f"] = np.array(CEC.getParameter('parms-A', 'f').data)
-    available = np.array(CEC.getParameter('parms-A', 'AVAILABL').data, dtype=np.int)
-    ECE_launch_dict["df"] = np.array(CEC.getParameter('parms-A', 'df').data)
-    ECE_launch_dict["waveguide"] = np.zeros(len(ECE_launch_dict["f"]), dtype=np.int)
-    ifgroup = np.array(CEC.getParameter('parms-A', 'IFGROUP').data)
-    wg = np.array(CEC.getParameter('METHODS', 'WAVEGUID').data)
-    ECE_launch_dict["z_lens"] = float(CEC.getParameter('METHODS', 'ZLENS').data) * 1.e-2  # cm -> m
-    for i in range(len(ifgroup)):
-        ECE_launch_dict["waveguide"][i] = wg[ifgroup[i] - 1]
-    ECE_launch_dict["f"] = ECE_launch_dict["f"][available == 1]
-    ECE_launch_dict["df"] = ECE_launch_dict["df"][available == 1]
-    ECE_launch_dict["waveguide"] = ECE_launch_dict["waveguide"][available == 1]
+    try:
+        ECE_launch_dict = {}
+        ECE_launch_dict["f"] = np.array(CEC.getParameter('parms-A', 'f').data)
+        available = np.array(CEC.getParameter('parms-A', 'AVAILABL').data, dtype=np.int)
+        ECE_launch_dict["df"] = np.array(CEC.getParameter('parms-A', 'df').data)
+        ECE_launch_dict["waveguide"] = np.zeros(len(ECE_launch_dict["f"]), dtype=np.int)
+        ifgroup = np.array(CEC.getParameter('parms-A', 'IFGROUP').data)
+        wg = np.array(CEC.getParameter('METHODS', 'WAVEGUID').data)
+        ECE_launch_dict["z_lens"] = float(CEC.getParameter('METHODS', 'ZLENS').data) * 1.e-2  # cm -> m
+        for i in range(len(ifgroup)):
+            ECE_launch_dict["waveguide"][i] = wg[ifgroup[i] - 1]
+        ECE_launch_dict["f"] = ECE_launch_dict["f"][available == 1]
+        ECE_launch_dict["df"] = ECE_launch_dict["df"][available == 1]
+        ECE_launch_dict["waveguide"] = ECE_launch_dict["waveguide"][available == 1]
+    except dd.PyddError as e:
+        print("Failed to read " + diag.diag + " shotfile.")
+        print("Is this an old shotfile?")
+        raise IOError("Shofile read failed")
     return ECE_launch_dict
 
 
@@ -883,29 +898,64 @@ def get_ECI_launch(diag, shot):
         print("Error when trying to read diag " + diag.Rz_diag + \
               " exp. " + diag.Rz_exp + " ed. " + str(diag.Rz_ed))
         return None
-    ECI_dict = {}
-    ECI_dict["x"] = np.array(ECI.getParameter('BEAMS', 'x').data)
-    ECI_dict["y"] = np.array(ECI.getParameter('BEAMS', 'y').data)
-    ECI_dict["z"] = np.array(ECI.getParameter('BEAMS', 'z').data)
-    ECI_dict["tor_ang"] = np.array(ECI.getParameter('BEAMS', 'tor_ang').data)
-    ECI_dict["pol_ang"] = np.array(ECI.getParameter('BEAMS', 'pol_ang').data)
-    ECI_dict["freq_ECI_in"] = np.array(ECI.getParameter('PAR', 'freq').data) * 1.e9
-    ECI_dict["dist_foc"] = np.array(ECI.getParameter('BEAMS', 'dist_foc').data)
-    ECI_dict["w"] = np.array(ECI.getParameter('BEAMS', 'w').data)
-    return ECI_dict
+    ECEI_data = {}
+    ECI_launch_dict = {}
+    for key in ['freq', 'x', "y", "z", "tor_ang", "pol_ang", "dist_foc", "w"]:
+    # Load shotfile data
+        if(key is not "freq"):
+            ECEI_data[key] = np.array(ECI.getParameter('BEAMS', key).data)
+        else:
+            ECEI_data[key] = np.array(ECI.getParameter('PAR', key).data) * 1.e9
+    for key in ['freq', 'x', "y", "z", "tor_ang", "pol_ang", "dist_foc", "w"]:
+    # Store the launch data in a one dimensional array with one entry for each channel (i.e. len = len(freq) * len(x)
+        ECI_launch_dict[key] = []
+        for i_LOS, quant in enumerate(ECEI_data["x"]):
+            for i_FREQ, freq in enumerate(ECEI_data["freq"]):
+                if(key is "freq"):
+                    ECI_launch_dict[key].append(ECEI_data[key][i_FREQ])
+                else:
+                    ECI_launch_dict[key].append(ECEI_data[key][i_LOS])
+        ECI_launch_dict[key] = np.array(ECI_launch_dict[key])
+    return ECI_launch_dict
 
 def get_shot_heating(shot):
     data = []
-    ECS = dd.shotfile('ECS', int(shot))
-    NIS = dd.shotfile('NIS', int(shot))
-    signal = ECS.getSignal(\
+    try:
+        ECS = dd.shotfile('ECS', int(shot))
+        signal = ECS.getSignal(\
                       "PECRH") * 1.e-6
-    t = ECS.getTimeBase("PECRH")
-    data.append([t, signal])
-    signal = NIS.getSignal(\
+        t = ECS.getTimeBase("PECRH")
+        data.append([t, signal])
+    except:
+        print("No ECRH shot file for current shot")
+        print("Setting ECRH power to zero")
+        t = np.linspace(0.0, 10.0, 10000)
+        signal = np.zeros(len(t))
+        data.append([t, signal])
+    try:
+        NIS = dd.shotfile('NIS', int(shot))
+        signal = NIS.getSignal(\
                       "PNI") * 1.e-6
-    t = NIS.getTimeBase("PNI")
-    data.append([t, signal ])
+        t = NIS.getTimeBase("PNI")
+        data.append([t, signal ])
+    except:
+        print("No NBI shot file for current shot")
+        print("Setting NBI power to zero")
+        t = np.linspace(0.0, 10.0, 10000)
+        signal = np.zeros(len(t))
+        data.append([t, signal])
+    try:
+        ICP = dd.shotfile('ICP', int(shot))
+        signal = NIS.getSignal(\
+                      "Picr") * 1.e-6
+        t = NIS.getTimeBase("Picr")
+        data.append([t, signal ])
+    except:
+        print("No ICRH shot file for current shot")
+        print("Setting ICRH power to zero")
+        t = np.linspace(0.0, 10.0, 10000)
+        signal = np.zeros(len(t))
+        data.append([t, signal])
     return data
 
 def get_plasma_current(shot):
@@ -1431,48 +1481,6 @@ def make_ext_data_for_testing_grids(ext_data_folder, shot, times, eq_exp, eq_dia
         plt.contourf(EQ_t.R, EQ_t.z, Te, levels=np.linspace(0, 5000, 30))
         plt.show()
         index += 1
-
-def make_plasma_mat_for_testing(filename, shot, times, eq_exp, eq_diag, eq_ed, \
-                                bt_vac_correction=1.005, IDA_exp="AUGD", IDA_ed=0):
-    EQ_obj = EQData(shot, EQ_exp=eq_exp, EQ_diag=eq_diag, EQ_ed=eq_ed, bt_vac_correction=bt_vac_correction)
-    plasma_data = load_IDA_data(shot, timepoints=times, exp="AUGD", ed=IDA_ed)
-    mdict = {}
-    mdict["shot"] = shot
-    mdict["time"] = times
-    mdict["Te"] = plasma_data["Te"]
-    mdict["ne"] = plasma_data["ne"]
-    mdict["rhop_prof"] = plasma_data["rhop_prof"]
-    mdict["Psi_sep"] = []
-    mdict["Psi_ax"] = []
-    mdict["Psi"] = []
-    mdict["Br"] = []
-    mdict["Bt"] = []
-    mdict["Bz"] = []
-    vessel_bd = np.loadtxt(vessel_bd_file, skiprows=1)
-    mdict["vessel_bd"] = []
-    mdict["vessel_bd"].append(vessel_bd.T[0])
-    mdict["vessel_bd"].append(vessel_bd.T[1])
-    mdict["vessel_bd"] = np.array(mdict["vessel_bd"])
-    R_init = False
-    for time in plasma_data["time"]:
-        EQ_t = EQ_obj.GetSlice(time)
-        if(not R_init):
-            R_init = True
-            mdict["R"] = EQ_t.R
-            mdict["z"] = EQ_t.z
-        mdict["Psi_sep"].append(EQ_t.Psi_sep)
-        mdict["Psi_ax"].append(EQ_t.Psi_ax)
-        mdict["Psi"].append(EQ_t.Psi)
-        mdict["Br"].append(EQ_t.Br)
-        mdict["Bt"].append(EQ_t.Bt)
-        mdict["Bz"].append(EQ_t.Bz)
-    mdict["Psi_sep"] = np.array(mdict["Psi_sep"])
-    mdict["Psi_ax"] = np.array(mdict["Psi_ax"])
-    mdict["Psi"] = np.array(mdict["Psi"])
-    mdict["Br"] = np.array(mdict["Br"])
-    mdict["Bt"] = np.array(mdict["Bt"])
-    mdict["Bz"] = np.array(mdict["Bz"])
-    savemat(filename, mdict, appendmat=False)
 
 def export_ASDEX_Upgrade_grid(ext_data_folder, shot, times, eq_exp, eq_diag, eq_ed, \
                                     bt_vac_correction=1.005, IDA_exp="AUGD", IDA_ed=0, \

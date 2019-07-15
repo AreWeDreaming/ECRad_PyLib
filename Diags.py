@@ -38,18 +38,6 @@ class Diag(BasicDiag):
         self.properties.append("t_smooth")
         self.descriptions_dict["t_smooth"] = "time window for smoothing"
         self.data_types_dict["t_smooth"] = "real"
-#        self.N_ray = N_ray
-#        self.properties.append("N_ray")
-#        self.descriptions_dict["N_ray"] = "Number of rays"
-#        self.N_freq = N_freq
-#        self.properties.append("N_freq")
-#        self.descriptions_dict["N_freq"] = "Number of frequencies"
-#        self.waist_scale = waist_scale
-#        self.properties.append("waist_scale")
-#        self.descriptions_dict["waist_scale"] = "Scale beam waist"
-#        self.waist_shift = waist_shift
-#        self.properties.append("waist_shift")
-#        self.descriptions_dict["waist_shift"] = "Shift beam waist"
         self.mode_filter = mode_filter
         self.mode_width = mode_width
         self.freq_cut_off = freq_cut_off
@@ -151,81 +139,17 @@ class EXT_diag(BasicDiag):  #  Makes no sense to inherit properties we do not wa
         if(launch_geo is not None):
             self.set_from_launch_geo(launch_geo, pol_coeff_X, False)
 
-    def load_launch_geo_from_file(self, filename, old_ray_launch=False):
-        # ray_launch refers to the old ray_launch files written by older versions of ECRad
-        new_launch = np.loadtxt(filename, skiprows=1)
-        launch_geo = []
-        length_scale = 1.0
-        if(old_ray_launch):
-            length_scale = 1.e-2
-        if(len(new_launch.T) < 10):
-            print("Old launch file detected")
-            launch_geo.append(new_launch.T[0])  # f
-            launch_geo.append(new_launch.T[1])  # df
-            launch_geo.append(np.zeros(len((new_launch.T[0])), dtype=np.int))  # N_freq
-            launch_geo[-1][:] = 1
-            launch_geo.append(np.zeros(len((new_launch.T[0])), dtype=np.int))  # N_ray
-            launch_geo[-1][:] = 1
-            launch_geo.append(np.zeros(len((new_launch.T[0]))))  # waist_scale
-            launch_geo[-1][:] = 1.0
-            launch_geo.append(np.zeros(len((new_launch.T[0]))))  # waist_shift
-            launch_geo[-1][:] = 0.0
-            if(old_ray_launch):
-                launch_geo.append(np.sqrt(new_launch.T[2] ** 2 + new_launch.T[3] ** 2) * length_scale)  # R
-                launch_geo.append(np.rad2deg(np.arctan2(new_launch.T[3], new_launch.T[2])))  # phi
-            else:
-                launch_geo.append(new_launch.T[2])
-                launch_geo.append(new_launch.T[3])
-            launch_geo.append(new_launch.T[4] * length_scale)  # z
-            launch_geo.append(new_launch.T[6])  # theta_pol
-            launch_geo.append(new_launch.T[5])  # phi_tor
-            if(old_ray_launch):
-                launch_geo.append(new_launch.T[7] * length_scale)  # dist_focus
-                launch_geo.append(new_launch.T[8] * length_scale)  # width
-            else:
-                launch_geo.append(new_launch.T[8] * length_scale)  # dist_focus
-                launch_geo.append(new_launch.T[7] * length_scale)  # width
-        else:
-            launch_geo.append(new_launch.T[0])  # f
-            launch_geo.append(new_launch.T[1])  # df
-            launch_geo.append(new_launch.T[2])  # N_freq
-            launch_geo.append(new_launch.T[3])  # N_ray
-            launch_geo.append(new_launch.T[4])  # waist_scale
-            launch_geo.append(new_launch.T[5])  # waist_shift
-            if(old_ray_launch):
-                launch_geo.append(np.sqrt(new_launch.T[6] ** 2 + new_launch.T[7] ** 2) * length_scale)  # R
-                launch_geo.append(np.rad2deg(np.arctan2(new_launch.T[7], new_launch.T[6])))  # phi
-            else:
-                launch_geo.append(new_launch.T[6])  # R
-                launch_geo.append(new_launch.T[7])  # Phi
-            launch_geo.append(new_launch.T[8] * length_scale)  # z
-            launch_geo.append(new_launch.T[9])  # theta_pol
-            launch_geo.append(new_launch.T[10])  # phi_tor
-            launch_geo.append(new_launch.T[11] * length_scale)  # dist_focus
-            launch_geo.append(new_launch.T[12] * length_scale)  # width
-        try:
-            polfilename = os.path.join(os.path.dirname(filename), \
-                                       os.path.basename(filename)[0:3] + "_pol_coeff.dat")
-            pol = np.loadtxt(polfilename)
-        except:
-            pol = -1
-        self.set_from_launch_geo(launch_geo, pol)
-
     def get_launch_geo(self):
-        launch_geo = np.zeros((13, len(self.f)))
+        launch_geo = np.zeros((9, len(self.f)))
         launch_geo[0] = self.f
         launch_geo[1] = self.df
-        launch_geo[2] = self.N_freq
-        launch_geo[3] = self.N_ray
-        launch_geo[4] = self.waist_scale
-        launch_geo[5] = self.waist_shift
-        launch_geo[6] = self.R
-        launch_geo[7] = self.phi
-        launch_geo[8] = self.z
-        launch_geo[9] = self.theta_pol
-        launch_geo[10] = self.phi_tor
-        launch_geo[11] = self.dist_focus
-        launch_geo[12] = self.width
+        launch_geo[2] = self.R
+        launch_geo[3] = self.phi
+        launch_geo[4] = self.z
+        launch_geo[5] = self.theta_pol
+        launch_geo[6] = self.phi_tor
+        launch_geo[7] = self.dist_focus
+        launch_geo[8] = self.width
         return launch_geo, self.pol_coeff_X
     
     def set_from_ray_launch(self, ray_launch, itime, set_only_EXT=True):
@@ -236,10 +160,6 @@ class EXT_diag(BasicDiag):  #  Makes no sense to inherit properties we do not wa
         self.f = ray_launch[itime]["f"][mask]
         self.N_ch = len(self.f)
         self.df = ray_launch[itime]["df"][mask]
-        self.N_freq = 1
-        self.N_ray = 1
-        self.waist_scale = 1.0
-        self.waist_shift = 0.0
         self.R = ray_launch[itime]["R"][mask]
         self.phi = ray_launch[itime]["phi"][mask]
         self.z = ray_launch[itime]["z"][mask]
@@ -275,10 +195,6 @@ class EXT_diag(BasicDiag):  #  Makes no sense to inherit properties we do not wa
             self.width = mdict["launch_width"][0]
             self.pol_coeff_X = mdict["launch_pol_coeff_X"][0]
         self.N_ch = len(self.f)
-        self.N_freq = 1
-        self.N_ray = 1
-        self.waist_scale = 1.0
-        self.waist_shift = 0.0
         
 
     def set_from_launch_geo(self, launch_geo, pol_coeff_X, append=False):
@@ -286,17 +202,13 @@ class EXT_diag(BasicDiag):  #  Makes no sense to inherit properties we do not wa
             self.N_ch += len(launch_geo[0])
             self.f = np.concatenate([self.f, launch_geo[0]])
             self.df = np.concatenate([self.df, launch_geo[1]])
-            self.N_freq = np.concatenate([self.N_freq, launch_geo[2]])
-            self.N_ray = np.concatenate([self.N_ray, launch_geo[3]])
-            self.waist_scale = np.concatenate([self.waist_scale, launch_geo[4]])
-            self.waist_shift = np.concatenate([self.waist_shift, launch_geo[5]])
-            self.R = np.concatenate([self.R, launch_geo[6]])
-            self.phi = np.concatenate([self.phi, launch_geo[7]])
-            self.z = np.concatenate([self.z, launch_geo[8]])
-            self.theta_pol = np.concatenate([self.theta_pol, launch_geo[9]])
-            self.phi_tor = np.concatenate([self.phi_tor, launch_geo[10]])
-            self.dist_focus = np.concatenate([self.dist_focus, launch_geo[11]])
-            self.width = np.concatenate([self.width, launch_geo[12]])
+            self.R = np.concatenate([self.R, launch_geo[2]])
+            self.phi = np.concatenate([self.phi, launch_geo[3]])
+            self.z = np.concatenate([self.z, launch_geo[4]])
+            self.theta_pol = np.concatenate([self.theta_pol, launch_geo[5]])
+            self.phi_tor = np.concatenate([self.phi_tor, launch_geo[6]])
+            self.dist_focus = np.concatenate([self.dist_focus, launch_geo[7]])
+            self.width = np.concatenate([self.width, launch_geo[8]])
             if(np.isscalar(pol_coeff_X)):
                 pol_coeff_X_append = np.zeros(self.N_ch)
                 pol_coeff_X_append[:] = pol_coeff_X
@@ -308,32 +220,24 @@ class EXT_diag(BasicDiag):  #  Makes no sense to inherit properties we do not wa
                 self.N_ch = 1
                 self.f = np.array([launch_geo[0]])
                 self.df = np.array([launch_geo[1]])
-                self.N_freq = np.array([launch_geo[2]])
-                self.N_ray = np.array([launch_geo[3]])
-                self.waist_scale = np.array([launch_geo[4]])
-                self.waist_shift = np.array([launch_geo[5]])
-                self.R = np.array([launch_geo[6]])
-                self.phi = np.array([launch_geo[7]])
-                self.z = np.array([launch_geo[8]])
-                self.theta_pol = np.array([launch_geo[9]])
-                self.phi_tor = np.array([launch_geo[10]])
-                self.dist_focus = np.array([launch_geo[11]])
-                self.width = np.array([launch_geo[12]])
+                self.R = np.array([launch_geo[2]])
+                self.phi = np.array([launch_geo[3]])
+                self.z = np.array([launch_geo[4]])
+                self.theta_pol = np.array([launch_geo[5]])
+                self.phi_tor = np.array([launch_geo[6]])
+                self.dist_focus = np.array([launch_geo[7]])
+                self.width = np.array([launch_geo[8]])
             else:
                 self.N_ch = len(launch_geo[0])
                 self.f = launch_geo[0]
                 self.df = launch_geo[1]
-                self.N_freq = launch_geo[2]
-                self.N_ray = launch_geo[3]
-                self.waist_scale = launch_geo[4]
-                self.waist_shift = launch_geo[5]
-                self.R = launch_geo[6]
-                self.phi = launch_geo[7]
-                self.z = launch_geo[8]
-                self.theta_pol = launch_geo[9]
-                self.phi_tor = launch_geo[10]
-                self.dist_focus = launch_geo[11]
-                self.width = launch_geo[12]
+                self.R = launch_geo[2]
+                self.phi = launch_geo[3]
+                self.z = launch_geo[4]
+                self.theta_pol = launch_geo[5]
+                self.phi_tor = launch_geo[6]
+                self.dist_focus = launch_geo[7]
+                self.width = launch_geo[8]
             if(np.isscalar(pol_coeff_X)):
                 self.pol_coeff_X = np.zeros(self.N_ch)
                 self.pol_coeff_X[:] = pol_coeff_X
@@ -346,17 +250,13 @@ DefaultDiagDict = od()
 launch_geo = np.zeros((13, 1))
 launch_geo[0, 0] = 140.e9
 launch_geo[1, 0] = 0.2e9
-launch_geo[2, 0] = 1
-launch_geo[3, 0] = 1
-launch_geo[4, 0] = 1.0
-launch_geo[5, 0] = 0.0
-launch_geo[6, 0] = 2.3
-launch_geo[7, 0] = 104.0
-launch_geo[8, 0] = 0.33
-launch_geo[9, 0] = -0.824
-launch_geo[10, 0] = -8.24
-launch_geo[11, 0] = 1.1850
-launch_geo[12, 0] = 0.0865
+launch_geo[2, 0] = 2.3
+launch_geo[3, 0] = 104.0
+launch_geo[4, 0] = 0.33
+launch_geo[5, 0] = -0.824
+launch_geo[6, 0] = -8.24
+launch_geo[7, 0] = 1.1850
+launch_geo[8, 0] = 0.0865
 DefaultDiagDict.update({"EXT":  EXT_diag("EXT", launch_geo)})                
                 
 # Deprecated

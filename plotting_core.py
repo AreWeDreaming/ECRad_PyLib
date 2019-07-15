@@ -22,6 +22,7 @@ from wxEvents import ThreadFinishedEvt, Unbound_EVT_DONE_PLOTTING
 import wx
 from colorsys import hls_to_rgb
 from distribution_functions import Juettner2D
+from __builtin__ import False
 non_therm_dist_Relax = True
 home = '/afs/ipp-garching.mpg.de/home/s/sdenk/'
 
@@ -30,7 +31,7 @@ home = '/afs/ipp-garching.mpg.de/home/s/sdenk/'
 # Very much overcomplicated - sorry I did not know any better
 
 class plotting_core:
-    def __init__(self, fig, fig_2=None, title=True):
+    def __init__(self, fig, fig_2=None, title=False):
         self.fig = fig
         self.fig_2 = fig_2
         self.reset(title)
@@ -154,20 +155,12 @@ class plotting_core:
             self.setup_axes("Te_no_ne" + twinx, r"$T_\mathrm{rad}$, $T_\mathrm{e}$", \
                             r"Optical depth $\tau_\omega$")
         mathrm = r"\mathrm"
-        if(dstf == "Mx"):
-            dist_simpl = r"M"
-            dist = r"MJ"
-            dist = r"[" + dist + r"]"
-        elif(dstf == "TB"):
+        if(dstf == "Th"):
             dist_simpl = r"Fa"
-            dist = r"Alb"
-            dist = r"[" + dist + r"]"
-        elif(dstf == "Th"):
-            dist_simpl = r"Hu"
             dist = r"Alb"
             dist = r"[" + dist + r"]"
         elif(dstf == "Re"):
-            dist_simpl = r"Fa"
+            dist_simpl = r"Th"
             dist = r"RELAX"
             dist = r"[" + dist + r"]"
         elif(dstf == "Ge"):
@@ -285,54 +278,61 @@ class plotting_core:
             if(self.diag_color_index[0] > len(self.diag_colors)):
                 print("Warning too many diagnostics to plot - ran out of unique colors")
                 self.diag_color_index[0] = 0
-            
+        self.axlist[0].set_xlim(0.0, np.max(rhop[mask]) * 1.05)
         self.create_legends("Te_no_ne" + twinx)
         return self.fig
 
-    def plot_tau(self, time, rhop, tau, tau_comp, rhop_IDA, Te_IDA, dstf, model_2=True):
+    def plot_tau(self, time, rhop, tau, tau_comp, rhop_IDA, Te_IDA, dstf, model_2, use_tau):
         if(plot_mode == "Software"):
             self.setup_axes("twinx", r"$\tau_{\omega}$, $T_{e}$ ", r"Optical depth $\tau_\omega$")
         else:
             self.setup_axes("twinx", r"$\tau_{\omega}$, $T_\mathrm{e}$", \
                             r"Optical depth $\tau_\omega$")
         mathrm = r"\mathrm"
-        if(dstf == "Mx"):
-            dist_simpl = r"M"
-            dist = r"MJ"
-            dist = r"[" + dist + r"]"
-        elif(dstf == "TB"):
+        if(dstf == "Th"):
             dist_simpl = r"Fa"
-            dist = r"Alb"
-            dist = r"[" + dist + r"]"
-        elif(dstf == "Th"):
-            dist_simpl = r"Hu"
             dist = r"Alb"
             dist = r"[" + dist + r"]"
         elif(dstf == "Re"):
-            dist_simpl = r"Fa"
+            dist_simpl = r"Th"
             dist = r"RELAX"
             dist = r"[" + dist + r"]"
         if(len(dist_simpl) > 0):
             dist_simpl = r"[" + dist_simpl + r"]"
         ax_flag = "T_rho"
+        quant_name = "T"
+        if(use_tau):
+            ax_flag = "tau"
+            quant_name = r"\tau"
         if(model_2 and tau_comp is not None):
-            self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
-                data=[rhop, np.exp(-tau_comp)], \
-                name=r"$T_" + mathrm + "{mod}" + dist_simpl + r"$", \
-                marker="s", color=(126.0 / 255, 0.0, 126.0 / 255), \
-                y_range_in=self.y_range_list[0], ax_flag=ax_flag)
-        self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
-            data=[rhop, np.exp(-tau)], \
-            name=r"$T_" + mathrm + "{mod}" + dist + r"$", \
-            marker="v", color=(126.0 / 255, 126.0 / 255, 0.e0), \
-            y_range_in=self.y_range_list[0], ax_flag=ax_flag)
+            if(not use_tau):
+                val = np.exp(-tau_comp)
+            else:
+                val = tau_comp
+            self.axlist[0], self.y_range_list[0] = \
+                self.add_plot(self.axlist[0], \
+                              data=[rhop, val], \
+                              name=r"$" + quant_name + "_" + mathrm + "{mod}" + dist_simpl + r"$", \
+                              marker="s", color=(126.0 / 255, 0.0, 126.0 / 255), \
+                              y_range_in=self.y_range_list[0], ax_flag=ax_flag)
+        if(not use_tau):
+            val = np.exp(-tau)
+        else:
+            val = tau
+        self.axlist[0], self.y_range_list[0] = \
+            self.add_plot(self.axlist[0], \
+                          data=[rhop, val], \
+                          name=r"$T_" + mathrm + "{mod}" + dist + r"$", \
+                          marker="v", color=(126.0 / 255, 126.0 / 255, 0.e0), \
+                          y_range_in=self.y_range_list[0], ax_flag=ax_flag)
         self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], data=[ rhop_IDA, Te_IDA], \
             name=r"$T_" + mathrm + "{e}$", coloumn=1, marker="-", color=(0.0, 0.0, 0.0), \
                  y_range_in=self.y_range_list[1], y_scale=1.0, ax_flag="Te")  # \times 100$
         self.create_legends("BDP")
         if(len(rhop_IDA) > 0):
             self.axlist[0].set_xlim(0.0, 1.05 * np.max([np.max(rhop_IDA), np.max(rhop)]))
-        self.axlist[0].set_ylim(0.0, 1.00)
+        if(not use_tau):
+            self.axlist[0].set_ylim(0.0, 1.00)
         return self.fig, self.fig_2
 
     def plot_1D_cpo(self, x, y, shot, time, x_info, y_info):
@@ -365,6 +365,57 @@ class plotting_core:
 #        self.axlist[0].get_xaxis().set_minor_locator(MaxNLocator(nbins=6, steps=steps / 4.0))
 #        self.axlist[0].get_yaxis().set_major_locator(MaxNLocator(nbins=3, steps=steps_y))
 #        self.axlist[0].get_yaxis().set_minor_locator(MaxNLocator(nbins=6, steps=steps_y / 4.0)
+
+    def B_plot(self, Result, itime, ich, mode_str, ray_launch, N_ray):
+        self.setup_axes("single", "Frequencies")
+        if(N_ray == 1):
+            mask = Result.ray["rhop" + mode_str][itime][ich] > 0
+            s = Result.ray["s" + mode_str][itime][ich][mask]
+            R = np.sqrt(Result.ray["x" + mode_str][itime][ich][mask]**2 + \
+                        Result.ray["y" + mode_str][itime][ich][mask]**2)
+            freq = np.zeros(len(R))
+            freq[:] = ray_launch[itime]["f"][ich] / 1.e9
+            f_c_1 = Result.ray["Y" + mode_str][itime][ich][mask] * freq
+            f_p = np.sqrt(Result.ray["X" + mode_str][itime][ich][mask]) * freq
+        else:
+            mask = Result.ray["rhop" + mode_str][itime][ich][0] > 0
+            s = Result.ray["s" + mode_str][itime][ich][0][mask]
+            R = np.sqrt(Result.ray["x" + mode_str][itime][ich][0][mask]**2 + \
+                        Result.ray["y" + mode_str][itime][ich][0][mask]**2)
+            freq = np.zeros(len(R))
+            freq[:] = ray_launch[itime]["f"][ich] / 1.e9
+            f_c_1 = Result.ray["Y" + mode_str][itime][ich][0][mask] * freq
+            f_p = np.sqrt(Result.ray["X" + mode_str][itime][ich][0][mask]) * freq
+        f_c_2 = f_c_1 * 2.0
+        f_c_3 = f_c_1 * 3.0
+        f_R = f_c_1 * (np.sqrt(1.0 + 4.0 * (f_p * 2.0 * np.pi) ** 2 / (f_c_1 * 2.0 * np.pi) ** 2) + 1.0) / 2.0
+        self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[R, f_c_1], \
+                    name=r"$f_\mathrm{c}$", marker="--", color=(0.4, 0.4, 0.0), \
+                         y_range_in=self.y_range_list[0], ax_flag="f")
+        self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[R, f_c_2], \
+                name=r"$2 f_\mathrm{c}$", marker="-", color=(0.2, 0.6, 0.0), \
+                     y_range_in=self.y_range_list[0], ax_flag="f")
+        self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[R, f_p], \
+                    name=r"$f_\mathrm{p}$", marker=":", color=(0.2, 0.0, 0.6), \
+                         y_range_in=self.y_range_list[0], ax_flag="f")
+        self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[R, f_c_3], \
+                    name=r"$3 f_\mathrm{c}$", marker="--", color=(0.0, 0.4, 0.4), \
+                         y_range_in=self.y_range_list[0], ax_flag="f")
+        self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[R, freq], \
+                    name=r"$f_\mathrm{ECE}$", marker="-", color=(0.0, 0.0, 0.0), \
+                         y_range_in=self.y_range_list[0], ax_flag="f")
+        self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[R, f_R], \
+                    name=r"$f_\mathrm{R}$", marker=":", color=(0.6, 0.0, 0.3), \
+                         y_range_in=self.y_range_list[0], ax_flag="f")
+        self.model_color_index = 0
+        for n, color in zip(range(1, 4),[(0.4, 0.4, 0.0), (0.2, 0.6, 0.0), (0.0, 0.4, 0.4)]):
+            R_spl = InterpolatedUnivariateSpline(s, R)
+            fc_spl = InterpolatedUnivariateSpline(s, f_c_1 * n - freq)
+            s_res = fc_spl.roots()
+            if(len(s_res) > 0):
+                self.axlist[0].vlines(R_spl(s_res), self.y_range_list[0][0], self.y_range_list[0][1], linestyle='dotted', color=color)
+        self.create_legends("single")
+        return self.fig
 
     def diag_calib_summary(self, diag, file_list):
         self.setup_axes("single", "Calibration factors for diagn. " + diag, r"Rel. mean scatter for diagn. " + diag)
@@ -436,30 +487,52 @@ class plotting_core:
 
     def diag_calib_avg(self, diag, freq, calib, rel_dev, title):
         self.setup_axes("single", title, r"Rel. mean scatter for diagn. " + diag.name)
+        mask = np.abs(rel_dev * 100.0) > 1.0
+        print("Not plotting the following channels due to more than 100% statistical uncertainty")
+        print(np.array(range(1, len(calib) + 1))[np.logical_not(mask)])
+        print("Not plotting the following channels since their calibration factor is more than 20 times larger than median of the calibration factors of all channels")
+        print(np.array(range(1, len(calib) + 1))[np.abs(calib) > np.median(np.abs(calib)) * 20])
+        mask[np.abs(calib) > np.median(np.abs(calib)) * 20] = False
         self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
-            data=[freq * 1.e-9, calib], \
-            y_error=calib * rel_dev / 100.e0, \
+            data=[freq[mask], calib[mask]], \
+            y_error=calib[mask] * rel_dev[mask] / 100.e0, \
             name=title, marker="+", \
                  y_range_in=self.y_range_list[0], ax_flag="Calib")
         self.create_legends("errorbar")
+        self.fig.tight_layout()
         return self.fig, self.fig_2
 
     def diag_calib_slice(self, diag, freq, calib, std_dev, title):
         self.setup_axes("single", title, r"Rel. mean scatter for diagn. " + diag.name)
+        mask = np.abs(std_dev) < calib
+        print("Not plotting the following channels due to more than 100% statistical uncertainty")
+        print(np.array(range(1, len(calib) + 1))[np.logical_not(mask)])
+        print("Not plotting the following channels since their calibration factor is more than 20 times larger than median of the calibration factors of all channels")
+        print(np.array(range(1, len(calib) + 1))[np.abs(calib) > np.median(np.abs(calib)) * 20])
+        mask[np.abs(calib) > np.median(np.abs(calib)) * 20] = False
         self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
-            data=[freq * 1.e-9, calib], \
-            y_error=std_dev, \
+            data=[freq[mask], calib[mask]], \
+            y_error=std_dev[mask], \
             name=title, marker="+", \
                  y_range_in=self.y_range_list[0], ax_flag="Calib")
         self.create_legends("errorbar")
+        self.fig.tight_layout()
         return self.fig, self.fig_2
 
 
     def calib_evolution(self, diag, ch, ECRad_result_list, heating_array=None, time_ne = None, ne=None):
         self.title = False
         extra_info = heating_array is not None and time_ne is not None and  ne is not None
+        plot_power = False
         if(extra_info):
-            self.setup_axes("twinx_double", "\"+\" = $c$, \"-\" = $T_\mathrm{rad,mod}$  " + diag, r"Rel. mean scatter for diagn. " + diag)
+            for i, P_trace in enumerate(heating_array):
+                if(np.any(P_trace[1] > 1.e-3)):
+                    plot_power = True
+        if(extra_info):
+            if(plot_power):
+                self.setup_axes("twinx_double", "\"+\" = $c$, \"-\" = $T_\mathrm{rad,mod}$  " + diag, r"Rel. mean scatter for diagn. " + diag)
+            else:
+                self.setup_axes("twinx_double_single_second", "\"+\" = $c$, \"-\" = $T_\mathrm{rad,mod}$  " + diag, r"Rel. mean scatter for diagn. " + diag)
         else:
             self.setup_axes("twinx", "\"+\" = $c$, \"-\" = $T_\mathrm{rad,mod}$  " + diag, r"Rel. mean scatter for diagn. " + diag)
         # \"--\" $= T_\mathrm{e}$
@@ -489,18 +562,18 @@ class plotting_core:
                 data=[result.time[result.masked_time_points[diag]], Trad.T[ch]], \
                 color=color, marker="--",  name=label_Trad, y_range_in=self.y_range_list[1], ax_flag="Trad_trace")
             if(extra_info):
-                heating_labels = [r"$P_\mathrm{ECRH}$", r"$P_\mathrm{NBI}$"]
-                heating_color = ["blue", "red"]
+                heating_labels = [r"$P_\mathrm{ECRH}$", r"$P_\mathrm{NBI}$", r"$P_\mathrm{ICRH}$"]
+                heating_color = ["blue", "red", "green"]
                 for i, P_trace in enumerate(heating_array):
-                    if(np.sum(P_trace[1]) > 1.e-3):
-                        self.axlist[2], self.y_range_list[2] = self.add_plot(self.axlist[2], \
+                    if(np.any(P_trace[1] > 1.e-3)):
+                        self.axlist[3], self.y_range_list[3] = self.add_plot(self.axlist[3], \
                                                                              data=[P_trace[0], P_trace[1]], \
                                                                              color=heating_color[i], marker="-",  name=heating_labels[i],\
-                                                                             y_range_in=self.y_range_list[2], ax_flag="P_trace")
-                self.axlist[3], self.y_range_list[3] = self.add_plot(self.axlist[3], \
+                                                                             y_range_in=self.y_range_list[3], ax_flag="P_trace")
+                self.axlist[2], self.y_range_list[2] = self.add_plot(self.axlist[2], \
                                                                      data=[time_ne, ne / 1.e19], \
                                                                      color="black", marker="--",  name=r"$n_\mathrm{e}$", \
-                                                                     y_range_in=self.y_range_list[3], ax_flag="ne_trace")
+                                                                     y_range_in=self.y_range_list[2], ax_flag="ne_trace")
             i += 1
 #         self.axlist[1].set_ylim(0.0, self.y_range_list[1][1])
         self.axlist[0].set_ylim(0.0, self.y_range_list[0][1])
@@ -509,7 +582,11 @@ class plotting_core:
                 transform=self.axlist[0].transAxes,
                 color='black', fontsize=plt.rcParams['axes.titlesize'])
         if(extra_info):
-            self.create_legends("errorbar_double_twinx")
+            if(plot_power):
+                self.create_legends("errorbar_double_twinx")
+            else:
+                self.create_legends("errorbar_double_twinx_single_second")
+            self.axlist[0].get_xaxis().set_visible(False)
         else:
             self.create_legends("errorbar_twinx")
         return self.fig
@@ -1067,11 +1144,6 @@ class plotting_core:
                     vessel_bd=None):
         shotstr = "\#" + str(shot) + " t = " + "{0:2.3f}".format(time) + " s  "
         self.setup_axes("single", r"ECE cold res. and ray " + shotstr, "Toroidal angle")
-        stop_at_axis = False
-        if(stop_at_axis):
-            if(EQ_obj == False):
-                EQ_obj = EQData(shot, EQ_exp=EQ_exp, EQ_diag=EQ_diag, EQ_ed=EQ_ed)
-            R, z = EQ_obj.get_axis(float(time))
         if(Rays is not None):
             if(not np.isscalar(Rays[0][0][0])):  # multiple rays stored
                 for i in range(len(Rays)):
@@ -1079,37 +1151,17 @@ class plotting_core:
         if(Rays is not None):
             if(tb_Rays is not None or straight_Rays is not None):
                 i_axis = len(Rays[0][1])
-                if(stop_at_axis):
-                    i_axis = 0
-                    for i in range(len(Rays[0][0])):
-                        i_axis = i
-                        if(Rays[0][0][::-1][i] < R):
-                            break
                 self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                       self.y_range_list[0], data=[ Rays[0][0][:i_axis] , Rays[0][1][:i_axis] ], marker="-", color="blue", \
                       name=r"Rays according to ECRad", ax_flag="Rz")
             else:
                 i_axis = len(Rays[0][1])
-                if(stop_at_axis):
-                    i_axis = 0
-                    for i in range(len(Rays[0][0])):
-                        i_axis = i
-                        if(Rays[0][0][::-1][i] < R):
-                            break
                 self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                       self.y_range_list[0], data=[ Rays[0][0][:i_axis] , Rays[0][1][:i_axis] ], marker="-", color="blue", \
                       ax_flag="Rz")
             for ray in Rays[1:len(Rays) - 1]:
                 try:
-                    i_axis = len(Rays[0][::-1])
-                    if(stop_at_axis):
-                        i_axis = 0
-                        for i in range(len(ray[0])):
-                            i_axis = i
-                            if(ray[0][::-1][i] < R):
-                                break
-                    else:
-                        i_axis = len(ray[0])
+                    i_axis = len(ray[0])
                     self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                       self.y_range_list[0], data=[ray[0][::-1][:i_axis] , ray[1][::-1][:i_axis] ], marker="-", color="blue", \
                       ax_flag="Rz")
@@ -1146,16 +1198,7 @@ class plotting_core:
                       name=r"Cold res. pos.", \
                       ax_flag="Rz")
         equilibrium = True
-        if(equilibrium and EQ_obj == False):
-            if(EQ_exp and EQ_ed is not None and EQ_diag is not None):
-                EQ_obj = EQData(shot, EQ_exp=EQ_exp, EQ_diag=EQ_diag, EQ_ed=EQ_ed)
-            else:
-                EQ_obj = EQData(shot, EQ_exp='AUGD', EQ_diag='EQH', EQ_ed=0)
-            EQ_Slice = EQ_obj.GetSlice(time)
-            R = EQ_Slice.R
-            z = EQ_Slice.z
-            rhop = EQ_Slice.rhop
-        else:
+        if(equilibrium and EQ_obj):
             R = EQ_obj.slices[np.argmin(np.abs(EQ_obj.times - time))].R
             z = EQ_obj.slices[np.argmin(np.abs(EQ_obj.times - time))].z
             rhop = EQ_obj.slices[np.argmin(np.abs(EQ_obj.times - time))].rhop
@@ -2005,6 +2048,26 @@ class plotting_core:
             self.twinx_array = [True, True]
             self.x_share_list = [None, 0, 0, 0]
             self.y_share_list = [None, None, None, None]  # Note the twinx axes!
+            self.twinx_y_share = [None, None, None, None]
+            self.y_range_list = []
+            self.layout_2 = [1, 1, 1]
+            self.grid_locations_2 = [[0, 0]]
+            self.twinx_array_2 = [False]
+            self.x_share_list_2 = [None]
+            self.y_share_list_2 = [None]  # Note the twinx axes!
+            self.y_range_listv = []
+            steps = np.array([1.0, 5.0, 10.0])
+            steps_y = steps
+            steps_2 = steps
+            steps_2_y = steps_y
+            self.gridspec = plt.GridSpec(self.layout[1], self.layout[2])
+            self.gridspec_2 = plt.GridSpec(self.layout_2[1], self.layout_2[2])
+        elif(mode == "twinx_double_single_second"):
+            self.layout = [2, 2, 1]
+            self.grid_locations = [[0, 0], [1, 0]]
+            self.twinx_array = [True, False]
+            self.x_share_list = [None, 0, 0]
+            self.y_share_list = [None, None, None]  # Note the twinx axes!
             self.twinx_y_share = [None, None, None]
             self.y_range_list = []
             self.layout_2 = [1, 1, 1]
@@ -2571,6 +2634,18 @@ class plotting_core:
 #                    labs.append(lns[l].get_label())
 #                    lns_short.append(lns[l])
 #            leg = self.axlist[0].legend(lns_short, labs)
+        elif(mode == "errorbar_double_twinx_single_second"):
+            handles_primary, labels_primary = self.axlist[0].get_legend_handles_labels()
+            handles_twinx, labels_twinx = self.axlist[1].get_legend_handles_labels()
+            handles = handles_primary + handles_twinx
+            labels = labels_primary + labels_twinx
+            leg = self.axlist[0].legend(handles, labels)
+            leg.get_frame().set_alpha(1.0)
+            leg.draggable()
+            handles, labels = self.axlist[2].get_legend_handles_labels()
+            leg2 = self.axlist[2].legend(handles, labels)
+            leg2.get_frame().set_alpha(1.0)
+            leg2.draggable()
         elif(mode == "only_axis_1"):
             for i in range(len(self.axlist) - 1):
                 lns = self.axlist[i].get_lines()
@@ -3023,8 +3098,9 @@ class plotting_core:
             ax.set_yscale('log')
         if(y_range_in is not None):
             if(y_error is not None):
-                ymax = np.nanmax([y_range_in[1], np.nanmax(y[np.abs(y) != np.inf] + y_error[np.abs(y_error) != np.inf])])
-                ymin = np.nanmin([y_range_in[0], np.nanmin(y[np.abs(y) != np.inf] - y_error[np.abs(y_error) != np.inf])])
+                mask = np.logical_or(np.abs(y) != np.inf,np.abs(y_error) != np.inf)
+                ymax = np.nanmax([y_range_in[1], np.nanmax(y[mask] + y_error[mask])])
+                ymin = np.nanmin([y_range_in[0], np.nanmin(y[mask] - y_error[mask])])
             else:
                 ymax = np.nanmax([y_range_in[1], np.nanmax(y[np.abs(y) != np.inf])])
                 ymin = np.nanmin([y_range_in[0], np.nanmin(y[np.abs(y) != np.inf])])
@@ -3110,37 +3186,37 @@ class plotting_core:
                                 ax.vlines(vline, -10 * np.abs(y_range[0]), 10 * y_range[1], linestyle='dotted')
                 elif(ax_flag == "Calib"):
                     ax.set_xlabel(r"$f$ [GHz]")
-                    ax.set_ylabel(r"$c$ [keV/(V/s)]")
+                    ax.set_ylabel(r"$c$ [keV/(V)]")
                 elif(ax_flag == "Calib_trace"):
                     ax.set_xlabel(r"$t$ [s]")
-                    ax.set_ylabel(r"$c$ [eV/(V/s)]")
+                    ax.set_ylabel(r"$c$ [eV/(V)]")
                 elif(ax_flag == "Sig_vs_Trad"):
                     ax.set_xlabel(r"$T_\mathrm{rad,mod}$ [keV]")
-                    ax.set_ylabel(r"Sig [V/s]")
+                    ax.set_ylabel(r"Sig [V]")
                 elif(ax_flag == "V_vs_Trad"):
                     ax.set_xlabel(r"$T_\mathrm{rad,mod}$ [keV]")
-                    ax.set_ylabel(r"$V^*_\mathrm{diag}$ [V/s]")
+                    ax.set_ylabel(r"$V^*_\mathrm{diag}$ [V]")
                 elif(ax_flag == "V_vs_Trad_small"):
                     ax.set_xlabel(r"$T_\mathrm{rad,mod}$ [keV]")
-                    ax.set_ylabel(r"$V^*_\mathrm{diag}$ [mV/s]")
+                    ax.set_ylabel(r"$V^*_\mathrm{diag}$ [mV]")
                 elif(ax_flag == "Sig_vs_Trad_small"):
                     ax.set_xlabel(r"$T_\mathrm{rad,mod}$ [keV]")
-                    ax.set_ylabel(r"Sig [mV/s]")
+                    ax.set_ylabel(r"Sig [mV]")
                 elif(ax_flag == "Sig_vs_time"):
                     ax.set_xlabel(r"$t$ [s]")
-                    ax.set_ylabel(r"Sig [V/s]")
+                    ax.set_ylabel(r"Sig [V]")
                 elif(ax_flag == "Sig_vs_Trad"):
-                    ax.set_xlabel(r"Sig [V/s]")
+                    ax.set_xlabel(r"Sig [V]")
                     ax.set_ylabel(r"$T_\mathrm{rad,mod}$ [keV]")
                 elif(ax_flag == "Ang_vs_Trad"):
                     ax.set_xlabel(r"$T_\mathrm{rad,mod}$ [keV]")
                     ax.set_ylabel(r"$\theta_\mathrm{pol}$ [$^\circ$]")
                 elif(ax_flag == "Ang_vs_Sig"):
-                    ax.set_xlabel(r"Sig [V/s]")
+                    ax.set_xlabel(r"Sig [V]")
                     ax.set_ylabel(r"$\theta_\mathrm{pol}$ [$^\circ$]")
                 elif(ax_flag == "calib_vs_launch"):
                     ax.set_xlabel(r"$\theta_\mathrm{pol}$ [$^\circ$]")
-                    ax.set_ylabel(r"$c$ [keV/(V/s)]")
+                    ax.set_ylabel(r"$c$ [keV/(V)]")
                 elif(ax_flag == "Rz"):
                     ax.set_xlabel(r"$R$ [m]")
                     ax.set_ylabel(r"$z$ [m]")
@@ -3247,7 +3323,7 @@ class plotting_core:
                             else:
                                 ax.vlines(vline, -10 * np.abs(y_range[0]), 10 * y_range[1], linestyle='dotted')
                 elif(ax_flag == "ne_trace"):
-                    ax.set_xlabel(r"$t / \mathrm{s}$")
+                    ax.set_xlabel(r"$t [\mathrm{s}]$")
                     ax.set_ylabel(r"$n_\mathrm{e}\left[\SI{1.e19}{\per\cubic\metre}\right]$")
                 elif(ax_flag == "P_trace"):
                     ax.set_xlabel(r"$t \si{\second}$")

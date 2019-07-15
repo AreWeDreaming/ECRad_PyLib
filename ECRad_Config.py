@@ -111,10 +111,6 @@ class ECRadConfig:
             self.max_points_svec = mdict["max_points_svec"]
         except KeyError:
             self.max_points_svec = 20000
-        try:
-            self.Relax_dir = mdict["Relax_dir"]
-        except:
-            self.Relax_dir = "/afs/ipp-garching.mpg.de/home/s/sdenk/Documentation/Data/fRelax"
         if(path is None and not ext_mdict):
             print("Successfully loaded last used configuration")
         return
@@ -156,7 +152,6 @@ class ECRadConfig:
         mdict["large_ds"] = self.large_ds
         mdict["small_ds"] = self.small_ds
         mdict["max_points_svec"] = self.max_points_svec
-        mdict["Relax_dir"] = self.Relax_dir
         if(write_mat):
             try:
                 savemat(path, mdict, appendmat=False)
@@ -174,7 +169,7 @@ def provide_default_mdict():
     mdict = {}
     mdict["shot"] = 0
     mdict["working_dir"] = ""
-    mdict["dstf"] = "TB"
+    mdict["dstf"] = "Th"
     mdict["extra_output"] = True
     mdict["debug"] = False
     mdict["batch"] = True
@@ -184,7 +179,7 @@ def provide_default_mdict():
     mdict["vmem"] = 32000
     mdict["raytracing"] = True
     mdict["ripple"] = True
-    mdict["weak_rel"] = False
+    mdict["weak_rel"] = True
     mdict["N_freq"] = 1
     mdict["N_ray"] = 1
     mdict["ratio_for_3rd_harm"] = 0.4
@@ -204,7 +199,6 @@ def provide_default_mdict():
     mdict["large_ds"] = 2.5e-3
     mdict["small_ds"] = 2.5e-4
     mdict["max_points_svec"] = 20000
-    mdict["Relax_dir"] = "/afs/ipp-garching.mpg.de/home/s/sdenk/Documentation/Data/fRelax"
     return mdict
 
 # InvokeECRad = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/Ecfm_Model_new/ecfm_model"

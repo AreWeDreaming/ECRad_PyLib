@@ -10,9 +10,10 @@ from scipy.io import loadmat, savemat
 import sys
 from GlobalSettings import globalsettings
 import numpy as np
-from equilibrium_utils import EQDataSlice, special_points
+from equilibrium_utils import EQDataSlice, special_points, EQDataExt
 from Diags import Diag, ECRH_diag, ECI_diag, EXT_diag
 from distribution_io import load_f_from_mat
+from __builtin__ import True
 if(globalsettings.AUG):
     from ECRad_DIAG_AUG import DefaultDiagDict
 elif(globalsettings.TCV):
@@ -27,7 +28,8 @@ class ECRadScenario:
             self.scenario_file = os.path.join(os.path.expanduser("~"), ".ECRad_GUI_last_scenario.mat")
             try:
                 self.from_mat(path_in=self.scenario_file)
-            except IOError:
+            except (IOError,KeyError):
+                print("Failed to import last used Scenario")
                 self.reset()
         else:
             self.reset()
@@ -93,7 +95,7 @@ class ECRadScenario:
             for key in ["rhop_prof", "Te", "ne"  ]:
                 at_least_2d_keys.append(key)
         elif(self.profile_dimension == 2):
-            for key in ["Te", "ne"  ]:
+            for key in ["Te", "ne"]:
                 at_least_3d_keys.append(key)
         self.shot = mdict["shot"]
         self.IDA_exp = mdict["IDA_exp"]
@@ -140,7 +142,7 @@ class ECRadScenario:
         self.default_diag = mdict["used_diags"][0]
         for i in range(len(mdict["used_diags"])):
             diagname = mdict["used_diags"][i]
-            if(diagname == "ECN" or diagname == "ECO" or diagname == "ECI"):
+            if((diagname == "ECN" or diagname == "ECO" or diagname == "ECI") and globalsettings.AUG):
                 self.used_diags_dict.update({diagname: ECI_diag(diagname, mdict["Diags_exp"][i], mdict["Diags_diag"][i], int(mdict["Diags_ed"][i]), \
                                               mdict["Extra_arg_1"][i], mdict["Extra_arg_2"][i], int(mdict["Extra_arg_3"][i]))})
             elif("CT" in diagname or "IEC" in diagname):
@@ -157,7 +159,7 @@ class ECRadScenario:
                     self.used_diags_dict.update({diagname: EXT_diag(diagname, mdict["Ext_launch_geo"], mdict["Ext_launch_pol"])})
                 else:
                     self.used_diags_dict.update({diagname: EXT_diag(diagname, mdict["Ext_launch_geo"], -1)})
-            else:
+            elif(globalsettings.AUG):
                 self.used_diags_dict.update({diagname: \
                         Diag(diagname, mdict["Diags_exp"][i], mdict["Diags_diag"][i], int(mdict["Diags_ed"][i]))})
         if("launch_R" in mdict.keys()):
@@ -201,7 +203,7 @@ class ECRadScenario:
         self.plasma_dict["eq_data"] = np.array(self.plasma_dict["eq_data"])
         self.plasma_dict["vessel_bd"] = mdict["vessel_bd"]
         for diag_key in self.avail_diags_dict:
-            if(diag_key in self.used_diags_dict.keys()):
+            if(diag_key in list(self.used_diags_dict.keys())):
                 self.avail_diags_dict.update({diag_key: self.used_diags_dict[diag_key]})
         if("data_source" in mdict.keys()):
             self.data_source = mdict["data_source"]
@@ -226,14 +228,14 @@ class ECRadScenario:
         mdict["EQ_exp"] = self.EQ_exp
         mdict["EQ_diag"] = self.EQ_diag
         mdict["EQ_ed"] = self.EQ_ed
-        mdict["used_diags"] = self.used_diags_dict.keys()
+        mdict["used_diags"] = list(self.used_diags_dict.keys()) # Cast ordered_dict_keys to list
         mdict["Diags_exp"] = []
         mdict["Diags_diag"] = []
         mdict["Diags_ed"] = []
         mdict["Extra_arg_1"] = []
         mdict["Extra_arg_2"] = []
         mdict["Extra_arg_3"] = []
-        for diagname in self.used_diags_dict.keys():
+        for diagname in list(self.used_diags_dict.keys()):
             if(hasattr(self.used_diags_dict[diagname], "exp")):
                 mdict["Diags_exp"].append(self.used_diags_dict[diagname].exp)
                 mdict["Diags_diag"].append(self.used_diags_dict[diagname].diag)
@@ -344,8 +346,6 @@ class ECRadScenario:
     def load_dist_obj(self, filename):
         self.dist_obj = load_f_from_mat(filename, use_dist_prefix=True)
         
-        
-    
 if(__name__ == "__main__"):
     newScen = ECRadScenario(noLoad=True)
     newScen.from_mat( path_in="/tokp/work/sdenk/ECRad/ECRad_35662_ECECTCCTA_ed2.mat")
