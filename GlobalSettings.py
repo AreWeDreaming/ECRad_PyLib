@@ -43,7 +43,7 @@ def partition_function_itm(cores, wall_time):
 
 class GlobalSettingsITM:
     def __init__(self):
-        self.AUG = False  # True  -> Start with True, set it to false if we run into problems
+        self.AUG = True  # True  -> Start with True, set it to false if we run into problems
         self.TCV = False # Not fully supported -> needs some work
         self.root = os.path.expanduser("~/")
         self.SLES12 = False
