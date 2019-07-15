@@ -14,6 +14,8 @@ from ECRad_Config import ECRadConfig
 from ECRad_Scenario import ECRadScenario
 from collections import OrderedDict as od
 from ndarray_helper import ndarray_math_operation, ndarray_check_for_None
+
+
 class ECRadResults:
     def __init__(self):
         self.Config = ECRadConfig()
@@ -927,8 +929,15 @@ class ECRadResults:
         elif(self.comment is not None):
             mdict["comment"] = self.comment
         mdict["ECRad_git_tag"] = np.loadtxt(os.path.join(globalsettings.ECRadRoot, "id"),dtype=np.str)
-        mdict["ECRadGUI_git_tag"]= np.loadtxt("id",dtype=np.str)
-        mdict["ECRadPylib_git_tag"] = np.loadtxt("../ECRad_Pylib/id",dtype=np.str)
+        globalsettings
+        try:
+            mdict["ECRadGUI_git_tag"] =  np.loadtxt(os.path.join(globalsettings.GUI_folder, "id"),dtype=np.str)
+        except IOError:
+            mdict["ECRadGUI_git_tag"] = "Unknown"
+        try:
+            mdict["ECRadPylib_git_tag"] = np.loadtxt(os.path.join(globalsettings.pylib_folder, "id"),dtype=np.str)
+        except IOError:
+            mdict["ECRadPylib_git_tag"] = "Unknown"
         mdict["time"] = self.time
         mdict["Trad"] = self.Trad
         mdict["tau"] = self.tau

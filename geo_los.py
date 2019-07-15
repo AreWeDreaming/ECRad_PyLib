@@ -14,7 +14,7 @@ if(not os.path.isdir(geo_los_path)):
 lib_geo_los = ct.cdll.LoadLibrary(os.path.join(geo_los_path, "libece.so"))
 from numpy.ctypeslib import ndpointer
 geo_fun = lib_geo_los.geo_los
-geo_fun.restype = None
+geo_fun.restype = None  
 geo_fun.argtypes = [ct.c_int32, \
                 ct.c_int32, \
                 ct.c_float, \

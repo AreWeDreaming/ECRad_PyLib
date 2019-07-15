@@ -12,8 +12,12 @@ from subprocess import call
 from scipy.io import savemat
 from GlobalSettings import globalsettings
 if(globalsettings.AUG):
-    from shotfile_handling_AUG import load_IDA_data, get_Vloop, get_RELAX_target_current, get_total_current, make_ext_data_for_testing_from_data
-    from equilibrium_utils_AUG import EQData
+    try:    
+        from shotfile_handling_AUG import load_IDA_data, get_Vloop, get_RELAX_target_current, get_total_current, make_ext_data_for_testing_from_data
+        from equilibrium_utils_AUG import EQData
+    except (OSError,ImportError):
+        print("Failed to access dd routines in TB_communication.py - setting AUG to False")
+        globalsettings.AUG = False
 from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
 from scipy.optimize import minimize
 import scipy.constants as cnst
