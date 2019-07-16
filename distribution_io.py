@@ -112,16 +112,26 @@ def export_gene_fortran_friendly(wpath, rhop, beta_par, mu_norm, ne, f, f0, B0):
 
 def load_f_from_mat(filename, use_dist_prefix=False):
     # Load distribution object from .mat file created by AECM GUI
-    dist_prefix = ""
-    if(use_dist_prefix):
-        dist_prefix = "dist_"
     mdict = loadmat(filename, squeeze_me=True)
+    dist_prefix = ""
+    if(use_dist_prefix is None):
+        for key in mdict.keys():
+            if(key.startswith("dist")):
+                dist_prefix = "dist_"
+                break
+    elif(use_dist_prefix):
+        dist_prefix = "dist_"
     return distribution(mdict[dist_prefix + "rhot_prof"], mdict[dist_prefix + "rhop_prof"], mdict[dist_prefix + "u"], mdict[dist_prefix + "pitch"], mdict[dist_prefix + "f"], mdict[dist_prefix + "rhot_1D_profs"], mdict[dist_prefix + "rhop_1D_profs"], mdict[dist_prefix + "Te_init"], mdict[dist_prefix + "ne_init"])
 
 def read_waves_mat_to_beam(waves_mat, EQSlice, use_wave_prefix=False):
     # Load waves object from .mat file created by AECM GUI (GRAY or TORAYFOM)
     wave_prefix = ""
-    if(use_wave_prefix):
+    if(use_wave_prefix is None):
+        for key in waves_mat.keys():
+            if(key.startswith("wave")):
+                wave_prefix = "wave_"
+                break
+    elif(use_wave_prefix):
         wave_prefix = "wave_"
     rho_prof = waves_mat[wave_prefix + "rhop_prof"]
     j = waves_mat[wave_prefix + "j_prof"]
@@ -164,7 +174,12 @@ def read_waves_mat_to_beam(waves_mat, EQSlice, use_wave_prefix=False):
 def read_dist_mat_to_beam(dist_mat, use_dist_prefix=True):
     # Load waves object from .mat file created by AECM GUI (RELAX)
     dist_prefix = ""
-    if(use_dist_prefix):
+    if(use_dist_prefix is None):
+        for key in dist_mat.keys():
+            if(key.startswith("dist")):
+                dist_prefix = "dist_"
+                break
+    elif(use_dist_prefix):
         dist_prefix = "dist_"
     rho_prof = dist_mat[dist_prefix + "rhop_prof"]
     j = dist_mat[dist_prefix + "j_prof"]
@@ -276,9 +291,7 @@ def read_LUKE_profiles(path):
         return [], []
 
 def make_dist_from_Gene_input(path, shot, time, EQObj, debug=False):
-    h5_fileID = h5py.File(os.path.join(path, "xvspelectrons_1c.h5"), 'r')
-    ne_file = np.loadtxt(os.path.join(path, "ne_file.dat"), skiprows=1)
-    ne_spl = InterpolatedUnivariateSpline(ne_file.T[0], ne_file.T[1], k=1)
+    h5_fileID = h5py.File(path, 'r')
     it = 0
     beta_max = 0.5
     R = np.array(h5_fileID["axes"]["Rpos_m"]).flatten()
@@ -299,8 +312,6 @@ def make_dist_from_Gene_input(path, shot, time, EQObj, debug=False):
     EQSlice = EQObj.GetSlice(time)
     rhop_spl = RectBivariateSpline(EQSlice.R, EQSlice.z, EQSlice.rhop)
     rhop = rhop_spl(R, z, grid=False)
-    # f /= cnst.c ** 3 * cnst.m_e / (2.0 * np.pi)
-    # B0 = EQObj.get_B_on_axis(time)
     Btot_spl = RectBivariateSpline(EQSlice.R, EQSlice.z, np.sqrt(EQSlice.Br ** 2 + EQSlice.Bt ** 2 + EQSlice.Bz ** 2))
     B_local = np.float64(Btot_spl(R[int(len(R) / 2.0 + 0.5)], z[int(len(z) / 2.0 + 0.5)], grid=False))
     beta_perp = np.sqrt(mu_norm * 2.0 * B_local)
@@ -343,7 +354,19 @@ def make_dist_from_Gene_input(path, shot, time, EQObj, debug=False):
         plt.legend()
         plt.show()
     rhopindex = np.argsort(rhop)
-    return rhop[rhopindex], R, z, beta_par, mu_norm, f[rhopindex], f0, g[rhopindex], Te, ne, B_local
+    gene_data = {}
+    gene_data["rhop"] = rhop[rhopindex]
+    gene_data["R"] = R
+    gene_data["z"] = z
+    gene_data["beta_par"] = beta_par
+    gene_data["mu_norm"] = mu_norm
+    gene_data["f"] = f[rhopindex]
+    gene_data["f9"] = f0
+    gene_data["g"] = g[rhopindex]
+    gene_data["Te"] = Te
+    gene_data["ne"] = ne
+    gene_data["B_local"] = B_local
+    return gene_data
 
 def browse_gene_dists(path, shot, time, it):
     # Broken atm -> GENE requires EQSlice now
@@ -824,7 +847,7 @@ def load_and_export_fortran_friendly(args):
     wpath = args[6]
     rhop, R, z, beta_par, mu_norm, f, f0, g, Te, ne, B0 = make_dist_from_Gene_input(rpath, shot, time, eq_exp=eq_exp, eq_diag=eq_diag, eq_ed=eq_ed)
     #    Te_perp, Te_par, ne_prof = get_dist_moments_non_rel(rhop, beta_par, mu_norm, f, Te, ne, B0, slices=1, ne_out=True)
-    export_gene_fortran_friendly(wpath, rhop, beta_par, mu_norm, f, f0, B0)
+    export_gene_fortran_friendly(wpath, rhop, beta_par, mu_norm, f, f0, B0)  
 
 
 

@@ -41,19 +41,21 @@ def GetECRadExec(Config, Scenario, time):
     if(parallel):
         stacksize = 0
         cores  = Config.parallel_cores
+        factor = 1
         for diag in Scenario.used_diags_dict:
             if(diag == "ECN" or diag == "ECO"  or diag == "ECI"):
-                stacksize += int(np.ceil(Config.max_points_svec * 3.125) * 3)
-            else:
-                stacksize += int(np.ceil(Config.max_points_svec * 3.125))
+                factor = 3
+        if(Config.dstf in ["Ge", "GB", "Re", "Lu"]):
+            factor *= 3
+        stacksize += int(np.ceil(Config.max_points_svec * 3.125) * factor)
     else:
         cores = 1 # serial
+    os.environ['OMP_STACKSIZE'] = "{0:d}k".format(stacksize)
     if(Config.batch):
         os.environ['ECRad_working_dir_1'] = Config.working_dir
         os.environ['ECRad'] = ECRadVers
         launch_options_dict = {}
         launch_options_dict["jobname"] = "-J " + "E{0:5d}{1:1.1f}".format(Scenario.shot, time)
-        os.environ['OMP_STACKSIZE'] = "{0:d}k".format(stacksize)
         launch_options_dict["IO"] = "-o {0:s} -e {1:s} ".format(os.path.join(Config.working_dir, "ECRad.stdout"), \
                                                                 os.path.join(Config.working_dir, "ECRad.stderr"))
         launch_options_dict["partition"] = globalsettings.partition_function(cores, Config.wall_time)
@@ -101,8 +103,10 @@ def prepare_input_files(Config, Scenario, index, copy_dist=True):
         print("ne scale != 1 -> scaling ne for model")
     if(Scenario.bt_vac_correction != 1.0):
         print("Bt scale != 1 -> scaling Bt for model")
-    if((Config.dstf != "Ge" and Config.dstf != "GB")):
-        success = make_ECRadInputFromPlasmaDict(ECRad_data_path, Scenario.plasma_dict, index, Scenario)
+    success = make_ECRadInputFromPlasmaDict(ECRad_data_path, Scenario.plasma_dict, index, Scenario)
+    if(not success):
+        print("An error occured when creating input profiles and the topfile")
+        return False
     input_file = open(os.path.join(ECRad_data_path, "ECRad.inp"), "w")
     if(Config.dstf == "GB"):
         input_file.write("Ge" + "\n")  # Model does not distinguish between Ge and GB
@@ -154,19 +158,18 @@ def prepare_input_files(Config, Scenario, index, copy_dist=True):
         if os.path.exists(wpath):
             rmtree(wpath)  # Removing the old files first is faster than overwriting them
         os.mkdir(wpath)
-        export_gene_fortran_friendly(wpath, Config.gene_obj[index].rhop, Config.gene_obj[index].beta_par, \
-                                     Config.gene_obj[index].mu_norm, Config.gene_obj[index].ne, \
-                                     Config.gene_obj[index].f, Config.gene_obj[index].f0, \
-                                     Config.gene_obj[index].B0)
+        export_gene_fortran_friendly(wpath, Scenario.GENE_obj.rhop, Scenario.GENE_obj.beta_par, \
+                                     Scenario.GENE_obj.mu_norm, Scenario.GENE_obj.ne, \
+                                     Scenario.GENE_obj.f[index], Scenario.GENE_obj.f0, \
+                                     Scenario.GENE_obj.B0)
     if(Config.dstf == "GB" and copy_dist):
         wpath = os.path.join(os.path.join(Config.working_dir, "ECRad_data", "fGe"))
         if os.path.exists(wpath):
             rmtree(wpath)  # Removing the old files first is faster than overwriting them
         os.mkdir(wpath)
-        Config.gene_obj[index].make_bi_max()
-        export_gene_bimax_fortran_friendly(wpath, Config.gene_obj[index].rhop, Config.gene_obj[index].beta_par, \
-                                     Config.gene_obj[index].mu_norm, Config.gene_obj[index].Te, Config.gene_obj[index].ne, \
-                                     Config.gene_obj[index].Te_perp, Config.gene_obj[index].Te_par, Config.gene_obj[index].B0)
+        export_gene_bimax_fortran_friendly(wpath, Scenario.GENE_obj.rhop, Scenario.GENE_obj.beta_par, \
+                                           Scenario.GENE_obj.mu_norm, Scenario.GENE_obj.Te, Scenario.GENE_obj.ne, \
+                                           Scenario.GENE_obj.Te_perp[index], Scenario.GENE_obj.Te_par[index], Scenario.GENE_obj.B0)
 
     return True
 
@@ -670,7 +673,7 @@ def make_topfile_from_ext_data(working_dir, shot, time, EQ, rhop, Te, ne, grid=F
                     cnt = 0
                 else:
                     cnt += 1
-    return 0
+    return True
 
 def read_svec_dict_from_file(folder, ich, mode="X"):  # ch no. starts from 1
     # ich is here channel nummer - i.e. channel 1 is the first channel -> add + 1 if ich comes from loop

@@ -397,14 +397,15 @@ def make_topfile_from_ext_data(working_dir, shot, time, EQ, rhop, Te, ne, grid=F
                     cnt += 1
     return 0
 
-def make_TORBEAM_no_data_load(working_dir, shot, time, rho_prof, Te_prof, ne_prof, R, z, psi, Br, Bt, Bz, psi_ax, psi_sep, launches, ITM=False, ITER=False, Z_eff=None):
+def make_TORBEAM_no_data_load(working_dir, shot, time, rho_prof, Te_prof, ne_prof, R, z, \
+                              psi, Br, Bt, Bz, psi_ax, psi_sep, launches, ITM=False, \
+                              ITER=False, Z_eff=None, mode = -1):
     TB_out_dir = os.path.join(working_dir, "{0:d}_{1:1.3f}_rays".format(shot, time))
     if(not os.path.isdir(TB_out_dir)):
         os.mkdir(TB_out_dir)
     org_path = os.getcwd()
     tb_lib_path = globalsettings.TB_path
     os.chdir(TB_out_dir)
-    mode = -1  # hard coded to X-mode
     prepare_TB_data_no_data_load(TB_out_dir, shot, time, rho_prof, Te_prof, ne_prof, R, z, psi, Br, Bt, Bz, psi_ax, psi_sep, ITM)
     beam_index = 0
     for launch in launches:

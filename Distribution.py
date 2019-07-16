@@ -29,9 +29,8 @@ class beam:
 
 class Gene:
     # Distribution class for distribution functions given by GENE in the output format specified by T. Goerler
-    def __init__(self, path, time=None, EqSlice=None, it=0, EQObj=None):
-        h5_fileID = h5py.File(os.path.join(path, "xvsp_electrons_1e.h5"), 'r')['xvsp_electrons']
-        gene_pos = h5py.File("/ptmp1/work/sdenk/ECRad7/xvspelectrons_1c.h5")
+    def __init__(self, filename, time=None, EqSlice=None, it=0, EQObj=None):
+        h5_fileID = h5py.File(filename, 'r')['xvsp_electrons']
         if(EqSlice is None):
             if(time is None):
                 print("The Gene class has to be initialized with either time or an EqSlice object present")
@@ -39,8 +38,8 @@ class Gene:
                 print("Either EqSlice or EQData must be present when GENE class is initialized")
             EqSlice = EQObj.GetSlice(time)
         beta_max = 1.0 # Cuts off distribution at high beta to avoid negative distribution, 1.0 -> no cut off
-        self.R = np.array(gene_pos["axes"]["Rpos_m"]).flatten()
-        self.z = np.array(gene_pos["axes"]["Zpos_m"]).flatten()
+        self.R = np.array(h5_fileID["axes"]["Rpos_m"]).flatten()
+        self.z = np.array(h5_fileID["axes"]["Zpos_m"]).flatten()
         dR_down = self.R[1] - self.R[0]
         dR_up = self.R[-1] - self.R[-2]
         dz_down = self.z[1] - self.z[0]
@@ -51,10 +50,14 @@ class Gene:
         self.beta_par = self.v_par / cnst.c
         self.mu_norm = np.array(h5_fileID["axes"]['mu_Am2']).flatten() / (cnst.m_e * cnst.c ** 2)
         self.total_time_cnt = len(h5_fileID['delta_f'].keys())
-        self.g = np.array(h5_fileID['delta_f'][u'{0:010d}'.format(it)]).T * cnst.c ** 3
-        self.f0 = np.array(h5_fileID['misc']['F0']).T * cnst.c ** 3
         self.Te = h5_fileID['general information'].attrs["Tref,eV"]
         self.ne = h5_fileID['general information'].attrs["nref,m^-3"]
+        self.g = []
+        self.time = np.array(h5_fileID["time"])
+        self.time *= h5_fileID['general information'].attrs["Lref,m"] / np.sqrt(cnst.e * self.Te / h5_fileID['general information'].attrs['mref,kg'])
+        for it in range(self.total_time_cnt):
+            self.g.append(np.array(h5_fileID['delta_f'][u'{0:010d}'.format(it)]).T * cnst.c ** 3)
+        self.f0 = np.array(h5_fileID['misc']['F0']).T * cnst.c ** 3
         rhop_spl = RectBivariateSpline(EqSlice.R, EqSlice.z, EqSlice.rhop)
         self.rhop = rhop_spl(self.R, self.z, grid=False)
         self.B0 = h5_fileID["misc"].attrs['Blocal,T']
@@ -64,26 +67,35 @@ class Gene:
         self.f0_log = np.copy(self.f0)
         self.f0_log[self.f0_log < 1.e-20] = 1.e-20
         self.f0_log = np.log(self.f0_log)
-        self.g = self.g[:, :, self.beta_perp < beta_max]
-        self.g = self.g[:, np.abs(self.beta_par) < beta_max, :]
+        for it in range(len(self.g)):
+            self.g[it] = self.g[it][:, :, self.beta_perp < beta_max]
+            self.g[it] = self.g[it][:, np.abs(self.beta_par) < beta_max, :]
         self.mu_norm = self.mu_norm[self.beta_perp < beta_max]
         self.beta_par = self.beta_par[np.abs(self.beta_par) < beta_max]
-        self.f = np.concatenate([[self.f0], self.g + self.f0, [self.f0]])
-        self.f_log = np.copy(self.f)
-        self.f_log[self.f_log < 1.e-20] = 1.e-20
-        self.f_log = np.log(self.f_log)
+        self.f = []
+        self.f_log = []
+        for it in range(len(self.g)):
+            self.f.append(np.concatenate([[self.f0], self.g[it] + self.f0, [self.f0]]))
+            self.f_log.append(np.copy(self.f[it]))
+            self.f_log[it][self.f_log[it] < 1.e-20] = 1.e-20
+            self.f_log[it] = np.log(self.f_log[it])
         rhopindex = np.argsort(self.rhop)
         self.rhop = self.rhop[rhopindex]
-
+        
 class Gene_BiMax(Gene):
     # Creates artifical GENE distribution based on the BiMaxwellian
     def __init__(self, path, shot, time=None, EqSlice=None, it=0, EQObj = None):
         Gene.__init__(self, path, shot, time, EqSlice, it, EQObj)
 
     def make_bi_max(self):
-        self.Te_perp, self.Te_par = get_dist_moments_non_rel(self.rhop, self.beta_par, self.mu_norm, \
-                                                             self.f, self.Te, self.ne, self.B0, \
-                                                             slices=1, ne_out=False)
+        self.Te_perp = []
+        self.Te_par = []
+        for it in self.time:
+            Te_perp, Te_par = get_dist_moments_non_rel(self.rhop, self.beta_par, self.mu_norm, \
+                                                                 self.f[it], self.Te, self.ne, self.B0, \
+                                                                 slices=1, ne_out=False)
+            self.Te_perp.append(Te_perp)
+            self.Te_par.append(Te_par)
         
 # Provides radial interpolation distribution functions
 

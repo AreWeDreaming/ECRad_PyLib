@@ -13,6 +13,7 @@ import numpy as np
 from equilibrium_utils import EQDataSlice, special_points, EQDataExt
 from Diags import Diag, ECRH_diag, ECI_diag, EXT_diag
 from distribution_io import load_f_from_mat
+from Distribution import Gene, Gene_BiMax
 from __builtin__ import True
 if(globalsettings.AUG):
     from ECRad_DIAG_AUG import DefaultDiagDict
@@ -83,7 +84,10 @@ class ECRadScenario:
                 print(e)
                 print("Error: File appears to be corrupted does not exist")
                 return False
-        self.profile_dimension = mdict["profile_dimension"]
+        try:
+            self.profile_dimension = mdict["profile_dimension"]
+        except KeyError:
+            self.profile_dimension = 1
         # Loading from .mat sometimes adds single entry arrays that we don't want
         at_least_1d_keys = ["diag", "time", "Diags_exp", "Diags_diag", "Diags_ed", "Extra_arg_1", "Extra_arg_2", "Extra_arg_3", \
                             "used_diags"]
@@ -351,6 +355,52 @@ class ECRadScenario:
 
     def load_dist_obj(self, filename):
         self.dist_obj = load_f_from_mat(filename, use_dist_prefix=True)
+        
+    def load_GENE_obj(self, filename, dstf):
+        it = 0 # Only single time point supported
+        try:
+            if(dstf == "Ge"):
+                self.GENE_obj = Gene(filename, self.plasma_dict["time"][it], self.plasma_dict["eq_data"][it])
+            else:
+                self.GENE_obj = Gene_BiMax(filename, self.plasma_dict["time"][it], self.plasma_dict["eq_data"][it])
+                self.GENE_obj.make_bi_max()
+            return True
+        except Exception as e:
+            self.GENE_obj = None
+            print("Failed to load the GENE data")
+            print(e)
+            return False
+        
+    def integrate_GeneData(self, used_times):
+        # We need this to hack in extra time points for the GENE computation
+        if(self.GENE_obj == None):
+            print("Gene object not initialized")
+            return False
+        first_time = True
+        plasma_dict_0 = self.plasma_dict.copy()
+        new_plasma_dict = {}
+        new_ray_launch = []
+        ray_launch_0 = self.ray_launch[0]
+        for used_time in used_times:
+            it_gene = np.argmin(np.abs(self.GENE_obj.time - (used_time - plasma_dict_0["time"][0])))
+            for key in self.plasma_dict.keys():
+                if(first_time):
+                    new_plasma_dict[key] = []
+                if(key != "time" and key != "vessel_bd"):
+                    new_plasma_dict[key].append(plasma_dict_0[key][0])
+                elif(key == "time" ):
+                    new_plasma_dict[key].append(plasma_dict_0[key][0] + self.GENE_obj.time[it_gene])
+                elif(first_time and key == "vessel_bd"):
+                    new_plasma_dict[key] = plasma_dict_0[key]
+            first_time = False
+            new_ray_launch.append({})
+            for key in ray_launch_0.keys():
+                new_ray_launch[-1][key] = ray_launch_0[key]
+        new_plasma_dict["time"] = np.array(new_plasma_dict["time"])
+        self.plasma_dict = new_plasma_dict
+        self.ray_launch = new_ray_launch
+        return True
+                     
         
 if(__name__ == "__main__"):
     newScen = ECRadScenario(noLoad=True)

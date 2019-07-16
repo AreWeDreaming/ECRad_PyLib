@@ -76,9 +76,24 @@ EVT_CPO_DATA_WRITTEN = wx.PyEventBinder(Unbound_EVT_CPO_DATA_WRITTEN, 1)
 Unbound_EVT_UNLOCK = wx.NewEventType()  # Call This
 EVT_UNLOCK = wx.PyEventBinder(Unbound_EVT_UNLOCK, 1)
 
+Unbound_EVT_GENE_DATA_LOADED = wx.NewEventType()  # Call This
+EVT_GENE_DATA_LOADED = wx.PyEventBinder(Unbound_EVT_GENE_DATA_LOADED, 1)
+
+
+Unbound_EVT_MAKE_ECRAD = wx.NewEventType()  # Call This
+EVT_MAKE_ECRAD = wx.PyEventBinder(Unbound_EVT_MAKE_ECRAD, 1)
+
 class UpdateConfigEvt(wx.PyCommandEvent):
     def __init__(self, evtType, id):
         wx.PyCommandEvent.__init__(self, evtType, id)
+        
+class GENEDataEvt(wx.PyCommandEvent):
+    def __init__(self, evtType, id):
+        wx.PyCommandEvent.__init__(self, evtType, id)
+        self.state = -2 # -> Not initialized, 0 Data loaded sucessfully, -1 Abort
+        
+    def set_state(self, state):
+        self. state = state
 
 class UpdateDiagDataEvt(wx.PyCommandEvent):
     def __init__(self, evtType, id):

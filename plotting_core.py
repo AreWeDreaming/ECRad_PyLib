@@ -155,6 +155,7 @@ class plotting_core:
                                                              marker="-", color=(0.0, 0.0, 0.0), \
                                                              y_range_in=self.y_range_list[0], y_scale=1.0, \
                                                              ax_flag=ax_flag)  # \times 100$
+        rhop_max = 0.0
         if(multiple_models):
             mask = np.zeros(len(Trad[0]), dtype=np.bool)
         else:
@@ -173,12 +174,14 @@ class plotting_core:
             mask[:] = True
         if(model_2 and len(Trad_comp) > 0):
             if(multiple_models):
+                rhop_max = max(np.max(rhop[0][mask]), rhop_max)
                 self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                     data=[rhop[0][mask], Trad_comp[mask]], \
                     name=r"$T_" + mathrm + "{rad,mod}" + dist_simpl + r"$", \
                     marker="s", color=(0.0, 0.0, 0.0), \
                     y_range_in=self.y_range_list[0], ax_flag=ax_flag)
             else:
+                rhop_max = max(np.max(rhop[mask]), rhop_max)
                 self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                     data=[rhop[mask], Trad_comp[mask]], \
                     name=r"$T_" + mathrm + "{rad,mod}" + dist_simpl + r"$", \
@@ -206,6 +209,7 @@ class plotting_core:
                         cur_mask[str(diags[key].name)==diag_name_entry] = True
                     if(np.all(cur_mask == False)):
                         cur_mask[:] = True
+                    rhop_max = max(np.max(rhop_entry[cur_mask]), rhop_max)
                     self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                                                                          data=[rhop_entry[cur_mask], Trad_entry[cur_mask]], \
                                                                          name=nice_label, \
@@ -218,6 +222,7 @@ class plotting_core:
                     print("THe result with the name " + label + "caused an index error")
                     print("Most likely it does not have the correct amount of modeled channels for the currently selected diagnostic")
         else:
+            rhop_max = max(np.max(rhop[mask]), rhop_max)
             self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                                                                  data=[rhop[mask], Trad[mask]], \
                                                                  name=r"$T_" + mathrm + "{rad,mod}" + dist + r"$", \
@@ -251,7 +256,7 @@ class plotting_core:
             if(self.diag_color_index[0] > len(self.diag_colors)):
                 print("Warning too many diagnostics to plot - ran out of unique colors")
                 self.diag_color_index[0] = 0
-        self.axlist[0].set_xlim(0.0, np.max(rhop[mask]) * 1.05)
+        self.axlist[0].set_xlim(0.0, rhop_max * 1.05)
         self.create_legends("Te_no_ne" + twinx)
         return self.fig
 
