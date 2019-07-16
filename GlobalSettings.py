@@ -105,4 +105,4 @@ class GlobalSettingsAUGEXT:
         self.pylib_folder = "../ECRad_Pylib"
         self.GUI_folder = "../ECRad_GUI"
         
-globalsettings = GlobalSettingsITM()
+globalsettings = GlobalSettingsAUG()
