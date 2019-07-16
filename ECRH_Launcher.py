@@ -3,6 +3,7 @@ Created on June 18, 2019
 @author: sdenk
 '''
 import numpy as np
+from scipy.optimize import root
 class ECRHLauncher:
     def __init__(self):
         self.x = None

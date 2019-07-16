@@ -112,7 +112,34 @@ class plotting_core:
     def get_figures(self):
         return self.fig, self.fig_2
 
-    
+    def get_si_string(self, unit):
+        if(plot_mode != 'Software'):
+            return r'\si{' + unit + r'}'
+        else:
+            format_string = unit.split('\\')
+            output = r'[\, \mathrm{'
+            for cur_str in format_string:
+                if(len(cur_str) == 0):
+                    continue
+                elif(cur_str == 'second'):
+                    output += 's'
+                else:
+                    print('Unit ' + cur_str + ' not yet supported')
+                    output += '?'
+            return output + r'}]'
+
+    def make_SI_string(self, value, unit):
+        if(plot_mode != 'Software'):
+            return r'\SI{' + value + r'}{' + unit + r'}'
+        else:
+            output = self.get_si_string(unit)
+            return value + r'\,' + output
+
+    def make_num_string(self, value):
+        if(plot_mode != 'Software'):
+            return r'\num{' + value + r'}'
+        else:
+            return value
 
     def plot_Trad(self, time, rhop, Trad, Trad_comp, rhop_Te, Te, \
                   diags, diag_names, dstf, model_2=True, \

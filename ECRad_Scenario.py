@@ -149,21 +149,15 @@ class ECRadScenario:
             if((diagname == "ECN" or diagname == "ECO" or diagname == "ECI") and globalsettings.AUG):
                 self.used_diags_dict.update({diagname: ECI_diag(diagname, mdict["Diags_exp"][i], mdict["Diags_diag"][i], int(mdict["Diags_ed"][i]), \
                                               mdict["Extra_arg_1"][i], mdict["Extra_arg_2"][i], int(mdict["Extra_arg_3"][i]))})
-            elif(("CT" in diagname or "IEC" in diagname) and globalsettings.AUG):
-                if(mdict["Extra_arg_3"][i] == "None"):
-                    self.used_diags_dict.update({diagname: ECRH_diag(diagname, mdict["Diags_exp"][i], mdict["Diags_diag"][i], int(mdict["Diags_ed"][i]), \
-                                              int(mdict["Extra_arg_1"][i]), float(mdict["Extra_arg_2"][i]), True)})
-                else:
-                    try:
-                        self.used_diags_dict.update({diagname: ECRH_diag(diagname, mdict["Diags_exp"][i], mdict["Diags_diag"][i], int(mdict["Diags_ed"][i]), \
-                                                  int(mdict["Extra_arg_1"][i]), float(mdict["Extra_arg_2"][i]), bool(int(mdict["Extra_arg_3"][i])))})
-                    except ValueError:
-                        if(mdict["Extra_arg_3"][i] == "True"):
-                            extra_arg_3 = True
-                        else:
-                            extra_arg_3 = False
-                        self.used_diags_dict.update({diagname: ECRH_diag(diagname, mdict["Diags_exp"][i], mdict["Diags_diag"][i], int(mdict["Diags_ed"][i]), \
-                                                  int(mdict["Extra_arg_1"][i]), float(mdict["Extra_arg_2"][i]), extra_arg_3)})
+            elif("CT" in diagname or "IEC" in diagname):
+                try:
+                    extra_arg_3 = bool(int(mdict["Extra_arg_3"][i]))
+                except ValueError:
+                    extra_arg_3 =  mdict["Extra_arg_3"][i] == "True"
+                    if(not extra_arg_3):
+                        extra_arg_3 =  mdict["Extra_arg_3"][i] == "None"
+                self.used_diags_dict.update({diagname: ECRH_diag(diagname, mdict["Diags_exp"][i], mdict["Diags_diag"][i], int(mdict["Diags_ed"][i]), \
+                                              int(mdict["Extra_arg_1"][i]), float(mdict["Extra_arg_2"][i]), extra_arg_3)})
             elif(diagname == "EXT"):
                 if("Ext_launch_pol" in mdict.keys()):
                     self.used_diags_dict.update({diagname: EXT_diag(diagname, mdict["Ext_launch_geo"], mdict["Ext_launch_pol"])})

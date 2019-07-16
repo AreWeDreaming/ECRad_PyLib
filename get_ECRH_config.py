@@ -9,7 +9,10 @@ import os
 import ctypes as ct
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline
-libECRH = np.ctypeslib.load_library("libaug_ecrh_setmirrors", os.path.join('/afs/ipp-garching.mpg.de/home/e/ecrh/sys/', os.environ["SYS"]))
+try:
+    libECRH = np.ctypeslib.load_library("libaug_ecrh_setmirrors", os.path.join('/afs/ipp-garching.mpg.de/home/e/ecrh/sys/', os.environ["SYS"]))
+except:
+    libECRH = np.ctypeslib.load_library("libaug_ecrh_setmirrors", '/afs/ipp-garching.mpg.de/home/e/ecrh/sys/amd64_sles15/')
 import datetime
 from ECRH_Launcher import ECRHLauncher
 # NOTE: Values not verified for ECRH III
