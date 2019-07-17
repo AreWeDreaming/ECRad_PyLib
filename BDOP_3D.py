@@ -296,7 +296,7 @@ class BDOP_3D:
         self.f_back = np.array(self.f_back)
 
 class PowerDepo_3D:
-    def __init__(self, s, freq, ray, f_inter, dist, B_ax, EqSlice, Te_spl, ne_spl, m=2, f_inter_scnd=None):
+    def __init__(self, s, P_norm, freq, ray, f_inter, dist, B_ax, EqSlice, Te_spl, ne_spl, m=2, f_inter_scnd=None):
         if(dist in ["Re", "ReComp"]):
             dist_mode = "ext"
             res_dist = dist.replace("Comp", "")
@@ -348,7 +348,13 @@ class PowerDepo_3D:
         self.u_perp_max = -np.inf
         self.R_spl = InterpolatedUnivariateSpline(ray["s"], ray["R"])
         self.phi_spl = InterpolatedUnivariateSpline(ray["s"], ray["phi"])
+        self.x_spl = InterpolatedUnivariateSpline(ray["s"], ray["R"] * np.cos(ray["phi"]))
+        self.y_spl = InterpolatedUnivariateSpline(ray["s"], ray["R"] * np.sin(ray["phi"]))
         self.z_spl = InterpolatedUnivariateSpline(ray["s"], ray["z"])
+        k_spl_arr = []
+        k_spl_arr.append(InterpolatedUnivariateSpline(ray["s"], self.x_spl(ray["s"], nu=1)))
+        k_spl_arr.append(InterpolatedUnivariateSpline(ray["s"], self.y_spl(ray["s"], nu=1)))
+        k_spl_arr.append(InterpolatedUnivariateSpline(ray["s"], self.z_spl(ray["s"], nu=1)))
         self.rhop_spl = InterpolatedUnivariateSpline(ray["s"], ray["rhop"])
         self.ne_spl = ne_spl
         self.Te_spl = Te_spl
@@ -361,20 +367,15 @@ class PowerDepo_3D:
         self.k = np.zeros(3)
         R = self.R_spl(s[0])
         phi = self.phi_spl(s[0])
-        self.z_old = self.z_spl(s[0])
-        self.x_old = R * np.cos(phi)
-        self.y_old = R * np.sin(phi)
-        self.P = 1.0
-        for i in range(1, len(s)):
-            ds = s[i] - s[i - 1]
+        for i in range(len(s)):
             R = self.R_spl(s[i])
             phi = self.phi_spl(s[i])
             x = R * np.cos(phi)
             y = R * np.sin(phi)
             z = self.z_spl(s[i])
-            self.k[0] = x - self.x_old
-            self.k[1] = y - self.y_old
-            self.k[2] = z - self.z_old
+            self.k[0] = k_spl_arr[0](s[i])
+            self.k[1] = k_spl_arr[1](s[i])
+            self.k[2] = k_spl_arr[2](s[i])
             self.k[:] /= np.linalg.norm(self.k)
             cos_phi = np.cos(phi)
             sin_phi = np.sin(phi)
@@ -438,7 +439,7 @@ class PowerDepo_3D:
                         self.rho.append(rho_cur)
                     u_par = np.copy(self.em_abs_Alb_obj.u_par)
                     u_perp = np.copy(self.em_abs_Alb_obj.u_perp)
-                    cur_val = np.copy(self.em_abs_Alb_obj.c_abs * ds * self.P)
+                    cur_val = np.copy(self.em_abs_Alb_obj.c_abs * P_norm[i])
                     cur_abs = np.copy(self.em_abs_Alb_obj.c_abs)
                     if(np.any(np.abs(u_par) > self.u_par_limit)):
                         u_par_cut = np.linspace(max(np.min(u_par), -self.u_par_limit), min(np.max(u_par), self.u_par_limit), len(u_par))
@@ -464,11 +465,9 @@ class PowerDepo_3D:
                                  freq_2X, theta)
                     mu = cnst.c ** 2 * cnst.m_e / (Te * cnst.e)
                     c_abs, j = self.em_abs_Alb_obj.abs_Albajar(cur_svec, 2.0 * np.pi * self.freq, 1, n_max=3, n_min=2)
-                    self.P -= c_abs * ds * self.P
                     self.f.append(self.em_abs_Alb_obj.dist(self.u_par[-1], self.u_perp[-1], mu, cur_svec))
                     u, pitch, spline = self.f_inter_scnd.get_spline(rhop, Te)
                     dist_inter_slice = distribution_interpolator(u, pitch, spline)
-                    print("P", self.P, "c_abs", c_abs)
             else:
                 print("Channel not resonant at rhop = ", rhop)
             # plt.plot(u_par[-1], val[-1])
@@ -502,14 +501,14 @@ def make_3DBDOP_cut_GUI(Results, fig,  time, ch, dist="Th", dist_mat_filename=No
 def make_3DBDOP_cut_standalone(matfilename, time, ch_list, m_list, dist, include_ECRH=False, \
                                single_Beam=False, m_ECRH_list=[2], only_contribution=False, \
                                single_ray_BPD=False, Teweight=False, ECRH_freq=140.e9, \
-                               mat_for_waves_and_distribution=None):
+                               wave_mat_filename=None, mat_for_distribution=None):
     Results = ECRadResults()
     fig = plt.figure(figsize=(16.5, 8.5))
     Results.from_mat_file(matfilename)
     fig = make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=include_ECRH, \
                     single_Beam=single_Beam, m_ECRH_list=m_ECRH_list, only_contribution=only_contribution, \
                     single_ray_BPD=single_ray_BPD, Teweight=Teweight, ECRH_freq=ECRH_freq, \
-                    mat_for_waves=mat_for_waves_and_distribution, mat_for_distribution=mat_for_waves_and_distribution)
+                    mat_for_waves=wave_mat_filename, mat_for_distribution=mat_for_distribution)
     plt.show()
 
 def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=False, \
@@ -672,7 +671,7 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
                 root_spl = InterpolatedUnivariateSpline(rhop_binned, BPD_int_spl(rhop_binned)/BPD_norm - cum_BPD_val)
                 roots_cum_BPD = root_spl.roots()
                 if(len(roots_cum_BPD) != 1):
-                    print("Found " + str(len(root_spl)) + " roots when looking for rhop where BPD at ", cum_BPD_val)
+                    print("Found " + str(len(roots_cum_BPD)) + " roots when looking for rhop where BPD at ", cum_BPD_val)
                     print("Discarding this value")
                 else:
                     rhop_BPD_root_spl = InterpolatedUnivariateSpline(s_ray, rhop_BPD_ray - roots_cum_BPD)
@@ -680,7 +679,7 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
                     if(len(s_roots) == 0):
                         print("Could not find a position on the central ray with rho= ", roots_cum_BPD)
                         print("Using closest position")
-                        i_s_closest = np.argmin(np.abs(rhop_BPD_ray - roots_cum_BPD))
+                        i_s_closest = np.argmin(np.abs(rhop_BPD_ray - roots_cum_BPD[0]))
                         s_important.append(s_ray[i_s_closest])
                     else:
                         i_s_closest = np.argmin(np.abs(s_roots - s_BPD_max))
@@ -716,77 +715,76 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
         Beam_max = np.max(linear_beam.PW_beam.flatten())
         for beam, PW_beam, color in zip(linear_beam.rays, linear_beam.PW_beam, ECRH_colors):
             mask = np.logical_not(np.isnan(linear_beam.rhop))
-            #if(use_fit_for_s_important):
-            # Fit a gaussian to get the 3 radial points for the 3D BPD cuts
             beam_rhop = beam[0]["rhop"]
-            R_spl = InterpolatedUnivariateSpline(beam[0]["s"], beam[0]["R"])
-            P_spl = InterpolatedUnivariateSpline(beam[0]["s"], beam[0]["PW"])
+            s_beam_ray = beam[0]["s"]
+            P_spl =  InterpolatedUnivariateSpline(s_beam_ray,  beam[0]["PW"] )
+            R_spl = InterpolatedUnivariateSpline(s_beam_ray, beam[0]["R"])
             rhop_spl = InterpolatedUnivariateSpline(beam[0]["s"], beam_rhop)
-            dP = P_spl(beam[0]["s"], nu=1)
-            beta0 = np.array([np.max(dP), beam[0]["s"][np.argmax(dP)], 0.05])
-            data = odr.Data(beam[0]["s"], dP)
-            mdl = odr.Model(func)
-            ODR = odr.ODR(data, mdl, beta0)
-            output = ODR.run()
-            beta = output.beta
-    #        beta[2] *= 10.0
-            label = "ECRH (Gray)"
-            if(not single_Beam):
-                label += " beam no. " + str(ibeam)
+            if(use_fit_for_s_important):
+                # Fit a gaussian to get the 3 radial points for the 3D BPD cuts
+                dP = P_spl(beam[0]["s"], nu=1)
+                beta0 = np.array([np.max(dP), beam[0]["s"][np.argmax(dP)], 0.05])
+                data = odr.Data(beam[0]["s"], dP)
+                mdl = odr.Model(func)
+                ODR = odr.ODR(data, mdl, beta0)
+                output = ODR.run()
+                beta = output.beta
+        #        beta[2] *= 10.0
+                s_max = beam[0]["s"][np.argmax(dP)]
+                s_important = [s_max, s_max + beta[2], s_max - beta[2]]
+                PDP_POI = []
+                PDP_POI_rhop = []
+                for s in s_important:
+                    PDP_POI.append(R_spl(s))
+                    PDP_POI_rhop.append(rhop_spl(s))
+                R_BPD_dict["ECRH" + "_" + str(ibeam)] = PDP_POI
+                rhop_BPD_dict["ECRH" + "_" + str(ibeam)] = PDP_POI_rhop
+                s_BPD_dict["ECRH" + "_" + str(ibeam)] = s_important
             else:
-                label += "linear damping"
-            s_max = beam[0]["s"][np.argmax(dP)]
-            s_important = [s_max, s_max + beta[2], s_max - beta[2]]
-            PDP_POI = []
-            PDP_POI_rhop = []
-            for s in s_important:
-                PDP_POI.append(R_spl(s))
-                PDP_POI_rhop.append(rhop_spl(s))
-            R_BPD_dict["ECRH" + "_" + str(ibeam)] = PDP_POI
-            rhop_BPD_dict["ECRH" + "_" + str(ibeam)] = PDP_POI_rhop
-            s_BPD_dict["ECRH" + "_" + str(ibeam)] = s_important
+                # Use the integral of the power depsotion profile to determine a the three radial points for the plot
+                # Compute norm, since BPD is normalized only in s
+                PDP_spl = InterpolatedUnivariateSpline(linear_beam.rhop[mask], PW_beam[mask] )
+                s_max = beam[0]["s"][np.argmax(P_spl(s_beam_ray, nu=1))] # Find maximum of that, does not need to be super precise
+                PDP_norm = PDP_spl.integral(linear_beam.rhop[mask][0], linear_beam.rhop[mask][-1])
+                s_important =  []
+                for cum_PDP_val in [0.5 - 0.31731, 0.5, 0.5 + 0.31731]:# Confidence interval
+                    # Use s of the central here
+                    # It would we better to use the power deposition profile directly,
+                    # but there is the situation where the central ray does not reach certain flux surfaces which causes the root search to fail
+                    root_spl = InterpolatedUnivariateSpline(linear_beam.rhop[mask], PDP_spl.antiderivative(1)(linear_beam.rhop[mask])/PDP_norm - cum_PDP_val)
+                    roots_cum_PDP = root_spl.roots()
+                    if(len(roots_cum_PDP) != 1):
+                        print("Found " + str(len(roots_cum_PDP)) + " roots when looking for rhop where PDP at ", cum_BPD_val)
+                        print("Discarding this value")
+                    else:
+                        rhop_PDP_root_spl = InterpolatedUnivariateSpline(s_beam_ray, beam_rhop - roots_cum_PDP[0])
+                        s_roots = rhop_PDP_root_spl.roots()
+                        if(len(s_roots) == 0):
+                            print("Could not find a position on the central ray with rho= ", roots_cum_PDP[0])
+                            print("Using closest position")
+                            i_s_closest = np.argmin(np.abs(beam_rhop - roots_cum_PDP))
+                            s_important.append(s_beam_ray[i_s_closest])
+                        else:
+                            i_s_closest = np.argmin(np.abs(s_roots - s_max))
+                            s_important.append(s_roots[i_s_closest])
+                PDP_POI = []
+                PDP_POI_rhop = []
+                for s in s_important:
+                    PDP_POI.append(R_spl(s))
+                    PDP_POI_rhop.append(rhop_spl(s))
+                R_BPD_dict["ECRH" + "_" + str(ibeam)] = PDP_POI
+                rhop_BPD_dict["ECRH" + "_" + str(ibeam)] = PDP_POI_rhop
+                s_BPD_dict["ECRH" + "_" + str(ibeam)] = s_important
+            label = "ECRH (Gray)"
+            if(single_Beam or len(linear_beam.rays) == 1):
+                label += " linear damping"
+            else:
+                label += " beam no. " + str(ibeam)
             ibeam += 1
-#             else:
-#                 # Use the integral of the power depsotion profile to determine a the three radial points for the plot
-#                 s_important =  []
-#                 # Compute norm, since BPD is normalized only in s
-#                 beam_rhop = beam[0]["rhop"]
-#                 s_beam_ray = beam[0]["s"]
-#                 R_spl = InterpolatedUnivariateSpline(s_beam_ray, beam[0]["R"])
-#                 P_spl = InterpolatedUnivariateSpline(s_beam_ray, beam[0]["PW"])
-#                 dP = P_spl(beam[0]["s"], nu=1) # Get dP/ds for power deposition
-#                 s_max = beam[0]["s"][np.argmax(dP)] # Find maximum of that, does not need to be super precise
-#                 rhop_spl = InterpolatedUnivariateSpline(s_beam_ray, beam_rhop)
-#                 PDP_POI = []
-#                 PDP_POI_rhop = []
-#                 PDP_norm = P_spl.integral(s_beam_ray[0], s_beam_ray[-1])
-#                 for cum_PDP_val in [0.5 - 0.31731, 0.5, 0.5 + 0.31731]:# Confidence interval
-#                     # Use s of the central here
-#                     # It would we better to use the power deposition profile directly,
-#                     # but there is the situation where the central ray does not reach certain flux surfaces which causes the root search to fail
-#                     root_spl = InterpolatedUnivariateSpline(s_beam_ray, P_spl(beam[0]["s"])/PDP_norm - cum_PDP_val)
-#                     roots_cum_PDP = root_spl.roots()
-#                     if(len(roots_cum_BPD) != 1):
-#                         print("Found " + str(len(root_spl)) + " roots when looking for rhop where PDP at ", cum_BPD_val)
-#                         print("Discarding this value")
-#                     else:
-#                         # The beam might go through the same flux surface multiple times
-#                         # Hence we only want to collect the intersetion that is close to maximum power deposition
-#                         PDP_POI.append(R_spl(roots_cum_PDP[0])) 
-#                         PDP_POI_rhop.append(rhop_spl(roots_cum_PDP[0]))
-#                         s_important.append(roots_cum_PDP[0])
-#                 R_BPD_dict["ECRH" + "_" + str(ibeam)] = PDP_POI
-#                 rhop_BPD_dict["ECRH" + "_" + str(ibeam)] = PDP_POI_rhop
-#                 s_BPD_dict["ECRH" + "_" + str(ibeam)] = s_important
-#                 ibeam += 1
-            label = "ECRH (Gray)"
-            if(not single_Beam):
-                label += " beam no. " + str(ibeam)
-            else:
-                label += "linear damping"
             ax_depo.plot(linear_beam.rhop[mask], PW_beam[mask] / Beam_max, label=label, linestyle="--", color=color)
             for m_ECRH in m_ECRH_list:
-                BDOP_list.append(PowerDepo_3D(s_important, freq, beam[0], f_inter, dist, B_ax, EqSlice, Te_spline, ne_spline, m=m_ECRH))
+                BDOP_list.append(PowerDepo_3D(s_important, P_spl(s_important) / P_spl.integral(s_beam_ray[0], s_beam_ray[-1]), \
+                                              freq, beam[0], f_inter, dist, B_ax, EqSlice, Te_spline, ne_spline, m=m_ECRH))
                 m = cm.ScalarMappable(cmap=plt.cm.get_cmap("spring"))
                 m.set_array(np.linspace(0.0, 1.0, 20))
                 cmaps.append(m)
@@ -910,10 +908,10 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
     return fig
     
 if(__name__ == "__main__"):
-    x = np.linspace(0,1,30)
-    distribute_points(x, 0.2 + 5 * np.exp(-(x-0.5)**2 / 0.05**2), 30)
-#     make_3DBDOP_cut_standalone("/tokp/work/sdenk/ECRad/ECRad_35662_ECECTACTC_ed7.mat", 4.40, [81], [2], "Re", \
-#                     include_ECRH=True, m_ECRH_list=[2], only_contribution=True, \
-#                     ECRH_freq=105.e9, mat_for_waves_and_distribution = \
-#                     "/tokp/work/sdenk/ECRad/ECRad_35662_ECECTACTC_ed9.mat")  # 
+#     x = np.linspace(0,1,30)
+#     distribute_points(x, 0.2 + 5 * np.exp(-(x-0.5)**2 / 0.05**2), 30)
+    make_3DBDOP_cut_standalone("/tokp/work/sdenk/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat", 4.40, [144], [2], "Re", \
+                               include_ECRH=True, m_ECRH_list=[2], \
+                               ECRH_freq=105.e9, wave_mat_filename="/tokp/work/sdenk/DRELAX_Results_2nd_batch/GRAY_rays_35662_4.40.mat", \
+                               mat_for_distribution= "/tokp/work/sdenk/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat")  # 94 # 144 -> second last each
 

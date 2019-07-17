@@ -38,7 +38,7 @@ class plotting_core:
         self.model_markers = ["^", "v", "+", "d", "^", "v", "+", "d", "^", "v", "+", "d"]
         self.line_markers = ["-", "--", ":", "-", "--", ":", "-", "--", ":"]
         self.diag_colors = [(0.0, 126.0 / 255, 0.0)]
-        self.model_colors = [(1.0, 0.e0, 0.e0), (126.0 / 255, 0.0, 126.0 / 255), (0.0, 0.0, 0.0), (0.0, 126.0 / 255, 1.0), (126.0 / 255, 126.0 / 255, 0.0)]
+        self.model_colors = [(0.0, 0.3e0, 0.7e0), (0.0, 126.0 / 255, 1.0), (126.0 / 255, 126.0 / 255, 0.0)]
         self.line_colors = [(0.0, 0.e0, 0.e0)]
         self.n_diag_colors = 8
         self.n_line_colors = 8
@@ -143,7 +143,7 @@ class plotting_core:
     def plot_Trad(self, time, rhop, Trad, Trad_comp, rhop_Te, Te, \
                   diags, diag_names, dstf, model_2=True, \
                   X_mode_fraction=None, X_mode_fraction_comp=None, \
-                  multiple_models=False, label_list=None):
+                  multiple_models=False, label_list=None, max_unc = 0.5):
         if(X_mode_fraction is not None):
             twinx = "_twinx"
         else:
@@ -219,8 +219,36 @@ class plotting_core:
                                                                      name=r"X-mode fraction $" + dist_simpl + r"$", \
                                                                      marker="o", color=(0.0, 0.2, 0.2e0), \
                                                                      y_range_in=self.y_range_list[1], ax_flag="X_frac")
+        if(X_mode_fraction is not None):
+            # percent
+            self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], \
+                data=[rhop[mask], X_mode_fraction[mask] * 1.e2], \
+                name=r"X-mode fraction $" + dist + r"$", \
+                marker="+", color=(0.0, 0.0, 0.e0), \
+                y_range_in=self.y_range_list[1], ax_flag="X_frac")
+        for key in diags.keys():
+            if(diags[key].is_prof):
+                self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
+                    data=[diags[key].rhop, diags[key].val],\
+                    marker="--", \
+                    color="black", \
+                    y_range_in=self.y_range_list[0], ax_flag=ax_flag)
+            else:
+                diag_mask = np.abs(diags[key].val * max_unc) > np.abs(diags[key].unc)
+                self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
+                    data=[diags[key].rhop[diag_mask], diags[key].val[diag_mask]], y_error=diags[key].unc[diag_mask], \
+                    name=key, marker=self.diag_markers[self.diag_marker_index[0]], \
+                    color=self.diag_colors[self.diag_color_index[0]], \
+                    y_range_in=self.y_range_list[0], ax_flag=ax_flag)
+            self.diag_marker_index[0] += 1
+            if(self.diag_marker_index[0] > len(self.diag_markers)):
+                print("Warning too many diagnostics to plot - ran out of unique markers")
+                self.diag_color_index[0] = 0
+            self.diag_color_index[0] += 1
+            if(self.diag_color_index[0] > len(self.diag_colors)):
+                print("Warning too many diagnostics to plot - ran out of unique colors")
+                self.diag_color_index[0] = 0
         if(multiple_models):
-            self.model_color_index = 0
             for rhop_entry, Trad_entry, diag_name_entry, label in zip(rhop, Trad, diag_names, label_list):
                 try:
                     cur_mask = np.zeros(len(Trad_entry), dtype=np.bool)
@@ -239,11 +267,12 @@ class plotting_core:
                     self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                                                                          data=[rhop_entry[cur_mask], Trad_entry[cur_mask]], \
                                                                          name=nice_label, \
-                                                                         marker="v", color=self.model_colors[self.model_color_index], \
+                                                                         marker="v", color=self.model_colors[self.model_color_index[0]], \
                                                                          y_range_in=self.y_range_list[0], ax_flag=ax_flag)
-                    self.model_color_index += 1
-                    if(self.model_color_index >= len(self.model_colors)):
+                    self.model_color_index[0] += 1
+                    if(self.model_color_index[0] >= len(self.model_colors[0])):
                         print("Too many models -> ran out of unique colors")
+                        self.model_color_index[0] = 0
                 except KeyError:
                     print("THe result with the name " + label + "caused an index error")
                     print("Most likely it does not have the correct amount of modeled channels for the currently selected diagnostic")
@@ -252,36 +281,9 @@ class plotting_core:
             self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                                                                  data=[rhop[mask], Trad[mask]], \
                                                                  name=r"$T_" + mathrm + "{rad,mod}" + dist + r"$", \
-                                                                 marker="v", color=(126.0 / 255, 126.0 / 255, 0.e0), \
+                                                                 marker="v", color=self.model_colors[self.model_color_index[0]], \
                                                                  y_range_in=self.y_range_list[0], ax_flag=ax_flag)
-        if(X_mode_fraction is not None):
-            # percent
-            self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], \
-                data=[rhop[mask], X_mode_fraction[mask] * 1.e2], \
-                name=r"X-mode fraction $" + dist + r"$", \
-                marker="+", color=(0.0, 0.0, 0.e0), \
-                y_range_in=self.y_range_list[1], ax_flag="X_frac")
-        for key in diags.keys():
-            if(diags[key].is_prof):
-                self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
-                    data=[diags[key].rhop, diags[key].val],\
-                    marker="--", \
-                    color="black", \
-                    y_range_in=self.y_range_list[0], ax_flag=ax_flag)
-            else:
-                self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
-                    data=[diags[key].rhop, diags[key].val], y_error=diags[key].unc, \
-                    name=key, marker=self.diag_markers[self.diag_marker_index[0]], \
-                    color=self.diag_colors[self.diag_color_index[0]], \
-                    y_range_in=self.y_range_list[0], ax_flag=ax_flag)
-            self.diag_marker_index[0] += 1
-            if(self.diag_marker_index[0] > len(self.diag_markers)):
-                print("Warning too many diagnostics to plot - ran out of unique markers")
-                self.diag_color_index[0] = 0
-            self.diag_color_index[0] += 1
-            if(self.diag_color_index[0] > len(self.diag_colors)):
-                print("Warning too many diagnostics to plot - ran out of unique colors")
-                self.diag_color_index[0] = 0
+            self.model_color_index[0] += 1
         self.axlist[0].set_xlim(0.0, rhop_max * 1.05)
         self.create_legends("Te_no_ne" + twinx)
         return self.fig
@@ -389,7 +391,11 @@ class plotting_core:
             freq = np.zeros(len(R))
             freq[:] = ray_launch[itime]["f"][ich] / 1.e9
             f_c_1 = Result.ray["Y" + mode_str][itime][ich][0][mask] * freq
-            f_p = np.sqrt(Result.ray["X" + mode_str][itime][ich][0][mask]) * freq
+            if(np.any(Result.ray["X" + mode_str][itime][ich][0][mask]> 1.e10)):
+                #Error in ECRad_Result, missing 1/omega**2
+                f_p = np.sqrt(Result.ray["X" + mode_str][itime][ich][0][mask] / (freq *1.e9 * 2* np.pi) ** 2) * freq
+            else:
+                f_p = np.sqrt(Result.ray["X" + mode_str][itime][ich][0][mask]) * freq
         f_c_2 = f_c_1 * 2.0
         f_c_3 = f_c_1 * 3.0
         f_R = f_c_1 * (np.sqrt(1.0 + 4.0 * (f_p * 2.0 * np.pi) ** 2 / (f_c_1 * 2.0 * np.pi) ** 2) + 1.0) / 2.0
@@ -691,35 +697,35 @@ class plotting_core:
         self.create_legends("errorbar")
         return self.fig
 
-    def plot_BPD(self, time, rhop_signed, D, D_comp, rhop_IDA, Te_IDA, dstf, rhop_cold, scale_w_Trad=False):
-        if(rhop_cold < 0.0):
+    def plot_BPD(self, time, rhop_signed, D, D_comp, rhop_IDA, Te_IDA, dstf, rhop_res, scale_w_Trad=False):
+        if(rhop_res < 0.0):
             ch_Hf_str = "HFS"
         else:
             ch_Hf_str = "LFS"
         self.setup_axes("BPD", r"BDO: $\rho_\mathrm{pol,res} = " + \
-            r"{0:1.2f}$".format(np.abs(rhop_cold)) + " on " + ch_Hf_str)
+            r"{0:1.2f}$".format(np.abs(rhop_res)) + " on " + ch_Hf_str)
         ax_flag = "j_weighted"
         if(scale_w_Trad):
             ax_flag += "_Trad"
         if(self.title):
             name = r"$D_\omega$, $\rho_\mathrm{pol,res} = " + \
-                r"{0:1.2f}".format(rhop_cold) + "$ on " + ch_Hf_str
+                r"{0:1.2f}".format(rhop_res) + "$ on " + ch_Hf_str
         else:
             name = r"$D_\omega$"
         self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                 self.y_range_list[0] , data=[rhop_signed, D ], color=(0.6, 0.0, 0.0), marker="-", \
                 name=name, \
-                vline=rhop_cold, ax_flag=ax_flag)
+                vline=rhop_res, ax_flag=ax_flag)
 
         if(self.title):
             name = r"$D_\omega$, $\rho_\mathrm{pol,res} = " + \
-                r"{0:1.2f}".format(rhop_cold) + "$ on " + ch_Hf_str
+                r"{0:1.2f}".format(rhop_res) + "$ on " + ch_Hf_str
         else:
             name = r"$D_\omega [" + r"\matrhm{2nd\,model}"  + "$"
         self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                 self.y_range_list[0] , data=[rhop_signed, D_comp ], color=(0.0, 0.0, 0.6), marker="--", \
                 name=name, \
-                vline=rhop_cold, ax_flag=ax_flag)
+                vline=rhop_res, ax_flag=ax_flag)
         rhop_te_weighted = np.hstack([-rhop_IDA[::-1], rhop_IDA])
         te_weighted = np.hstack([Te_IDA[::-1], Te_IDA])
         self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], \
@@ -1215,7 +1221,7 @@ class plotting_core:
         if(globalsettings.AUG):
             self.plt_vessel(self.axlist[0])
         elif(vessel_bd is not None):
-             self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
+            self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                       self.y_range_list[0], data=[vessel_bd[0], vessel_bd[1]], marker="-", color=(0.0, 0.0, 0.0), \
                       ax_flag="Rz")
         if(eq_aspect_ratio):
@@ -1280,8 +1286,8 @@ class plotting_core:
                 ax.plot(vessel[key]['r'], vessel[key]['z'], 'k-')
 
 
-    def plot_ray(self, shot, time, ray, index=0, Eq_Slice=None, H=True, R_cold=None, z_cold=None, \
-                 s_cold=None, straight=False, eq_aspect_ratio=True, R_other_list=[], z_other_list=[], \
+    def plot_ray(self, shot, time, ray, index=0, Eq_Slice=None, H=True, R_res=None, z_res=None, \
+                 s_res=None, straight=False, eq_aspect_ratio=True, R_other_list=[], z_other_list=[], \
                  x_other_list = [], y_other_list = [], label_list=None, vessel_bd=None):
         self.setup_axes("ray", "Ray", "Hamiltonian")
         # eqi = equ_map()
@@ -1312,8 +1318,8 @@ class plotting_core:
             self.axlist[1].add_patch(pltCircle([0.0, 0.0], Eq_Slice.R_ax, edgecolor='b', facecolor='none', linestyle="-"))
             for i in range(len(tor_cont_list)):
                 self.axlist[1].add_patch(pltCircle([0.0, 0.0], tor_cont_list[i], edgecolor='k', facecolor='none', linestyle="--"))
-        if(R_cold is not None and z_cold is not None):
-            self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[R_cold, z_cold], \
+        if(R_res is not None and z_res is not None):
+            self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[R_res, z_res], \
                 name=r"Cold resonance", marker="+", color=(0.e0, 126.0 / 255, 0.e0), \
                      y_range_in=self.y_range_list[0], ax_flag="Rz")
         if(globalsettings.AUG):
@@ -1344,10 +1350,10 @@ class plotting_core:
             self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[ray[0].R, ray[0].z], \
                 name=ECRad_main_label, marker="-", color=(0.e0, 126.0 / 255, 0.e0), \
                      y_range_in=self.y_range_list[0], ax_flag="Rz")
-            if(s_cold is not None):
+            if(s_res is not None):
                 x_spl = InterpolatedUnivariateSpline(ray[0].s, ray[0].x)
                 y_spl = InterpolatedUnivariateSpline(ray[0].s, ray[0].y)
-                self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], data=[x_spl(s_cold), y_spl(s_cold)], \
+                self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], data=[x_spl(s_res), y_spl(s_res)], \
                             name=r"Cold resonance", marker="+", color=(0.e0, 126.0 / 255, 0.e0), \
                                  y_range_in=self.y_range_list[1], ax_flag="xy")
             self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], data=[ray[0].x, ray[0].y], \
@@ -1404,10 +1410,10 @@ class plotting_core:
                             name=ray_label + r" peripheral ray", marker=":", color=(126.0 / 255, 0.e0, 126.0 / 255), \
                                  y_range_in=self.y_range_list[1], ax_flag="xy")
         else:
-            if(s_cold is not None and s_cold > 0.0):
+            if(s_res is not None and s_res > 0.0):
                 x_spl = InterpolatedUnivariateSpline(ray.s, ray.x)
                 y_spl = InterpolatedUnivariateSpline(ray.s, ray.y)
-                self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], data=[x_spl(s_cold), y_spl(s_cold)], \
+                self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], data=[x_spl(s_res), y_spl(s_res)], \
                             name=r"Cold resonance", marker="+", color=(0.e0, 126.0 / 255, 0.e0), \
                                  y_range_in=self.y_range_list[1], ax_flag="xy")
             self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[ray.R, ray.z], \

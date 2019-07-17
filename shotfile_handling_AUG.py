@@ -110,7 +110,12 @@ def smooth(y_arr, median=False):
     else:
         if(len(y_arr) > 1):
             y_smooth = np.mean(y_arr)  # make sure we get only one value
-            std_dev = np.std(y_arr, ddof=1)
+            if(len(y_arr) > 50):
+                print("Large amount of data -> using mean squared error for uncertainty")
+                std_dev = np.std(y_arr, ddof=1) / np.sqrt(np.float(len(y_arr)))
+            else:
+                print("Less than 50 data points -> using standard deviation for uncertainty")
+                std_dev = np.std(y_arr, ddof=1)
         else:
             y_smooth = y_arr[0]
             std_dev = 0.0

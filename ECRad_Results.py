@@ -283,7 +283,7 @@ class ECRadResults:
                                     ne_spl = InterpolatedUnivariateSpline(self.Scenario.plasma_dict["rhop_prof"][itime], \
                                                                           np.log(self.Scenario.plasma_dict["ne"][itime]), ext=3)
                                     self.ray["XX"][-1][-1].append(cnst.e**2 * np.exp(ne_spl(self.ray["rhopX"][-1][-1][-1]))/ \
-                                                                  (cnst.m_e * cnst.epsilon_0))
+                                                                  (cnst.m_e * cnst.epsilon_0 * omega**2))
                                 else:
                                     ne_spl = RectBivariateSpline(self.Scenario.plasma_dict["eq_data"][itime].R, \
                                                                  self.Scenario.plasma_dict["eq_data"][itime].R, \
@@ -297,7 +297,7 @@ class ECRadResults:
                                                         z_ray < np.min(self.Scenario.plasma_dict["eq_data"][itime].z) )] = \
                                          np.max(self.Scenario.plasma_dict["eq_data"][itime].z)
                                     self.ray["XX"][-1][-1].append(cnst.e**2 * np.exp(ne_spl(R_ray, z_ray, grid=False))/ \
-                                                                  (cnst.m_e * cnst.epsilon_0))
+                                                                  (cnst.m_e * cnst.epsilon_0 * omega**2))
                                     self.ray["XX"][-1][-1][-1][np.logical_or(R_ray >= np.max(self.Scenario.plasma_dict["eq_data"][itime].R), \
                                                                              z_ray >= np.max(self.Scenario.plasma_dict["eq_data"][itime].z) )] = 0.0
                                                                                 
@@ -399,6 +399,31 @@ class ECRadResults:
                             self.ray["NO"][-1][-1].append(Ray_file.T[9])
                             self.ray["NcO"][-1][-1].append(Ray_file.T[10])
                             self.ray["thetaO"][-1][-1].append(Ray_file.T[11])
+                            itime = np.argmin(np.abs(self.Scenario.plasma_dict["time"] - time))
+                            omega = 2.0 * np.pi * self.Scenario.ray_launch[itime]["f"][i]
+                            self.ray["YO"][-1][-1].append(cnst.e * np.sqrt(Bx**2 + By**2 + Bz**2) / \
+                                                          (cnst.m_e * omega))
+                            if(self.Scenario.profile_dimension == 1):
+                                ne_spl = InterpolatedUnivariateSpline(self.Scenario.plasma_dict["rhop_prof"][itime], \
+                                                                      np.log(self.Scenario.plasma_dict["ne"][itime]), ext=3)
+                                self.ray["XO"][-1][-1].append(cnst.e**2 * np.exp(ne_spl(self.ray["rhopO"][-1][-1][-1]))/ \
+                                                              (cnst.m_e * cnst.epsilon_0 * omega**2))
+                            else:
+                                ne_spl = RectBivariateSpline(self.Scenario.plasma_dict["eq_data"][itime].R, \
+                                                             self.Scenario.plasma_dict["eq_data"][itime].R, \
+                                                             np.log(self.Scenario.plasma_dict["ne"][itime]), ext=3)
+                                R_ray = self.ray["R"][-1][-1][-1]
+                                z_ray = self.ray["z"][-1][-1][-1]
+                                R_ray[np.logical_or(R_ray > np.max(self.Scenario.plasma_dict["eq_data"][itime].R), \
+                                                    R_ray < np.min(self.Scenario.plasma_dict["eq_data"][itime].R) )] = \
+                                     np.max(self.Scenario.plasma_dict["eq_data"][itime].R)
+                                z_ray[np.logical_or(z_ray > np.max(self.Scenario.plasma_dict["eq_data"][itime].z), \
+                                                    z_ray < np.min(self.Scenario.plasma_dict["eq_data"][itime].z) )] = \
+                                     np.max(self.Scenario.plasma_dict["eq_data"][itime].z)
+                                self.ray["XO"][-1][-1].append(cnst.e**2 * np.exp(ne_spl(R_ray, z_ray, grid=False))/ \
+                                                              (cnst.m_e * cnst.epsilon_0 * omega**2))
+                                self.ray["XO"][-1][-1][-1][np.logical_or(R_ray >= np.max(self.Scenario.plasma_dict["eq_data"][itime].R), \
+                                                                         z_ray >= np.max(self.Scenario.plasma_dict["eq_data"][itime].z) )] = 0.0
                 else:
                     try:
                         Ray_file = np.loadtxt(os.path.join(Ich_folder, "BPD_ray{0:03d}ch{1:03d}_O.dat".format(1, i + 1)))
@@ -423,6 +448,34 @@ class ECRadResults:
                         self.ray["NO"][-1].append(Ray_file.T[15])
                         self.ray["NcO"][-1].append(Ray_file.T[16])
                         self.ray["thetaO"][-1].append(Ray_file.T[17])
+                        itime = np.argmin(np.abs(self.Scenario.plasma_dict["time"] - time))
+                        omega = 2.0 * np.pi * self.Scenario.ray_launch[itime]["f"][i]
+                        self.ray["YO"][-1].append(cnst.e * np.sqrt(Bx**2 + By**2 + Bz**2) / \
+                                                      (cnst.m_e * omega))
+                        if(self.Scenario.profile_dimension == 1):
+                            ne_spl = InterpolatedUnivariateSpline(self.Scenario.plasma_dict["rhop_prof"][itime], \
+                                                                  np.log(self.Scenario.plasma_dict["ne"][itime]), ext=1)
+                            self.ray["XO"][-1].append(cnst.e**2 * np.exp(ne_spl(self.ray["rhopO"][-1][-1]))/ \
+                                                          (cnst.m_e * cnst.epsilon_0* omega**2))
+                        elif(self.Scenario.profile_dimension == 3):
+                            ne_spl = RectBivariateSpline(self.Scenario.plasma_dict["eq_data"][itime].R, \
+                                                         self.Scenario.plasma_dict["eq_data"][itime].z, \
+                                                         np.log(self.Scenario.plasma_dict["ne"][itime]))
+                            R_ray = self.ray["R"][-1][-1]
+                            z_ray = self.ray["z"][-1][-1]
+                            R_ray[np.logical_or(R_ray > np.max(self.Scenario.plasma_dict["eq_data"][itime].R), \
+                                                R_ray < np.min(self.Scenario.plasma_dict["eq_data"][itime].R) )] = \
+                                 np.max(self.Scenario.plasma_dict["eq_data"][itime].R)
+                            z_ray[np.logical_or(z_ray > np.max(self.Scenario.plasma_dict["eq_data"][itime].z), \
+                                                z_ray < np.min(self.Scenario.plasma_dict["eq_data"][itime].z) )] = \
+                                 np.max(self.Scenario.plasma_dict["eq_data"][itime].z)
+                            self.ray["XX"][-1].append(cnst.e**2 * np.exp(ne_spl(R_ray, z_ray, grid=False))/ \
+                                                          (cnst.m_e * cnst.epsilon_0 * omega**2))
+                            self.ray["XX"][-1][-1][np.logical_or(R_ray >= np.max(self.Scenario.plasma_dict["eq_data"][itime].R), \
+                                                                     z_ray >= np.max(self.Scenario.plasma_dict["eq_data"][itime].z) )] = 0.0
+                        else:
+                            print("Three dimensional profiles not supported for Stix parameters X and Y")
+                            break
         self.weights["ray"].append(np.loadtxt(os.path.join(self.Config.working_dir, "ECRad_data", "ray_weights.dat"), ndmin=2))
         self.weights["freq"].append(np.loadtxt(os.path.join(self.Config.working_dir, "ECRad_data", "freq_weights.dat"), ndmin=2))
         self.resonance["s_cold"].append(sres_file.T[0])
