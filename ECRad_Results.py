@@ -813,11 +813,11 @@ class ECRadResults:
             mdict["comment"] = self.comment
         mdict["ECRad_git_tag"] = np.loadtxt(os.path.join(globalsettings.ECRadRoot, "id"),dtype=np.str)
         try:
-            mdict["ECRadGUI_git_tag"] =  np.loadtxt(os.path.join(globalsettings.GUI_folder, "id"),dtype=np.str)
+            mdict["ECRadGUI_git_tag"] =  np.loadtxt(os.path.join(globalsettings.ECRadGUIRoot, "id"),dtype=np.str)
         except IOError:
             mdict["ECRadGUI_git_tag"] = "Unknown"
         try:
-            mdict["ECRadPylib_git_tag"] = np.loadtxt(os.path.join(globalsettings.pylib_folder, "id"),dtype=np.str)
+            mdict["ECRadPylib_git_tag"] = np.loadtxt(os.path.join(globalsettings.ECRadPylibRoot, "id"),dtype=np.str)
         except IOError:
             mdict["ECRadPylib_git_tag"] = "Unknown"
         mdict["time"] = self.time
