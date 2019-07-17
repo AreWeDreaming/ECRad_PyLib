@@ -106,3 +106,4 @@ class GlobalSettingsAUGEXT:
         self.GUI_folder = "../ECRad_GUI"
         
 globalsettings = GlobalSettingsAUG()
+#globalsettings = GlobalSettingsITM()
