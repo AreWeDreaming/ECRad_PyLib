@@ -24,7 +24,6 @@ from colorsys import hls_to_rgb
 from distribution_functions import Juettner2D
 from __builtin__ import False
 non_therm_dist_Relax = True
-home = '/afs/ipp-garching.mpg.de/home/s/sdenk/'
 
 
 # Central plotting routine for ECRad and the AECM GUI
@@ -1236,9 +1235,9 @@ class plotting_core:
         if polygon:
             from matplotlib.patches import Polygon
         if pol:
-            f = open("/afs/ipp-garching.mpg.de/u/sdenk/public/pol_vessel.data", 'r')
+            f = open(os.path.join(globalsettings.ECRadPylibRoot, "pol_vessel.data"), 'r')
         else:
-            f = open("/afs/ipp-garching.mpg.de/u/sdenk/public/tor_vessel.data", 'r')
+            f = open(os.path.join(globalsettings.ECRadPylibRoot, "tor_vessel.data"), 'r')
     
         lines = f.readlines()
         f.close()

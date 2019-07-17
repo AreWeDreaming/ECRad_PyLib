@@ -48,9 +48,9 @@ def GetECRadExec(Config, Scenario, time):
         if(Config.dstf in ["Ge", "GB", "Re", "Lu"]):
             factor *= 3
         stacksize += int(np.ceil(Config.max_points_svec * 3.125) * factor)
+        os.environ['OMP_STACKSIZE'] = "{0:d}k".format(stacksize)
     else:
         cores = 1 # serial
-    os.environ['OMP_STACKSIZE'] = "{0:d}k".format(stacksize)
     if(Config.batch):
         os.environ['ECRad_working_dir_1'] = Config.working_dir
         os.environ['ECRad'] = ECRadVers
