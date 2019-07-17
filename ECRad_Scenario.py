@@ -146,7 +146,7 @@ class ECRadScenario:
         self.default_diag = mdict["used_diags"][0]
         for i in range(len(mdict["used_diags"])):
             diagname = mdict["used_diags"][i]
-            if((diagname == "ECN" or diagname == "ECO" or diagname == "ECI") and globalsettings.AUG):
+            if((diagname == "ECN" or diagname == "ECO" or diagname == "ECI")): #and globalsettings.AUG):
                 self.used_diags_dict.update({diagname: ECI_diag(diagname, mdict["Diags_exp"][i], mdict["Diags_diag"][i], int(mdict["Diags_ed"][i]), \
                                               mdict["Extra_arg_1"][i], mdict["Extra_arg_2"][i], int(mdict["Extra_arg_3"][i]))})
             elif("CT" in diagname or "IEC" in diagname):
@@ -163,7 +163,7 @@ class ECRadScenario:
                     self.used_diags_dict.update({diagname: EXT_diag(diagname, mdict["Ext_launch_geo"], mdict["Ext_launch_pol"])})
                 else:
                     self.used_diags_dict.update({diagname: EXT_diag(diagname, mdict["Ext_launch_geo"], -1)})
-            elif(globalsettings.AUG):
+            else:#if(globalsettings.AUG):
                 self.used_diags_dict.update({diagname: \
                         Diag(diagname, mdict["Diags_exp"][i], mdict["Diags_diag"][i], int(mdict["Diags_ed"][i]))})
         if("launch_R" in mdict.keys()):
