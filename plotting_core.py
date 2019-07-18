@@ -68,7 +68,7 @@ class plotting_core:
         self.line_marker_index_2 = [0]
         self.line_color_index_2 = [0]
 
-    def reset(self, title=True):
+    def reset(self, title=False):
         self.setup = False
         self.fig.clf()
         if(self.fig_2 is not None):
@@ -339,7 +339,7 @@ class plotting_core:
             self.axlist[0].set_xlim(0.0, 1.05 * np.max([np.max(rhop_IDA), np.max(rhop)]))
         if(not use_tau):
             self.axlist[0].set_ylim(0.0, 1.00)
-        return self.fig, self.fig_2
+        return self.fig
 
     def plot_1D_cpo(self, x, y, shot, time, x_info, y_info):
         self.setup_axes("single", r"AUG data for \# {0:d}".format(shot) + r" and $t = \SI{" + r"{0:2.2f}".format(time) + "}{\second}$")
@@ -721,7 +721,7 @@ class plotting_core:
             name = r"$D_\omega$, $\rho_\mathrm{pol,res} = " + \
                 r"{0:1.2f}".format(rhop_res) + "$ on " + ch_Hf_str
         else:
-            name = r"$D_\omega [" + r"\matrhm{2nd\,model}"  + "$"
+            name = r"$D_\omega [" + r"\mathrm{2nd\,model}"  + "$"
         self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                 self.y_range_list[0] , data=[rhop_signed, D_comp ], color=(0.0, 0.0, 0.6), marker="--", \
                 name=name, \

@@ -49,7 +49,10 @@ def make_f_inter(dist, EQObj, working_dir=None, dist_obj=None, time=None):
 
 def make_3DBDOP_for_ray(result, time, ch, ir, m, B_ax, f_inter=None, N_pnts=100):
     # Currently only supported for non-Gene distributions
-    dist = result.Config.dstf
+    if(result.dist_obj is None):
+        dist = "Th"
+    else:
+        dist = result.Config.dstf
     svec, freq, Trad, T, BPD = load_data_for_3DBDOP(result, time, dist, ch, ir=ir, get_BPD=True)
     s = distribute_points(svec["s"], BPD, N_pnts)
     return BDOP_3D(s, svec, freq, Trad, T, f_inter, dist, B_ax, m=m)

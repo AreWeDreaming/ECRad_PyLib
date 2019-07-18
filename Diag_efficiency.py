@@ -57,7 +57,7 @@ def diag_weight(fig, Results, time_point, ch, DistWaveFile=None):
         f_inter, f_inter_scnd = make_f_inter(Results.Config.dstf, dist_obj=dist_obj, EQObj=EQObj, time=time_cor)
     else:
         dist_obj = None
-        f_inter, f_inter_scnd  = make_f_inter(Results.Config.dstf, EQObj=EQObj, time=time_cor)
+        f_inter, f_inter_scnd  = make_f_inter("Th", EQObj=EQObj, time=time_cor)
     m= 40
     n= 80
     if(dist_obj is None):

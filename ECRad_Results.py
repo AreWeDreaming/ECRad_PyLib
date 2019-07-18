@@ -132,6 +132,7 @@ class ECRadResults:
         self.ray_launch["dist_focus"] = []
         self.ray_launch["width"] = []
         self.ray_launch["pol_coeff_X"] = []
+        self.dist_obj = None
         self.comment = ""
 
     def append_new_results(self, time):
