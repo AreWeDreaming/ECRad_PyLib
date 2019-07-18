@@ -795,13 +795,16 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
                 R_BPD_list.append(PDP_POI)
                 s_BPD_list.append(s_important)
         ax_depo.plot(quasi_linear_beam.rhop, quasi_linear_beam.PW / np.max(quasi_linear_beam.PW), label="ECRH (RELAX)", linestyle="None", marker="^", color="black")
-    if(len(BDOP_list) > 1):
-        leg = ax_depo.legend()
-        leg.draggable()
     te_ax = ax_depo.twinx()
     te_ax.plot(rhop_Te, np.exp(Te) * 1.e-3, "--", label="$T_\mathrm{e}$")
     te_ax.set_ylabel(r"$T_\mathrm{e}$ [\si{\kilo\electronvolt}]")
     ax_depo.set_xlabel(r"$\rho_\mathrm{pol}$")
+    if(len(BDOP_list) > 1):
+        lns = ax_depo.get_lines() + te_ax.get_lines()
+        labs = [l.get_label() for l in lns]
+        leg = ax_depo.legend(lns, labs)
+        leg.get_frame().set_alpha(0.5)
+        leg.draggable()
     if(include_ECRH):
         ax_depo.set_ylabel(r"$D_\omega\, \mathrm{and} \, \mathrm{d}P/\mathrm{d}R\,[\si{{a.u.}}]$")
     else:

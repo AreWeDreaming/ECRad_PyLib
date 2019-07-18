@@ -89,7 +89,7 @@ def get_divertor_currents(shot):
         raise Exception(e)
         return [], []
 
-def smooth(y_arr, median=False):
+def smooth(y_arr, median=False, use_std_err=False):
     if(median):
 #        kernel_size = int(len(y_arr) / 10.e0)
 #        if(kernel_size % 2 == 0):
@@ -103,20 +103,27 @@ def smooth(y_arr, median=False):
             y_median = medfilt(y_median, len(y_median) / 3 / 2 * 2 + 1)  # broad median filter
         if(len(y_median) > 1):
             y_smooth = np.mean(y_median)  # make sure we get only one value
-            std_dev = np.std(y_median, ddof=1)
+            if(len(y_median) > 100 and use_std_err):
+                print("Using standard error for uncertainty")
+                std_dev = np.std(y_median, ddof=1) / np.sqrt(np.float(len(y_arr)))
+            else:
+                print("Using standard deviation for uncertainty")
+                std_dev = np.std(y_median, ddof=1)
         else:
+            print("Singe data point -> no means of computing uncertainty")
             y_smooth = np.mean(y_arr)
             std_dev = 0.0
     else:
         if(len(y_arr) > 1):
             y_smooth = np.mean(y_arr)  # make sure we get only one value
-            if(len(y_arr) > 50):
-                print("Large amount of data -> using mean squared error for uncertainty")
+            if(len(y_arr) > 100 and use_std_err):
+                print("Using standard error for uncertainty")
                 std_dev = np.std(y_arr, ddof=1) / np.sqrt(np.float(len(y_arr)))
             else:
-                print("Less than 50 data points -> using standard deviation for uncertainty")
+                print("Using standard deviation for uncertainty")
                 std_dev = np.std(y_arr, ddof=1)
         else:
+            print("Singe data point -> no means of computing uncertainty")
             y_smooth = y_arr[0]
             std_dev = 0.0
     return y_smooth, std_dev
@@ -306,7 +313,7 @@ def get_data_calib_entire_shot(diag, shot, ext_resonances=None, calib=None):
 def get_data_calib(diag, shot=0, time=None, eq_exp="AUGD", eq_diag="EQH", \
                    eq_ed=0, calib=None, std_dev_calib=None, sys_dev_calib=None, \
                    ext_resonances=None, name="", t_smooth=None, median=True, \
-                   aux_diag=None):
+                   aux_diag=None, use_std_dev=True):
     # Gets the data from all ECE diagnostics that have shotfiles
     # Returns std deviation in keV, rho poloidal resonance and Trad in keV
     if(t_smooth is None):
@@ -577,7 +584,7 @@ def get_data_calib(diag, shot=0, time=None, eq_exp="AUGD", eq_diag="EQH", \
                                                ECEI_norm_spls[ich](new_times[it])
                     else:
                         temp_sig = signals[i][it0:it1]
-                    sig, std_dev = smooth(temp_sig, median)
+                    sig, std_dev = smooth(temp_sig, median, use_std_dev)
                     offset[i] = sig
                 else:
 #                    print(ext_resonances)
@@ -596,7 +603,7 @@ def get_data_calib(diag, shot=0, time=None, eq_exp="AUGD", eq_diag="EQH", \
                         mode_sys_dev = mode_size
                     else:
                         sig = np.copy(temp_sig)
-                    sig, std_dev = smooth(sig, median)
+                    sig, std_dev = smooth(sig, median, use_std_dev)
                     data[-1].append((sig - offset[i]) * calib[i])
                     std_dev_data[-1][-1] += np.sqrt(std_dev_calib[i] ** 2 * \
                                                (sig - offset[i]) ** 2 + \
@@ -609,7 +616,7 @@ def get_data_calib(diag, shot=0, time=None, eq_exp="AUGD", eq_diag="EQH", \
                 if(diag.mode_filter):
                     sig, mode_size, phase = remove_mode(diag_time[it0:it1], sig, harmonics=diag.mode_harmonics, mode_width=diag.mode_width, low_freq=diag.freq_cut_off)
                     sys_dev_data[-1][-1] += mode_size
-                sig, std_dev = smooth(sig, False)
+                sig, std_dev = smooth(sig, median , use_std_dev)
                 data[-1].append(sig)
                 std_dev_data[-1][-1] += np.sqrt(std_dev ** 2 + sig ** 2 / SNR_cali_channel[i] ** 2)  # 7 % systematic calibration error already in SNR
                 # 7 percent of systematic calibration error and the statistical error from the calibration as another systematic uncertainty
