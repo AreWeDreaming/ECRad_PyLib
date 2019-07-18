@@ -270,7 +270,7 @@ class plotting_core:
                                                                          marker="v", color=self.model_colors[self.model_color_index[0]], \
                                                                          y_range_in=self.y_range_list[0], ax_flag=ax_flag)
                     self.model_color_index[0] += 1
-                    if(self.model_color_index[0] >= len(self.model_colors[0])):
+                    if(self.model_color_index[0] >= len(self.model_colors)):
                         print("Too many models -> ran out of unique colors")
                         self.model_color_index[0] = 0
                 except KeyError:

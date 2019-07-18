@@ -916,7 +916,7 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
 if(__name__ == "__main__"):
 #     x = np.linspace(0,1,30)
 #     distribute_points(x, 0.2 + 5 * np.exp(-(x-0.5)**2 / 0.05**2), 30)
-    make_3DBDOP_cut_standalone("/tokp/work/sdenk/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat", 4.40, [144], [2], "Re", \
+    make_3DBDOP_cut_standalone("/tokp/work/sdenk/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat", 4.40, [94], [2], "Re", \
                                include_ECRH=True, m_ECRH_list=[2], \
                                ECRH_freq=105.e9, wave_mat_filename="/tokp/work/sdenk/DRELAX_Results_2nd_batch/GRAY_rays_35662_4.40.mat", \
                                mat_for_distribution= "/tokp/work/sdenk/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat")  # 94 # 144 -> second last each

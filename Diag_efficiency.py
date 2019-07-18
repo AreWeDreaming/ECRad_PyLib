@@ -91,10 +91,18 @@ def diag_weight(fig, Results, time_point, ch, DistWaveFile=None):
                     j -= 1
                 if(i < 0 or j < 0):
                     continue # only happens at the lower bounds, where u_perp is very small and, therefore, also j is very small
-                t = np.sqrt((cur_BDOP.u_par[irhop] - np.min(cur_BDOP.u_par[irhop]))**2 + (cur_BDOP.u_perp[irhop] - np.min(cur_BDOP.u_perp[irhop]))**2)
+                # Compute arclength
+                t = np.zeros(cur_BDOP.u_par[irhop].shape)
+                for i_res_line in range(1,len(cur_BDOP.u_par[irhop])):
+                    t[i_res_line] = t[i_res_line - 1] + np.sqrt((cur_BDOP.u_par[irhop][i_res_line] - cur_BDOP.u_par[irhop][i_res_line - 1])**2 + \
+                                                                (cur_BDOP.u_perp[irhop][i_res_line] - cur_BDOP.u_perp[irhop][i_res_line - 1])**2)
                 t /= np.max(t) # Normalize this
+                # Sort 
                 t_spl = InterpolatedUnivariateSpline(cur_BDOP.u_par[irhop], t)
-                BPD_val_spl = InterpolatedUnivariateSpline(t, cur_BDOP.val[irhop])
+                try:
+                    BPD_val_spl = InterpolatedUnivariateSpline(t, cur_BDOP.val[irhop])
+                except Exception as e:
+                    print(e)
                 BPD_val_rel_spl = InterpolatedUnivariateSpline(t, np.abs(cur_BDOP.val[irhop] - cur_BDOP.val_back[irhop]))
                 t1 = t_spl(intercep_point[0])
                 t2 = t_spl(intercep_points[i_intercep + 1][0])
@@ -147,8 +155,10 @@ def current_weight(DistWaveFile):
 if(__name__ == "__main__"):
     fig = plt.figure()
     #current_weight("/tokp/work/sdenk/ECRad/ECRad_35662_ECECTACTC_ed9.mat")
-    current_weight("/tokp/work/sdenk/DRELAX_Results/ECRad_35662_ECECTACTC_run0209.mat")
-#     diag_weight_stand_alone("/tokp/work/sdenk/ECRad/ECRad_35662_ECECTACTC_ed7.mat", 4.4, 81, \
-#                 "/tokp/work/sdenk/ECRad/ECRad_35662_ECECTACTC_ed9.mat")
+    current_weight('/tokp/work/sdenk/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat')
+    diag_weight_stand_alone('/tokp/work/sdenk/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat', 4.4, 94, \
+                            '/tokp/work/sdenk/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat')
+    diag_weight_stand_alone('/tokp/work/sdenk/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat', 4.4, 144, \
+                            '/tokp/work/sdenk/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat')
     plt.show()
     
