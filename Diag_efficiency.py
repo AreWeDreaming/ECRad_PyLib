@@ -36,16 +36,16 @@ def find_cell_interceps(u_par_grid, u_perp_grid, cur_BDOP, irhop):
     sortarray = np.argsort(intercep_list[0])
     return intercep_list.T[sortarray]
     
-def diag_weight_stand_alone(Result_file, time_point, ch, DistWaveFile=None):
+def diag_weight_stand_alone(fig, ax, Result_file, time_point, ch, DistWaveFile=None):
     Results = ECRadResults()
     Results.from_mat_file(Result_file)
-    fig = plt.figure(figsize=(12.5,8.5))
-    fig = diag_weight(fig, Results, time_point, ch, DistWaveFile=DistWaveFile)    
+    fig = diag_weight(fig, Results, time_point, ch, DistWaveFile=DistWaveFile, ax=ax)    
 
-def diag_weight(fig, Results, time_point, ch, DistWaveFile=None):
+def diag_weight(fig, Results, time_point, ch, DistWaveFile=None, ax=None):
     # Currently only RELAX/LUKE distributions supported
     # Extension for GENE trivial though
-    ax = fig.add_subplot(111)
+    if(ax is None):
+        ax = fig.add_subplot(111)
     harmonic_n = 2
     itime = np.argmin(np.abs(time_point - Results.Scenario.plasma_dict["time"]))
     time_cor = Results.Scenario.plasma_dict["time"][itime]
@@ -122,7 +122,7 @@ def diag_weight(fig, Results, time_point, ch, DistWaveFile=None):
     return fig
 
 
-def current_weight(DistWaveFile):
+def current_weight(DistWaveFile, fig=None, ax=None):
     dist_obj = load_f_from_mat(DistWaveFile, True)
     dist_mat = loadmat(DistWaveFile, squeeze_me=True)
     waves = read_dist_mat_to_beam(dist_mat, True)
@@ -142,23 +142,29 @@ def current_weight(DistWaveFile):
     ECCD_weight /= np.max(np.abs(ECCD_weight.flatten()))
     ECCD_weight -= 0.5
     ECCD_weight *= 2.0
-    plt.contourf(dist_obj.uxx, dist_obj.ull, ECCD_weight / np.max(ECCD_weight.flatten()), \
+    if(fig is None):
+        fig = plt.figure()
+    if(ax is None):
+        ax = fig.add_subplot(111)
+    ax.contourf(dist_obj.uxx, dist_obj.ull, ECCD_weight / np.max(ECCD_weight.flatten()), \
                  levels = np.linspace(-1,1,30), cmap = plt.get_cmap("coolwarm"))
-    plt.gca().set_ylabel(r"$u_\parallel$")
-    plt.gca().set_xlabel(r"$u_\perp$")
+    ax.set_ylabel(r"$u_\parallel$")
+    ax.set_xlabel(r"$u_\perp$")
     m = cm.ScalarMappable(cmap=plt.cm.get_cmap("coolwarm"))
     m.set_array(np.linspace(-1.0, 1.0, 30))
-    cb_j = plt.gcf().colorbar(m, pad=0.15, ticks=[-1.0, 0.0, 1.0])
+    cb_j = fig.colorbar(m, pad=0.15, ticks=[-1.0, 0.0, 1.0])
     cb_j.set_label(r"$(f - f_0) u_\parallel [\si{{a.u.}}]$")
-    plt.gca().set_aspect("equal")
+    ax.set_aspect("equal")
 #     plt.show()
 if(__name__ == "__main__"):
-    fig = plt.figure()
+    fig = plt.figure(figsize=(12.5,8.5))
+    ax = fig.add_subplot(111)
     #current_weight("/tokp/work/sdenk/ECRad/ECRad_35662_ECECTACTC_ed9.mat")
-    current_weight('/tokp/work/sdenk/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat')
-    diag_weight_stand_alone('/tokp/work/sdenk/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat', 4.4, 94, \
+    current_weight('/tokp/work/sdenk/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat',fig,ax)
+    diag_weight_stand_alone(fig, ax, '/tokp/work/sdenk/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat', 4.4, 94, \
                             '/tokp/work/sdenk/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat')
-    diag_weight_stand_alone('/tokp/work/sdenk/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat', 4.4, 144, \
+    diag_weight_stand_alone(fig, ax, '/tokp/work/sdenk/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat', 4.4, 144, \
                             '/tokp/work/sdenk/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat')
     plt.show()
+    plt.hold(True)
     
