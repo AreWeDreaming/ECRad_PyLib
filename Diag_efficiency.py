@@ -160,11 +160,11 @@ if(__name__ == "__main__"):
     fig = plt.figure(figsize=(12.5,8.5))
     ax = fig.add_subplot(111)
     #current_weight("/tokp/work/sdenk/ECRad/ECRad_35662_ECECTACTC_ed9.mat")
-    current_weight('/tokp/work/sdenk/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat',fig,ax)
-    diag_weight_stand_alone(fig, ax, '/tokp/work/sdenk/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat', 4.4, 94, \
-                            '/tokp/work/sdenk/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat')
-    diag_weight_stand_alone(fig, ax, '/tokp/work/sdenk/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat', 4.4, 144, \
-                            '/tokp/work/sdenk/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat')
+    current_weight('/tokp/work/sdenk/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0004.mat',fig,ax)
+    diag_weight_stand_alone(fig, ax, '/tokp/work/sdenk/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0004.mat', 4.4, 94, \
+                            '/tokp/work/sdenk/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0004.mat')
+    diag_weight_stand_alone(fig, ax, '/tokp/work/sdenk/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0004.mat', 4.4, 144, \
+                            '/tokp/work/sdenk/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0004.mat')
     plt.show()
     plt.hold(True)
     
