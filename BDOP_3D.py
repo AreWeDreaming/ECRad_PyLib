@@ -399,7 +399,7 @@ class PowerDepo_3D:
             N_par = self.N_par_spl(s[i])
             print("N_abs, N_par in situ, N_par Gray", N, np.cos(theta) * N, N_par)
             if(self.em_abs_Alb_obj.is_resonant(rhop, Te, ne, \
-                                     freq_2X, theta, self.freq, self.m)):
+                                               freq_2X, theta, self.freq, self.m)):
                 x, y, spline = self.f_inter.get_spline(rhop, Te)
                 dist_inter_slice = distribution_interpolator(x, y, spline)
                 if(self.f_inter.B_min_spline(rhop).item() == 0.0):
@@ -504,20 +504,21 @@ def make_3DBDOP_cut_GUI(Results, fig,  time, ch, dist="Th", dist_mat_filename=No
 def make_3DBDOP_cut_standalone(matfilename, time, ch_list, m_list, dist, include_ECRH=False, \
                                single_Beam=False, m_ECRH_list=[2], only_contribution=False, \
                                single_ray_BPD=False, Teweight=False, ECRH_freq=140.e9, \
-                               wave_mat_filename=None, mat_for_distribution=None):
+                               wave_mat_filename=None, mat_for_distribution=None, rhop_range=[0,1.0]):
     Results = ECRadResults()
     fig = plt.figure(figsize=(16.5, 8.5))
     Results.from_mat_file(matfilename)
     fig = make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=include_ECRH, \
                     single_Beam=single_Beam, m_ECRH_list=m_ECRH_list, only_contribution=only_contribution, \
                     single_ray_BPD=single_ray_BPD, Teweight=Teweight, ECRH_freq=ECRH_freq, \
-                    mat_for_waves=wave_mat_filename, mat_for_distribution=mat_for_distribution)
+                    mat_for_waves=wave_mat_filename, mat_for_distribution=mat_for_distribution, \
+                    rhop_range=rhop_range)
     plt.show()
 
 def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=False, \
                     single_Beam=False, m_ECRH_list=[2], only_contribution=False, \
                     single_ray_BPD=False, Teweight=False, ECRH_freq=140.e9, \
-                    mat_for_waves=None, mat_for_distribution=None):
+                    mat_for_waves=None, mat_for_distribution=None,rhop_range=[0,1.0]):
     fig.text(0.025, 0.95, "a)")
     fig.text(0.55, 0.95, "b)")
     BDOP_list = []
@@ -526,7 +527,7 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
     rhop_Te = Results.Scenario.plasma_dict["rhop_prof"][itime] * Results.Scenario.Te_rhop_scale
     Te = np.log(Results.Scenario.plasma_dict["Te"][itime] * Results.Scenario.Te_scale)  # from IDA always positive definite
     rhop_ne = Results.Scenario.plasma_dict["rhop_prof"][itime] * Results.Scenario.ne_rhop_scale
-    ne = np.log(Results.Scenario.plasma_dict["Te"][itime] * Results.Scenario.ne_scale)  # from IDA always positive definite
+    ne = np.log(Results.Scenario.plasma_dict["ne"][itime] * Results.Scenario.ne_scale)  # from IDA always positive definite
     EqSlice = Results.Scenario.plasma_dict["eq_data"][itime]
     EQObj = EQDataExt(Results.Scenario.shot, bt_vac_correction=1.0, Ext_data=True)
     EQObj.insert_slices_from_ext(Results.Scenario.plasma_dict["time"], Results.Scenario.plasma_dict["eq_data"])
@@ -647,6 +648,18 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
         BPD_POI = []
         BPD_POI_rhop = []
         s_BPD_max = s_ray[np.argmax(BPD_ray)]
+        rhop_cropped = np.linspace(rhop_range[0], rhop_range[1], n_rhop)
+        BPD_croped = np.zeros(n_rhop)
+        BPD_ch_cropped = np.zeros(n_rhop)
+        for i in range(len(rhop_cropped)):
+            # Recalculate BDOP for an unsigned rhop grid
+            for ray, ray_BPD_spl, ray_weight in zip(ray_list, ray_BPD_spl_list, Results.weights["ray"][itime][ich]):
+                root_spl_ray = InterpolatedUnivariateSpline(ray["s"], ray["rhop"] - rhop_cropped[i])
+                for root in root_spl_ray.roots():
+                    BPD_ch_cropped[i] += ray_BPD_spl(root) * ray_weight
+        BPD_POI = []
+        BPD_POI_rhop = []
+        s_BPD_max = s_ray[np.argmax(BPD_ray)]
         if(use_fit_for_s_important):
             # Fit a gaussian to get the 3 radial points for the 3D BPD cuts
             sigma_BPD_ray_spl = InterpolatedUnivariateSpline(s_ray, BPD_ray * (s_ray - s_BPD_max) ** 2)
@@ -668,10 +681,10 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
             # analogous to the normal distribution
             s_important =  []
             # Compute norm, since BPD is normalized only in s
-            BPD_int_spl = InterpolatedUnivariateSpline(rhop_binned, BPD_ch_binned).antiderivative(1)
-            BPD_norm = BPD_int_spl(rhop_binned[-1])    
+            BPD_int_spl = InterpolatedUnivariateSpline(rhop_cropped, BPD_ch_cropped).antiderivative(1)
+            BPD_norm = BPD_int_spl(rhop_cropped[-1])    
             for cum_BPD_val in [0.5 - 0.31731, 0.5, 0.5 + 0.31731]:# Confidence interval
-                root_spl = InterpolatedUnivariateSpline(rhop_binned, BPD_int_spl(rhop_binned)/BPD_norm - cum_BPD_val)
+                root_spl = InterpolatedUnivariateSpline(rhop_cropped, BPD_int_spl(rhop_cropped)/BPD_norm - cum_BPD_val)
                 roots_cum_BPD = root_spl.roots()
                 if(len(roots_cum_BPD) != 1):
                     print("Found " + str(len(roots_cum_BPD)) + " roots when looking for rhop where BPD at ", cum_BPD_val)
@@ -718,22 +731,23 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
         Beam_max = np.max(linear_beam.PW_beam.flatten())
         for beam, PW_beam, color in zip(linear_beam.rays, linear_beam.PW_beam, ECRH_colors):
             mask = np.logical_not(np.isnan(linear_beam.rhop))
-            beam_rhop = beam[0]["rhop"]
-            s_beam_ray = beam[0]["s"]
-            P_spl =  InterpolatedUnivariateSpline(s_beam_ray,  beam[0]["PW"] )
-            R_spl = InterpolatedUnivariateSpline(s_beam_ray, beam[0]["R"])
-            rhop_spl = InterpolatedUnivariateSpline(beam[0]["s"], beam_rhop)
+            ray_mask = np.logical_and(beam[0]["rhop"] > rhop_range[0], beam[0]["rhop"] < rhop_range[1])
+            beam_rhop = beam[0]["rhop"][ray_mask]
+            s_beam_ray = beam[0]["s"][ray_mask]
+            P_spl =  InterpolatedUnivariateSpline(s_beam_ray,  beam[0]["PW"][ray_mask] )
+            R_spl = InterpolatedUnivariateSpline(s_beam_ray, beam[0]["R"][ray_mask])
+            rhop_spl = InterpolatedUnivariateSpline(s_beam_ray, beam_rhop)
             if(use_fit_for_s_important):
                 # Fit a gaussian to get the 3 radial points for the 3D BPD cuts
-                dP = P_spl(beam[0]["s"], nu=1)
-                beta0 = np.array([np.max(dP), beam[0]["s"][np.argmax(dP)], 0.05])
-                data = odr.Data(beam[0]["s"], dP)
+                dP = P_spl(s_beam_ray, nu=1)
+                beta0 = np.array([np.max(dP), s_beam_ray[np.argmax(dP)], 0.05])
+                data = odr.Data(s_beam_ray, dP)
                 mdl = odr.Model(func)
                 ODR = odr.ODR(data, mdl, beta0)
                 output = ODR.run()
                 beta = output.beta
         #        beta[2] *= 10.0
-                s_max = beam[0]["s"][np.argmax(dP)]
+                s_max = s_beam_ray[np.argmax(dP)]
                 s_important = [s_max, s_max + beta[2], s_max - beta[2]]
                 PDP_POI = []
                 PDP_POI_rhop = []
@@ -747,7 +761,7 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
                 # Use the integral of the power depsotion profile to determine a the three radial points for the plot
                 # Compute norm, since BPD is normalized only in s
                 PDP_spl = InterpolatedUnivariateSpline(linear_beam.rhop[mask], PW_beam[mask] )
-                s_max = beam[0]["s"][np.argmax(P_spl(s_beam_ray, nu=1))] # Find maximum of that, does not need to be super precise
+                s_max = s_beam_ray[np.argmax(P_spl(s_beam_ray, nu=1))] # Find maximum of that, does not need to be super precise
                 PDP_norm = PDP_spl.integral(linear_beam.rhop[mask][0], linear_beam.rhop[mask][-1])
                 s_important =  []
                 for cum_PDP_val in [0.5 - 0.31731, 0.5, 0.5 + 0.31731]:# Confidence interval
@@ -787,7 +801,7 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
             ax_depo.plot(linear_beam.rhop[mask], PW_beam[mask] / Beam_max, label=label, linestyle="--", color=color)
             for m_ECRH in m_ECRH_list:
                 BDOP_list.append(PowerDepo_3D(s_important, P_spl(s_important) / P_spl.integral(s_beam_ray[0], s_beam_ray[-1]), \
-                                              freq, beam[0], f_inter, dist, B_ax, EqSlice, Te_spline, ne_spline, m=m_ECRH))
+                                              ECRH_freq, beam[0], f_inter, dist, B_ax, EqSlice, Te_spline, ne_spline, m=m_ECRH))
                 m = cm.ScalarMappable(cmap=plt.cm.get_cmap("spring"))
                 m.set_array(np.linspace(0.0, 1.0, 20))
                 cmaps.append(m)
@@ -916,8 +930,8 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
 if(__name__ == "__main__"):
 #     x = np.linspace(0,1,30)
 #     distribute_points(x, 0.2 + 5 * np.exp(-(x-0.5)**2 / 0.05**2), 30)
-    make_3DBDOP_cut_standalone("/tokp/work/sdenk/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat", 4.40, [94], [2], "Re", \
+    make_3DBDOP_cut_standalone("/tokp/work/sdenk/Backup:_PhD_stuff/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat", 4.40, [144], [2], "Re", \
                                include_ECRH=True, m_ECRH_list=[2], \
-                               ECRH_freq=105.e9, wave_mat_filename="/tokp/work/sdenk/DRELAX_Results_2nd_batch/GRAY_rays_35662_4.40.mat", \
-                               mat_for_distribution= "/tokp/work/sdenk/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat")  # 94 # 144 -> second last each
+                               ECRH_freq=105.e9, wave_mat_filename="/tokp/work/sdenk/Backup:_PhD_stuff/DRELAX_Results_2nd_batch/GRAY_rays_35662_4.40.mat", \
+                               mat_for_distribution= "/tokp/work/sdenk/Backup:_PhD_stuff/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat", rhop_range=[0,0.3]) #20 # 48  # 94 # 144 -> second last each
 

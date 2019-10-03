@@ -6,7 +6,6 @@ Created on Oct 11, 2016
 import os
 import numpy as np
 import sys
-vessel_file = '/afs/ipp-garching.mpg.de/home/s/sdenk/F90/ECRad_Pylib/ASDEX_Upgrade_vessel.txt'
 sys.path.append("../ECRad_Pylib")
 from subprocess import call
 from scipy.io import savemat

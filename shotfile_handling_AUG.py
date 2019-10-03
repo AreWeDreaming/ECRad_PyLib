@@ -1359,41 +1359,42 @@ def load_IDA_data(shot, timepoints=None, exp="AUGD", ed=0, double_entries_allowe
     IDA_dict["eq_data"] = None
     return IDA_dict
 
-def make_ext_data_for_testing(ext_data_folder, shot, times, eq_exp="AUGD", eq_diag="EQH", eq_ed=0, bt_vac_correction=1.005, IDA_exp="AUGD", IDA_ed=0):
-    index = 0
-    EQ_obj = EQData(shot, EQ_exp=eq_exp, EQ_diag=eq_diag, EQ_ed=eq_ed, bt_vac_correction=bt_vac_correction)
-    plasma_data = load_IDA_data(shot, timepoints=times, exp=IDA_exp, ed=IDA_ed)
-    if(not os.path.isdir(ext_data_folder)):
-        try:
-            os.mkdir(ext_data_folder)
-        except OSError:
-            try:
-                os.mkdir(ext_data_folder.replace('Ext_data', ''))
-                os.mkdir(ext_data_folder)
-            except OSError:
-                print('Please create the parent directory: ' + ext_data_folder.replace(os.sep + 'Ext_data', '').rsplit(os.sep)[0])
-                return
-    np.savetxt(os.path.join(ext_data_folder, "t"), plasma_data["time"])
-    for time in plasma_data["time"]:
-        EQ_t = EQ_obj.GetSlice(time)
-        np.savetxt(os.path.join(ext_data_folder, "special_points{0:d}".format(index)), np.array([EQ_t.R_ax, EQ_t.Psi_sep]))
-        np.savetxt(os.path.join(ext_data_folder, "R{0:d}".format(index)), EQ_t.R)
-        np.savetxt(os.path.join(ext_data_folder, "z{0:d}".format(index)), EQ_t.z)
-        np.savetxt(os.path.join(ext_data_folder, "Psi{0:d}".format(index)), EQ_t.Psi)
-        np.savetxt(os.path.join(ext_data_folder, "Br{0:d}".format(index)), EQ_t.Br)
-        np.savetxt(os.path.join(ext_data_folder, "Bt{0:d}".format(index)), EQ_t.Bt)
-        # plt.contour(EQ.R, EQ.z, EQ.rhop, levels=np.array([0.1, 1.2]))
-        # cont = plt.contourf(EQ.R, EQ.z, np.arctan(EQ.Bz / EQ.Bt) / np.pi * 180.0, levels=np.linspace(-15, 15.0, 40))
-        # cb = plt.gcf().colorbar(cont, ax=plt.gca(), ticks=[-15, -5, 0, 5, 15])
-        # plt.show()
-        np.savetxt(os.path.join(ext_data_folder, "Bz{0:d}".format(index)), EQ_t.Bz)
-        Te_data = np.array([plasma_data["rhop"][index], plasma_data["Te"][index]]).T  # for coloumn
-        ne_data = np.array([plasma_data["rhop"][index], plasma_data["ne"][index]]).T
-        np.savetxt(os.path.join(ext_data_folder, "Te{0:d}".format(index)), Te_data)
-        np.savetxt(os.path.join(ext_data_folder, "ne{0:d}".format(index)), ne_data)
-        index += 1
-    copyfile('../ECRad_Pylib/ASDEX_Upgrade_vessel.txt', os.path.join(ext_data_folder, "Ext_vessel.bd"))
-    print('External data ready!')
+#Deprecated!
+# def make_ext_data_for_testing(ext_data_folder, shot, times, eq_exp="AUGD", eq_diag="EQH", eq_ed=0, bt_vac_correction=1.005, IDA_exp="AUGD", IDA_ed=0):
+#     index = 0
+#     EQ_obj = EQData(shot, EQ_exp=eq_exp, EQ_diag=eq_diag, EQ_ed=eq_ed, bt_vac_correction=bt_vac_correction)
+#     plasma_data = load_IDA_data(shot, timepoints=times, exp=IDA_exp, ed=IDA_ed)
+#     if(not os.path.isdir(ext_data_folder)):
+#         try:
+#             os.mkdir(ext_data_folder)
+#         except OSError:
+#             try:
+#                 os.mkdir(ext_data_folder.replace('Ext_data', ''))
+#                 os.mkdir(ext_data_folder)
+#             except OSError:
+#                 print('Please create the parent directory: ' + ext_data_folder.replace(os.sep + 'Ext_data', '').rsplit(os.sep)[0])
+#                 return
+#     np.savetxt(os.path.join(ext_data_folder, "t"), plasma_data["time"])
+#     for time in plasma_data["time"]:
+#         EQ_t = EQ_obj.GetSlice(time)
+#         np.savetxt(os.path.join(ext_data_folder, "special_points{0:d}".format(index)), np.array([EQ_t.R_ax, EQ_t.Psi_sep]))
+#         np.savetxt(os.path.join(ext_data_folder, "R{0:d}".format(index)), EQ_t.R)
+#         np.savetxt(os.path.join(ext_data_folder, "z{0:d}".format(index)), EQ_t.z)
+#         np.savetxt(os.path.join(ext_data_folder, "Psi{0:d}".format(index)), EQ_t.Psi)
+#         np.savetxt(os.path.join(ext_data_folder, "Br{0:d}".format(index)), EQ_t.Br)
+#         np.savetxt(os.path.join(ext_data_folder, "Bt{0:d}".format(index)), EQ_t.Bt)
+#         # plt.contour(EQ.R, EQ.z, EQ.rhop, levels=np.array([0.1, 1.2]))
+#         # cont = plt.contourf(EQ.R, EQ.z, np.arctan(EQ.Bz / EQ.Bt) / np.pi * 180.0, levels=np.linspace(-15, 15.0, 40))
+#         # cb = plt.gcf().colorbar(cont, ax=plt.gca(), ticks=[-15, -5, 0, 5, 15])
+#         # plt.show()
+#         np.savetxt(os.path.join(ext_data_folder, "Bz{0:d}".format(index)), EQ_t.Bz)
+#         Te_data = np.array([plasma_data["rhop"][index], plasma_data["Te"][index]]).T  # for coloumn
+#         ne_data = np.array([plasma_data["rhop"][index], plasma_data["ne"][index]]).T
+#         np.savetxt(os.path.join(ext_data_folder, "Te{0:d}".format(index)), Te_data)
+#         np.savetxt(os.path.join(ext_data_folder, "ne{0:d}".format(index)), ne_data)
+#         index += 1
+#     copyfile('../ECRad_Pylib/ASDEX_Upgrade_vessel.txt', os.path.join(ext_data_folder, "Ext_vessel.bd"))
+#     print('External data ready!')
 
 def make_ext_data_for_testing_from_data(ext_data_folder, shot, times, R, z, Br, Bt, Bz, Psi, R_ax, z_ax, Psi_ax, Psi_sep, rhop, ne, Te):
     # SI UNITS!

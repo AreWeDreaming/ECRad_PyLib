@@ -10,7 +10,7 @@ import sys
 sys.path.append("../ECRad_Pylib")
 from Diags import Diag
 if(globalsettings.AUG):
-    vessel_file = '../ECRad_Pylib/ASDEX_Upgrade_vessel.txt'
+    vessel_file = os.path.join(globalsettings.ECRadPylibRoot,'ASDEX_Upgrade_vessel.txt')
 from shutil import copy, copyfile, rmtree
 from scipy.io import loadmat
 import scipy.constants as cnst

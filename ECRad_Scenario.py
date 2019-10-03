@@ -348,7 +348,7 @@ class ECRadScenario:
             return True
 
     def load_dist_obj(self, filename):
-        self.dist_obj = load_f_from_mat(filename, use_dist_prefix=True)
+        self.dist_obj = load_f_from_mat(filename, use_dist_prefix=None)
         
     def load_GENE_obj(self, filename, dstf):
         it = 0 # Only single time point supported
