@@ -103,7 +103,7 @@ class GlobalSettingsAUGEXT:
         self.pylib_folder = "../ECRad_Pylib"
         self.GUI_folder = "../ECRad_GUI"
         
-if("SLES" in os.environ["SYS"]):
+if("sles" in os.environ["SYS"]):
     globalsettings = GlobalSettingsAUG()
 elif("rhel" in os.environ["SYS"]):
     globalsettings = GlobalSettingsITM()
