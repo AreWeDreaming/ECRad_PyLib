@@ -77,8 +77,8 @@ def calibrate(shot, timepoints, Trad_matrix, calib_diag, aux_diag, masked_channe
                 print("Pseudo systematic error [%] and systematic vs. statistical error ", np.abs(systematic_error / calib[i] * 100.0), np.abs(systematic_error / (perr[1] / popt[1] ** 2)))
                 print("intercept [V] and error [V]", popt[0], perr[0])
                 print("Channel ", i + 1, 'mean', np.mean(calib_mat.T[i]))
-                relative_dev[i] = np.abs(np.sqrt(perr[1] ** 2 / popt[1] ** 4) / calib[i]) * 100.0
-                sys_dev[i] = np.abs(systematic_error / calib[i] * 100.0)
+                relative_dev[i] = np.abs(np.sqrt(perr[1] ** 2 / popt[1] ** 4) / calib[i]) * 100.0   # We want percent for rel_dev for historical reasons
+                sys_dev[i] = np.abs(systematic_error)
                 if(relative_dev[i] > 30):
                     print("Channel ", i + 1, " not usable!")
             except (ValueError, IndexError) as e:
@@ -87,4 +87,4 @@ def calibrate(shot, timepoints, Trad_matrix, calib_diag, aux_diag, masked_channe
                 print(Trad_matrix.T[i].shape, calib_mat.T[i].shape)
                 raise ValueError
         relative_dev[masked_channels] = 1.0
-    return calib_mat, std_dev_mat, calib, relative_dev, sys_dev  # We want percent
+    return calib_mat, std_dev_mat, calib, relative_dev, sys_dev

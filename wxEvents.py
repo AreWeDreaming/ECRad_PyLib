@@ -83,6 +83,14 @@ EVT_GENE_DATA_LOADED = wx.PyEventBinder(Unbound_EVT_GENE_DATA_LOADED, 1)
 Unbound_EVT_MAKE_ECRAD = wx.NewEventType()  # Call This
 EVT_MAKE_ECRAD = wx.PyEventBinder(Unbound_EVT_MAKE_ECRAD, 1)
 
+class UpdatePlotEvent(wx.PyCommandEvent):
+    def __init__(self, evtType, id):
+        wx.PyCommandEvent.__init__(self, evtType, id)
+    
+    def set_shot_time(self, shot, time):
+        self.shot = shot
+        self.time = time
+
 class UpdateConfigEvt(wx.PyCommandEvent):
     def __init__(self, evtType, id):
         wx.PyCommandEvent.__init__(self, evtType, id)

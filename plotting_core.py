@@ -34,8 +34,8 @@ class plotting_core:
         self.fig = fig
         self.fig_2 = fig_2
         self.reset(title)
-        self.diag_markers = ["o", "s", "*", "o", "s", "*", "o", "s", "*"]
-        self.model_markers = ["^", "v", "+", "d", "^", "v", "+", "d", "^", "v", "+", "d"]
+        self.diag_markers = ["o", "+", "*", "o", "s", "*", "o", "s", "*"]
+        self.model_markers = ["^", "s", "v", "d", "o", "+", "*"  ]        
         self.line_markers = ["-", "--", ":", "-", "--", ":", "-", "--", ":"]
         self.diag_colors = [(0.0, 126.0 / 255, 0.0)]
         self.model_colors = [(0.0, 0.3e0, 0.7e0), (0.0, 126.0 / 255, 1.0), (126.0 / 255, 126.0 / 255, 0.0)]
@@ -68,7 +68,7 @@ class plotting_core:
         self.line_marker_index_2 = [0]
         self.line_color_index_2 = [0]
 
-    def reset(self, title=True):
+    def reset(self, title=False):
         self.setup = False
         self.fig.clf()
         if(self.fig_2 is not None):
@@ -198,40 +198,53 @@ class plotting_core:
                 mask[:] = True
         else:
             mask[:] = True
+        self.model_marker_index[0] = 1
         if(model_2 and len(Trad_comp) > 0):
             if(multiple_models):
                 rhop_max = max(np.max(rhop[0][mask]), rhop_max)
                 self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                     data=[rhop[0][mask], Trad_comp[mask]], \
                     name=r"$T_" + mathrm + "{rad,mod}" + dist_simpl + r"$", \
-                    marker="s", color=(0.0, 0.0, 0.0), \
+                    marker=self.model_markers[self.model_marker_index[0]], color=(0.0, 0.0, 0.0), \
                     y_range_in=self.y_range_list[0], ax_flag=ax_flag)
             else:
                 rhop_max = max(np.max(rhop[mask]), rhop_max)
                 self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                     data=[rhop[mask], Trad_comp[mask]], \
                     name=r"$T_" + mathrm + "{rad,mod}" + dist_simpl + r"$", \
-                    marker="s", color=(126.0 / 255, 0.0, 126.0 / 255), \
+                    marker=self.model_markers[self.model_marker_index[0]], color=(126.0 / 255, 0.0, 126.0 / 255), \
                     y_range_in=self.y_range_list[0], ax_flag=ax_flag)
+            self.model_marker_index[0] += 1
             if(X_mode_fraction_comp is not None):
+                # Note that marker index still 0 due to twin x
                 self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], \
                                                                      data=[rhop[mask], X_mode_fraction_comp[mask] * 1.e2], \
                                                                      name=r"X-mode fraction $" + dist_simpl + r"$", \
-                                                                     marker="o", color=(0.0, 0.2, 0.2e0), \
+                                                                     marker=self.model_markers[self.model_marker_index[0]], color=(0.0, 0.2, 0.2e0), \
                                                                      y_range_in=self.y_range_list[1], ax_flag="X_frac")
+                self.model_marker_index[0] += 1
         if(X_mode_fraction is not None):
             # percent
+            # Note that marker index still 0 due to twin x
             self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], \
                 data=[rhop[mask], X_mode_fraction[mask] * 1.e2], \
                 name=r"X-mode fraction $" + dist + r"$", \
-                marker="+", color=(0.0, 0.0, 0.e0), \
+                marker=self.model_markers[self.model_marker_index[0]], color=(0.0, 0.0, 0.e0), \
                 y_range_in=self.y_range_list[1], ax_flag="X_frac")
+            self.model_marker_index[0] += 1
+        self.diag_marker_index[0] = 0
         for key in diags.keys():
             if(diags[key].is_prof):
                 self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                     data=[diags[key].rhop, diags[key].val],\
                     marker="--", \
-                    color="black", \
+                    color=self.diag_colors[self.diag_color_index[0]], \
+                    y_range_in=self.y_range_list[0], ax_flag=ax_flag)
+            elif(diags[key].unc is None):
+                self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
+                    data=[diags[key].rhop, diags[key].val],\
+                    marker=self.diag_markers[self.diag_marker_index], \
+                    color=self.diag_colors[self.diag_color_index[0]], \
                     y_range_in=self.y_range_list[0], ax_flag=ax_flag)
             else:
                 diag_mask = np.abs(diags[key].val * max_unc) > np.abs(diags[key].unc)
@@ -249,6 +262,7 @@ class plotting_core:
                 print("Warning too many diagnostics to plot - ran out of unique colors")
                 self.diag_color_index[0] = 0
         if(multiple_models):
+            primary = True
             for rhop_entry, Trad_entry, diag_name_entry, label in zip(rhop, Trad, diag_names, label_list):
                 try:
                     cur_mask = np.zeros(len(Trad_entry), dtype=np.bool)
@@ -264,15 +278,24 @@ class plotting_core:
                     if(np.all(cur_mask == False)):
                         cur_mask[:] = True
                     rhop_max = max(np.max(rhop_entry[cur_mask]), rhop_max)
+                    if(primary):
+                        marker = self.model_markers[0]
+                        primary = False
+                    else:
+                        marker = self.model_markers[self.model_marker_index[0]]
+                        self.model_marker_index[0] += 1
                     self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                                                                          data=[rhop_entry[cur_mask], Trad_entry[cur_mask]], \
                                                                          name=nice_label, \
-                                                                         marker="v", color=self.model_colors[self.model_color_index[0]], \
+                                                                         marker=marker, color=self.model_colors[self.model_color_index[0]], \
                                                                          y_range_in=self.y_range_list[0], ax_flag=ax_flag)
                     self.model_color_index[0] += 1
-                    if(self.model_color_index[0] >= len(self.model_colors[0])):
+                    if(self.model_color_index[0] >= len(self.model_colors)):
                         print("Too many models -> ran out of unique colors")
                         self.model_color_index[0] = 0
+                    if(self.model_marker_index[0] > len(self.model_markers)):
+                        print("Too many models to plot - ran out of unique markers")
+                        self.diag_model_index[0] = 0
                 except KeyError:
                     print("THe result with the name " + label + "caused an index error")
                     print("Most likely it does not have the correct amount of modeled channels for the currently selected diagnostic")
@@ -339,7 +362,7 @@ class plotting_core:
             self.axlist[0].set_xlim(0.0, 1.05 * np.max([np.max(rhop_IDA), np.max(rhop)]))
         if(not use_tau):
             self.axlist[0].set_ylim(0.0, 1.00)
-        return self.fig, self.fig_2
+        return self.fig
 
     def plot_1D_cpo(self, x, y, shot, time, x_info, y_info):
         self.setup_axes("single", r"AUG data for \# {0:d}".format(shot) + r" and $t = \SI{" + r"{0:2.2f}".format(time) + "}{\second}$")
@@ -600,6 +623,48 @@ class plotting_core:
         else:
             self.create_legends("errorbar_twinx")
         return self.fig
+    
+    def time_trace(self, shot, time, Te, ne, heating_array=None, time_z_axis = None, z_axis=None):
+        self.title = False   
+        if(z_axis is not None):     
+            self.setup_axes("twinx_double", None)
+        else:
+            self.setup_axes("twinx_double_single_second", None)
+        # \"--\" $= T_\mathrm{e}$
+        i = 0
+        heating_labels = [r"$P_\mathrm{ECRH}$", r"$P_\mathrm{NBI}$", r"$P_\mathrm{ICRH}$"]
+        heating_color = ["blue", "red", "green"]
+        for i, P_trace in enumerate(heating_array):
+            if(np.any(P_trace[1] > 1.e-3)):
+                self.axlist[2], self.y_range_list[2] = self.add_plot(self.axlist[2], \
+                                                                     data=[P_trace[0], P_trace[1]], \
+                                                                     color=heating_color[i], marker="-",  name=heating_labels[i],\
+                                                                     y_range_in=self.y_range_list[2], ax_flag="P_trace")
+        self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
+                                                             data=[time, Te / 1.e3], \
+                                                             color="blue", marker="-",  name=r"$T_\mathrm{e}$", \
+                                                             y_range_in=self.y_range_list[0], ax_flag="Te_trace")
+        self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], \
+                                                             data=[time, ne / 1.e19], \
+                                                             color="black", marker="--",  name=r"$n_\mathrm{e}$", \
+                                                             y_range_in=self.y_range_list[1], ax_flag="ne_trace")
+        if(z_axis is not None):
+            self.axlist[3], self.y_range_list[3] = self.add_plot(self.axlist[3], \
+                                                                 data=[time_z_axis, z_axis/ 1.e-2], \
+                                                                 color="black", marker="--",  name=r"$z_\mathrm{axis}$", \
+                                                                 y_range_in=self.y_range_list[3], ax_flag="z_trace")
+        self.axlist[0].set_ylim(0.0, self.y_range_list[0][1])
+        self.axlist[0].text(0.75, 0.70,  r" \# {0:d}".format(shot),
+                verticalalignment='bottom', horizontalalignment='left',
+                transform=self.axlist[0].transAxes,
+                color='black', fontsize=plt.rcParams['axes.titlesize'])
+        if(z_axis is not None):
+            self.create_legends("errorbar_double_twinx")
+        else:
+            self.create_legends("errorbar_double_twinx_single_second")
+        self.axlist[0].get_xaxis().set_visible(False)
+        plt.tight_layout()
+        return self.fig
 
     def calib_evolution_Trad(self, diag, ch, ECRad_result_list, diag_data, std_dev_data, popt_list, pol_angle_list=None):
         self.title = False
@@ -721,7 +786,7 @@ class plotting_core:
             name = r"$D_\omega$, $\rho_\mathrm{pol,res} = " + \
                 r"{0:1.2f}".format(rhop_res) + "$ on " + ch_Hf_str
         else:
-            name = r"$D_\omega [" + r"\matrhm{2nd\,model}"  + "$"
+            name = r"$D_\omega [" + r"\mathrm{2nd\,model}"  + "$"
         self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                 self.y_range_list[0] , data=[rhop_signed, D_comp ], color=(0.0, 0.0, 0.6), marker="--", \
                 name=name, \
@@ -1230,7 +1295,7 @@ class plotting_core:
             self.axlist[0].set_xlim((0.8, 2.4))
             self.axlist[0].set_ylim((-0.75, 1.0))
         self.create_legends("vessel")
-        return self.fig    
+        return self.fig
 
     def plt_vessel(self, ax, pol=True, polygon=False):
         # Stolen from fconf by M. Cavedon -> all praise or blame goes there
@@ -1244,7 +1309,7 @@ class plotting_core:
             f = open(os.path.join(globalsettings.ECRadPylibRoot, "pol_vessel.data"), 'r')
         else:
             f = open(os.path.join(globalsettings.ECRadPylibRoot, "tor_vessel.data"), 'r')
-    
+
         lines = f.readlines()
         f.close()
         vessel = []
@@ -1265,20 +1330,20 @@ class plotting_core:
             val = line.split()
             r.append(float(val[0]))
             z.append(float(val[1]))
-    
+
         # embed()
-    
-    
+
+
         # if pol==False:
-    
+
             # rotate to new coordinate system
         #    xnew=(np.array(r)*np.cos(np.deg2rad(-22.5*3.))-np.array(z)*np.sin(np.deg2rad(-22.5*3.))).tolist()
         #    ynew = (np.array(r)*np.sin(np.deg2rad(-22.5*3.))+np.array(z)*np.cos(np.deg2rad(-22.5*3.))).tolist()
-    
+
         #    embed()
         #    r=xnew
         #    z=ynew
-    
+
         for key in range(len(vessel)):
             if polygon:
                 ax.add_patch(Polygon(zip(vessel[key]['r'], vessel[key]['z']), facecolor='grey', edgecolor='none'))
@@ -1517,7 +1582,7 @@ class plotting_core:
         linear_beam = args[8]
         if(len(args) > 9):
             result = args[9]
-            channel_list = args[10]
+            itime, channel_list = args[10]
             mode = args[11]
             tb_path = args[12]
         else:
@@ -1578,6 +1643,42 @@ class plotting_core:
                 i += 1
                 filename = os.path.join(path, "Rz_beam_{0:1d}.dat".format(i))
                 filename_tor = os.path.join(path, "xy_beam_{0:1d}.dat".format(i))
+        if(result is not None):
+            self.model_color_index[0] = 1
+            self.model_color_index_2[0] = 1
+            for ich in channel_list:
+                if(result.Config.N_ray > 1):
+                    for iray in range(result.Config.N_ray):
+                        x = result.ray["x" + mode][itime][ich - 1][iray]
+                        y = result.ray["y" + mode][itime][ich - 1][iray]
+                        z = result.ray["z" + mode][itime][ich - 1][iray]                        
+                        R = np.sqrt(x**2 + y**2)
+                        self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
+                                                                 data=[R, z], \
+                                                                         color=self.model_colors[self.model_color_index[0]], marker="--", linewidth=1, \
+                                                                         y_range_in=self.y_range_list[0], ax_flag="Rz")
+                        self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], data=[x, y], \
+                                                                                 color=self.model_colors[self.model_color_index_2[0]], marker="--", linewidth=1, \
+                                                                                 y_range_in=self.y_range_list_2[0], ax_flag="xy")
+                else:
+                    x = result.ray["x" + mode][itime][ich - 1]
+                    y = result.ray["y" + mode][itime][ich - 1]
+                    z = result.ray["z" + mode][itime][ich - 1]                       
+                    R = np.sqrt(x**2 + y**2)
+                    self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
+                                                             data=[R, z], \
+                                                                     color=self.model_colors[self.model_color_index[0]], marker="-", linewidth=1, \
+                                                                     y_range_in=self.y_range_list[0], ax_flag="Rz")
+                    self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], data=[x, y], \
+                                                                             color=self.model_colors[self.model_color_index_2[0]], marker="-", linewidth=1, \
+                                                                             y_range_in=self.y_range_list_2[0], ax_flag="xy")
+                if(self.model_color_index[0] >  len(self.model_colors)):
+                    print("Too many channels had to cycle colors")
+                    self.model_color_index[0] = 1
+                    self.model_color_index_2[0] = 1
+                else:
+                    self.model_color_index[0] += 1
+                    self.model_color_index_2[0] += 1
         for beam in linear_beam.rays:
             ray_count = 1
             pw_max = -np.inf
@@ -2091,7 +2192,7 @@ class plotting_core:
             steps_2 = steps
             steps_2_y = steps_y
             self.gridspec = plt.GridSpec(self.layout[1], self.layout[2])
-            self.gridspec_2 = plt.GridSpec(self.layout_2[1], self.layout_2[2])
+            self.gridspec_2 = plt.GridSpec(self.layout_2[1], self.layout_2[2])        
         elif(mode == "single"):
             self.layout = [1, 1, 1]
             self.grid_locations = [[0, 0]]
@@ -2288,10 +2389,14 @@ class plotting_core:
                 self.gridspec.tight_layout(self.fig, pad=0.0, h_pad=1.0, w_pad=1.0,
                          rect=[0.075 * ratio_x, 0.075 * ratio_y, 0.95 , 0.95 - 0.05 * (1.0 - 1.0 / ratio_y)])
                 left_margin = 0.075 * ratio_x
-        elif(mode == "double" or mode == "ray"):
+        elif(mode == "ray"):
             self.gridspec.tight_layout(self.fig, pad=0.0, h_pad=1.0, w_pad=1.0,
                          rect=[0.075 * ratio_x, 0.075 * ratio_y, 0.95 , 0.95 - 0.05 * (1.0 - 1.0 / ratio_y)])
             left_margin = 0.075 * ratio_x
+        elif("double" in mode):
+            self.gridspec.tight_layout(self.fig, pad=0.0, h_pad=0.0, w_pad=0.0,
+                         rect=[0.075, 0.075, 0.95 , 0.95])
+            left_margin = 0.075
         elif(mode == "stacked_2_twinx"):
             self.gridspec.tight_layout(self.fig, pad=0.0, h_pad=1.0, w_pad=1.0,
                          rect=[0.075 * ratio_x, 0.075 * ratio_y, 0.95 , 0.95 - 0.05 * (1.0 - 1.0 / ratio_y)])
@@ -2361,7 +2466,7 @@ class plotting_core:
         if(mode == "stacked_2_twinx"):
             self.gridspec_2.tight_layout(self.fig_2, pad=0.0, h_pad=0.0, w_pad=1.0,
                          rect=[0.05 * ratio_x, 0.075 * ratio_y, 0.95 - 0.05 * (1.0 - 1.0 / ratio_x), 0.95 - 0.05 * (1.0 - 1.0 / ratio_y)])
-        elif(mode == "double"):
+        elif("double" in mode):
             self.gridspec_2.tight_layout(self.fig_2, pad=0.0, h_pad=0.0, w_pad=1.0,
                          rect=[0.05 * ratio_x, 0.1 * ratio_y, 0.95 - 0.05 * (1.0 - 1.0 / ratio_x), 0.95 - 0.05 * (1.0 - 1.0 / ratio_y)])
         elif(mode == "resonance"):
@@ -2625,14 +2730,14 @@ class plotting_core:
             handles_twinx, labels_twinx = self.axlist[1].get_legend_handles_labels()
             handles = handles_primary + handles_twinx
             labels = labels_primary + labels_twinx
-            leg = self.axlist[0].legend(handles, labels)
+            leg = self.axlist[1].legend(handles, labels)
             leg.get_frame().set_alpha(1.0)
             leg.draggable()
             handles_primary, labels_primary = self.axlist[2].get_legend_handles_labels()
             handles_twinx, labels_twinx = self.axlist[3].get_legend_handles_labels()
             handles = handles_primary + handles_twinx
             labels = labels_primary + labels_twinx
-            leg2 = self.axlist[2].legend(handles, labels)
+            leg2 = self.axlist[3].legend(handles, labels)
             leg2.get_frame().set_alpha(1.0)
             leg2.draggable()
 #            lns = self.axlist[0].get_lines()
@@ -3336,8 +3441,11 @@ class plotting_core:
                     ax.set_xlabel(r"$t [\mathrm{s}]$")
                     ax.set_ylabel(r"$n_\mathrm{e}\left[\SI{1.e19}{\per\cubic\metre}\right]$")
                 elif(ax_flag == "P_trace"):
-                    ax.set_xlabel(r"$t \si{\second}$")
-                    ax.set_ylabel(r"$P \left[\si{\mega\watt}\right]$")
+                    ax.set_xlabel(r"$t [\si{\second}]$")
+                    ax.set_ylabel(r"$P [\si{\mega\watt}]$")
+                elif(ax_flag == "z_trace"):
+                    ax.set_xlabel(r"$t [\si{\second}]$")
+                    ax.set_ylabel(r"$z [\si{\centi\metre}]$")
                 elif(ax_flag == "cnt_trace"):
                     ax.set_xlabel(r"$t [\mathrm{s}]$")
                     ax.set_ylabel(r"cnt rate $  \left[\si{\kilo\hertz}\right]$")
@@ -3735,5 +3843,3 @@ class plotting_core:
             else:
                 break
         return i
-
-

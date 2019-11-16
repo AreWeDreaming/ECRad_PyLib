@@ -36,16 +36,16 @@ def find_cell_interceps(u_par_grid, u_perp_grid, cur_BDOP, irhop):
     sortarray = np.argsort(intercep_list[0])
     return intercep_list.T[sortarray]
     
-def diag_weight_stand_alone(Result_file, time_point, ch, DistWaveFile=None):
+def diag_weight_stand_alone(fig, ax, Result_file, time_point, ch, DistWaveFile=None):
     Results = ECRadResults()
     Results.from_mat_file(Result_file)
-    fig = plt.figure(figsize=(12.5,8.5))
-    fig = diag_weight(fig, Results, time_point, ch, DistWaveFile=DistWaveFile)    
+    fig = diag_weight(fig, Results, time_point, ch, DistWaveFile=DistWaveFile, ax=ax)    
 
-def diag_weight(fig, Results, time_point, ch, DistWaveFile=None):
+def diag_weight(fig, Results, time_point, ch, DistWaveFile=None, ax=None):
     # Currently only RELAX/LUKE distributions supported
     # Extension for GENE trivial though
-    ax = fig.add_subplot(111)
+    if(ax is None):
+        ax = fig.add_subplot(111)
     harmonic_n = 2
     itime = np.argmin(np.abs(time_point - Results.Scenario.plasma_dict["time"]))
     time_cor = Results.Scenario.plasma_dict["time"][itime]
@@ -57,7 +57,7 @@ def diag_weight(fig, Results, time_point, ch, DistWaveFile=None):
         f_inter, f_inter_scnd = make_f_inter(Results.Config.dstf, dist_obj=dist_obj, EQObj=EQObj, time=time_cor)
     else:
         dist_obj = None
-        f_inter, f_inter_scnd  = make_f_inter(Results.Config.dstf, EQObj=EQObj, time=time_cor)
+        f_inter, f_inter_scnd  = make_f_inter("Th", EQObj=EQObj, time=time_cor)
     m= 40
     n= 80
     if(dist_obj is None):
@@ -91,10 +91,18 @@ def diag_weight(fig, Results, time_point, ch, DistWaveFile=None):
                     j -= 1
                 if(i < 0 or j < 0):
                     continue # only happens at the lower bounds, where u_perp is very small and, therefore, also j is very small
-                t = np.sqrt((cur_BDOP.u_par[irhop] - np.min(cur_BDOP.u_par[irhop]))**2 + (cur_BDOP.u_perp[irhop] - np.min(cur_BDOP.u_perp[irhop]))**2)
+                # Compute arclength
+                t = np.zeros(cur_BDOP.u_par[irhop].shape)
+                for i_res_line in range(1,len(cur_BDOP.u_par[irhop])):
+                    t[i_res_line] = t[i_res_line - 1] + np.sqrt((cur_BDOP.u_par[irhop][i_res_line] - cur_BDOP.u_par[irhop][i_res_line - 1])**2 + \
+                                                                (cur_BDOP.u_perp[irhop][i_res_line] - cur_BDOP.u_perp[irhop][i_res_line - 1])**2)
                 t /= np.max(t) # Normalize this
+                # Sort 
                 t_spl = InterpolatedUnivariateSpline(cur_BDOP.u_par[irhop], t)
-                BPD_val_spl = InterpolatedUnivariateSpline(t, cur_BDOP.val[irhop])
+                try:
+                    BPD_val_spl = InterpolatedUnivariateSpline(t, cur_BDOP.val[irhop])
+                except Exception as e:
+                    print(e)
                 BPD_val_rel_spl = InterpolatedUnivariateSpline(t, np.abs(cur_BDOP.val[irhop] - cur_BDOP.val_back[irhop]))
                 t1 = t_spl(intercep_point[0])
                 t2 = t_spl(intercep_points[i_intercep + 1][0])
@@ -114,7 +122,7 @@ def diag_weight(fig, Results, time_point, ch, DistWaveFile=None):
     return fig
 
 
-def current_weight(DistWaveFile):
+def current_weight(DistWaveFile, fig=None, ax=None):
     dist_obj = load_f_from_mat(DistWaveFile, True)
     dist_mat = loadmat(DistWaveFile, squeeze_me=True)
     waves = read_dist_mat_to_beam(dist_mat, True)
@@ -134,21 +142,29 @@ def current_weight(DistWaveFile):
     ECCD_weight /= np.max(np.abs(ECCD_weight.flatten()))
     ECCD_weight -= 0.5
     ECCD_weight *= 2.0
-    plt.contourf(dist_obj.uxx, dist_obj.ull, ECCD_weight / np.max(ECCD_weight.flatten()), \
+    if(fig is None):
+        fig = plt.figure()
+    if(ax is None):
+        ax = fig.add_subplot(111)
+    ax.contourf(dist_obj.uxx, dist_obj.ull, ECCD_weight / np.max(ECCD_weight.flatten()), \
                  levels = np.linspace(-1,1,30), cmap = plt.get_cmap("coolwarm"))
-    plt.gca().set_ylabel(r"$u_\parallel$")
-    plt.gca().set_xlabel(r"$u_\perp$")
+    ax.set_ylabel(r"$u_\parallel$")
+    ax.set_xlabel(r"$u_\perp$")
     m = cm.ScalarMappable(cmap=plt.cm.get_cmap("coolwarm"))
     m.set_array(np.linspace(-1.0, 1.0, 30))
-    cb_j = plt.gcf().colorbar(m, pad=0.15, ticks=[-1.0, 0.0, 1.0])
+    cb_j = fig.colorbar(m, pad=0.15, ticks=[-1.0, 0.0, 1.0])
     cb_j.set_label(r"$(f - f_0) u_\parallel [\si{{a.u.}}]$")
-    plt.gca().set_aspect("equal")
+    ax.set_aspect("equal")
 #     plt.show()
 if(__name__ == "__main__"):
-    fig = plt.figure()
+    fig = plt.figure(figsize=(12.5,8.5))
+    ax = fig.add_subplot(111)
     #current_weight("/tokp/work/sdenk/ECRad/ECRad_35662_ECECTACTC_ed9.mat")
-    current_weight("/tokp/work/sdenk/DRELAX_Results/ECRad_35662_ECECTACTC_run0209.mat")
-#     diag_weight_stand_alone("/tokp/work/sdenk/ECRad/ECRad_35662_ECECTACTC_ed7.mat", 4.4, 81, \
-#                 "/tokp/work/sdenk/ECRad/ECRad_35662_ECECTACTC_ed9.mat")
+    current_weight("/tokp/work/sdenk/Backup:_PhD_stuff/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0004.mat",fig,ax)
+    diag_weight_stand_alone(fig, ax, "/tokp/work/sdenk/Backup:_PhD_stuff/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0004.mat", 4.4, 94, \
+                            '/tokp/work/sdenk/Backup:_PhD_stuff/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0004.mat')
+    diag_weight_stand_alone(fig, ax, "/tokp/work/sdenk/Backup:_PhD_stuff/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0004.mat", 4.4, 144, \
+                            '/tokp/work/sdenk/Backup:_PhD_stuff/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0004.mat')
     plt.show()
+    plt.hold(True)
     

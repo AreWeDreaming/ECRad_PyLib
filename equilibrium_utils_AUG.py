@@ -17,8 +17,7 @@ from scipy import __version__ as scivers
 from get_ECRH_config import get_ECRH_viewing_angles
 import scipy.optimize as scopt
 from map_equ import equ_map
-vessel_bd_file = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/ECRad_Pylib/ASDEX_Upgrade_vessel.txt"
-
+vessel_bd_file = "ASDEX_Upgrade_vessel.txt"
 
 def eval_R(x):
     return -x[0] ** 3

@@ -132,6 +132,7 @@ class ECRadResults:
         self.ray_launch["dist_focus"] = []
         self.ray_launch["width"] = []
         self.ray_launch["pol_coeff_X"] = []
+        self.dist_obj = None
         self.comment = ""
 
     def append_new_results(self, time):
@@ -1042,7 +1043,10 @@ class ECRadResults:
 
     def extract_field(self, field):
         if(field=="Trad"):
-            x = self.resonance["rhop_cold"]
+            if(self.Config.extra_output):
+                x = [self.resonance["rhop_cold"],self.resonance["rhop_warm"]]
+            else:
+                x = [self.resonance["rhop_cold"],self.resonance["rhop_cold"]]
             y = self.Trad
         elif(field =="RayXRz"):
             x = ndarray_math_operation(self.ray["xX"]**2 + self.ray["yX"]**2, np.sqrt)

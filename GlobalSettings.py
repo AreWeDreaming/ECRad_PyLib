@@ -72,7 +72,7 @@ class GlobalSettingsAUG:
         if(os.getenv("SYS") == 'amd64_sles12'  or os.getenv("SYS") == 'amd64_sles15'):
             self.SLES12 = True
         self.Phoenix = "phoenix" in wx.PlatformInfo
-        self.ECRadRoot ="/afs/ipp-garching.mpg.de/home/s/sdenk/F90/ECRad/"
+        self.ECRadRoot = "/afs/ipp/home/r/rrf/F90/IDA/augd_ecrad/" # "/afs/ipp/home/s/sdenk/ECRad_testing/augd_ecrad/"# "/afs/ipp/home/r/rrf/F90/IDA/augd_ecrad/"
         self.ECRadPylibRoot = "../ECRad_Pylib/"
         self.ECRadGUIRoot = "../ECRad_GUI/"
         self.ECRadDevPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRaddb")
@@ -105,4 +105,11 @@ class GlobalSettingsAUGEXT:
         self.pylib_folder = "../ECRad_Pylib"
         self.GUI_folder = "../ECRad_GUI"
         
-globalsettings = GlobalSettingsITM()
+if("SLES" in os.environ["SYS"]):
+    globalsettings = GlobalSettingsAUG()
+elif("rhel" in os.environ["SYS"]):
+    globalsettings = GlobalSettingsITM()
+else:
+    globalsettings = GlobalSettingsAUGEXT()
+#
+#globalsettings = GlobalSettingsITM()
