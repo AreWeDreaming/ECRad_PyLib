@@ -115,13 +115,13 @@ def load_f_from_mat(filename, use_dist_prefix=False):
     mdict = loadmat(filename, squeeze_me=True)
     dist_prefix = ""
     if(use_dist_prefix is None):
-        for key in mdict.keys():
+        for key in mdict:
             if(key.startswith("dist")):
                 dist_prefix = "dist_"
                 break
     elif(use_dist_prefix):
         dist_prefix = "dist_"
-    if(dist_prefix + "rhot_prof" not in mdict.keys()):
+    if(dist_prefix + "rhot_prof" not in mdict):
         return distribution(None, mdict[dist_prefix + "rhop_prof"], mdict[dist_prefix + "u"], mdict[dist_prefix + "pitch"], mdict[dist_prefix + "f"], mdict[dist_prefix + "rhot_1D_profs"], mdict[dist_prefix + "rhop_1D_profs"], mdict[dist_prefix + "Te_init"], mdict[dist_prefix + "ne_init"])
     else:
         return distribution(mdict[dist_prefix + "rhot_prof"], mdict[dist_prefix + "rhop_prof"], mdict[dist_prefix + "u"], mdict[dist_prefix + "pitch"], mdict[dist_prefix + "f"], mdict[dist_prefix + "rhot_1D_profs"], mdict[dist_prefix + "rhop_1D_profs"], mdict[dist_prefix + "Te_init"], mdict[dist_prefix + "ne_init"])
@@ -130,7 +130,7 @@ def read_waves_mat_to_beam(waves_mat, EQSlice, use_wave_prefix=False):
     # Load waves object from .mat file created by AECM GUI (GRAY or TORAYFOM)
     wave_prefix = ""
     if(use_wave_prefix is None):
-        for key in waves_mat.keys():
+        for key in waves_mat:
             if(key.startswith("wave")):
                 wave_prefix = "wave_"
                 break
@@ -178,7 +178,7 @@ def read_dist_mat_to_beam(dist_mat, use_dist_prefix=True):
     # Load waves object from .mat file created by AECM GUI (RELAX)
     dist_prefix = ""
     if(use_dist_prefix is None):
-        for key in dist_mat.keys():
+        for key in dist_mat:
             if(key.startswith("dist")):
                 dist_prefix = "dist_"
                 break

@@ -22,7 +22,6 @@ from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
 from scipy.io import loadmat, savemat
 import scipy.odr as odr
 from ECRad_Results import ECRadResults
-from __builtin__ import False
 
 def func(beta, x):
     return beta[0] * np.exp(-(x - beta[1]) ** 2 / beta[2] ** 2)
@@ -85,7 +84,7 @@ def load_data_for_3DBDOP(Results, time, dist, ch, ir=1, get_BPD=False):
         svec["theta"] = Results.ray["thetaX"][itime][ich][ray_index][svec["rhop"] != -1.0]
         svec["freq_2X"] = Results.ray["YX"][itime][ich][ray_index][svec["rhop"] != -1.0] * 2.0 * freq
         svec["N_abs"] = Results.ray["NcX"][itime][ich][ray_index][svec["rhop"] != -1.0]
-    ne_spl = InterpolatedUnivariateSpline(Results.Scenario.plasma_dict["rhop_prof"][itime_Scenario], \
+    ne_spl = InterpolatedUnivariateSpline(Results.Scenario.plasma_dict[Results.Scenario.plasma_dict["prof_reference"]][itime_Scenario], \
                                           np.log(Results.Scenario.plasma_dict["ne"][itime_Scenario]), ext=3)
     svec["ne"] = np.exp(ne_spl(svec["rhop"][svec["rhop"] != -1.0]))
     if(dist != "ReTh"):
@@ -152,13 +151,13 @@ class BDOP_3D:
         if(dist == "Ge"):
             B0 = self.f_inter.B0
         # Already did this msot likely, but doesnt hurt tp do it again
-        for key in svec.keys():
+        for key in svec:
             if(key != "rhop"):
                 svec[key] = svec[key][svec["rhop"] != -1.0]
         T = T[svec["rhop"] != -1.0]
         svec["rhop"] = svec["rhop"][svec["rhop"] != -1.0]
         T = T[svec["rhop"] < rhop_max]
-        for key in svec.keys():
+        for key in svec:
             if(key != "rhop"):
                 svec[key] = svec[key][svec["rhop"] < rhop_max]
         svec["rhop"] = svec["rhop"][svec["rhop"] < rhop_max]
@@ -524,9 +523,9 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
     BDOP_list = []
     use_fit_for_s_important = False
     itime = np.argmin(np.abs(Results.Scenario.plasma_dict["time"] - time))
-    rhop_Te = Results.Scenario.plasma_dict["rhop_prof"][itime] * Results.Scenario.Te_rhop_scale
+    rhop_Te = Results.Scenario.plasma_dict[Results.Scenario.plasma_dict["prof_reference"]][itime] * Results.Scenario.Te_rhop_scale
     Te = np.log(Results.Scenario.plasma_dict["Te"][itime] * Results.Scenario.Te_scale)  # from IDA always positive definite
-    rhop_ne = Results.Scenario.plasma_dict["rhop_prof"][itime] * Results.Scenario.ne_rhop_scale
+    rhop_ne = Results.Scenario.plasma_dict[Results.Scenario.plasma_dict["prof_reference"]][itime] * Results.Scenario.ne_rhop_scale
     ne = np.log(Results.Scenario.plasma_dict["ne"][itime] * Results.Scenario.ne_scale)  # from IDA always positive definite
     EqSlice = Results.Scenario.plasma_dict["eq_data"][itime]
     EQObj = EQDataExt(Results.Scenario.shot, bt_vac_correction=1.0, Ext_data=True)
@@ -810,7 +809,7 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
                 s_BPD_list.append(s_important)
         ax_depo.plot(quasi_linear_beam.rhop, quasi_linear_beam.PW / np.max(quasi_linear_beam.PW), label="ECRH (RELAX)", linestyle="None", marker="^", color="black")
     te_ax = ax_depo.twinx()
-    te_ax.plot(rhop_Te, np.exp(Te) * 1.e-3, "--", label="$T_\mathrm{e}$")
+    te_ax.plot(rhop_Te, np.exp(Te) * 1.e-3, "--", label=r"$T_\mathrm{e}$")
     te_ax.set_ylabel(r"$T_\mathrm{e}$ [\si{\kilo\electronvolt}]")
     ax_depo.set_xlabel(r"$\rho_\mathrm{pol}$")
     if(len(BDOP_list) > 1):
@@ -827,7 +826,7 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
     ax_depo.get_xaxis().set_major_locator(MaxNLocator(nbins=3, steps=steps, prune="lower"))
     ax_depo.get_xaxis().set_minor_locator(MaxNLocator(nbins=6, steps=steps / 2.0))
     plt.autoscale(False)
-    for key in R_BPD_dict.keys():
+    for key in R_BPD_dict:
         if("2" in  key):
             color = ECRH_colors[1]
         else:

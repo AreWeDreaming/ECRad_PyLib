@@ -49,7 +49,7 @@ class Gene:
         self.v_par = np.array(h5_fileID["axes"]['vpar_m_s']).flatten() 
         self.beta_par = self.v_par / cnst.c
         self.mu_norm = np.array(h5_fileID["axes"]['mu_Am2']).flatten() / (cnst.m_e * cnst.c ** 2)
-        self.total_time_cnt = len(h5_fileID['delta_f'].keys())
+        self.total_time_cnt = len(h5_fileID['delta_f'])
         self.Te = h5_fileID['general information'].attrs["Tref,eV"]
         self.ne = h5_fileID['general information'].attrs["nref,m^-3"]
         self.g = []

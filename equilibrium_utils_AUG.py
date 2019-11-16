@@ -170,6 +170,20 @@ class EQData(EQDataExt):
                 return rhot 
             except TypeError:
                 return rhot[0] # equ routines always return arrays
+            
+    def rhot_to_rhop(self, time, rhot):
+        if(self.external_folder != '' or self.Ext_data):
+            print("Not yet implemented")
+            raise ValueError("Not yet implemented")
+        else:
+            if(not self.shotfile_ready):
+                self.init_read_from_shotfile()
+            rhop = self.equ.rho2rho(rhot, t_in=time, coord_in='rho_tor', coord_out="rho_pol")
+            try:
+                i = len(time)
+                return rhop 
+            except TypeError:
+                return rhop[0] # equ routines always return arrays
 
     def rhop_to_Psi(self, time, rhop):
         if(self.external_folder != '' or self.Ext_data):

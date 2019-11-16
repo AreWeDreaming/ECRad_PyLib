@@ -53,7 +53,7 @@ def repair_ECRad_results(folder_in, folder_out=None):
     
 def randomTests():
     mdict = {"key1":None, "key2":[None,None], "key3":[[None,None], [None,None]], "key4":[[[None], [None]]]}
-    for key in mdict.keys():
+    for key in mdict:
         print(key)
         if(ndarray_check_for_None(mdict[key])):
             print(key + " contains None or is None!")

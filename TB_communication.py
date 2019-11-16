@@ -198,41 +198,41 @@ def make_topfile_no_data_load(working_dir, shot, time, R, z, Psi, Br, Bt, Bz, Ps
     print("topfile successfully written to", os.path.join(working_dir, "topfile"))
     return 0
 
-def make_Te_ne_files(working_dir, rhop, Te, ne):
+def make_Te_ne_files(working_dir, rho, Te, ne):
     # makes Te and ne files for TORBEAM and ECRad
     Te_file = open(os.path.join(working_dir, "Te_file.dat"), "w")
     Te_tb_file = open(os.path.join(working_dir, "Te.dat"), "w")
     lines = 150
-    Te_file.write("{0: 7d}".format(lines) + "\n")
-    Te_tb_file.write("{0: 7d}".format(lines) + "\n")
-    Te_spline = InterpolatedUnivariateSpline(rhop, Te, k=1)
-    rhop_short = np.linspace(np.min(rhop), np.max(rhop), lines)
-    for i in range(len(rhop_short)):
-        try:
-            Te_file.write("{0: 1.12E} {1: 1.12E}".format(rhop_short[i], Te_spline(rhop_short[i]).item()) + "\n")
-            Te_tb_file.write("{0: 1.12E} {1: 1.12E}".format(rhop_short[i], Te_spline(rhop_short[i]).item() / 1.e03) + "\n")
-        except ValueError:
-            print(rhop_short[i], Te_spline(rhop_short[i]))
-            raise(ValueError)
+    Te_file.write("{0: 7d}".format(len(rho)) + "\n")
+    for i in range(len(rho)):
+        Te_file.write("{0: 1.12E} {1: 1.12E}".format(rho[i], Te[i]) + "\n")
     Te_file.flush()
     Te_file.close()
+    Te_tb_file.write("{0: 7d}".format(lines) + "\n")
+    Te_spline = InterpolatedUnivariateSpline(rho, Te, k=1)
+    rho_short = np.linspace(np.min(rho), np.max(rho), lines)
+    for i in range(len(rho_short)):
+        try:
+            Te_tb_file.write("{0: 1.12E} {1: 1.12E}".format(rho_short[i], Te_spline(rho_short[i]).item() / 1.e03) + "\n")
+        except ValueError:
+            print(rho_short[i], Te_spline(rho_short[i]))
+            raise(ValueError)
     Te_tb_file.flush()
     Te_tb_file.close()
     ne_file = open(os.path.join(working_dir, "ne_file.dat"), "w")
-    ne_tb_file = open(os.path.join(working_dir, "ne.dat"), "w")
-    lines = 150
-    ne_file.write("{0: 7d}".format(lines) + "\n")
-    ne_tb_file.write("{0: 7d}".format(lines) + "\n")
-    ne_spline = InterpolatedUnivariateSpline(rhop, ne, k=1)
-    rhop_short = np.linspace(np.min(rhop), np.max(rhop), lines)
-    for i in range(len(rhop_short)):
-        ne_file.write("{0: 1.12E} {1: 1.12E}".format(rhop_short[i], ne_spline(rhop_short[i]).item()) + "\n")
-        ne_tb_file.write("{0: 1.12E} {1: 1.12E}".format(rhop_short[i], ne_spline(rhop_short[i]).item() / 1.e19) + "\n")
+    ne_file.write("{0: 7d}".format(len(rho)) + "\n")
+    for i in range(len(rho)):
+        ne_file.write("{0: 1.12E} {1: 1.12E}".format(rho[i], ne[i]) + "\n")
     ne_file.flush()
     ne_file.close()
+    ne_tb_file = open(os.path.join(working_dir, "ne.dat"), "w")
+    ne_tb_file.write("{0: 7d}".format(lines) + "\n")
+    ne_spline = InterpolatedUnivariateSpline(rho, ne, k=1)
+    rho_short = np.linspace(np.min(rho), np.max(rho), lines)
+    for i in range(len(rho_short)):
+        ne_tb_file.write("{0: 1.12E} {1: 1.12E}".format(rho_short[i], ne_spline(rho_short[i]).item() / 1.e19) + "\n")
     ne_tb_file.flush()
     ne_tb_file.close()
-
 
 def make_topfile_from_ext_data(working_dir, shot, time, EQ, rhop, Te, ne, grid=False):
     columns = 5  # number of coloumns
@@ -600,7 +600,7 @@ def make_inbeam(working_dir, launch, mode, time, inbeam_no=0, cyl=False, ITM=Fal
             elif("xpw0" in inbeam_lines[i]):
                 inbeam_lines[i] = " xpw0 =           {0:1.6f},\n".format(500.e3 / 1.e6)
                 double_check_dict["PW_set"] = True
-    for checked_quant in double_check_dict.keys():
+    for checked_quant in double_check_dict:
         if(not double_check_dict[checked_quant]):
             print("ERROR!! " + checked_quant + " was not put into the inbeam file")
             raise IOError
@@ -707,7 +707,7 @@ def make_mdict_from_TB_files(path, eq_only=False):
             mdict["rhop_prof"].append(cur_line[0])
             mdict["Te"].append(cur_line[1])
             mdict["ne"].append(cur_line[2])
-    for key in mdict.keys():
+    for key in mdict:
         if(key not in ["R", "z"]):
             mdict[key] = np.array([mdict[key]]) #equlibrium entries is expected to have time as first dimension
     return mdict

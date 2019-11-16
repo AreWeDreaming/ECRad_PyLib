@@ -14,7 +14,6 @@ from equilibrium_utils import EQDataSlice, special_points, EQDataExt
 from Diags import Diag, ECRH_diag, ECI_diag, EXT_diag
 from distribution_io import load_f_from_mat
 from Distribution import Gene, Gene_BiMax
-from __builtin__ import True
 if(globalsettings.AUG):
     from ECRad_DIAG_AUG import DefaultDiagDict
 elif(globalsettings.TCV):
@@ -42,6 +41,8 @@ class ECRadScenario:
         self.plasma_dict = {}
         self.plasma_dict["time"] = []
         self.plasma_dict["rhop_prof"] = []
+        self.plasma_dict["rhot_prof"] = []
+        self.plasma_dict["prof_reference"] = "rhop_prof"
         self.plasma_dict["Te"] = []
         self.plasma_dict["ne"] = []
         self.plasma_dict["eq_data"] = []
@@ -66,6 +67,7 @@ class ECRadScenario:
         self.default_diag = "ECE"
         self.data_source = "aug_database"
         self.dist_obj = None
+        self.use3Dscen = Use3DScenario()
 
     def from_mat(self, mdict=None, path_in=None, load_plasma_dict=True):
         self.reset()
@@ -96,7 +98,7 @@ class ECRadScenario:
                              "launch_width", "launch_pol_coeff_X", "eq_special", "eq_special_complete"  ]
         at_least_3d_keys = ["eq_Psi", "eq_rhop", "eq_Br", "eq_Bt", "eq_Bz"]
         if(self.profile_dimension == 1):
-            for key in ["rhop_prof", "Te", "ne"  ]:
+            for key in ["rhop_prof", "Te", "ne",  "rhot_prof"]:
                 at_least_2d_keys.append(key)
         elif(self.profile_dimension == 2):
             for key in ["Te", "ne"]:
@@ -129,7 +131,7 @@ class ECRadScenario:
             increase_time_dim = True
         else:
             self.plasma_dict["time"] = mdict["time"]
-        for key in mdict.keys():
+        for key in mdict:
             if(not key.startswith("_")):  # throw out the .mat specific information
                 try:
                     if(key in at_least_1d_keys and np.isscalar(mdict[key])):
@@ -159,14 +161,14 @@ class ECRadScenario:
                 self.used_diags_dict.update({diagname: ECRH_diag(diagname, mdict["Diags_exp"][i], mdict["Diags_diag"][i], int(mdict["Diags_ed"][i]), \
                                               int(mdict["Extra_arg_1"][i]), float(mdict["Extra_arg_2"][i]), extra_arg_3)})
             elif(diagname == "EXT"):
-                if("Ext_launch_pol" in mdict.keys()):
+                if("Ext_launch_pol" in mdict):
                     self.used_diags_dict.update({diagname: EXT_diag(diagname, mdict["Ext_launch_geo"], mdict["Ext_launch_pol"])})
                 else:
                     self.used_diags_dict.update({diagname: EXT_diag(diagname, mdict["Ext_launch_geo"], -1)})
             else:#if(globalsettings.AUG):
                 self.used_diags_dict.update({diagname: \
                         Diag(diagname, mdict["Diags_exp"][i], mdict["Diags_diag"][i], int(mdict["Diags_ed"][i]))})
-        if("launch_R" in mdict.keys()):
+        if("launch_R" in mdict):
             for itime in range(len(self.plasma_dict["time"])):
                 self.ray_launch.append({})
                 self.ray_launch[-1]["f"] = mdict["launch_f"][itime]
@@ -189,27 +191,39 @@ class ECRadScenario:
             return
         if(self.profile_dimension == 1):
             self.plasma_dict["rhop_prof"] = mdict["rhop_prof"]
+            try:
+                self.plasma_dict["rhot_prof"] = mdict["rhot_prof"]
+            except KeyError:
+                print("Could not find rho_tor profile")
+                self.plasma_dict["rhot_prof"] = None
         self.plasma_dict["Te"] = mdict["Te"]
         self.plasma_dict["ne"] = mdict["ne"]
         self.plasma_dict["eq_data"] = []
-        for i in range(len(self.plasma_dict["time"])):
-            if("eq_special_complete" in mdict.keys()):
-                entry = mdict["eq_special_complete"][i]
-                spcl = special_points(entry[0], entry[1], entry[4], entry[2], entry[3], entry[5])
-            else:
-                entry = mdict["eq_special"][i]
-                spcl = special_points(0.0, 0.0, entry[0], 0.0, 0.0, entry[1])
-            self.plasma_dict["eq_data"].append(EQDataSlice(self.plasma_dict["time"][i], \
-                                                                  mdict["eq_R"][i], mdict["eq_z"][i], \
-                                                                  mdict["eq_Psi"][i], mdict["eq_Br"][i], \
-                                                                  mdict["eq_Bt"][i], mdict["eq_Bz"][i], \
-                                                                  spcl, rhop=mdict["eq_rhop"][i]))
-        self.plasma_dict["eq_data"] = np.array(self.plasma_dict["eq_data"])
-        self.plasma_dict["vessel_bd"] = mdict["vessel_bd"]
+        self.use3Dscen.load_from_mat(mdict)
+        if(not self.use3Dscen.used):
+            for i in range(len(self.plasma_dict["time"])):
+                if("eq_special_complete" in mdict):
+                    entry = mdict["eq_special_complete"][i]
+                    spcl = special_points(entry[0], entry[1], entry[4], entry[2], entry[3], entry[5])
+                else:
+                    entry = mdict["eq_special"][i]
+                    spcl = special_points(0.0, 0.0, entry[0], 0.0, 0.0, entry[1])
+                self.plasma_dict["eq_data"].append(EQDataSlice(self.plasma_dict["time"][i], \
+                                                                      mdict["eq_R"][i], mdict["eq_z"][i], \
+                                                                      mdict["eq_Psi"][i], mdict["eq_Br"][i], \
+                                                                      mdict["eq_Bt"][i], mdict["eq_Bz"][i], \
+                                                                      spcl, rhop=mdict["eq_rhop"][i]))
+            self.plasma_dict["eq_data"] = np.array(self.plasma_dict["eq_data"])
+            self.plasma_dict["vessel_bd"] = mdict["vessel_bd"]
+        elif(self.plasma_dict["rhot_prof"] is None):
+            print("For 3D calculations the rho toroidal is obligatory")
+            raise ValueError("Failed to load equilibrium")
+        else:
+            self.plasma_dict["prof_reference"] = "rhot_prof"
         for diag_key in self.avail_diags_dict:
-            if(diag_key in list(self.used_diags_dict.keys())):
+            if(diag_key in list(self.used_diags_dict)):
                 self.avail_diags_dict.update({diag_key: self.used_diags_dict[diag_key]})
-        if("data_source" in mdict.keys()):
+        if("data_source" in mdict):
             self.data_source = mdict["data_source"]
         else:
             self.data_source = "aug_database"
@@ -232,14 +246,14 @@ class ECRadScenario:
         mdict["EQ_exp"] = self.EQ_exp
         mdict["EQ_diag"] = self.EQ_diag
         mdict["EQ_ed"] = self.EQ_ed
-        mdict["used_diags"] = list(self.used_diags_dict.keys()) # Cast ordered_dict_keys to list
+        mdict["used_diags"] = list(self.used_diags_dict) # Cast ordered_dict_keys to list
         mdict["Diags_exp"] = []
         mdict["Diags_diag"] = []
         mdict["Diags_ed"] = []
         mdict["Extra_arg_1"] = []
         mdict["Extra_arg_2"] = []
         mdict["Extra_arg_3"] = []
-        for diagname in list(self.used_diags_dict.keys()):
+        for diagname in list(self.used_diags_dict):
             if(hasattr(self.used_diags_dict[diagname], "exp")):
                 mdict["Diags_exp"].append(self.used_diags_dict[diagname].exp)
                 mdict["Diags_diag"].append(self.used_diags_dict[diagname].diag)
@@ -297,6 +311,9 @@ class ECRadScenario:
         mdict["profile_dimension"] = self.profile_dimension
         if(mdict["profile_dimension"] == 1):
             mdict["rhop_prof"] = self.plasma_dict["rhop_prof"]
+            if("rhot_prof" in self.plasma_dict):
+                if(self.plasma_dict["rhot_prof"] is not None):
+                    mdict["rhot_prof"] = self.plasma_dict["rhot_prof"]
         mdict["eq_R"] = []
         mdict["eq_z"] = []
         mdict["eq_Psi"] = []
@@ -305,35 +322,37 @@ class ECRadScenario:
         mdict["eq_Bt"] = []
         mdict["eq_Bz"] = []
         mdict["bt_vac_correction"] = self.bt_vac_correction
-        if(self.plasma_dict["eq_data"][0].R_sep is not None):
-            mdict["eq_special_complete"] = []
-        mdict["eq_special"] = []
-        for i in range(len(self.plasma_dict["time"])):
-            mdict["eq_R"].append(self.plasma_dict["eq_data"][i].R)
-            mdict["eq_z"].append(self.plasma_dict["eq_data"][i].z)
-            mdict["eq_Psi"].append(self.plasma_dict["eq_data"][i].Psi)
-            mdict["eq_rhop"].append(self.plasma_dict["eq_data"][i].rhop)
-            mdict["eq_Br"].append(self.plasma_dict["eq_data"][i].Br)
-            mdict["eq_Bt"].append(self.plasma_dict["eq_data"][i].Bt)
-            mdict["eq_Bz"].append(self.plasma_dict["eq_data"][i].Bz)
-            mdict["eq_special"].append(self.plasma_dict["eq_data"][i].special)
-            if(self.plasma_dict["eq_data"][i].R_sep is not None):
-                mdict["eq_special_complete"].append(np.array([self.plasma_dict["eq_data"][i].R_ax, \
-                                                          self.plasma_dict["eq_data"][i].z_ax, \
-                                                          self.plasma_dict["eq_data"][i].R_sep, \
-                                                          self.plasma_dict["eq_data"][i].z_sep, \
-                                                          self.plasma_dict["eq_data"][i].Psi_ax, \
-                                                          self.plasma_dict["eq_data"][i].Psi_sep]))
-        mdict["eq_R"] = np.array(mdict["eq_R"])
-        mdict["eq_z"] = np.array(mdict["eq_z"])
-        mdict["eq_Psi"] = np.array(mdict["eq_Psi"])
-        mdict["eq_rhop"] = np.array(mdict["eq_rhop"])
-        mdict["eq_Br"] = np.array(mdict["eq_Br"])
-        mdict["eq_Bt"] = np.array(mdict["eq_Bt"])
-        mdict["eq_Bz"] = np.array(mdict["eq_Bz"])
-        mdict["eq_special"] = np.array(mdict["eq_special"])
-        mdict["vessel_bd"] = self.plasma_dict["vessel_bd"]
+        if(not self.use3Dscen.used):
+            if(self.plasma_dict["eq_data"][0].R_sep is not None):
+                mdict["eq_special_complete"] = []
+            mdict["eq_special"] = []
+            for i in range(len(self.plasma_dict["time"])):
+                mdict["eq_R"].append(self.plasma_dict["eq_data"][i].R)
+                mdict["eq_z"].append(self.plasma_dict["eq_data"][i].z)
+                mdict["eq_Psi"].append(self.plasma_dict["eq_data"][i].Psi)
+                mdict["eq_rhop"].append(self.plasma_dict["eq_data"][i].rhop)
+                mdict["eq_Br"].append(self.plasma_dict["eq_data"][i].Br)
+                mdict["eq_Bt"].append(self.plasma_dict["eq_data"][i].Bt)
+                mdict["eq_Bz"].append(self.plasma_dict["eq_data"][i].Bz)
+                mdict["eq_special"].append(self.plasma_dict["eq_data"][i].special)
+                if(self.plasma_dict["eq_data"][i].R_sep is not None):
+                    mdict["eq_special_complete"].append(np.array([self.plasma_dict["eq_data"][i].R_ax, \
+                                                              self.plasma_dict["eq_data"][i].z_ax, \
+                                                              self.plasma_dict["eq_data"][i].R_sep, \
+                                                              self.plasma_dict["eq_data"][i].z_sep, \
+                                                              self.plasma_dict["eq_data"][i].Psi_ax, \
+                                                              self.plasma_dict["eq_data"][i].Psi_sep]))
+            mdict["eq_R"] = np.array(mdict["eq_R"])
+            mdict["eq_z"] = np.array(mdict["eq_z"])
+            mdict["eq_Psi"] = np.array(mdict["eq_Psi"])
+            mdict["eq_rhop"] = np.array(mdict["eq_rhop"])
+            mdict["eq_Br"] = np.array(mdict["eq_Br"])
+            mdict["eq_Bt"] = np.array(mdict["eq_Bt"])
+            mdict["eq_Bz"] = np.array(mdict["eq_Bz"])
+            mdict["eq_special"] = np.array(mdict["eq_special"])
+            mdict["vessel_bd"] = self.plasma_dict["vessel_bd"]
         mdict["data_source"] = self.data_source
+        self.use3Dscen.to_mat(mdict)
         if(filename is not None):
             try:
                 savemat(filename, mdict, appendmat=False)
@@ -377,7 +396,7 @@ class ECRadScenario:
         ray_launch_0 = self.ray_launch[0]
         for used_time in used_times:
             it_gene = np.argmin(np.abs(self.GENE_obj.time - (used_time - plasma_dict_0["time"][0])))
-            for key in self.plasma_dict.keys():
+            for key in self.plasma_dict:
                 if(first_time):
                     new_plasma_dict[key] = []
                 if(key != "time" and key != "vessel_bd"):
@@ -388,13 +407,72 @@ class ECRadScenario:
                     new_plasma_dict[key] = plasma_dict_0[key]
             first_time = False
             new_ray_launch.append({})
-            for key in ray_launch_0.keys():
+            for key in ray_launch_0:
                 new_ray_launch[-1][key] = ray_launch_0[key]
         new_plasma_dict["time"] = np.array(new_plasma_dict["time"])
         self.plasma_dict = new_plasma_dict
         self.ray_launch = new_ray_launch
         return True
-                     
+
+class Use3DScenario:
+    def __init__(self):
+        self.reset()
+        
+    def reset(self):
+        self.used = False
+        self.attribute_list = ["equilibrium_file", "equilibrium_type", "use_mesh", \
+                               "use_symmetry", "B_ref", "s_plus", "s_max", \
+                               "interpolation_acc", "fourier_coeff_trunc", \
+                               "h_mesh", "delta_phi_mesh", "vessel_filename"]
+        self.type_dict = {}
+        self.type_dict["equilibrium_file"] = "string"
+        self.type_dict["equilibrium_type"] = "string"
+        self.type_dict["use_mesh"] = "bool"
+        self.type_dict["use_symmetry"] = "bool"
+        self.type_dict["B_ref"] = "real"
+        self.type_dict["s_plus"] = "real"
+        self.type_dict["s_max"] = "real"
+        self.type_dict["interpolation_acc"] = "real"
+        self.type_dict["fourier_coeff_trunc"] = "real"
+        self.type_dict["h_mesh"] = "real"
+        self.type_dict["delta_phi_mesh"] = "real"
+        self.type_dict["vessel_filename"] = "string"
+        self.equilibrium_file = ""
+        self.equilibrium_type = ""
+        self.use_mesh= False
+        self.use_symmetry = True
+        self.s_plus = 1.0
+        self.s_max = 1.2
+        self.B_ref = 1.0
+        self.interpolation_acc = 1.e-12
+        self.fourier_coeff_trunc = 1.e-12
+        self.h_mesh = 1.5e-2 # meters
+        self.delta_phi_mesh = 2.0 # Degrees
+        self.vessel_filename = "/tokp/work/sdenk/ECRad/W7X_wall.dat"
+    
+    def load_from_mat(self, mdict):
+        self.reset()
+        if("Use_3D_equilibrium_file" not in mdict):
+            print("No 3D equilibrium info -- setting 3D equilibrium to False")
+            self.used = False
+        else:
+            for key in self.attribute_list:
+                try:
+                    setattr(self, key, mdict["Use_3D_" + key])
+                    if( self.type_dict[key] == "string"):
+                        if(len(getattr(self, key)) == 0):
+                            setattr(self, key, "")
+                except KeyError as e:
+                    print("Failed to read " + key.replace("Use_3D_","") + " from .mat file.")
+                    print("Using default value")
+            self.used = bool(mdict["Use_3D_used"])
+    
+    def to_mat(self, mdict):
+        for key in self.attribute_list:
+            mdict["Use_3D_" + key] = getattr(self, key)
+        mdict["Use_3D_used"] =  self.used 
+        
+                       
         
 if(__name__ == "__main__"):
     newScen = ECRadScenario(noLoad=True)

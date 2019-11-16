@@ -3,6 +3,7 @@
 	<name>ECRad_Pylib</name>
 	<comment></comment>
 	<projects>
+		<project>Mconf</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

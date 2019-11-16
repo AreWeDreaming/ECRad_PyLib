@@ -905,7 +905,7 @@ def debug_EQ():
     except IOError:
         print("Error: " + path + " does not exist")
         raise IOError
-    print(mdict.keys())
+    print(mdict)
     increase_diag_dim = False
     increase_time_dim = False
     if(np.isscalar(mdict["t"])):
@@ -913,7 +913,7 @@ def debug_EQ():
         increase_time_dim = True
     else:
         times = mdict["t"]
-    for key in mdict.keys():
+    for key in mdict:
         if(not key.startswith("_")):  # throw out the .mat specific information
             try:
                 if(key in at_least_1d_keys and np.isscalar(mdict[key])):

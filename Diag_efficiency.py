@@ -62,7 +62,8 @@ def diag_weight(fig, Results, time_point, ch, DistWaveFile=None, ax=None):
     n= 80
     if(dist_obj is None):
         # Estimate grid for thermal distribution assuming X-mode
-        rhop_Te_signed = np.concatenate([- Results.Scenario.plasma_dict["rhop_prof"][itime][::-1][:-1], Results.Scenario.plasma_dict["rhop_prof"][itime]])
+        rhop_Te_signed = np.concatenate([- Results.Scenario.plasma_dict[Results.Scenario.plasma_dict["prof_reference"]][itime][::-1][:-1], \
+                                        Results.Scenario.plasma_dict[Results.Scenario.plasma_dict["prof_reference"]][itime]])
         Te_signed_rhop = np.concatenate([Results.Scenario.plasma_dict["Te"][itime][::-1][:-1], Results.Scenario.plasma_dict["Te"][itime]])
         Te_spl = InterpolatedUnivariateSpline(rhop_Te_signed, Te_signed_rhop)
         Te_weighted_spl = InterpolatedUnivariateSpline(Results.BPD["rhopX"][itime][ch - 1], Results.BPD["BPDX"][itime][ch - 1] * \

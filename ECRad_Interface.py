@@ -27,14 +27,17 @@ from TB_communication import make_topfile_no_data_load, make_Te_ne_files
 def GetECRadExec(Config, Scenario, time):
     # Determine OMP stacksize
     parallel = Config.parallel
+    ECRadVers = globalsettings.ECRadPath
+    if(parallel):
+        ECRadVers += "OMP"
+    if(Scenario.use3Dscen.used):
+        ECRadVers += "USE3D"
     if(Config.debug):
         if(Config.parallel):
             print("No parallel version with debug symbols available at the moment")
             print("Falling back to single core")
             parallel = False
-        ECRadVers = globalsettings.ECRadDevPath
-    else:
-        ECRadVers = globalsettings.ECRadPath
+        ECRadVers += "db"
     if(parallel and Config.parallel_cores > globalsettings.max_cores):
         print("The maximum amount of cores for tokp submission is 32")
         raise ValueError
@@ -52,12 +55,12 @@ def GetECRadExec(Config, Scenario, time):
     else:
         cores = 1 # serial
     if(Config.batch):
-        os.environ['ECRad_working_dir_1'] = Config.working_dir
+        os.environ['ECRad_working_dir_1'] = Config.scratch_dir
         os.environ['ECRad'] = ECRadVers
         launch_options_dict = {}
         launch_options_dict["jobname"] = "-J " + "E{0:5d}{1:1.1f}".format(Scenario.shot, time)
-        launch_options_dict["IO"] = "-o {0:s} -e {1:s} ".format(os.path.join(Config.working_dir, "ECRad.stdout"), \
-                                                                os.path.join(Config.working_dir, "ECRad.stderr"))
+        launch_options_dict["IO"] = "-o {0:s} -e {1:s} ".format(os.path.join(Config.scratch_dir, "ECRad.stdout"), \
+                                                                os.path.join(Config.scratch_dir, "ECRad.stderr"))
         launch_options_dict["partition"] = globalsettings.partition_function(cores, Config.wall_time)
         launch_options_dict["qos"] = globalsettings.qos_function(cores, Config.wall_time)
         launch_options_dict["memory"] = "--mem-per-cpu={0:d}M".format(int(Config.vmem / cores))
@@ -68,34 +71,43 @@ def GetECRadExec(Config, Scenario, time):
         InvokeECRad += " " + globalsettings.ECRadPathBSUB
     else:
         os.environ['OMP_NUM_THREADS'] = "{0:d}".format(cores)
-        InvokeECRad = ECRadVers + " " + Config.working_dir
+        InvokeECRad = ECRadVers + " " + Config.scratch_dir
     return InvokeECRad
 
 def prepare_input_files(Config, Scenario, index, copy_dist=True):
-    working_dir = Config.working_dir
+    working_dir = Config.scratch_dir
     # eq_exp = Config.EQ_exp always exp
     ECRad_data_path = os.path.join(working_dir, "ECRad_data", "")
-    if(os.path.isdir(ECRad_data_path)):
-    #Get rid of old data -> This ensures that the new data is really new
-        rmtree(ECRad_data_path)
-    try:
-        os.mkdir(ECRad_data_path)
-    except OSError:
-        print("Failed to create ECRad_data folder in: ", working_dir)
-        print("Please check that this folder exists and you have write permissions")
-        return False
-    print("Created folder " + ECRad_data_path)#
-    if(Config.dstf != "GB"):
-        Ich_path = os.path.join(ECRad_data_path, "Ich" + Config.dstf)
+    if(Config.extra_output):
+        if(os.path.isdir(ECRad_data_path)):
+        #Get rid of old data -> This ensures that the new data is really new
+            rmtree(ECRad_data_path)
+        try:
+            os.mkdir(ECRad_data_path)
+        except OSError:
+            print("Failed to create ECRad_data folder in: ", working_dir)
+            print("Please check that this folder exists and you have write permissions")
+            return False
+        print("Created folder " + ECRad_data_path)#
+        if(Config.dstf != "GB"):
+            Ich_path = os.path.join(ECRad_data_path, "Ich" + Config.dstf)
+        else:
+            Ich_path = os.path.join(ECRad_data_path, "IchGe")
+        if(not os.path.isdir(Ich_path)):
+            os.mkdir(Ich_path)
+            print("Created folder " + Ich_path)
+        ray_folder = os.path.join(ECRad_data_path, "ray")
+        if(not os.path.isdir(ray_folder)):
+            os.mkdir(ray_folder)
+            print("Created folder " + ray_folder)
     else:
-        Ich_path = os.path.join(ECRad_data_path, "IchGe")
-    if(not os.path.isdir(Ich_path)):
-        os.mkdir(Ich_path)
-        print("Created folder " + Ich_path)
-    ray_folder = os.path.join(ECRad_data_path, "ray")
-    if(not os.path.isdir(ray_folder)):
-        os.mkdir(ray_folder)
-        print("Created folder " + ray_folder)
+        if(not os.path.isdir(ECRad_data_path)):
+            try:
+                os.mkdir(ECRad_data_path)
+            except OSError:
+                print("Failed to create ECRad_data folder in: ", working_dir)
+                print("Please check that this folder exists and you have write permissions")
+                return False
     write_diag_launch(ECRad_data_path, Scenario.ray_launch[index])
     if(Scenario.Te_scale != 1.0):
         print("Te scale != 1 -> scaling Te for model")
@@ -141,14 +153,49 @@ def prepare_input_files(Config, Scenario, index, copy_dist=True):
     input_file.write("{0:1.12E}".format(Config.R_shift) + "\n")
     input_file.write("{0:1.12E}".format(Config.z_shift) + "\n")
     input_file.write("{0:10d}".format(Config.max_points_svec) + "\n")
+    if(Scenario.use3Dscen.used):
+        input_file.write("T\n")
+    else:
+        input_file.write("F\n")
     input_file.flush()
     input_file.close()
-    fvessel = open(os.path.join(ECRad_data_path, "vessel_bd.txt"), "w")
-    fvessel.write("{0: 7d}".format(len(Scenario.plasma_dict["vessel_bd"][0])) + "\n")
-    for i in range(len(Scenario.plasma_dict["vessel_bd"][0])):
-        fvessel.write("{0: 1.12E} {1: 1.12E}".format(Scenario.plasma_dict["vessel_bd"][0][i], Scenario.plasma_dict["vessel_bd"][1][i]) + "\n")
-    fvessel.flush()
-    fvessel.close()
+    if(Scenario.use3Dscen.used):
+        try:
+            use3dconfigfile = open(os.path.join(ECRad_data_path, "equ3D_info"), "w")
+            use3dconfigfile.write(os.path.basename(Scenario.use3Dscen.equilibrium_file) + "\n")
+            use3dconfigfile.write(Scenario.use3Dscen.equilibrium_type + "\n")
+            if(Scenario.use3Dscen.use_mesh):
+                use3dconfigfile.write("T\n")
+            else:
+                use3dconfigfile.write("F\n")
+            if(Scenario.use3Dscen.use_symmetry):
+                use3dconfigfile.write("T\n")
+            else:
+                use3dconfigfile.write("F\n")
+            use3dconfigfile.write("{0:1.7e}\n".format(Scenario.use3Dscen.B_ref))
+            use3dconfigfile.write("{0:1.7e}\n".format(Scenario.use3Dscen.s_plus))
+            use3dconfigfile.write("{0:1.7e}\n".format(Scenario.use3Dscen.s_max))
+            use3dconfigfile.write("{0:1.7e}\n".format(Scenario.use3Dscen.interpolation_acc))
+            use3dconfigfile.write("{0:1.7e}\n".format(Scenario.use3Dscen.fourier_coeff_trunc))
+            use3dconfigfile.write("{0:1.7e}\n".format(Scenario.use3Dscen.h_mesh))
+            use3dconfigfile.write("{0:1.7e}\n".format(Scenario.use3Dscen.delta_phi_mesh))
+            use3dconfigfile.flush()
+            use3dconfigfile.close()
+            copyfile(os.path.join(Scenario.use3Dscen.equilibrium_file), \
+                     os.path.join(ECRad_data_path,os.path.basename(Scenario.use3Dscen.equilibrium_file)))
+            copyfile(os.path.join(Scenario.use3Dscen.vessel_filename), \
+                     os.path.join(ECRad_data_path, "vessel_bd.txt"))
+        except OSError as e:
+            print("Did not find an equilibrium file at " + Scenario.use3Dscen.equilibrium_file)
+            print(e)
+            return False
+    else:
+        fvessel = open(os.path.join(ECRad_data_path, "vessel_bd.txt"), "w")
+        fvessel.write("{0: 7d}".format(len(Scenario.plasma_dict["vessel_bd"][0])) + "\n")
+        for i in range(len(Scenario.plasma_dict["vessel_bd"][0])):
+            fvessel.write("{0: 1.12E} {1: 1.12E}".format(Scenario.plasma_dict["vessel_bd"][0][i], Scenario.plasma_dict["vessel_bd"][1][i]) + "\n")
+        fvessel.flush()
+        fvessel.close()
     if(Config.dstf == "Re" and copy_dist):
         fRe_dir = os.path.join(ECRad_data_path, "fRe")
         os.mkdir(fRe_dir)
@@ -244,9 +291,9 @@ def get_ECE_launch_info(shot, diag):
     return ECE_launch
 
 def get_diag_launch(shot, time, used_diag_dict, gy_dict=None, ECI_dict=None):
-    print("ECRad data will be written for diags ", used_diag_dict.keys())
+    print("ECRad data will be written for diags ", used_diag_dict)
     launch_array = []
-    for diag in used_diag_dict.keys():
+    for diag in used_diag_dict:
         launch = {}
         if(used_diag_dict[diag].name == "ECE"):
             launch = get_ECE_launch_info(shot, used_diag_dict[diag])
@@ -390,25 +437,24 @@ def get_diag_launch(shot, time, used_diag_dict, gy_dict=None, ECI_dict=None):
             launch["dist_focus"] = np.copy(used_diag_dict[diag].dist_focus)
             launch["width"] = np.copy(used_diag_dict[diag].width)
             launch["pol_coeff_X"] = np.copy(used_diag_dict[diag].pol_coeff_X)
-        if("pol_coeff_X" not in launch.keys()):
+        if("pol_coeff_X" not in launch):
             launch["pol_coeff_X"] = np.zeros(len(launch["f"]))
             launch["pol_coeff_X"][:] = -1  # Means that ECRad will compute the X-mode fraction
-        launch["diag_name"] = np.zeros(len(launch["f"]), dtype="|S3")
+        launch["diag_name"] = np.zeros(len(launch["f"]), dtype="|U3")
         launch["diag_name"][:] = used_diag_dict[diag].name
         launch_array.append(launch)
     # The subdivision into individual diagnostics is only relevant for the GUI for ECRad all diagnostics are equal
     # -> Only one launch file for all diagnostics
-    if(len(used_diag_dict.keys()) > 1):
+    if(len(used_diag_dict) > 1):
         flat_launch = dict(launch_array[0])
-        for i in range(1, len(used_diag_dict.keys())):
-            for key in launch_array[i].keys():
+        for i in range(1, len(used_diag_dict)):
+            for key in launch_array[i]:
                 flat_launch[key] = np.concatenate([flat_launch[key], launch_array[i][key]])
     else:
         flat_launch = launch_array[0]
     return flat_launch
 
 def write_diag_launch(path, diag_launch):
-    print("ECRad data will be written for diags ", list(set(diag_launch["diag_name"])))
     launch_file = open(os.path.join(path, 'ray_launch.dat'), 'w')
     launch_file.write("{0: 5d}\n".format(len(diag_launch["f"])))
     for i in range(len(diag_launch["f"])):
@@ -430,8 +476,8 @@ def make_reflec_launch(working_dir, shot, time, used_diag_dict, gy_dict=None, EC
     # This routine prepares the ECRad calculation of the isotropic background radiation temperature
     # At the moment this considers just the normal LOS, hence the approach is very much simplified
     # TO BE IMPROVED
-    print("ECRad reflec data will be written for diags ", used_diag_dict.keys())
-    if(len(used_diag_dict.keys()) > 1):
+    print("ECRad reflec data will be written for diags ", used_diag_dict)
+    if(len(used_diag_dict) > 1):
         raise ValueError("Currently only one concurrent diagnostic supported for reflec_model = 1")
     diag_launch_array = get_diag_launch(working_dir, shot, time, used_diag_dict, gy_dict=gy_dict, ECI_dict=ECI_dict)
     for diag_launch in diag_launch_array:
@@ -519,7 +565,7 @@ def load_plasma_from_mat(path):
         plasma_dict = {}
         # Loading from .mat sometimes adds single entry arrays that we don't want
         at_least_1d_keys = ["time", "R", "z", "eq_R", "eq_z", "Psi_sep", "Psi_ax"]
-        at_least_2d_keys = ["rhop_prof", "rhop", "Te", "ne", "eq_special", "eq_R", "eq_z", "eq_special"]
+        at_least_2d_keys = ["rhop_prof", "rhot_prof", "rhop", "Te", "ne", "eq_special", "eq_R", "eq_z", "eq_special"]
         at_least_3d_keys = ["Psi", "Br", "Bt", "Bz"]
         at_least_3d_keys += ["eq_Psi", "eq_Br", "eq_Bt", "eq_Bz"]
         variable_names = at_least_1d_keys + at_least_2d_keys + at_least_3d_keys + ["shot"] + ["vessel_bd"] + ["bt_vac_correction"]
@@ -537,7 +583,7 @@ def load_plasma_from_mat(path):
             increase_time_dim = True
         else:
             plasma_dict["time"] = mdict["time"]
-        for key in mdict.keys():
+        for key in mdict:
             if(not key.startswith("_")):  # throw out the .mat specific information
                 try:
                     if(key in at_least_1d_keys and np.isscalar(mdict[key])):
@@ -556,24 +602,27 @@ def load_plasma_from_mat(path):
         plasma_dict["Te"] = mdict["Te"]
         plasma_dict["ne"] = mdict["ne"]
         if(len(plasma_dict["Te"][0].shape) == 1):
-            if("rhop_prof" in mdict.keys()):
+            if("rhop_prof" in mdict):
                 plasma_dict["rhop_prof"] = mdict["rhop_prof"]
+                plasma_dict["prof_reference"] = "rhop_prof"
             else:
                 plasma_dict["rhop_prof"] = mdict["rhop"]
+            if("rhot_prof" in mdict):
+                plasma_dict["rhot_prof"] = mdict["rhot_prof"]
         # External data should be delivered without additional scaling
         # Otherwise it is not clear whether this means that the data should be scaled or is already scaled by this factor
         plasma_dict["ECE_rhop"] = []
         plasma_dict["ECE_dat"] = []
         plasma_dict["eq_data"] = []
         # TODO remove this place holder by a routine that does this for external equilibriae
-        plasma_dict["ECE_mod"] = []     
+        plasma_dict["ECE_mod"] = []  
         EQ_obj = EQDataExt(mdict["shot"], external_folder=os.path.dirname(path), bt_vac_correction=1.0, Ext_data=True)
-        if("Bt" in mdict.keys()):
+        if("Bt" in mdict):
             EQ_obj.load_slices_from_mat(plasma_dict["time"], mdict)
         else:
             EQ_obj.load_slices_from_mat(plasma_dict["time"], mdict,eq_prefix=True)
         plasma_dict["eq_data"] = EQ_obj.slices
-        if("vessel_bd" not in mdict.keys()):
+        if("vessel_bd" not in mdict):
             try:
                 vessel_bd = np.loadtxt(os.path.join(os.path.dirname(path), "vessel_bd"), skiprows=1)
                 plasma_dict["vessel_bd"] = []
@@ -592,7 +641,7 @@ def load_plasma_from_mat(path):
         plasma_dict["eq_exp"] = "EXT"
         plasma_dict["eq_diag"] = "EXT"
         plasma_dict["eq_ed"] = 0
-        if("bt_vac_correction" in mdict.keys()):
+        if("bt_vac_correction" in mdict):
             plasma_dict["bt_vac_correction"] = mdict["bt_vac_correction"]
         else:
             plasma_dict["bt_vac_correction"] = 1.0
@@ -608,20 +657,25 @@ def load_plasma_from_mat(path):
 
 def make_ECRadInputFromPlasmaDict(working_dir, plasma_dict, index, Scenario):
     # In the topfile the dimensions of the matrices are z,R unlike in the GUI where it is R,z -> transpose the matrices here
-    columns = 5  # number of coloumns
-    columns -= 1
-    EQ = plasma_dict["eq_data"][index]
-    return make_topfile_from_ext_data(working_dir, Scenario.shot, plasma_dict["time"][index], EQ, plasma_dict["rhop_prof"][index], \
+    if(not Scenario.use3Dscen.used):
+        EQ = plasma_dict["eq_data"][index]
+        error = make_topfile_no_data_load(working_dir, Scenario.shot, plasma_dict["time"][index], EQ.R, EQ.z, EQ.Psi, EQ.Br, \
+                                      EQ.Bt, EQ.Bz, EQ.Psi_ax, EQ.Psi_sep) # Routine does the transposing!
+        if(error != 0):
+            return False
+        return make_Te_ne_data(working_dir, Scenario.shot, plasma_dict["time"][index], plasma_dict[plasma_dict["prof_reference"]][index], \
                                plasma_dict["Te"][index], plasma_dict["ne"][index], \
-                               grid=len(plasma_dict["Te"][index].shape) == 2)
-
-def make_topfile_from_ext_data(working_dir, shot, time, EQ, rhop, Te, ne, grid=False):
-    if(grid==False):
-        make_topfile_no_data_load(working_dir, shot, time, EQ.R, EQ.z, EQ.Psi, EQ.Br, \
-                                  EQ.Bt, EQ.Bz, EQ.Psi_ax, EQ.Psi_sep) # Routine does the transposing!
-        make_Te_ne_files(working_dir, rhop, Te, ne)
+                               grid=len(plasma_dict["Te"][index].shape) == 2, EQ=EQ)
     else:
-        print("Copying Te and ne matrix")
+        return make_Te_ne_data(working_dir, Scenario.shot, plasma_dict["time"][index], plasma_dict[plasma_dict["prof_reference"]][index], \
+                               plasma_dict["Te"][index], plasma_dict["ne"][index], \
+                               grid=False)
+
+def make_Te_ne_data(working_dir, shot, time, rho, Te, ne, grid=False, EQ=None):
+    if(grid==False):
+        make_Te_ne_files(working_dir, rho, Te, ne)
+    else:
+        print("Creating Te and ne matrix")
         Te_ne_matfile = open(os.path.join(working_dir, "Te_ne_matfile"), "w")
         Te_ne_matfile.write('Number of radial and vertical grid points in AUGD:EQH:{0:5d}: {1:1.4f}\n'.format(shot, time))
         Te_ne_matfile.write('   {0: 8d} {1: 8d}\n'.format(len(EQ.R), len(EQ.z)))

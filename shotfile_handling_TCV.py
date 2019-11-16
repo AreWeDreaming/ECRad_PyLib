@@ -30,7 +30,7 @@ def make_CCE_diag_launch(shot, shot_data_file):
     except IOError:
         print("Error: " + shot_data_file + " does not exist")
         return
-    for key in mdict.keys():
+    for key in mdict:
         if(not key.startswith("_")):  # throw out the .mat specific information
             try:
                 if(key in at_least_1d_keys and np.isscalar(mdict[key])):

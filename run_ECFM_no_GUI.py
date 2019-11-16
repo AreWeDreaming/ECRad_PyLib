@@ -99,9 +99,9 @@ def run_ECRad():
         return -1
     Config.shot = shot
     Config.working_dir = working_dir
-    for diag_key in Config.used_diags_dict.keys():
+    for diag_key in Config.used_diags_dict:
         if("CT" in diag_key or "IEC" == diag_key):
-            if(str(Config.used_diags_dict[diag_key].beamline) not in Config.gy_dict.keys()):
+            if(str(Config.used_diags_dict[diag_key].beamline) not in Config.gy_dict):
                 new_gy = get_ECRH_viewing_angles(Config.shot, \
                                                 Config.used_diags_dict[diag_key].beamline)
                 if(new_gy.error == 0):
@@ -153,9 +153,9 @@ def run_ECRad_from_script(working_dir, shot, Config, InvokeECRad, args):
         print("Working on t = {0:1.4f}".format(Config.time[next_time_index_to_analyze]))
         if(os.path.isdir(os.path.join(Config.working_dir, "ECRad_data"))):
             shutil.rmtree(os.path.join(Config.working_dir, "ECRad_data"))
-        for diag_key in Config.used_diags_dict.keys():
+        for diag_key in Config.used_diags_dict:
             if("CT" in diag_key or "IEC" == diag_key):
-                if(str(Config.used_diags_dict[diag_key].beamline) not in Config.gy_dict.keys()):
+                if(str(Config.used_diags_dict[diag_key].beamline) not in Config.gy_dict):
                     new_gy = get_ECRH_viewing_angles(Config.shot, \
                                                      Config.used_diags_dict[diag_key].beamline)
                     if(new_gy.error == 0):

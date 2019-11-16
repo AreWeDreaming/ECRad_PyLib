@@ -1,5 +1,6 @@
 from matplotlib import use
-use('TKagg')
+import wx
+use('wxAGG')
 from matplotlib import pyplot as plt
 # plt.style.use('bmh')
 plot_mode = "Presentation"  #  "Presentation"  "Article"

@@ -21,12 +21,29 @@ from shutil import copyfile
 from data_processing import remove_mode
 AUG_profile_diags = ["IDA", "RMD", "CEC", "VTA", "CEZ", "COZ", "CUZ"]
 
+
+
 def shotfile_exists(shot, diag):
-    try:
-        sf = dd.shotfile(diagnostic=diag.diag, pulseNumber=shot, experiment=diag.exp, edition=diag.ed)
-        return True
-    except dd.PyddError:
+    if(hasattr(diag, "diag")):
+        try:
+            sf = dd.shotfile(diagnostic=diag.diag, pulseNumber=shot, experiment=diag.exp, edition=diag.ed)
+            return True
+        except dd.PyddError:
+            return False
+    else:
         return False
+
+def get_prof(shot, time, diag, sig, exp="AUGD", edition=0):
+    DIAG = dd.shotfile(diag, int(shot), experiment=exp, edition=edition)
+    prof = DIAG.getSignalGroup(\
+                    sig, dtype=np.double)
+    rhop = DIAG.getAreaBase(\
+                    sig, dtype=np.double).data
+    time_trace = DIAG.getTimeBase(sig)
+    itime = np.argmin(np.abs(time_trace - time))
+    return rhop[itime], prof[itime]
+
+
 
 def get_diag_data_no_calib_wrapper(shot, name, exp="AUGD", diag="None", ed=0):
     if(diag is None):
@@ -96,11 +113,11 @@ def smooth(y_arr, median=False, use_std_err=False):
 #            kernel_size -= 1
         if(len(y_arr) > 100):
             d = 10
-            y_median = y_arr[:(len(y_arr) / d) * d].reshape(-1, d).mean(1)  # this downsamples factor 10 with a mean
+            y_median = y_arr[:(len(y_arr) // d) * d].reshape(-1, d).mean(1)  # this downsamples factor 10 with a mean
         else:
             y_median = y_arr
-        if(len(y_median) / 3 / 2 * 2 + 1 > 3):
-            y_median = medfilt(y_median, len(y_median) / 3 / 2 * 2 + 1)  # broad median filter
+        if(len(y_median) // 3 // 2 * 2 + 1 > 3):
+            y_median = medfilt(y_median, len(y_median) // 3 // 2 * 2 + 1)  # broad median filter
         if(len(y_median) > 1):
             y_smooth = np.mean(y_median)  # make sure we get only one value
             if(len(y_median) > 100 and use_std_err):
@@ -315,7 +332,7 @@ def get_data_calib(diag, shot=0, time=None, eq_exp="AUGD", eq_diag="EQH", \
                    ext_resonances=None, name="", t_smooth=None, median=True, \
                    aux_diag=None, use_std_err=True):
     # Gets the data from all ECE diagnostics that have shotfiles
-    # Returns std deviation in keV, rho poloidal resonance and Trad in keV
+    # Returns std deviation in keV, rho poloIDAl resonance and Trad in keV
     if(t_smooth is None):
         t_smooth = diag.t_smooth
     if(len(name) == 0):
@@ -1134,7 +1151,7 @@ def get_CECE_launch(shot, angpol):
                      [0.003006190, -0.180083, -3.51089]]
     ind = np.where(shot_openings <= shot)[0][::-1][0]
     a = poly_params[ind]
-    # determine toroidal angle (depends on which campaign due to
+    # determine toroIDAl angle (depends on which campaign due to
     # recalibration of system during openings)
     print('shot requested / first shot of corresponding campaign: ', shot, shot_openings[ind])
     print('=> polygon parameters: ', a)
@@ -1187,35 +1204,42 @@ def load_IDA_data(shot, timepoints=None, exp="AUGD", ed=0, double_entries_allowe
     IDA_ne_mat = IDA.getSignalGroup(\
                     "ne", dtype=np.double)
     IDA_rhop_mat = IDA.getAreaBase(\
-                    "rhop", dtype=np.double).data
+                    "rhop".encode("utf-8"), dtype=np.double).data
+    rhot_available=True
+    try:
+        IDA_rhot_mat = IDA.getSignalGroup(\
+                        "rhot", dtype=np.double)
+    except Exception as e:
+        rhot_available=False
+        print("No rho toroIDAl profile in IDA shotfile")
+        print("Getting rho tor later")
     # This parameter is not used according to Rainer Fischer
     # IDA_ne_rhop_scal_mat = IDA.getSignal(\
     #                "ecenrpsc", dtype=np.double)
     try:
-        IDA_ECE_rhop_mat = IDA.getSignalGroup(\
-                        "ece_rhop", dtype=np.double)
-        IDA_ECE_dat_mat = IDA.getSignalGroup(\
-                        "ece_dat", dtype=np.double)
-        IDA_ECE_unc_mat = IDA.getSignalGroup(\
-                        "ece_unc", dtype=np.double)
-        IDA_ECE_mod_mat = IDA.getSignalGroup(\
-                        "ece_mod", dtype=np.double)
+        if(sys.version_info.major == 3):
+            raise Exception("Cannot load IDA ECE data in python 3")
+        IDA_ECE_rhop_mat = IDA.getSignalGroup("ece_rhop", dtype=np.double)
+        IDA_ECE_dat_mat = IDA.getSignalGroup("ece_dat", dtype=np.double)
+        IDA_ECE_unc_mat = IDA.getSignalGroup("ece_unc", dtype=np.double)
+        IDA_ECE_mod_mat = IDA.getSignalGroup("ece_mod", dtype=np.double)
         IDA_ECE_data = True
     except Exception as e:
         print("Could not find any ECE data in the IDA shotfile")
         print("Reason", e)
         IDA_ECE_data = False
     if(len(IDA_time) == 1):
-        IDA_Te_mat = np.array([IDA_Te_mat])
-        IDA_Te_low_mat = np.array([IDA_Te_low_mat])
-        IDA_Te_up_mat = np.array([IDA_Te_up_mat])
-        IDA_ne_mat = np.array([IDA_ne_mat])
+        IDA_Te_mat = np.atleast_2d(IDA_Te_mat)
+        IDA_Te_low_mat = np.atleast_2d(IDA_Te_low_mat)
+        IDA_Te_up_mat = np.atleast_2d(IDA_Te_up_mat)
+        IDA_ne_mat = np.atleast_2d(IDA_ne_mat)
         # IDA_rhop_mat = np.array([IDA_rhop_mat])
         if(IDA_ECE_data):
-            IDA_ECE_rhop_mat = np.array([IDA_ECE_rhop_mat])
-            IDA_ECE_dat_mat = np.array([IDA_ECE_dat_mat])
-            IDA_ECE_unc_mat = np.array([IDA_ECE_unc_mat])
-            IDA_ECE_mod_mat = np.array([IDA_ECE_mod_mat])
+            IDA_ECE_rhop_mat = np.atleast_2d(IDA_ECE_rhop_mat)
+            if(np.ndim(IDA_ECE_dat_mat)):
+                IDA_ECE_dat_mat = np.expand_dims(IDA_ECE_dat_mat,0)
+                IDA_ECE_unc_mat = np.expand_dims(IDA_ECE_unc_mat,0)
+            IDA_ECE_mod_mat = np.atleast_2d(IDA_ECE_mod_mat)
     if(IDA_ECE_data):
         if(np.ndim(IDA_ECE_dat_mat) == 3):
             IDA_ECE_dat_mat=np.swapaxes(IDA_ECE_dat_mat, 2, 1)
@@ -1228,6 +1252,8 @@ def load_IDA_data(shot, timepoints=None, exp="AUGD", ed=0, double_entries_allowe
     Te_low_mat = []
     ne_mat = []
     rhop_mat = []
+    if(rhot_available):
+        rhot_mat = []
     ne_rhop_scale_mat = []
     ECE_rhop_mat = []
     ECE_dat_rhop_mat = []
@@ -1244,6 +1270,8 @@ def load_IDA_data(shot, timepoints=None, exp="AUGD", ed=0, double_entries_allowe
                 Te_low_mat.append(IDA_Te_low_mat[index])
                 ne_mat.append(IDA_ne_mat[index])
                 rhop_mat.append(IDA_rhop_mat[index])
+                if(rhot_available):
+                    rhot_mat.append(IDA_rhot_mat[index])
                 if(IDA_ECE_data):
                 # ne_rhop_scale_mat.append(IDA_ne_rhop_scal_mat[index])
                     ECE_rhop_mat.append(IDA_ECE_rhop_mat[index])
@@ -1262,6 +1290,8 @@ def load_IDA_data(shot, timepoints=None, exp="AUGD", ed=0, double_entries_allowe
                 Te_low_mat.append(IDA_Te_low_mat[index])
                 ne_mat.append(IDA_ne_mat[index])
                 rhop_mat.append(IDA_rhop_mat[index])
+                if(rhot_available):
+                    rhot_mat.append(IDA_rhot_mat[index])
                 # print(rhop_mat[-1], Te_mat[-1])
                 # ne_rhop_scale_mat.append(IDA_ne_rhop_scal_mat[index])
                 if(IDA_ECE_data):
@@ -1276,6 +1306,8 @@ def load_IDA_data(shot, timepoints=None, exp="AUGD", ed=0, double_entries_allowe
     Te_low_mat = np.array(Te_low_mat)
     ne_mat = np.array(ne_mat)
     rhop_mat = np.array(rhop_mat)
+    if(rhot_available):
+        rhot_mat = np.array(rhot_mat)
     ne_rhop_scale_mat = np.array(ne_rhop_scale_mat)
     ne_rhop_scale_mat[ne_rhop_scale_mat == 0] = 1
     if(IDA_ECE_data):
@@ -1292,6 +1324,9 @@ def load_IDA_data(shot, timepoints=None, exp="AUGD", ed=0, double_entries_allowe
     IDA_dict["Te_low"] = Te_low_mat
     IDA_dict["ne"] = ne_mat
     IDA_dict["rhop_prof"] = rhop_mat
+    if(rhot_available):
+        IDA_dict["rhot_prof"] = rhot_mat
+    IDA_dict["prof_reference"] = "rhop_prof"
     try:
         IDA_dict["ne_rhop_scale"] = IDA.getSignal("ecenrpsc", dtype=np.double)
     except:
@@ -1358,6 +1393,59 @@ def load_IDA_data(shot, timepoints=None, exp="AUGD", ed=0, double_entries_allowe
     IDA_dict["ne_rhop_scale_mean"] = np.mean(IDA_dict["ne_rhop_scale"])
     IDA_dict["eq_data"] = None
     return IDA_dict
+
+def load_IDI_data(shot, timepoints=None, exp="AUGD", ed=0):
+    IDI_dict = { }
+    IDI = dd.shotfile("IDI", pulseNumber=int(shot), experiment=exp, edition=ed)
+    IDI_dict["ed"] = IDI.edition
+    IDI_time = IDI.getTimeBase(\
+                    "time", dtype=np.double)
+    IDI_Ti_mat = IDI.getSignalGroup(\
+                    "Ti", dtype=np.double)
+    IDI_Ti_unc_mat = IDI.getSignalGroup(\
+                    "Ti_unc", dtype=np.double)
+    IDI_rhop_mat = IDI.getAreaBase(\
+                    "rp_Ti", dtype=np.double).data
+    if(len(IDI_time) == 1):
+        IDI_Ti_mat = np.array([IDI_Ti_mat])
+        IDI_Ti_unc_mat = np.array([IDI_Ti_unc_mat])
+    Ti_mat = []
+    Ti_unc_mat = []
+    ne_mat = []
+    rhop_mat = []
+    ne_rhop_scale_mat = []
+    IDI_dict["time"] = []
+    if(timepoints is None):
+        for index in range(len(IDI_time)):
+            if(IDI_time[index] not in IDI_dict["time"]):  # No double entries unless specifically requested!
+                IDI_dict["time"].append(IDI_time[index])
+                Ti_mat.append(IDI_Ti_mat[index])
+                Ti_unc_mat.append(IDI_Ti_unc_mat[index])
+                rhop_mat.append(IDI_rhop_mat[index])
+    else:
+        for t in timepoints:  # Finds closest - NO inTirpolation
+            index = np.argmin(np.abs(IDI_time - t))
+            if(IDI_time[index] not in IDI_dict["time"]):  # No double entries !
+                # print(index, len(IDI_time), IDI_time[index], t)
+                IDI_dict["time"].append(IDI_time[index])
+                Ti_mat.append(IDI_Ti_mat[index])
+                Ti_unc_mat.append(IDI_Ti_unc_mat[index])
+                rhop_mat.append(IDI_rhop_mat[index])
+                # print(rhop_mat[-1], Te_mat[-1])
+                # ne_rhop_scale_mat.append(IDI_ne_rhop_scal_mat[index])
+    IDI_dict["time"] = np.array(IDI_dict["time"])
+    Ti_mat = np.array(Ti_mat)
+    Ti_unc_mat = np.array(Ti_unc_mat)
+    ne_mat = np.array(ne_mat)
+    rhop_mat = np.array(rhop_mat)
+    ne_rhop_scale_mat = np.array(ne_rhop_scale_mat)
+    ne_rhop_scale_mat[ne_rhop_scale_mat == 0] = 1
+    IDI_dict["Ti"] = Ti_mat
+    IDI_dict["Ti_unc"] = Ti_unc_mat
+    IDI_dict["ne"] = ne_mat
+    IDI_dict["rhop_prof"] = rhop_mat
+    IDI_dict["prof_reference"] = "rhop_prof"
+    return IDI_dict
 
 #Deprecated!
 # def make_ext_data_for_testing(ext_data_folder, shot, times, eq_exp="AUGD", eq_diag="EQH", eq_ed=0, bt_vac_correction=1.005, IDA_exp="AUGD", IDA_ed=0):

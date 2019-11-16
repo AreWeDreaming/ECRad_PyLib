@@ -152,6 +152,22 @@ class EXT_diag(BasicDiag):  #  Makes no sense to inherit properties we do not wa
         launch_geo[8] = self.width
         return launch_geo, self.pol_coeff_X
     
+    def get_launch(self):
+        launch = {}
+        launch["diag_name"] = np.zeros(len(self.f), dtype="|U3")
+        launch["diag_name"][:] = "EXT"
+        launch["f"] = np.copy(self.f)
+        launch["df"] = np.copy(self.df)
+        launch["R"] = np.copy(self.R)
+        launch["phi"] = np.copy(self.phi)
+        launch["z"] = np.copy(self.z)
+        launch["theta_pol"] = np.copy(self.theta_pol)
+        launch["phi_tor"] = np.copy(self.phi_tor)
+        launch["dist_focus"] = np.copy(self.dist_focus)
+        launch["width"] = np.copy(self.width)
+        launch["pol_coeff_X"] = np.copy(self.pol_coeff_X)
+        return launch
+    
     def set_from_ray_launch(self, ray_launch, itime, set_only_EXT=True):
         if(set_only_EXT):
             mask = ray_launch[itime]["diag_name"] == "EXT"

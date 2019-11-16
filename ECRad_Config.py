@@ -33,6 +33,17 @@ class ECRadConfig:
             print("Warning currently chosen working directory does not exit!")
         else:
             print("Warning working dir not imported, since it is not a valid directory")
+        try:
+            if(os.path.isdir(mdict["scratch_dir"])):
+                self.scratch_dir = mdict["scratch_dir"]
+            elif(not ext_mdict):
+                self.scratch_dir = mdict["scratch_dir"]
+                print("Warning currently chosen working directory does not exit!")
+            else:
+                print("Warning working dir not imported, since it is not a valid directory")
+        except KeyError:
+            print("Scratch dir not set in ECRad config -> failling back to working directory")
+            self.scratch_dir = self.working_dir
         self.dstf = mdict["dstf"]
         self.extra_output = mdict["extra_output"]
         try:
@@ -128,6 +139,7 @@ class ECRadConfig:
             mdict = {}
             write_mat = True
         mdict["working_dir"] = self.working_dir
+        mdict["scratch_dir"] = self.scratch_dir
         mdict["dstf"] = self.dstf
         mdict["extra_output"] = self.extra_output
         mdict["debug"] = self.debug
@@ -169,6 +181,7 @@ def provide_default_mdict():
     mdict = {}
     mdict["shot"] = 0
     mdict["working_dir"] = ""
+    mdict["scratch_dir"] = ""
     mdict["dstf"] = "Th"
     mdict["extra_output"] = True
     mdict["debug"] = False

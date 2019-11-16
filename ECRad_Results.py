@@ -161,8 +161,8 @@ class ECRadResults:
             Tradfilename = "TRadM_LUKE.dat"
         elif(self.Config.dstf == "Ge" or self.Config.dstf == "GB"):
             Tradfilename = "TRadM_GENE.dat"
-        Trad_file = np.loadtxt(os.path.join(self.Config.working_dir, "ECRad_data", Tradfilename))
-        sres_file = np.loadtxt(os.path.join(self.Config.working_dir, "ECRad_data", "sres.dat"))
+        Trad_file = np.loadtxt(os.path.join(self.Config.scratch_dir, "ECRad_data", Tradfilename))
+        sres_file = np.loadtxt(os.path.join(self.Config.scratch_dir, "ECRad_data", "sres.dat"))
         self.Trad.append(Trad_file.T[1])
         self.tau.append(Trad_file.T[2])
         if(not self.Config.extra_output):
@@ -172,14 +172,14 @@ class ECRadResults:
             self.resonance["rhop_cold"].append(sres_file.T[3])
             return
         if(self.Config.considered_modes == 3):
-            XTrad_file = np.loadtxt(os.path.join(self.Config.working_dir, "ECRad_data", "X_" + Tradfilename))
-            OTrad_file = np.loadtxt(os.path.join(self.Config.working_dir, "ECRad_data", "O_" + Tradfilename))
+            XTrad_file = np.loadtxt(os.path.join(self.Config.scratch_dir, "ECRad_data", "X_" + Tradfilename))
+            OTrad_file = np.loadtxt(os.path.join(self.Config.scratch_dir, "ECRad_data", "O_" + Tradfilename))
             self.XTrad.append(XTrad_file.T[1])
             self.OTrad.append(OTrad_file.T[1])
             self.Xtau.append(XTrad_file.T[2])
             self.Otau.append(OTrad_file.T[2])
             self.X_mode_frac.append(XTrad_file.T[3])
-        sres_rel_file = np.loadtxt(os.path.join(self.Config.working_dir, "ECRad_data", "sres_rel.dat"))
+        sres_rel_file = np.loadtxt(os.path.join(self.Config.scratch_dir, "ECRad_data", "sres_rel.dat"))
         self.resonance["rhop_warm_secondary"].append(sres_rel_file.T[7])
         if(self.Config.dstf == "Th"):
             Ich_folder = "Ich" + self.Config.dstf
@@ -198,28 +198,28 @@ class ECRadResults:
             print("Supported dstf are: \"Th\" and \"TB\":")
             print("Chosen dstf:", self.Config.dstf)
             return
-        Trad_comp_file = np.loadtxt(os.path.join(self.Config.working_dir, "ECRad_data", Trad_old_name))
-        Ich_folder = os.path.join(self.Config.working_dir, "ECRad_data", Ich_folder)
-        # Ray_folder = os.path.join(self.Config.working_dir, "ECRad_data", "ray")
+        Trad_comp_file = np.loadtxt(os.path.join(self.Config.scratch_dir, "ECRad_data", Trad_old_name))
+        Ich_folder = os.path.join(self.Config.scratch_dir, "ECRad_data", Ich_folder)
+        # Ray_folder = os.path.join(self.Config.scratch_dir, "ECRad_data", "ray")
         # Append new empty list for this time point
         if("X" in self.modes):
-            for key in self.resonance.keys():
+            for key in self.resonance:
                 if(key.endswith("X")):
                     self.resonance[key].append([])
-            for key in self.ray.keys():
+            for key in self.ray:
                 if(key.endswith("X")):
                     self.ray[key].append([])
-            for key in self.BPD.keys():
+            for key in self.BPD:
                 if(key.endswith("X")):
                     self.BPD[key].append([])
         if("O" in self.modes):
-            for key in self.resonance.keys():
+            for key in self.resonance:
                 if(key.endswith("O")):
                     self.resonance[key].append([])
-            for key in self.ray.keys():
+            for key in self.ray:
                 if(key.endswith("O")):
                     self.ray[key].append([])
-            for key in self.BPD.keys():
+            for key in self.BPD:
                 if(key.endswith("O")):
                     self.BPD[key].append([])
         # Now add los info into this list for each channel
@@ -238,7 +238,7 @@ class ECRadResults:
                     self.BPD["BPDX"][-1].append(BDOP_X.T[1])
                     self.BPD["BPD_secondX"][-1].append(BDOP_X.T[2])
                     if(self.Config.N_ray > 1):
-                        for key in self.ray.keys():
+                        for key in self.ray:
                             if(key.endswith("X")):
                                 self.ray[key][-1].append([])
                         try:
@@ -281,7 +281,7 @@ class ECRadResults:
                                 self.ray["YX"][-1][-1].append(cnst.e * np.sqrt(Bx**2 + By**2 + Bz**2) / \
                                                               (cnst.m_e * omega))
                                 if(self.Scenario.profile_dimension == 1):
-                                    ne_spl = InterpolatedUnivariateSpline(self.Scenario.plasma_dict["rhop_prof"][itime], \
+                                    ne_spl = InterpolatedUnivariateSpline(self.Scenario.plasma_dict[self.Scenario.plasma_dict["prof_reference"]][itime], \
                                                                           np.log(self.Scenario.plasma_dict["ne"][itime]), ext=3)
                                     self.ray["XX"][-1][-1].append(cnst.e**2 * np.exp(ne_spl(self.ray["rhopX"][-1][-1][-1]))/ \
                                                                   (cnst.m_e * cnst.epsilon_0 * omega**2))
@@ -289,8 +289,8 @@ class ECRadResults:
                                     ne_spl = RectBivariateSpline(self.Scenario.plasma_dict["eq_data"][itime].R, \
                                                                  self.Scenario.plasma_dict["eq_data"][itime].R, \
                                                                  np.log(self.Scenario.plasma_dict["ne"][itime]), ext=3)
-                                    R_ray = self.ray["R"][-1][-1][-1]
-                                    z_ray = self.ray["z"][-1][-1][-1]
+                                    R_ray = self.ray["RX"][-1][-1][-1]
+                                    z_ray = self.ray["zX"][-1][-1][-1]
                                     R_ray[np.logical_or(R_ray > np.max(self.Scenario.plasma_dict["eq_data"][itime].R), \
                                                         R_ray < np.min(self.Scenario.plasma_dict["eq_data"][itime].R) )] = \
                                          np.max(self.Scenario.plasma_dict["eq_data"][itime].R)
@@ -334,7 +334,7 @@ class ECRadResults:
                             self.ray["YX"][-1].append(cnst.e * np.sqrt(Bx**2 + By**2 + Bz**2) / \
                                                           (cnst.m_e * omega))
                             if(self.Scenario.profile_dimension == 1):
-                                ne_spl = InterpolatedUnivariateSpline(self.Scenario.plasma_dict["rhop_prof"][itime], \
+                                ne_spl = InterpolatedUnivariateSpline(self.Scenario.plasma_dict[self.Scenario.plasma_dict["prof_reference"]][itime], \
                                                                       np.log(self.Scenario.plasma_dict["ne"][itime]), ext=1)
                                 self.ray["XX"][-1].append(cnst.e**2 * np.exp(ne_spl(self.ray["rhopX"][-1][-1]))/ \
                                                               (cnst.m_e * cnst.epsilon_0* omega**2))
@@ -342,8 +342,8 @@ class ECRadResults:
                                 ne_spl = RectBivariateSpline(self.Scenario.plasma_dict["eq_data"][itime].R, \
                                                              self.Scenario.plasma_dict["eq_data"][itime].z, \
                                                              np.log(self.Scenario.plasma_dict["ne"][itime]))
-                                R_ray = self.ray["R"][-1][-1]
-                                z_ray = self.ray["z"][-1][-1]
+                                R_ray = self.ray["RX"][-1][-1]
+                                z_ray = self.ray["zX"][-1][-1]
                                 R_ray[np.logical_or(R_ray > np.max(self.Scenario.plasma_dict["eq_data"][itime].R), \
                                                     R_ray < np.min(self.Scenario.plasma_dict["eq_data"][itime].R) )] = \
                                      np.max(self.Scenario.plasma_dict["eq_data"][itime].R)
@@ -366,7 +366,7 @@ class ECRadResults:
                 self.BPD["BPDO"][-1].append(BDOP_O.T[1])
                 self.BPD["BPD_secondO"][-1].append(BDOP_O.T[2])
                 if(self.Config.N_ray > 1):
-                    for key in self.ray.keys():
+                    for key in self.ray:
                         if(key.endswith("O")):
                             self.ray[key][-1].append([])
                     try:
@@ -405,7 +405,7 @@ class ECRadResults:
                             self.ray["YO"][-1][-1].append(cnst.e * np.sqrt(Bx**2 + By**2 + Bz**2) / \
                                                           (cnst.m_e * omega))
                             if(self.Scenario.profile_dimension == 1):
-                                ne_spl = InterpolatedUnivariateSpline(self.Scenario.plasma_dict["rhop_prof"][itime], \
+                                ne_spl = InterpolatedUnivariateSpline(self.Scenario.plasma_dict[self.Scenario.plasma_dict["prof_reference"]][itime], \
                                                                       np.log(self.Scenario.plasma_dict["ne"][itime]), ext=3)
                                 self.ray["XO"][-1][-1].append(cnst.e**2 * np.exp(ne_spl(self.ray["rhopO"][-1][-1][-1]))/ \
                                                               (cnst.m_e * cnst.epsilon_0 * omega**2))
@@ -454,7 +454,7 @@ class ECRadResults:
                         self.ray["YO"][-1].append(cnst.e * np.sqrt(Bx**2 + By**2 + Bz**2) / \
                                                       (cnst.m_e * omega))
                         if(self.Scenario.profile_dimension == 1):
-                            ne_spl = InterpolatedUnivariateSpline(self.Scenario.plasma_dict["rhop_prof"][itime], \
+                            ne_spl = InterpolatedUnivariateSpline(self.Scenario.plasma_dict[self.Scenario.plasma_dict["prof_reference"]][itime], \
                                                                   np.log(self.Scenario.plasma_dict["ne"][itime]), ext=1)
                             self.ray["XO"][-1].append(cnst.e**2 * np.exp(ne_spl(self.ray["rhopO"][-1][-1]))/ \
                                                           (cnst.m_e * cnst.epsilon_0* omega**2))
@@ -477,8 +477,8 @@ class ECRadResults:
                         else:
                             print("Three dimensional profiles not supported for Stix parameters X and Y")
                             break
-        self.weights["ray"].append(np.loadtxt(os.path.join(self.Config.working_dir, "ECRad_data", "ray_weights.dat"), ndmin=2))
-        self.weights["freq"].append(np.loadtxt(os.path.join(self.Config.working_dir, "ECRad_data", "freq_weights.dat"), ndmin=2))
+        self.weights["ray"].append(np.loadtxt(os.path.join(self.Config.scratch_dir, "ECRad_data", "ray_weights.dat"), ndmin=2))
+        self.weights["freq"].append(np.loadtxt(os.path.join(self.Config.scratch_dir, "ECRad_data", "freq_weights.dat"), ndmin=2))
         self.resonance["s_cold"].append(sres_file.T[0])
         self.resonance["R_cold"].append(sres_file.T[1])
         self.resonance["z_cold"].append(sres_file.T[2])
@@ -493,8 +493,8 @@ class ECRadResults:
         self.Trad_comp.append(Trad_comp_file.T[1])
         self.tau_comp.append(Trad_comp_file.T[2])
         if(self.Config.considered_modes == 3):
-            XTrad_comp_file = np.loadtxt(os.path.join(self.Config.working_dir, "ECRad_data", "X_" + Trad_old_name))
-            OTrad_comp_file = np.loadtxt(os.path.join(self.Config.working_dir, "ECRad_data", "O_" + Trad_old_name))
+            XTrad_comp_file = np.loadtxt(os.path.join(self.Config.scratch_dir, "ECRad_data", "X_" + Trad_old_name))
+            OTrad_comp_file = np.loadtxt(os.path.join(self.Config.scratch_dir, "ECRad_data", "O_" + Trad_old_name))
             self.XTrad_comp.append(XTrad_comp_file.T[1])
             self.OTrad_comp.append(OTrad_comp_file.T[1])
             self.Xtau_comp.append(XTrad_comp_file.T[2])
@@ -526,17 +526,17 @@ class ECRadResults:
         self.Xtau_comp = np.array(self.Xtau_comp)
         self.Otau_comp = np.array(self.Otau_comp)
         self.X_mode_frac_comp = np.array(self.X_mode_frac_comp)
-        for key in self.resonance.keys():
+        for key in self.resonance:
             self.resonance[key] = np.array(self.resonance[key])
         for key in self.ray_launch:
             self.ray_launch[key] = np.array(self.ray_launch[key])
-        for key in self.ray.keys():
+        for key in self.ray:
             self.ray[key] = np.array(self.ray[key])
-        for key in self.BPD.keys():
+        for key in self.BPD:
             self.BPD[key] = np.array(self.BPD[key])
         if(not self.init):
             self.init = True
-        for key in self.weights.keys():
+        for key in self.weights:
             self.weights[key] = np.array(self.weights[key])
         self.time = np.array(self.time)
         # Autosave results
@@ -567,11 +567,11 @@ class ECRadResults:
                              "ECE_rhop", "ECE_dat", "eq_data", \
                              "eq_R", "eq_z", "launch_diag_name", "launch_f", "launch_df", "launch_R", "launch_phi", \
                              "launch_z", "launch_tor_ang" , "launch_pol_ang", "launch_dist_focus", \
-                             "launch_width", "eq_special", "eq_special_complete"  ] + self.resonance.keys()
-        at_least_3d_keys = self.BPD.keys()
+                             "launch_width", "eq_special", "eq_special_complete"  ] + list(self.resonance)
+        at_least_3d_keys = list(self.BPD)
         at_least_3d_keys[at_least_3d_keys.index("rhopX")] = "BPDrhopX"
         at_least_3d_keys[at_least_3d_keys.index("rhopO")] = "BPDrhopO"
-        at_least_3d_keys += self.ray.keys() + ["ray_BPDX", "ray_BPDO", "ray_BPD_secondX", "ray_BPD_secondO", "ray_emX", "ray_emO", \
+        at_least_3d_keys += list(self.ray) + ["ray_BPDX", "ray_BPDO", "ray_BPD_secondX", "ray_BPD_secondO", "ray_emX", "ray_emO", \
                                                "ray_abX", "ray_abO", "ray_TX", "ray_TO", "ray_em_secondX", "ray_em_secondO", \
                                                "ray_absecondX", "ray_absecondO", "ray_TsecondX", "ray_TsecondO", "freq_weights", \
                                                "ray_weights"]
@@ -590,7 +590,7 @@ class ECRadResults:
         except KeyError:
             if(len(np.unique(mdict["launch_diag_name"])) == 1):
                 increase_diag_dim = True
-        for key in mdict.keys():
+        for key in mdict:
             if(not key.startswith("_")):  # throw out the .mat specific information
                 try:
                     if(key in at_least_1d_keys and np.isscalar(mdict[key])):
@@ -620,7 +620,7 @@ class ECRadResults:
             self.modes = ["O"]
         elif(mdict["considered_modes"] == 3):
             self.modes = ["X", "O"]
-        if("comment" in mdict.keys()):
+        if("comment" in mdict):
             self.comment = mdict["comment"]
             try:
                 if(type(self.comment) == np.ndarray):
@@ -667,7 +667,7 @@ class ECRadResults:
                 print("Only the warm resonances of the primary model could be found!")
                 print("Is this an old file?")
         try:
-            if("calib_diags" in mdict.keys()  and len(mdict["calib"]) > 0):
+            if("calib_diags" in mdict  and len(mdict["calib"]) > 0):
                 if(len(mdict["calib_diags"]) == 1):
                     self.calib[mdict["calib_diags"][0]] = mdict["calib"][0]
                     self.calib_mat[mdict["calib_diags"][0]] = mdict["calib_mat"][0].T
@@ -712,7 +712,7 @@ class ECRadResults:
             self.weights["freq"] = mdict["freq_weights"]
             self.weights["ray"] = mdict["ray_weights"]
             if(self.Config.N_ray == 1):
-                for key in self.weights.keys():
+                for key in self.weights:
                     self.weights[key] = self.weights[key].reshape((len(self.time), len(self.weights[key][0]), 1))
         except:
             self.weights["freq"] = None
@@ -845,17 +845,17 @@ class ECRadResults:
     def to_mat_file(self, ext_filename=None, comment=None, quasi_linear_beam=None, dist_obj=None, linear_beam=None):
         ed = 1
         diag_str = ""
-        for key in self.Scenario.used_diags_dict.keys():
+        for key in self.Scenario.used_diags_dict:
             diag_str += key
         if(ext_filename is not None):
             filename = ext_filename
-        elif(len(self.calib.keys()) > 0):
+        elif(len(self.calib) > 0):
             filename = os.path.join(self.Config.working_dir, "ECRad_{0:5d}_{1:s}_w_calib_ed{2:d}.mat".format(self.Scenario.shot, diag_str, ed))
         else:
             filename = os.path.join(self.Config.working_dir, "ECRad_{0:5d}_{1:s}_ed{2:d}.mat".format(self.Scenario.shot, diag_str, ed))
         while(os.path.exists(filename) and ext_filename is None):
             ed += 1
-            if(len(self.calib.keys()) > 0):
+            if(len(self.calib) > 0):
                 filename = os.path.join(self.Config.working_dir, "ECRad_{0:5d}_{1:s}_w_calib_ed{2:d}.mat".format(self.Scenario.shot, diag_str, ed))
             else:
                 filename = os.path.join(self.Config.working_dir, "ECRad_{0:5d}_{1:s}_ed{2:d}.mat".format(self.Scenario.shot, diag_str, ed))
@@ -965,7 +965,7 @@ class ECRadResults:
             mdict["ray_ab_secondO"] = self.ray["ab_secondO"]
             mdict["ray_TO"] = self.ray["TO"]
             mdict["ray_T_secondO"] = self.ray["T_secondO"]
-        if(len(self.calib.keys()) > 0):
+        if(len(self.calib) > 0):
             mdict["calib"] = []
             mdict["calib_mat"] = []
             mdict["std_dev_mat"] = []
@@ -973,7 +973,7 @@ class ECRadResults:
             mdict["sys_dev"] = []
             mdict["masked_time_points"] = []
             mdict["calib_diags"] = []
-            for diag in self.calib.keys():
+            for diag in self.calib:
                 mdict["calib"].append(self.calib[diag])
                 # Needs to be transposed to avoid numpy error related to the different channel count of the individual diagnostics
                 mdict["calib_mat"].append(self.calib_mat[diag].T)
@@ -1020,7 +1020,7 @@ class ECRadResults:
                 mdict["wave_j_tot"] = linear_beam.j_tot * 1.e6
                 mdict["wave_PW_beam"] = linear_beam.PW_beam
                 mdict["wave_j_beam"] = linear_beam.j_beam
-                for key in linear_beam.rays[0][0].keys():
+                for key in linear_beam.rays[0][0]:
                     mdict["wave_" + key] = []
                     for ibeam in range(len(linear_beam.rays)):
                         mdict["wave_" + key].append([])
@@ -1036,7 +1036,7 @@ class ECRadResults:
             print("Failed to save to .mat")
             print(e)
             print(mdict)
-            for key in mdict.keys():
+            for key in mdict:
                 if(ndarray_check_for_None(mdict[key])): # Recursive seach of each element for None
                     print("Entry for " + key + "is None or contains None")
                     print(mdict[key])
@@ -1061,3 +1061,8 @@ class ECRadResults:
             x = self.ray["xO"]
             y = self.ray["yO"]
         return x,y
+    
+    def find_resonance(self, itime, mode_str=None):
+        if(mode_str == None):
+            res = np.copy(self.resonance["rhop_cold"][itime])
+        

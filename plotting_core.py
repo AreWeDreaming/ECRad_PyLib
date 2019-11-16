@@ -22,7 +22,6 @@ from wxEvents import ThreadFinishedEvt, Unbound_EVT_DONE_PLOTTING
 import wx
 from colorsys import hls_to_rgb
 from distribution_functions import Juettner2D
-from __builtin__ import False
 non_therm_dist_Relax = True
 
 
@@ -186,9 +185,9 @@ class plotting_core:
             mask = np.zeros(len(Trad[0]), dtype=np.bool)
         else:
             mask = np.zeros(len(Trad), dtype=np.bool)
-        if(len(diags.keys()) > 0):
+        if(len(diags) > 0):
             mask[:] = False
-            for key in diags.keys():
+            for key in diags:
                 # For some reason there is no automatic cast from unicode to string here -> make it explicit
                 if(multiple_models):
                     mask[str(diags[key].name)==diag_names[0]] = True
@@ -233,7 +232,7 @@ class plotting_core:
                 y_range_in=self.y_range_list[1], ax_flag="X_frac")
             self.model_marker_index[0] += 1
         self.diag_marker_index[0] = 0
-        for key in diags.keys():
+        for key in diags:
             if(diags[key].is_prof):
                 self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                     data=[diags[key].rhop, diags[key].val],\
@@ -268,11 +267,11 @@ class plotting_core:
                     cur_mask = np.zeros(len(Trad_entry), dtype=np.bool)
                     cur_mask[:] = False
                     nice_label = str(label)
-                    nice_label = nice_label.replace("_max", "$_\mathrm{max}$")
+                    nice_label = nice_label.replace("_max", r"$_\mathrm{max}$")
                     nice_label = nice_label.replace("rad_reac", "rad. reac.")
-                    nice_label = nice_label.replace("diff", "$_\mathrm{diff}$")
-                    nice_label = nice_label.replace("V_loop", "$V_\mathrm{loop}$")
-                    for key in diags.keys():
+                    nice_label = nice_label.replace("diff", r"$_\mathrm{diff}$")
+                    nice_label = nice_label.replace("V_loop", r"$V_\mathrm{loop}$")
+                    for key in diags:
                         # For some reason there is no automatic cast from unicode to string here -> make it explicit
                         cur_mask[str(diags[key].name)==diag_name_entry] = True
                     if(np.all(cur_mask == False)):
@@ -307,7 +306,8 @@ class plotting_core:
                                                                  marker="v", color=self.model_colors[self.model_color_index[0]], \
                                                                  y_range_in=self.y_range_list[0], ax_flag=ax_flag)
             self.model_color_index[0] += 1
-        self.axlist[0].set_xlim(0.0, rhop_max * 1.05)
+        if(rhop_max > 0.0):
+            self.axlist[0].set_xlim(0.0, rhop_max * 1.05)
         self.create_legends("Te_no_ne" + twinx)
         return self.fig
 
@@ -365,12 +365,12 @@ class plotting_core:
         return self.fig
 
     def plot_1D_cpo(self, x, y, shot, time, x_info, y_info):
-        self.setup_axes("single", r"AUG data for \# {0:d}".format(shot) + r" and $t = \SI{" + r"{0:2.2f}".format(time) + "}{\second}$")
+        self.setup_axes("single", r"AUG data for \# {0:d}".format(shot) + r" and $t = \SI{" + r"{0:2.2f}".format(time) + r"}{\second}$")
         self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], self.y_range_list[0], \
             data=[x, y], xlabel=x_info[0], ylabel=y_info[0], x_scale=x_info[1], y_scale=y_info[1])
 
     def plot_2D_cpo(self, x, y, z, shot, time, x_info, y_info, z_info):
-        self.setup_axes("single", r"AUG data for \# {0:d}".format(shot) + r" and $t = \SI{" + r"{0:2.2f}".format(time) + "}{\second}$")
+        self.setup_axes("single", r"AUG data for \# {0:d}".format(shot) + r" and $t = \SI{" + r"{0:2.2f}".format(time) + r"}{\second}$")
         cmap = plt.cm.get_cmap("jet")
         z_max = np.max(z.flatten())
         z_min = np.min(z.flatten())
@@ -563,11 +563,11 @@ class plotting_core:
                     plot_power = True
         if(extra_info):
             if(plot_power):
-                self.setup_axes("twinx_double", "\"+\" = $c$, \"-\" = $T_\mathrm{rad,mod}$  " + diag, r"Rel. mean scatter for diagn. " + diag)
+                self.setup_axes("twinx_double", r"\"+\" = $c$, \"-\" = $T_\mathrm{rad,mod}$  " + diag, r"Rel. mean scatter for diagn. " + diag)
             else:
-                self.setup_axes("twinx_double_single_second", "\"+\" = $c$, \"-\" = $T_\mathrm{rad,mod}$  " + diag, r"Rel. mean scatter for diagn. " + diag)
+                self.setup_axes("twinx_double_single_second", r"\"+\" = $c$, \"-\" = $T_\mathrm{rad,mod}$  " + diag, r"Rel. mean scatter for diagn. " + diag)
         else:
-            self.setup_axes("twinx", "\"+\" = $c$, \"-\" = $T_\mathrm{rad,mod}$  " + diag, r"Rel. mean scatter for diagn. " + diag)
+            self.setup_axes("twinx", r"\"+\" = $c$, \"-\" = $T_\mathrm{rad,mod}$  " + diag, r"Rel. mean scatter for diagn. " + diag)
         # \"--\" $= T_\mathrm{e}$
         i = 0
         for result in ECRad_result_list:
@@ -669,9 +669,9 @@ class plotting_core:
     def calib_evolution_Trad(self, diag, ch, ECRad_result_list, diag_data, std_dev_data, popt_list, pol_angle_list=None):
         self.title = False
         if(pol_angle_list is None):
-            self.setup_axes("single", "\"+\" = $c$, \"-\" = $T_\mathrm{rad,mod}$  " + diag, r"Rel. mean scatter for diagn. " + diag)
+            self.setup_axes("single", r"\"+\" = $c$, \"-\" = $T_\mathrm{rad,mod}$  " + diag, r"Rel. mean scatter for diagn. " + diag)
         else:
-            self.setup_axes("twinx", "\"+\" = $c$, \"-\" = $T_\mathrm{rad,mod}$  " + diag, r"Rel. mean scatter for diagn. " + diag)
+            self.setup_axes("twinx", r"\"+\" = $c$, \"-\" = $T_\mathrm{rad,mod}$  " + diag, r"Rel. mean scatter for diagn. " + diag)
         if(diag == "TDI"):
             if(len(ECRad_result_list[0].Trad.T[ECRad_result_list[0].diag == "ECN"]) > 0):
                 actual_diag = "ECN"
@@ -727,7 +727,7 @@ class plotting_core:
 
     def calib_vs_launch(self, diag, ch, ECRad_result_list, pol_ang_list):
         self.title = False
-        self.setup_axes("single", "\"+\" = $c$, \"-\" = $T_\mathrm{rad,mod}$  " + diag, r"Rel. mean scatter for diagn. " + diag)
+        self.setup_axes("single", r"\"+\" = $c$, \"-\" = $T_\mathrm{rad,mod}$  " + diag, r"Rel. mean scatter for diagn. " + diag)
         # \"--\" $= T_\mathrm{e}$
         i = 0
         for result in ECRad_result_list:
@@ -742,7 +742,7 @@ class plotting_core:
 
     def Trad_vs_diag(self, diagnostic, ch, time_list, calib_diag_trace, Trad_trace, ECE_diag_trace):
         self.title = False
-        self.setup_axes("single", "\"+\" = $c$, \"-\" = $T_\mathrm{rad,mod}$  " + diagnostic, r"Rel. mean scatter for diagn. " + diagnostic)
+        self.setup_axes("single", r"\"+\" = $c$, \"-\" = $T_\mathrm{rad,mod}$  " + diagnostic, r"Rel. mean scatter for diagn. " + diagnostic)
         # \"--\" $= T_\mathrm{e}$
         for i in range(len(time_list)):
             self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
@@ -815,7 +815,7 @@ class plotting_core:
         Te_cur = Te_spl(quasi_linear_beam.rhop[f_ind])
         ne_cur = ne_spl(quasi_linear_beam.rhop[f_ind])
         print("Te_cur", Te_cur)
-        self.setup_axes(r"QL_calc", "Power depostion and driven current \#" + str(shot) + \
+        self.setup_axes(r"QL_calc", r"Power depostion and driven current \#" + str(shot) + \
                         r" $t = " + self.make_SI_string("{0:1.2f}".format(float(time)), r"\second") + r'$', \
                         r"Distribution function slice at " + r"$\rho_\mathrm{pol} =" + \
                         self.make_num_string("{0:1.2f}".format(dist_obj.rhop[f_ind])) + r"$")
@@ -995,8 +995,8 @@ class plotting_core:
             self.setup_axes(r"stacked_small", "Power depostion and driven current #" + str(shot) + \
                             r" $t = " + "{0:1.2f}".format(float(time)) + " s$")
         else:
-            self.setup_axes(r"stacked_small", "Power depostion and driven current \#" + str(shot) + \
-                            r" $t = \SI{" + "{0:1.2f}".format(float(time)) + "}{\second}$")
+            self.setup_axes(r"stacked_small", r"Power depostion and driven current \#" + str(shot) + \
+                            r" $t = \SI{" + r"{0:1.2f}".format(float(time)) + r"}{\second}$")
         pw_torbeams = []
         j_torbeams = []
         rho_torbeams = []
@@ -1217,7 +1217,7 @@ class plotting_core:
                     R_warm_comp=None, z_warm_comp=None, \
                     EQ_exp="AUGD", EQ_diag="EQH", EQ_ed=0, eq_aspect_ratio=True, \
                     vessel_bd=None):
-        shotstr = "\#" + str(shot) + " t = " + "{0:2.3f}".format(time) + " s  "
+        shotstr = r"\#" + str(shot) + r" t = " + r"{0:2.3f}".format(time) + r" s  "
         self.setup_axes("single", r"ECE cold res. and ray " + shotstr, "Toroidal angle")
         if(Rays is not None):
             if(not np.isscalar(Rays[0][0][0])):  # multiple rays stored
@@ -2420,7 +2420,7 @@ class plotting_core:
         elif(shot is not None):
             shotstr = r"\# {0:d}".format(shot)
             if(time is not None):
-                shotstr += " $t$ = \SI{" + "{0:1.3f}".format(time) + r"}{\second}"
+                shotstr += r" $t$ = \SI{" + r"{0:1.3f}".format(time) + r"}{\second}"
             self.axlist[0].text(left_margin, 0.05, shotstr,
                 verticalalignment='bottom', horizontalalignment='left',
                 transform=self.axlist[0].transAxes,
