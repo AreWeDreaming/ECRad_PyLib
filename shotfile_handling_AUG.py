@@ -1558,7 +1558,6 @@ def get_RELAX_target_current(shot, time, exp="AUGD", ed=0, smoothing=1.e-3):
     NBCD_cur = IDF.getSignal("nbcd_tot", tBegin=time - smoothing * 0.5, tEnd=time + smoothing * 0.5)
     if(len(Ohmic_cur) > 10):
         Ohmic_cur, y_err = smooth(Ohmic_cur, True)
-
         ECCD_cur, y_err = smooth(ECCD_cur, True)
         Bootstrap_cur, y_err = smooth(Bootstrap_cur, True)
         NBCD_cur, y_err = smooth(NBCD_cur, True)
@@ -1571,7 +1570,7 @@ def get_RELAX_target_current(shot, time, exp="AUGD", ed=0, smoothing=1.e-3):
         I_tor, y_err = smooth(I_tor, True)
     else:
         I_tor = np.mean(I_tor)
-    print("Total current", I_tor * 1.e-6, "kA")
+    print("Total current", I_tor * 1.e-6, "MA")
     j_tot = (Ohmic_cur + ECCD_cur + Bootstrap_cur + NBCD_cur)
     print("Sum of currents inside the plasma", j_tot * 1.e-6, "kA")
     print("Current fractions: ECCD, Ohmic, Bootstrap, NBCD [%]", \
@@ -1579,6 +1578,11 @@ def get_RELAX_target_current(shot, time, exp="AUGD", ed=0, smoothing=1.e-3):
           Ohmic_cur / j_tot * 100.e0, \
           Bootstrap_cur / j_tot * 100.e0, \
           NBCD_cur / j_tot * 100.e0)
+    print("Current absolute value: ECCD, Ohmic, Bootstrap, NBCD [kA]", \
+          ECCD_cur * 1.e-3, \
+          Ohmic_cur * 1.e-3, \
+          Bootstrap_cur * 1.e-3, \
+          NBCD_cur * 1.e-3)
     return (Ohmic_cur + ECCD_cur) * 1.e-6
 
 def get_total_current(shot, time, exp="AUGD", diag="FPC", ed=0, smoothing=1.e-3):
@@ -1729,9 +1733,9 @@ def compare_IDE_to_MBI(shot):
     
 
 if(__name__ == '__main__'):
-    make_plasma_mat_for_testing("/tokp/work/sdenk/ECRad/32934.mat", 32934, [3.298], "AUGD", "EQH", 0, \
-                                bt_vac_correction=1.005, IDA_exp="AUGD", IDA_ed=0)
-#     print(get_RELAX_target_current(35662, 4.4, exp="AUGD", ed=0, smoothing=1.e-3))
+#     make_plasma_mat_for_testing("/tokp/work/sdenk/ECRad/32934.mat", 32934, [3.298], "AUGD", "EQH", 0, \
+#                                 bt_vac_correction=1.005, IDA_exp="AUGD", IDA_ed=0)
+    print(get_RELAX_target_current(35662, 6.12, exp="AUGD", ed=0, smoothing=2.e-2))
 #     compare_IDE_to_MBI(35662)
 #    pass
 #     print(get_RELAX_target_current(33697, 4.8, exp="AUGD", ed=0, smoothing=1.e-3))
