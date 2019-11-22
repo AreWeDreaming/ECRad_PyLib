@@ -1010,8 +1010,12 @@ def get_NPA_data(shot):
     t = np.mean(t.reshape((len(t) / 10, 10)), axis=1)  # average over 10 indidual points
     return [t, signal]
 
-def get_Thomson_data(shot, times, diag, Te=False, ne=False, edge=False, core=False, EQ_exp='AUGD', EQ_diag="EQH", EQ_ed=0):
+def get_Thomson_data(shot, times, diag, Te=False, ne=False, edge=False, core=False, EQ_exp='AUGD', EQ_diag="EQH", EQ_ed=0, smoothing=None):
     scalar_times = False
+    if(smoothing is not None):
+        t_smooth = smoothing
+    else:
+        t_smooth = diag.t_smooth
     if(np.isscalar(times)):
         scalar_times = True
         times = np.array([times])
@@ -1057,8 +1061,8 @@ def get_Thomson_data(shot, times, diag, Te=False, ne=False, edge=False, core=Fal
         return None, None
     i = 0
     for time in times:
-        t1 = np.argmin(np.abs(t_diag - time + 0.5 * diag.t_smooth))
-        t2 = np.argmin(np.abs(t_diag - time - 0.5 * diag.t_smooth))
+        t1 = np.argmin(np.abs(t_diag - time + 0.5 * t_smooth))
+        t2 = np.argmin(np.abs(t_diag - time - 0.5 * t_smooth))
         if(t2 == t1):
             t2 += 1
         signals.append(np.mean(sig[t1:t2], axis=0))

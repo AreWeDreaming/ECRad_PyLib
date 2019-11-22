@@ -65,7 +65,8 @@ class ECI_diag(Diag):
 
 
 class ECRH_diag(Diag):
-    def __init__(self, name, exp, diag_str, ed, beamline, pol_coeff_X, base_freq_140, t_smooth=1.e-3):
+    def __init__(self, name, exp, diag_str, ed, beamline, pol_coeff_X, base_freq_140, \
+                 t_smooth=1.e-3, pol_angle_cor= 0.0, tor_angle_cor = 0.0):
         Diag.__init__(self, name, exp, diag_str, ed, t_smooth)
         self.beamline = beamline
         self.properties.append("beamline")
@@ -79,6 +80,14 @@ class ECRH_diag(Diag):
         self.properties.append("base_freq_140")
         self.descriptions_dict["base_freq_140"] = "140 GHz central frequency"
         self.data_types_dict["base_freq_140"] = "bool"
+        self.pol_angle_cor = pol_angle_cor
+        self.properties.append("pol_angle_cor")
+        self.descriptions_dict["pol_angle_cor"] = "Correction to be applied on the pol. launch angle"
+        self.data_types_dict["pol_angle_cor"] = "real"
+        self.tor_angle_cor = tor_angle_cor
+        self.properties.append("tor_angle_cor")
+        self.descriptions_dict["tor_angle_cor"] = "Correction to be applied on the tor. launch angle"
+        self.data_types_dict["tor_angle_cor"] = "real"
 
 class EXT_diag(BasicDiag):  #  Makes no sense to inherit properties we do not want -> Own class
     def __init__(self, name, launch_geo=None, pol_coeff_X= -1, t_smooth=1.e-3):

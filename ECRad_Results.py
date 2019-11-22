@@ -573,7 +573,7 @@ class ECRadResults:
         at_least_3d_keys[at_least_3d_keys.index("rhopO")] = "BPDrhopO"
         at_least_3d_keys += list(self.ray) + ["ray_BPDX", "ray_BPDO", "ray_BPD_secondX", "ray_BPD_secondO", "ray_emX", "ray_emO", \
                                                "ray_abX", "ray_abO", "ray_TX", "ray_TO", "ray_em_secondX", "ray_em_secondO", \
-                                               "ray_absecondX", "ray_absecondO", "ray_TsecondX", "ray_TsecondO", "freq_weights", \
+                                               "ray_ab_secondX", "ray_ab_secondO", "ray_T_secondX", "ray_T_secondO", "freq_weights", \
                                                "ray_weights"]
         at_least_3d_keys += ["std_dev_mat", "calib_mat"]
         self.Config.from_mat_file(mdict=mdict)
