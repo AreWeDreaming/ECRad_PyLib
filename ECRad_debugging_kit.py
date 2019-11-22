@@ -4,7 +4,6 @@ Created on Apr 12, 2016
 @author: sdenk
 '''
 import ECRad_Results
-from __builtin__ import getattr
 from TB_communication import read_topfile
 working_dir = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/Ecfm_Model/"
 import sys
@@ -13,7 +12,6 @@ sys.path.append("../ECRad_Pylib")
 # from kk_abock import kk as KKeqi
 # from kk_extra import kk_extra
 from Diags import ECRH_diag
-from EQU import EQU
 import dd
 from plotting_configuration import *
 import numpy as np
@@ -24,33 +22,14 @@ import matplotlib.patches as patches
 from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
 from scipy.integrate import simps
 from em_Albajar import em_abs_Alb, s_vec
-from distribution_io import load_f_from_ASCII
-from electron_distribution_utils import read_svec_dict_from_file, load_f_from_ASCII, \
-                                        read_LUKE_data, read_Fe, Gauss_norm, \
-                                        Gauss_not_norm, Juettner2D, Juettner2D_bidrift, multi_slope, \
-                                        RunAway2D, make_dist_from_Gene_input, get_dist_moments, get_dist_moments_non_rel
 from em_Albajar import em_abs_Alb, distribution_interpolator, gene_distribution_interpolator, s_vec
-from ECRad_Interface import make_topfile_from_ext_data
+from TB_communication import make_topfile_from_ext_data
 from equilibrium_utils import EQDataExt
 from equilibrium_utils_AUG import EQData
-from equilibrium_utils_AUGEQU import EQData as EQDataEQU
 from shotfile_handling_AUG import get_data_calib
 from scipy.io import loadmat
 from ECRad_Results import ECRadResults
-from TB_communication import make_topfile
 
-
-def get_max_length_svec(working_dir):
-    freqs = np.loadtxt(os.path.join(working_dir,"ray_launch.dat"), skiprows=1)
-    N_ch = len(freqs)
-    max_lenght = 0
-    ich = 0
-    for i in range(N_ch):
-        svec_ECRad, freq = read_svec_dict_from_file(working_dir, i + 1)
-        if(len(svec_ECRad["s"]) > max_lenght):
-            max_lenght = len(svec_ECRad["s"])
-            ich = i + 1
-    print("Longset svec ", max_lenght, " channel ", ich)
 
 def debug_append_ECRadResults(filename):
     results = ECRadResults()
@@ -966,6 +945,14 @@ def debug_calib(resultfile):
     plt.show()
 
 
+def debug_ray(results_file, itime, ich, ir):
+    result = ECRadResults()
+    result.from_mat_file(results_file)
+    plt.plot(result.ray["YX"][itime][ich], result.ray["emX"][itime][ich])
+    plt.gca().twinx()
+    plt.plot(result.ray["YX"][itime][ich], result.ray["TeX"][itime][ich], "--r")
+    plt.show()
+
 if(__name__ == "__main__"):
 #     compare_LOS_Rz("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/", 20)
 #     compare_EQData(35662, 2.0, "AUGD", "IDE", 0)
@@ -985,7 +972,8 @@ if(__name__ == "__main__"):
 #     compare_topfiles("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/")
 #     debug_append_ECRadResults("/tokp/work/sdenk/ECRad_2/ECRad_35662_ECE_ed1.mat")
 #     compare_ECRad_results(["/tokp/work/sdenk/ECRad/ECRad_35662_ECECTCCTA_ed2.mat","/tokp/work/sdenk/ECRad/ECRad_35662_ECECTCCTA_ed7.mat"], 6.95,  100)
-    compare_ECRad_results_diff("/tokp/work/sdenk/ECRad/ECRad_35662_ECECTCCTA_ed2.mat", ["/tokp/work/sdenk/ECRad/ECRad_35662_ECECTCCTA_ed7.mat"], 6.95,  100)
+    debug_ray("/tokp/work/sdenk/ECRad/ECRad_35662_EXT_ed12.mat", 0, 0, 6)
+#     compare_ECRad_results_diff("/tokp/work/sdenk/ECRad/ECRad_35662_ECECTCCTA_ed2.mat", ["/tokp/work/sdenk/ECRad/ECRad_35662_ECECTCCTA_ed7.mat"], 6.95,  100)
 #     inspect_svec("/tokp/work/sdenk/ECRad_2/ECRad_data/", 3)
     # validate_theta_along_los("/ptmp1/work/sdenk/nssf/30406/1.38/", 1, 2)
     # debug_f_inter("/afs/ipp-garching.mpg.de/home/s/sdenk/F90/Ecfm_Model_new")

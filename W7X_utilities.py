@@ -137,6 +137,7 @@ def compare(ECRad_data, Travis_folder, quantity, channelno = None):
     ax = fig.add_subplot(111)
     results = ECRadResults()
     results.from_mat_file(ECRad_data)
+    twinx = None
     if(not os.path.isfile(os.path.join(Travis_folder, "ECE_spectrum_parsed"))):
         Travis_file = open(os.path.join(Travis_folder, "ECE_spectrum"))
         lines = []
@@ -148,12 +149,12 @@ def compare(ECRad_data, Travis_folder, quantity, channelno = None):
             parsed_Travis_file.write(line)
         parsed_Travis_file.flush()
         parsed_Travis_file.close()
-    if(quantity in ["Trad", "tau", "Trad_warm", "tau_warm"]):
+    if("Trad" in quantity or "tau" in quantity):
         Travis_Trad = np.loadtxt(os.path.join(Travis_folder, "ECE_spectrum_parsed"),skiprows=1)
         rho = results.Scenario.plasma_dict["rhot_prof"][0]
         Te = results.Scenario.plasma_dict["Te"][0] / 1.e3
         ne = results.Scenario.plasma_dict["ne"][0] / 1.e19
-        if("warm" not in quantity):
+        if("warm" not in quantity and "_f"  not in quantity):
             rho_cold = results.resonance["rhop_cold"][0]
             if("Trad" in quantity):
                 try:
@@ -179,7 +180,8 @@ def compare(ECRad_data, Travis_folder, quantity, channelno = None):
                 ax.plot(np.abs(Travis_Trad.T[10]), Travis_Trad.T[8], "cs", label="Travis")
                 ax.set_xlabel(r"$\rho_\mathrm{tor,\,cold}$")
                 ax.set_ylabel(r"$T_\mathrm{rad}\,[\si{\kilo\electronvolt}]$")
-        else:
+            ax.set_xlim(0.0,1.0)
+        elif("warm" in quantity):
             rho_warm = results.resonance["rhop_warm"][0]
             if("Trad" in quantity):
                 ax.plot(rho_warm, results.XTrad[0], "r+", label="ECRad Primary")
@@ -201,7 +203,22 @@ def compare(ECRad_data, Travis_folder, quantity, channelno = None):
                 twinx = ax.twinx()
                 twinx.plot(rho, Te, "m:", label="ECRad $T_\mathrm{e}$")
                 twinx.set_ylabel(r"$T_\mathrm{e}\,[\si{\kilo\electronvolt}]$")
-        ax.set_xlim(0.0,1.0)
+            ax.set_xlim(0.0,1.0)
+        else:
+            f = results.Scenario.ray_launch[0]["f"] / 1.e9
+            if("Trad" in quantity):
+                ax.plot(f, results.XTrad[0], "r+", label="ECRad Primary")
+                ax.plot(f, results.XTrad_comp[0], "b*", label="ECRad Secondary")
+                ax.plot(f, Travis_Trad.T[3], "cs", label="Travis")
+                ax.set_xlabel(r"$f\,[\si{\giga\hertz}]$")
+                ax.set_ylabel(r"$T_\mathrm{rad/e}\,[\si{\kilo\electronvolt}]$")
+            elif("tau" in quantity):
+                ax.plot(f, results.Xtau[0], "r+", label="ECRad Primary")
+                ax.plot(f, results.Xtau_comp[0], "b*", label="ECRad Secondary")
+                ax.plot(f, Travis_Trad.T[8], "cs", label="Travis")
+                ax.set_xlabel(r"$f\,[\si{\giga\hertz}]$")
+                ax.set_ylabel(r"$\tau_\omega$")
+        
     elif(quantity == "Rres"):
         Travis_Trad = np.loadtxt(os.path.join(Travis_folder, "ECE_spectrum_parsed"),skiprows=1)
         ECRad_chno = np.linspace(1, len(results.resonance["R_cold"][0]),  \
@@ -282,6 +299,13 @@ def compare(ECRad_data, Travis_folder, quantity, channelno = None):
 #             ax.plot(Travis_ray.T[1], Travis_ray.T[-4], "g+", label="Travis $B_z$",linestyle="--")
 #             ax.set_xlabel(r"$s\,[\si{\metre}]$")
 #             ax.set_ylabel(r"$\vert B\vert\,[\si{\tesla}]$")
+        elif(quantity == "alpha"):
+            s = np.max(results.ray["sX"][0][channelno - 1]) - results.ray["sX"][0][channelno - 1][::-1]
+            ax.plot(s, results.ray["abX"][0][channelno - 1][::-1], "r*", label="ECRad primary abs. coeff.", linestyle="-")
+            ax.plot(s, results.ray["ab_secondX"][0][channelno - 1][::-1], "mo", label="ECRad secondary abs. coeff.", linestyle=":")
+            ax.plot(Travis_ray.T[1], Travis_ray.T[16], "g+", label="Travis abs. coeff.", linestyle="--")
+            ax.set_xlabel(r"$R\,[\si{\metre}]$")
+            ax.set_ylabel(r"$\alpha_\omega\,[\si{\per\metre}]$")
         elif(quantity == "BPD"):
             R = np.sqrt(results.ray["xX"][0][channelno - 1][::-1]**2 + results.ray["yX"][0][channelno - 1][::-1]**2)
             ax.plot(R, results.ray["BPDX"][0][channelno - 1][::-1] / np.max(results.ray["BPDX"][0][channelno - 1]), "r*", label="ECRad primary BPD",linestyle="-")
@@ -289,7 +313,7 @@ def compare(ECRad_data, Travis_folder, quantity, channelno = None):
             ax.plot(np.sqrt(Travis_ray.T[2]**2 + Travis_ray.T[3]**2), Travis_ray.T[21]* Travis_ray.T[23] / np.max(Travis_ray.T[21]* Travis_ray.T[23]), "g+", label="Travis BPD",linestyle="--")
             ax.set_xlabel(r"$R\,[\si{\metre}]$")
             ax.set_ylabel(r"$D_\omega$")
-    if(quantity is not "Trad" or "tau"):
+    if(twinx is None ):
         plt.legend()
     else:
         lns = ax.get_lines() + twinx.get_lines()
@@ -320,7 +344,8 @@ def test_mconf(filename):
 if(__name__ == "__main__"):
 #     test_mconf("/tokp/scratch/sdenk/ECRad/ECRad_data/W7X-EIM-stand5ard-beta=0.wout")
 #     compare('/tokp/work/sdenk/ECRad/ECRad_20181009043_EXT_ed16.mat', "/afs/ipp-garching.mpg.de/home/s/sdenk/Documentation/Data/W7X_stuff/example/travisinput/results/", "Trad_warm", 2)
-    compare('/tokp/work/sdenk/ECRad/ECRad_20181009043002_EXT_ed1.mat', "/afs/ipp-garching.mpg.de/home/s/sdenk/Documentation/Data/W7X_stuff/Travis_ECRad_Benchmark/20181009.043.002_2_15s/results_0/", "Rz", 5)
+#compare('/tokp/work/sdenk/ECRad/ECRad_20180823016002_EXT_ed19.mat', "/afs/ipp-garching.mpg.de/home/s/sdenk/Documentation/Data/W7X_stuff/Travis_ECRad_Benchmark/20180823.016.002_4_45s/results_0/", "Trad", 7)
+    compare('/tokp/work/sdenk/ECRad/ECRad_20181009043002_EXT_ed6.mat', "/afs/ipp-garching.mpg.de/home/s/sdenk/Documentation/Data/W7X_stuff/Travis_ECRad_Benchmark/20181009.043.002_2_15s/results_0/", "Trad", 7)
 #     compare('/tokp/work/sdenk/ECRad/ECRad_20181009043_EXT_ed18.mat', "/afs/ipp-garching.mpg.de/home/s/sdenk/Documentation/Data/W7X_stuff/low_ne_case/results_0/", "Rz", 2)
 #     compare('/tokp/work/sdenk/ECRad/ECRad_20181009043_EXT_ed18.mat', "/afs/ipp-garching.mpg.de/home/s/sdenk/Documentation/Data/W7X_stuff/example2/results/", "Rz", 2)
     plt.show()

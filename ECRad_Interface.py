@@ -404,6 +404,8 @@ def get_diag_launch(shot, time, used_diag_dict, gy_dict=None, ECI_dict=None):
                 launch["theta_pol"][:] = -gy_dict[str(used_diag_dict[diag].beamline)].theta_pol  # TORBEAM convention
             else:
                 launch["theta_pol"][:] = -gy_dict[str(used_diag_dict[diag].beamline)].theta_pol[np.argmin(np.abs(gy_dict[str(used_diag_dict[diag].beamline)].time - time))]  # TORBEAM convention
+            launch["theta_pol"][:] += used_diag_dict[diag].pol_angle_cor
+            launch["phi_tor"][:] += used_diag_dict[diag].tor_angle_cor
             launch["width"][:] = gy_dict[str(used_diag_dict[diag].beamline)].width_y
             launch["dist_focus"][:] = gy_dict[str(used_diag_dict[diag].beamline)].curv_y
         if(diag == "ECN" or diag == "ECO"):

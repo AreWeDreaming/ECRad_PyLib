@@ -198,7 +198,7 @@ class EQDataExt:
         if(Psi.shape[0] != len(R)):
             Psi = Psi
         special = cur_slice.special
-        if(Psi[len(R) / 2][len(z) / 2] > special[1]):
+        if(Psi[len(R) // 2][len(z) // 2] > special[1]):
         # We want a minimum in the flux at the magn. axis
             Psi *= -1.0
             special[1] *= -1.0
