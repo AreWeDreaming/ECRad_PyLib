@@ -58,7 +58,7 @@ class GlobalSettingsITM:
         self.TB_path = "/gss_efgw_work/work/g2sdenk/torbeam/lib-OUT/"
         self.qos_function = qos_function_itm
         self.partition_function = partition_function_itm
-        self.max_cores = 36
+        self.max_cores = 48
         self.pylib_folder = "../ECRad_Pylib"
         self.GUI_folder = "../ECRad_GUI"
                 

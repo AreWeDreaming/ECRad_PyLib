@@ -27,6 +27,7 @@ from TB_communication import make_topfile_no_data_load, make_Te_ne_files
 def GetECRadExec(Config, Scenario, time):
     # Determine OMP stacksize
     parallel = Config.parallel
+    parallel_cores = Config.parallel_cores
     ECRadVers = globalsettings.ECRadPath
     if(parallel):
         ECRadVers += "OMP"
@@ -38,12 +39,12 @@ def GetECRadExec(Config, Scenario, time):
             print("Falling back to single core")
             parallel = False
         ECRadVers += "db"
-    if(parallel and Config.parallel_cores > globalsettings.max_cores):
-        print("The maximum amount of cores for tokp submission is 32")
-        raise ValueError
+    if(parallel and parallel_cores > globalsettings.max_cores):
+        print("The maximum amount of cores for the current machine is: ", globalsettings.max_cores )
+        print("Settings amount of cores to maximum for best performance")
+        parallel_cores = globalsettings.max_cores
     if(parallel):
         stacksize = 0
-        cores  = Config.parallel_cores
         factor = 1
         for diag in Scenario.used_diags_dict:
             if(diag == "ECN" or diag == "ECO"  or diag == "ECI"):
@@ -53,7 +54,7 @@ def GetECRadExec(Config, Scenario, time):
         stacksize += int(np.ceil(Config.max_points_svec * 3.125) * factor)
         os.environ['OMP_STACKSIZE'] = "{0:d}k".format(stacksize)
     else:
-        cores = 1 # serial
+        parallel_cores = 1 # serial
     if(Config.batch):
         os.environ['ECRad_working_dir_1'] = Config.scratch_dir
         os.environ['ECRad'] = ECRadVers
@@ -61,16 +62,16 @@ def GetECRadExec(Config, Scenario, time):
         launch_options_dict["jobname"] = "-J " + "E{0:5d}{1:1.1f}".format(Scenario.shot, time)
         launch_options_dict["IO"] = "-o {0:s} -e {1:s} ".format(os.path.join(Config.scratch_dir, "ECRad.stdout"), \
                                                                 os.path.join(Config.scratch_dir, "ECRad.stderr"))
-        launch_options_dict["partition"] = globalsettings.partition_function(cores, Config.wall_time)
-        launch_options_dict["qos"] = globalsettings.qos_function(cores, Config.wall_time)
-        launch_options_dict["memory"] = "--mem-per-cpu={0:d}M".format(int(Config.vmem / cores))
-        launch_options_dict["cpus"] = " --cpus-per-task={0:d}".format(cores)
+        launch_options_dict["partition"] = globalsettings.partition_function(parallel_cores, Config.wall_time)
+        launch_options_dict["qos"] = globalsettings.qos_function(parallel_cores, Config.wall_time)
+        launch_options_dict["memory"] = "--mem-per-cpu={0:d}M".format(int(Config.vmem / parallel_cores))
+        launch_options_dict["cpus"] = " --cpus-per-task={0:d}".format(parallel_cores)
         InvokeECRad = "sbatch"
         for key in launch_options_dict:
             InvokeECRad += " " + launch_options_dict[key]
         InvokeECRad += " " + globalsettings.ECRadPathBSUB
     else:
-        os.environ['OMP_NUM_THREADS'] = "{0:d}".format(cores)
+        os.environ['OMP_NUM_THREADS'] = "{0:d}".format(parallel_cores)
         InvokeECRad = ECRadVers + " " + Config.scratch_dir
     return InvokeECRad
 

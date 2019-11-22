@@ -182,6 +182,21 @@ class f_interpolator:
                 for j in range(len(self.y)):
                     Fe_new[i][j] = self.spline_mat[i][j](rhop)
             return self.x, self.y, RectBivariateSpline(self.x , self.y, Fe_new, kx=self.order, ky=self.order)
+        
+    
+        
+
+class distribution_momentum_interpolator:
+    # Simple class to interpolate in momentum space
+    # Initialized with a RectBivariateSpline
+    def __init__(self, x, y, spline):
+        self.x = x
+        self.y = y
+        self.spline = spline
+        
+    def __call__(self, x_eval, y_eval):
+        self.spline(x_eval, y_eval, grid=False)
+        
 
 class distribution:
     # Distribution class for bounce averaged distributions, for example from RELAX or LUKE
@@ -223,4 +238,6 @@ class distribution:
         self.f_cycl_log10 = np.log10(self.f_cycl)
         print("distribution shape:", self.f.shape)
         print("Finished remapping.")
+        
+        
 
