@@ -51,6 +51,7 @@ class GlobalSettingsITM:
             self.SLES12 = True
         self.Phoenix = "phoenix" in wx.PlatformInfo
         self.ECRadRoot = "/gss_efgw_work/work/g2sdenk/ECRad/"
+        self.ECRadLibDir = os.path.join(self.ECRadRoot, "$SYS")
         self.ECRadPylibRoot = "../ECRad_Pylib/"
         self.ECRadGUIRoot = "../ECRad_GUI/"
         self.ECRadPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRad")

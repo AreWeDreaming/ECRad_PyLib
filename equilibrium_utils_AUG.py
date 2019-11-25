@@ -111,7 +111,7 @@ class EQData(EQDataExt):
         self.equ.read_scalars()
         dummy, time_index = self.equ._get_nearest_index(time)
         time_index = time_index[0]
-        special = special_points(self.equ.ssq['Rmag'][time_index], self.equ.ssq['Zmag'][time_index], self.equ.psi0[time_index], None, None, self.equ.psix[time_index])
+        special = special_points(self.equ.ssq['Rmag'][time_index], self.equ.ssq['Zmag'][time_index], self.equ.psi0[time_index], self.equ.ssq['Raus'][time_index], self.equ.ssq['Zsquad'][time_index], self.equ.psix[time_index])
         self.equ.read_pfm()
         Psi = self.equ.pfm[:, :, time_index]
         self.R0 = 1.65  # Point for which BTFABB is defined
