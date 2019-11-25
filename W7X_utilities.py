@@ -345,8 +345,9 @@ if(__name__ == "__main__"):
 #     test_mconf("/tokp/scratch/sdenk/ECRad/ECRad_data/W7X-EIM-stand5ard-beta=0.wout")
 #     compare('/tokp/work/sdenk/ECRad/ECRad_20181009043_EXT_ed16.mat', "/afs/ipp-garching.mpg.de/home/s/sdenk/Documentation/Data/W7X_stuff/example/travisinput/results/", "Trad_warm", 2)
 #compare('/tokp/work/sdenk/ECRad/ECRad_20180823016002_EXT_ed19.mat', "/afs/ipp-garching.mpg.de/home/s/sdenk/Documentation/Data/W7X_stuff/Travis_ECRad_Benchmark/20180823.016.002_4_45s/results_0/", "Trad", 7)
-    compare('/tokp/work/sdenk/ECRad/ECRad_20181009043002_EXT_ed6.mat', "/afs/ipp-garching.mpg.de/home/s/sdenk/Documentation/Data/W7X_stuff/Travis_ECRad_Benchmark/20181009.043.002_2_15s/results_0/", "Trad", 7)
-#     compare('/tokp/work/sdenk/ECRad/ECRad_20181009043_EXT_ed18.mat', "/afs/ipp-garching.mpg.de/home/s/sdenk/Documentation/Data/W7X_stuff/low_ne_case/results_0/", "Rz", 2)
+    compare('/afs/ipp-garching.mpg.de/home/s/sdenk/Documentation/Data/W7X_stuff/Travis_ECRad_Benchmark/20180823.016.002_4_45s/ECRad_20180823016002_EXT_ed19.mat', \
+             "/afs/ipp-garching.mpg.de/home/s/sdenk/Documentation/Data/W7X_stuff/Travis_ECRad_Benchmark/20180823.016.002_4_45s/results_0/", "tau", 7)
+#      compare('/tokp/work/sdenk/ECRad/ECRad_20181009043_EXT_ed18.mat', "/afs/ipp-garching.mpg.de/home/s/sdenk/Documentation/Data/W7X_stuff/low_ne_case/results_0/", "Rz", 2)
 #     compare('/tokp/work/sdenk/ECRad/ECRad_20181009043_EXT_ed18.mat', "/afs/ipp-garching.mpg.de/home/s/sdenk/Documentation/Data/W7X_stuff/example2/results/", "Rz", 2)
     plt.show()
 #     make_Travis_input_from_AUG("/tokp/work/sdenk/ECRad/", 32934, 3.298, "SDENK", 0, "AUGD", "EQH", 0)
