@@ -9,7 +9,7 @@ from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
 import scipy.constants as cnst
 from scipy.integrate import simps 
 from scipy.integrate import nquad
-from distribution_functions import Juettner2D, Juettner1D
+from distribution_functions import Juettner2D, Juettner1D, rel_thermal_beta
 
 def zeros_mom_non_rel(betall, betaxx, f_spl):
     return 2.0 * np.pi * betaxx * np.exp(f_spl(betall, betaxx))
@@ -496,4 +496,53 @@ def check_distribution(rhop, u, pitch, Fe):
             print("df/du", (Fe_grid * Fe[i])[indices[0], indices[1]])
     return good
 
+class RDiffRelax:
+    def __init__(self, Te_0, a,b,c,d):
+        # Copy of the RELAX radial diffusion model
+        # Does not include the inward pinch and only does one flux surface at a time
+        # and does not support rdiff
+        self.a= a
+        self.b=b
+        self.c=c
+        self.d=d
+        self.u_th_0 = rel_thermal_beta(cnst.electron_mass * cnst.c**2 / (Te_0* cnst.e))
+        self.u_th_0 /= np.sqrt(1.0 - self.u_th_0**2)
+    
+    def __call__(self,x):   
+        if(self.c != 0.e0 and self.d != 0.e0):
+            tot_vel_diff = self.c * np.exp(-(x / self.u_th_0 / self.d)**2)
+        else:
+            tot_vel_diff = 0.e0
+        return tot_vel_diff + (self.a + self.b * (x / self.u_th_0)**2)
+        
+        
+class DistWeightInt:
+    def __init__(self, rdiff_relax):
+        self.rdiff_relax = rdiff_relax
+        self.eval_mode = "thermal"
+        self.N_count = 0
+        
+    def set_distribution(self, Te=None, Spl=None):
+        # Spline has to be the logarithm of distribution
+        self.N_count = 0
+        if(Spl is not None):
+            self.Spl = Spl
+            self.eval_mode = "Spl"
+        else:
+            self.Te = Te
+            self.eval_mode = "thermal"
+    
+    def eval_int(self, ull, uxx):
+        self.N_count += 1
+        if(self.eval_mode == "Spl"):
+            return( 2.0 * np.pi * np.exp(self.Spl(ull,uxx)) * self.rdiff_relax(np.sqrt(ull**2 + uxx**2))* uxx)
+        else:
+            return( 2.0 * np.pi * Juettner2D(ull, uxx, self.Te) * self.rdiff_relax(np.sqrt(ull**2 + uxx**2)) * uxx)
+            
+    def make_integral(self, ull_range, uxx_range, points):
+        return nquad(self.eval_int, [[ull_range[0], ull_range[1]], [uxx_range[0], uxx_range[1]]], \
+                   opts=[{"epsabs":1.e-4, "epsrel":1.e-4, "points":points[0]},\
+                         {"epsabs":1.e-4, "epsrel":1.e-4, "points":points[1]}])[0]
+            
+            
 
