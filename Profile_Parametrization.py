@@ -37,10 +37,12 @@ class ProfileParametrization:
     def __call__(self, rho):
         return self.eval(rho)
     
-    def eval(self, rho):
+    def eval(self, rho, dn=0):
         # Returns profile value for rho
         # Should support numpy arrays of arbitrary shape and scalars
+        # dn sets the order of the derivative to be taken
         return 0.0
+    
     
     def make_initital_guess(self, data=None, unc=None, rho=None):
         # Estimate parameters using the data directly
@@ -54,6 +56,7 @@ class ProfileParametrization:
         self.bounds = bounds
     
     def set_fixed(self, fixed):
+        # Requires splitting of the parameter variable
         # 1D boolean numpy array - True means that the parameter will not be optimized
         if(len(fixed) != self.n_param):
             raise ValueError("The number of parameters must not be changed")
@@ -69,37 +72,37 @@ class ProfileParametrization:
         
     
 
-class TravisTeProfile(ProfileParametrization):
-# Do not use - easily produces negative Te
-        
-    
-    def reset(self):
-        ProfileParametrization.reset(self)
-        #                             0,   g,  hole, p,   q,  width
-        self.parameters = np.array([0.97, 0.0, -0.5, 3.0, 2.0, 0.5])
-        self.name = "Travis Profile"
-        self.type = "Te"
-        self.n_param = 6
-        # Here True directly after initialization
-
-    def is_ready(self):
-        return True
-        
-    def make_initital_guess(self, data=None, unc=None, rho=None):
-        if(data is not None):
-            self.parameters[0] = np.max(data)
-        return self.parameters
-    
-    def eval(self, rho):
-        if(np.isscalar(rho) and ( rho > 1.0 or rho < 0.0)):
-            return 0.0
-        prof = self.parameters[0] * (self.parameters[1] - self.parameters[2] + \
-                                     (1.e0 + self.parameters[2] - self.parameters[1]) * \
-                                     ((1.e0 - rho**self.parameters[3])**self.parameters[4]) + \
-                                     self.parameters[2] * (1.e0 - np.exp(- (rho / self.parameters[5]**2))))
-        if(not np.isscalar(rho)):
-            prof[np.logical_or(rho > 1.0, rho < 0.0)] = 0.0
-        return prof
+# class TravisTeProfile(ProfileParametrization):
+# # Do not use - easily produces negative Te
+#         
+#     
+#     def reset(self):
+#         ProfileParametrization.reset(self)
+#         #                             0,   g,  hole, p,   q,  width
+#         self.parameters = np.array([0.97, 0.0, -0.5, 3.0, 2.0, 0.5])
+#         self.name = "Travis Profile"
+#         self.type = "Te"
+#         self.n_param = 6
+#         # Here True directly after initialization
+# 
+#     def is_ready(self):
+#         return True
+#         
+#     def make_initital_guess(self, data=None, unc=None, rho=None):
+#         if(data is not None):
+#             self.parameters[0] = np.max(data)
+#         return self.parameters
+#     
+#     def eval(self, rho):
+#         if(np.isscalar(rho) and ( rho > 1.0 or rho < 0.0)):
+#             return 0.0
+#         prof = self.parameters[0] * (self.parameters[1] - self.parameters[2] + \
+#                                      (1.e0 + self.parameters[2] - self.parameters[1]) * \
+#                                      ((1.e0 - rho**self.parameters[3])**self.parameters[4]) + \
+#                                      self.parameters[2] * (1.e0 - np.exp(- (rho / self.parameters[5]**2))))
+#         if(not np.isscalar(rho)):
+#             prof[np.logical_or(rho > 1.0, rho < 0.0)] = 0.0
+#         return prof
 
 class UnivariateLSQSpline(ProfileParametrization):
     def __init__(self):
@@ -133,7 +136,7 @@ class UnivariateLSQSpline(ProfileParametrization):
 #         plt.plot(x,y, "+")
         self.order = 3
         self.t = np.linspace(0.1, 0.9, 7)
-        self.t=np.r_[(0.0,)*(self.order+1),self.t, (1.0,)*(self.order+1)]
+        self.t = np.r_[(0.0,)*(self.order+1),self.t, (1.0,)*(self.order+1)]
         self.spl = make_lsq_spline(x[sort], y[sort], t=self.t, k=self.order, w=w[sort])
         self.parameters = self.spl.c
 #         print(self.t)
@@ -151,29 +154,37 @@ class UnivariateLSQSpline(ProfileParametrization):
             return False
         
     
-    def eval(self, rho):
-        spl =BSpline(self.t, self.parameters, k=self.order)
+    def eval(self, rho, dn=0):
+        spl = BSpline(self.t, self.parameters, k=self.order)
         #self.spl.k = self.parameters
-        return(np.exp(spl(rho)))
+        if(dn == 0):
+            return(np.exp(spl(rho)))
+        elif(dn == 1):
+            return spl(rho, nu=1) * np.exp(spl(rho))
+        elif(dn == 2):
+            return spl(rho, nu=1)**2 * np.exp(spl(rho)) + \
+                   spl(rho, nu=2) * np.exp(spl(rho))
+        else:
+            raise(ValueError("dn in UnivariateLSQSpline is " + str(dn) + " only 0, 1,2 are supported"))
 
-if(__name__== "__main__"):
-    profile_parametrization = TravisTeProfile()
-    from plotting_configuration import plt
-    rho = np.linspace(0.0, 1.0, 100)
-    dummy, Trad, dummy2 = np.loadtxt("/tokp/work/sdenk/ECRad/TRadM_therm.dat", unpack=True)
-    # *1.e3, because  the ECRad ascii output file is in keV but the result file used in the forward model uses eV
-    Trad *= 1.e3
-    art_unc = np.zeros(len(Trad))
-    art_unc[:] = 1.0 # unweighted least squares
-    # Use maximum of data to guess highest Te
-    parameters = profile_parametrization.make_initital_guess(Trad)
-    plt.plot(rho, profile_parametrization.eval(rho, profile_parametrization.parameters), "+")
-    rhot, ne, Te, Zeff = np.loadtxt("/tokp/work/sdenk/ECRad/201810090432150_plasma_profiles.txt", \
-                                    skiprows=3, unpack=True)
-    profile_parametrization.set_parameters(np.array([1.28377419e+03, -8.64675130e-03, -4.53211484e-01,\
-                                   2.99424827e+00, 2.02938658e+00,  5.02846527e-01]))
-    plt.plot(rho, profile_parametrization.eval(rho, profile_parametrization.parameters), "-")
-    plt.plot(rhot, Te * 1.e3, "--")
-    plt.show()
-    
+# if(__name__== "__main__"):
+#     profile_parametrization = TravisTeProfile()
+#     from plotting_configuration import plt
+#     rho = np.linspace(0.0, 1.0, 100)
+#     dummy, Trad, dummy2 = np.loadtxt("/tokp/work/sdenk/ECRad/TRadM_therm.dat", unpack=True)
+#     # *1.e3, because  the ECRad ascii output file is in keV but the result file used in the forward model uses eV
+#     Trad *= 1.e3
+#     art_unc = np.zeros(len(Trad))
+#     art_unc[:] = 1.0 # unweighted least squares
+#     # Use maximum of data to guess highest Te
+#     parameters = profile_parametrization.make_initital_guess(Trad)
+#     plt.plot(rho, profile_parametrization.eval(rho, profile_parametrization.parameters), "+")
+#     rhot, ne, Te, Zeff = np.loadtxt("/tokp/work/sdenk/ECRad/201810090432150_plasma_profiles.txt", \
+#                                     skiprows=3, unpack=True)
+#     profile_parametrization.set_parameters(np.array([1.28377419e+03, -8.64675130e-03, -4.53211484e-01,\
+#                                    2.99424827e+00, 2.02938658e+00,  5.02846527e-01]))
+#     plt.plot(rho, profile_parametrization.eval(rho, profile_parametrization.parameters), "-")
+#     plt.plot(rhot, Te * 1.e3, "--")
+#     plt.show()
+#     
     

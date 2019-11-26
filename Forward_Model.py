@@ -19,7 +19,15 @@ class ForwardModel():
         # Forward models can provide a normalization which is inteded to bring the likelihood function closer to unity
         # Example would be 1.e19 for ne and 1.e3 for Te
         self.norm = 1.0
+        # In many cases not all data points are to be used
+        # For this it is necessary to mask data, which has to be handled by the forward model
+        self.data_mask = None
         pass
+    
+    def setup_data_mask(self, data, user_mask):
+        # Takes instance of the data_set argument and sets up the mask
+        pass
+        
     
     def is_ready(self):
         # Allows custom check to see if forward model is ready
@@ -30,6 +38,11 @@ class ForwardModel():
         # Sets parameters that are needed for the optimization, but not optimized themselves
         # Ideally the tyoe of the rho, Te, ne and equilibrium and diagnostic:configuration object is indepedent of which
         # child of FrrwardModel is used
+        pass
+    
+    def pre_optimization_tuneup(self):
+        # Here the Forward model should be tuned before each optimization step
+        # For the example of ECRad this means computing the rays and refining the grid
         pass
         
     def __call__(self, Te_model):
