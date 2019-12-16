@@ -98,6 +98,7 @@ class ECRadResults:
         self.ray["TX"] = []
         self.ray["T_secondX"] = []
         self.ray["TeX"] = []
+        self.ray["neX"] = []
         self.ray["sO"] = []
         self.ray["xO"] = []
         self.ray["yO"] = []
@@ -118,6 +119,7 @@ class ECRadResults:
         self.ray["TO"] = []
         self.ray["T_secondO"] = []
         self.ray["TeO"] = []
+        self.ray["neO"] = []
         self.weights = {}
         self.weights["ray"] = []
         self.weights["freq"] = []
@@ -285,6 +287,7 @@ class ECRadResults:
                                                                           np.log(self.Scenario.plasma_dict["ne"][itime]), ext=3)
                                     self.ray["XX"][-1][-1].append(cnst.e**2 * np.exp(ne_spl(self.ray["rhopX"][-1][-1][-1]))/ \
                                                                   (cnst.m_e * cnst.epsilon_0 * omega**2))
+                                    self.ray["neX"][-1][-1].append(np.exp(ne_spl(self.ray["rhopX"][-1][-1][-1])))
                                 else:
                                     ne_spl = RectBivariateSpline(self.Scenario.plasma_dict["eq_data"][itime].R, \
                                                                  self.Scenario.plasma_dict["eq_data"][itime].R, \
@@ -338,6 +341,7 @@ class ECRadResults:
                                                                       np.log(self.Scenario.plasma_dict["ne"][itime]), ext=1)
                                 self.ray["XX"][-1].append(cnst.e**2 * np.exp(ne_spl(self.ray["rhopX"][-1][-1]))/ \
                                                               (cnst.m_e * cnst.epsilon_0* omega**2))
+                                self.ray["neX"][-1].append(np.exp(ne_spl(self.ray["rhopX"][-1][-1])))
                             elif(self.Scenario.profile_dimension == 3):
                                 ne_spl = RectBivariateSpline(self.Scenario.plasma_dict["eq_data"][itime].R, \
                                                              self.Scenario.plasma_dict["eq_data"][itime].z, \
@@ -409,6 +413,7 @@ class ECRadResults:
                                                                       np.log(self.Scenario.plasma_dict["ne"][itime]), ext=3)
                                 self.ray["XO"][-1][-1].append(cnst.e**2 * np.exp(ne_spl(self.ray["rhopO"][-1][-1][-1]))/ \
                                                               (cnst.m_e * cnst.epsilon_0 * omega**2))
+                                self.ray["neO"][-1][-1].append(np.exp(ne_spl(self.ray["rhopO"][-1][-1][-1])))
                             else:
                                 ne_spl = RectBivariateSpline(self.Scenario.plasma_dict["eq_data"][itime].R, \
                                                              self.Scenario.plasma_dict["eq_data"][itime].R, \
@@ -458,6 +463,7 @@ class ECRadResults:
                                                                   np.log(self.Scenario.plasma_dict["ne"][itime]), ext=1)
                             self.ray["XO"][-1].append(cnst.e**2 * np.exp(ne_spl(self.ray["rhopO"][-1][-1]))/ \
                                                           (cnst.m_e * cnst.epsilon_0* omega**2))
+                            self.ray["neO"][-1].append(np.exp(ne_spl(self.ray["rhopO"][-1][-1])))
                         elif(self.Scenario.profile_dimension == 3):
                             ne_spl = RectBivariateSpline(self.Scenario.plasma_dict["eq_data"][itime].R, \
                                                          self.Scenario.plasma_dict["eq_data"][itime].z, \
@@ -768,6 +774,10 @@ class ECRadResults:
                 try:
                     self.ray["XX"] = mdict["XX"]
                     self.ray["YX"] = mdict["YX"]
+                except KeyError:
+                    print("Warning! Some BPD Ray information mssing in loaded .mat file. Is this an old file?")
+                try:
+                    self.ray["neX"] = mdict["neX"]
                 except KeyError:
                     print("Warning! Some BPD Ray information mssing in loaded .mat file. Is this an old file?")
                 try:

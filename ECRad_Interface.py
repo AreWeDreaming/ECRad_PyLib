@@ -109,6 +109,15 @@ def prepare_input_files(Config, Scenario, index, copy_dist=True):
                 print("Failed to create ECRad_data folder in: ", working_dir)
                 print("Please check that this folder exists and you have write permissions")
                 return False
+        else:
+            #Get rid of old data -> This ensures that the new data is really new
+            rmtree(ECRad_data_path)
+            try:
+                os.mkdir(ECRad_data_path)
+            except OSError:
+                print("Failed to create ECRad_data folder in: ", working_dir)
+                print("Please check that this folder exists and you have write permissions")
+                return False
     write_diag_launch(ECRad_data_path, Scenario.ray_launch[index])
     if(Scenario.Te_scale != 1.0):
         print("Te scale != 1 -> scaling Te for model")

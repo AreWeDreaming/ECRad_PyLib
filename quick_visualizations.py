@@ -38,14 +38,15 @@ def time_trace(shot, z_axis=False):
         heating_array[i][0], heating_array[i][1] = moving_average(heating_array[i][0], heating_array[i][1], 5.e-2)
     if(z_axis):
         time_z_axis, z_axis = get_z_mag(shot)
-    fig = plt.figure()
+    fig = plt.figure(figsize=(12,6))
     pc_obj = plotting_core(fig)
-    pc_obj.time_trace(shot, plasma_dict["time"], plasma_dict["Te"].T[0], plasma_dict["ne"].T[0], heating_array=heating_array, time_z_axis = time_z_axis, z_axis=z_axis)
+    fig = pc_obj.time_trace(shot, plasma_dict["time"], plasma_dict["Te"].T[0], plasma_dict["ne"].T[0], heating_array=heating_array, time_z_axis = time_z_axis, z_axis=z_axis)
+    pc_obj.gridspec.tight_layout(fig, h_pad=0.0)
     plt.show()
     
 
 def plot_shot_geometry(ECRadResFile, wave_mat_file, itime, ch_list, mode_str, tb_data_folder):
-    ECRadRes =ECRadResults()
+    ECRadRes = ECRadResults()
     ECRadRes.from_mat_file(ECRadResFile)
     wave_mat = loadmat(wave_mat_file)
     Beam = read_waves_mat_to_beam(wave_mat, ECRadRes.Scenario.plasma_dict["eq_data"][itime])
@@ -53,11 +54,10 @@ def plot_shot_geometry(ECRadResFile, wave_mat_file, itime, ch_list, mode_str, tb
             ECRadRes.Scenario.plasma_dict["eq_data"][itime].R, ECRadRes.Scenario.plasma_dict["eq_data"][itime].z ,\
             ECRadRes.Scenario.plasma_dict["eq_data"][itime].rhop, ECRadRes.Scenario.plasma_dict["eq_data"][itime].R_ax, \
             ECRadRes.Scenario.plasma_dict["eq_data"][itime].z_ax, Beam, ECRadRes, [itime, ch_list], mode_str, tb_data_folder]
-    fig = plt.figure(figsize=(6,12))
-    fig_2 = plt.figure(figsize=(12,12))
+    fig = plt.figure(figsize=(8,8.5))
+    fig_2 = plt.figure(figsize=(8,8.5))
     pc_obj = plotting_core(fig, fig_2)
     pc_obj.beam_plot(args)
-   
     plt.show()
     
     
@@ -73,10 +73,11 @@ def compare_IDI_IDF(shot, time):
     plt.show()
     
 if(__name__ == "__main__"):
-    #time_trace(35662, z_axis=True)
-#     plot_shot_geometry("/tokp/work/sdenk/Backup:_PhD_stuff/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0106.mat", \
-#                        "/tokp/work/sdenk/Backup:_PhD_stuff/DRELAX_Results_2nd_batch/GRAY_rays_35662_6.95.mat", 0, [20, 94, 144], "X", "/afs/ipp-garching.mpg.de/home/s/sdenk/Documentation/Data/DistData/")  
+    time_trace(35662, z_axis=True)
+#     plot_shot_geometry("/tokp/work/sdenk/Backup_PhD_stuff/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat", \
+#                        "/tokp/work/sdenk/Backup_PhD_stuff/DRELAX_Results_2nd_batch/GRAY_rays_35662_4.40.mat", 0, [], "X", \
+#                        "/afs/ipp-garching.mpg.de/home/s/sdenk/Documentation/Data/DistData/")  #94, 144
     
-    compare_IDI_IDF(35662, 4.41)
+#     compare_IDI_IDF(35662, 4.41)
     
     

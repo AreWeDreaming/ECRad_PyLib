@@ -541,6 +541,12 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
         if(include_ECRH and mat_for_waves is not None):
             waves_mat = loadmat(mat_for_waves, squeeze_me=True)
             linear_beam = read_waves_mat_to_beam(waves_mat, EqSlice, use_wave_prefix=None)
+            EQObjAug = EQData(Results.Scenario.shot, EQ_exp=Results.Scenario.EQ_exp, \
+                              EQ_diag=Results.Scenario.EQ_diag, EQ_ed=Results.Scenario.EQ_ed)
+            linear_beam.rhop = EQObjAug.rhot_to_rhop(time, linear_beam.rhot)
+#             for rhop_gray, rhop_aug in zip(linear_beam.rhop , rhop_temp):
+#                 print(rhop_gray, rhop_aug)
+#             return
             quasi_linear_beam = read_dist_mat_to_beam(mat, use_dist_prefix=None)
             if(single_Beam):
                 linear_beam.rays = linear_beam.rays[1:2]
@@ -929,8 +935,10 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
 if(__name__ == "__main__"):
 #     x = np.linspace(0,1,30)
 #     distribute_points(x, 0.2 + 5 * np.exp(-(x-0.5)**2 / 0.05**2), 30)
-    make_3DBDOP_cut_standalone("/tokp/work/sdenk/Backup:_PhD_stuff/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat", 4.40, [144], [2], "Re", \
+    make_3DBDOP_cut_standalone("/tokp/work/sdenk/Backup_PhD_stuff/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat", \
+                               4.40, [144], [2], "Re", \
                                include_ECRH=True, m_ECRH_list=[2], \
-                               ECRH_freq=105.e9, wave_mat_filename="/tokp/work/sdenk/Backup:_PhD_stuff/DRELAX_Results_2nd_batch/GRAY_rays_35662_4.40.mat", \
-                               mat_for_distribution= "/tokp/work/sdenk/Backup:_PhD_stuff/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat", rhop_range=[0,0.3]) #20 # 48  # 94 # 144 -> second last each
+                               ECRH_freq=105.e9, wave_mat_filename="/tokp/work/sdenk/Backup_PhD_stuff/DRELAX_Results_2nd_batch/GRAY_rays_35662_4.40.mat", \
+                               mat_for_distribution= "/tokp/work/sdenk/Backup_PhD_stuff/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat",\
+                                rhop_range=[0,0.3]) #20 # 48  # 94 # 144 -> second last each
 

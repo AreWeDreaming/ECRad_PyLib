@@ -53,8 +53,21 @@ def read_xi_astra(filename):
 #     alfs = data[:,41]
     rhop=(((FP-FP[0])/(FP[-1]-FP[0]))**0.5)
     return rhop, Xex
+
+def remove_edge_diff(rhop, Xex, cut_off_point=0.75, decay_rate=125.0):
+    Xex_simple = np.copy(Xex)
+    irhop_cut = np.argmin(np.abs(rhop - cut_off_point))
+    Xex_cut = Xex[irhop_cut]
+    Xex_simple[rhop>cut_off_point] = Xex_cut * np.exp(-125.0*(cut_off_point-rhop[rhop>cut_off_point])**2)
+    return Xex_simple
         
-        
+if(__name__  == "__main__"):
+    from plotting_configuration import plt
+    rhop, Xex = read_xi_astra("/afs/ipp/home/s/sdenk/Documentation/Data/DistData/ASTRA_35662_3_84.dat")
+    Xex_simple = remove_edge_diff(rhop, Xex)
+    plt.plot(rhop, Xex)
+    plt.plot(rhop, Xex_simple, "--")
+    plt.show()
         
         
         

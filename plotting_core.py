@@ -197,6 +197,35 @@ class plotting_core:
                 mask[:] = True
         else:
             mask[:] = True
+        self.diag_marker_index[0] = 0
+        for key in diags:
+            if(diags[key].is_prof):
+                self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
+                    data=[diags[key].rhop, diags[key].val],\
+                    marker="--", \
+                    color=self.diag_colors[self.diag_color_index[0]], \
+                    y_range_in=self.y_range_list[0], ax_flag=ax_flag)
+            elif(diags[key].unc is None):
+                self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
+                    data=[diags[key].rhop, diags[key].val],\
+                    marker=self.diag_markers[self.diag_marker_index], \
+                    color=self.diag_colors[self.diag_color_index[0]], \
+                    y_range_in=self.y_range_list[0], ax_flag=ax_flag)
+            else:
+                diag_mask = np.abs(diags[key].val * max_unc) > np.abs(diags[key].unc)
+                self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
+                    data=[diags[key].rhop[diag_mask], diags[key].val[diag_mask]], y_error=diags[key].unc[diag_mask], \
+                    name=key, marker=self.diag_markers[self.diag_marker_index[0]], \
+                    color=self.diag_colors[self.diag_color_index[0]], \
+                    y_range_in=self.y_range_list[0], ax_flag=ax_flag)
+            self.diag_marker_index[0] += 1
+            if(self.diag_marker_index[0] > len(self.diag_markers)):
+                print("Warning too many diagnostics to plot - ran out of unique markers")
+                self.diag_color_index[0] = 0
+            self.diag_color_index[0] += 1
+            if(self.diag_color_index[0] > len(self.diag_colors)):
+                print("Warning too many diagnostics to plot - ran out of unique colors")
+                self.diag_color_index[0] = 0
         self.model_marker_index[0] = 1
         if(model_2 and len(Trad_comp) > 0):
             if(multiple_models):
@@ -231,35 +260,6 @@ class plotting_core:
                 marker=self.model_markers[self.model_marker_index[0]], color=(0.0, 0.0, 0.e0), \
                 y_range_in=self.y_range_list[1], ax_flag="X_frac")
             self.model_marker_index[0] += 1
-        self.diag_marker_index[0] = 0
-        for key in diags:
-            if(diags[key].is_prof):
-                self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
-                    data=[diags[key].rhop, diags[key].val],\
-                    marker="--", \
-                    color=self.diag_colors[self.diag_color_index[0]], \
-                    y_range_in=self.y_range_list[0], ax_flag=ax_flag)
-            elif(diags[key].unc is None):
-                self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
-                    data=[diags[key].rhop, diags[key].val],\
-                    marker=self.diag_markers[self.diag_marker_index], \
-                    color=self.diag_colors[self.diag_color_index[0]], \
-                    y_range_in=self.y_range_list[0], ax_flag=ax_flag)
-            else:
-                diag_mask = np.abs(diags[key].val * max_unc) > np.abs(diags[key].unc)
-                self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
-                    data=[diags[key].rhop[diag_mask], diags[key].val[diag_mask]], y_error=diags[key].unc[diag_mask], \
-                    name=key, marker=self.diag_markers[self.diag_marker_index[0]], \
-                    color=self.diag_colors[self.diag_color_index[0]], \
-                    y_range_in=self.y_range_list[0], ax_flag=ax_flag)
-            self.diag_marker_index[0] += 1
-            if(self.diag_marker_index[0] > len(self.diag_markers)):
-                print("Warning too many diagnostics to plot - ran out of unique markers")
-                self.diag_color_index[0] = 0
-            self.diag_color_index[0] += 1
-            if(self.diag_color_index[0] > len(self.diag_colors)):
-                print("Warning too many diagnostics to plot - ran out of unique colors")
-                self.diag_color_index[0] = 0
         if(multiple_models):
             primary = True
             for rhop_entry, Trad_entry, diag_name_entry, label in zip(rhop, Trad, diag_names, label_list):
@@ -654,16 +654,16 @@ class plotting_core:
                                                                  color="black", marker="--",  name=r"$z_\mathrm{axis}$", \
                                                                  y_range_in=self.y_range_list[3], ax_flag="z_trace")
         self.axlist[0].set_ylim(0.0, self.y_range_list[0][1])
-        self.axlist[0].text(0.75, 0.70,  r" \# {0:d}".format(shot),
-                verticalalignment='bottom', horizontalalignment='left',
-                transform=self.axlist[0].transAxes,
-                color='black', fontsize=plt.rcParams['axes.titlesize'])
+        self.fig.suptitle(" \# {0:d}".format(shot), horizontalalignment='left', fontsize=plt.rcParams['axes.titlesize'])
+#         self.axlist[0].text(0.75, 0.70,  r" \# {0:d}".format(shot),
+#                 verticalalignment='bottom', horizontalalignment='left',
+#                 transform=self.axlist[0].transAxes,
+#                 color='black', fontsize=plt.rcParams['axes.titlesize'])
         if(z_axis is not None):
             self.create_legends("errorbar_double_twinx")
         else:
             self.create_legends("errorbar_double_twinx_single_second")
         self.axlist[0].get_xaxis().set_visible(False)
-        plt.tight_layout()
         return self.fig
 
     def calib_evolution_Trad(self, diag, ch, ECRad_result_list, diag_data, std_dev_data, popt_list, pol_angle_list=None):
@@ -1756,6 +1756,7 @@ class plotting_core:
             cb = self.fig.colorbar(cmap)
             cb.set_label(r"$P_\mathrm{ray} [\si{\kilo\watt}]$")
             cb2 = self.fig_2.colorbar(cmap)
+            cb2.set_label(r"$P_\mathrm{ray} [\si{\kilo\watt}]$")
         self.axlist[0].set_xlim(0.7, 2.5)
         self.axlist[0].set_ylim(-1.75, 1.75)
         self.axlist_2[0].set_xlim(-2.3, 2.3)
