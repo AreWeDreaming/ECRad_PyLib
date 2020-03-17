@@ -130,15 +130,13 @@ def current_weight(DistWaveFile, fig=None, ax=None):
     ECCD_weight = np.zeros(dist_obj.f_cycl[0].shape)
     j_spl = InterpolatedUnivariateSpline(waves.rhop, waves.j)
     j_tot = j_spl.integral(waves.rhop[0], waves.rhop[-1])
-#     u_par_stop = np.max(dist_obj.ull[dist_obj.ull < 0])
-    u_par_stop = -0.05
     for irhop, rhop in enumerate(dist_obj.rhop):
         weight = np.abs(waves.j[irhop] / j_tot)
         print(rhop, weight)
         for i, u_par in enumerate(dist_obj.ull):
             for j, u_perp  in enumerate(dist_obj.uxx):
                 f_diff = dist_obj.f_cycl[irhop][i,j] - Juettner2D(u_par, u_perp, dist_obj.Te[irhop])
-                ECCD_weight[i,j] += weight * f_diff * u_par 
+                ECCD_weight[i,j] += weight * f_diff * u_par  / np.sqrt(1.0 + u_par**2 + u_perp**2)
     ECCD_weight += np.max(np.abs(ECCD_weight.flatten()))
     ECCD_weight /= np.max(np.abs(ECCD_weight.flatten()))
     ECCD_weight -= 0.5
@@ -154,18 +152,25 @@ def current_weight(DistWaveFile, fig=None, ax=None):
     m = cm.ScalarMappable(cmap=plt.cm.get_cmap("coolwarm"))
     m.set_array(np.linspace(-1.0, 1.0, 30))
     cb_j = fig.colorbar(m, pad=0.15, ticks=[-1.0, 0.0, 1.0])
-    cb_j.set_label(r"$(f - f_0) u_\parallel [\si{{a.u.}}]$")
+    cb_j.set_label(r"$(f - f_0) \beta_\parallel [\si{{a.u.}}]$")
     ax.set_aspect("equal")
 #     plt.show()
 if(__name__ == "__main__"):
     fig = plt.figure(figsize=(12.5,8.5))
     ax = fig.add_subplot(111)
-    #current_weight("/tokp/work/sdenk/ECRad/ECRad_35662_ECECTACTC_ed9.mat")
-    current_weight("/tokp/work/sdenk/Backup:_PhD_stuff/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0004.mat",fig,ax)
-    diag_weight_stand_alone(fig, ax, "/tokp/work/sdenk/Backup:_PhD_stuff/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0004.mat", 4.4, 94, \
-                            '/tokp/work/sdenk/Backup:_PhD_stuff/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0004.mat')
-    diag_weight_stand_alone(fig, ax, "/tokp/work/sdenk/Backup:_PhD_stuff/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0004.mat", 4.4, 144, \
-                            '/tokp/work/sdenk/Backup:_PhD_stuff/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0004.mat')
+    current_weight("/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3204.mat",fig,ax)
+    diag_weight_stand_alone(fig, ax, "/tokp/work/sdenk/DRELAX_final/DRELAX_run_3204.mat", 3.84, 88, \
+                            "/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3204.mat")
+    diag_weight_stand_alone(fig, ax, "/tokp/work/sdenk/DRELAX_final/DRELAX_run_3204.mat", 3.84, 136, \
+                            "/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3204.mat")
     plt.show()
-    plt.hold(True)
+# #     plt.hold(True)
+#     current_weight("/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3224.mat",fig,ax)
+#     diag_weight_stand_alone(fig, ax, "/tokp/work/sdenk/DRELAX_final/DRELAX_run_3224.mat", 3.84, 88, \
+#                             "/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3224.mat")
+#     diag_weight_stand_alone(fig, ax, "/tokp/work/sdenk/DRELAX_final/DRELAX_run_3224.mat", 3.84, 136, \
+#                             "/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3224.mat")
+#     plt.show()
+#     plt.hold(True)
+    
     

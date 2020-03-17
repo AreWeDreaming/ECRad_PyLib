@@ -14,6 +14,7 @@ from scipy.interpolate import RectBivariateSpline, InterpolatedUnivariateSpline
 from equilibrium_utils import EQDataExt, EQDataSlice, eval_spline, special_points
 from Geometry_utils import get_contour, get_Surface_area_of_torus, get_arclength, get_av_radius
 from scipy import __version__ as scivers
+from scipy import constants as cnst
 from get_ECRH_config import get_ECRH_viewing_angles
 import scipy.optimize as scopt
 from map_equ import equ_map
@@ -256,17 +257,44 @@ class aug_bt_ripple:
                       self.K1 * R_vec[2] ** 2)) * R_vec[2] * np.sin(psi)
 
         return B_ripple
+    
+def compare_f_dia(shot, time, EQ_exp, EQ_diag, EQ_ed):
+    from plotting_configuration import plt
+    EQObj = EQData(shot, EQ_exp=EQ_exp, EQ_diag=EQ_diag, EQ_ed=EQ_ed)
+    EQ_t = EQObj.GetSlice(time)
+    rho = np.linspace(0.0, 1.0, 100)
+    ffp = EQObj.getQuantity(rho, "FFP", time)
+    ffp_spl = InterpolatedUnivariateSpline(rho, ffp)
+    f_sq_spl = ffp_spl.antiderivative(1)
+    magn_field_axis = EQObj.MBI_shot.getSignal("BTFABB", \
+                                              tBegin=time - 5.e-5, tEnd=time + 5.e-5)
+    f_spl = InterpolatedUnivariateSpline(rho, np.sign(magn_field_axis) * \
+                                                               (np.sqrt(2.0 * f_sq_spl(rho) + \
+                                                                        (EQ_t.R_ax * magn_field_axis)**2)))
+    psi_prof = EQObj.rhop_to_Psi(time, rho)
+    plt.plot(psi_prof, f_spl(rho))
+    gpol = EQObj.getQuantity(rho, "Jpol", time) * cnst.mu_0 / 2.0 / np.pi
+    plt.plot(psi_prof, gpol, "--")
+    plt.show()
+        
 
 if(__name__ == "__main__"):
-    from plotting_configuration import *
-    EQ_obj = EQData(33697)
-    time = 4.80
-    rhop = np.linspace(0.025, 0.99, 10)
-    EQSlice = EQ_obj.GetSlice(time)
-    plt.contour(EQSlice.R, EQSlice.z, EQSlice.rhop.T, levels=rhop)
-#    print("R_aus", "z_aus", EQ_obj.get_R_aus(time, rhop))
-#    EQ_obj = EQData(33697, EQ_diag="IDE")
-#    R_av = EQ_obj.get_mean_r(time, [0.08])
-#    plt.figure()
-#    plt.plot(rhop, R_av)
-    plt.show()
+#     compare_f_dia(35662, 3.84, EQ_exp="AUGD", EQ_diag="IDE", EQ_ed=2)
+#     from plotting_configuration import *
+    EQ_obj = EQData(35662, EQ_diag="IDE")
+    EQSlice = EQ_obj.GetSlice(3.84)
+    np.savetxt(os.path.join(os.path.expanduser("~"), "Documentation", "Data", "35662_R.dat"), EQSlice.R)
+    np.savetxt(os.path.join(os.path.expanduser("~"), "Documentation", "Data", "35662_z.dat"), EQSlice.z)
+    np.savetxt(os.path.join(os.path.expanduser("~"), "Documentation", "Data", "35662_Br.dat"), EQSlice.Br)
+    np.savetxt(os.path.join(os.path.expanduser("~"), "Documentation", "Data", "35662_Bt.dat"), EQSlice.Bt)
+    np.savetxt(os.path.join(os.path.expanduser("~"), "Documentation", "Data", "35662_Bz.dat"), EQSlice.Bz)
+#     time = 4.80
+#     rhop = np.linspace(0.025, 0.99, 10)
+#     EQSlice = EQ_obj.GetSlice(time)
+#     plt.contour(EQSlice.R, EQSlice.z, EQSlice.rhop.T, levels=rhop)
+# #    print("R_aus", "z_aus", EQ_obj.get_R_aus(time, rhop))
+# #    EQ_obj = EQData(33697, EQ_diag="IDE")
+# #    R_av = EQ_obj.get_mean_r(time, [0.08])
+# #    plt.figure()
+# #    plt.plot(rhop, R_av)
+#     plt.show()

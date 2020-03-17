@@ -6,6 +6,7 @@ Created on Aug 24, 2019
 import sys
 import os
 from glob import glob
+from Diags import Diag
 library_list = glob("../*pylib") + glob("../*Pylib")
 found_lib = False
 ECRadPylibFolder = None
@@ -24,7 +25,8 @@ from GlobalSettings import globalsettings
 globalsettings.ECRadGUIRoot = os.getcwd()
 globalsettings.ECRadPylibRoot = ECRadPylibFolder
 from plotting_configuration import *
-from shotfile_handling_AUG import load_IDA_data, get_shot_heating, get_z_mag, moving_average, get_prof
+from shotfile_handling_AUG import load_IDA_data, get_shot_heating, get_z_mag, \
+                                  moving_average, get_prof, get_Thomson_data
 from plotting_core import plotting_core
 from ECRad_Results import ECRadResults
 from distribution_io import read_waves_mat_to_beam
@@ -49,13 +51,13 @@ def plot_shot_geometry(ECRadResFile, wave_mat_file, itime, ch_list, mode_str, tb
     ECRadRes = ECRadResults()
     ECRadRes.from_mat_file(ECRadResFile)
     wave_mat = loadmat(wave_mat_file)
-    Beam = read_waves_mat_to_beam(wave_mat, ECRadRes.Scenario.plasma_dict["eq_data"][itime])
+    Beam = read_waves_mat_to_beam(wave_mat, ECRadRes.Scenario.plasma_dict["eq_data"][itime], use_wave_prefix=None)
     args = [None, ECRadRes.Scenario.shot, ECRadRes.Scenario.plasma_dict["time"][itime], \
-            ECRadRes.Scenario.plasma_dict["eq_data"][itime].R, ECRadRes.Scenario.plasma_dict["eq_data"][itime].z ,\
+            ECRadRes.Scenario.plasma_dict["eq_data"][itime].R, ECRadRes.Scenario.plasma_dict["eq_data"][itime].z - 0.01 ,\
             ECRadRes.Scenario.plasma_dict["eq_data"][itime].rhop, ECRadRes.Scenario.plasma_dict["eq_data"][itime].R_ax, \
-            ECRadRes.Scenario.plasma_dict["eq_data"][itime].z_ax, Beam, ECRadRes, [itime, ch_list], mode_str, tb_data_folder]
-    fig = plt.figure(figsize=(8,8.5))
-    fig_2 = plt.figure(figsize=(8,8.5))
+            ECRadRes.Scenario.plasma_dict["eq_data"][itime].z_ax - 0.01, Beam, ECRadRes, [itime, ch_list], mode_str, tb_data_folder]
+    fig = plt.figure(figsize=(8,6))
+    fig_2 = plt.figure(figsize=(8.5,8.5))
     pc_obj = plotting_core(fig, fig_2)
     pc_obj.beam_plot(args)
     plt.show()
@@ -72,11 +74,27 @@ def compare_IDI_IDF(shot, time):
     plt.gca().set_ylabel(r"$T_\mathrm{i}\,[\si{\electronvolt}]$")
     plt.show()
     
+def plot_ne_prof(shot, time):
+    plasma_dict = load_IDA_data(shot, [time])
+    plt.plot(plasma_dict["rhop_prof"][0], plasma_dict["ne"][0] / 1.e19)
+    plt.show()
+    
+def plot_Thomson_edge_ne(shot, time):    
+    diag =Diag("VTA", "AUGD", "VTA",0)
+    stddev, data = get_Thomson_data(shot, time, diag, Te=False, ne=True, edge=True, core=False, EQ_exp='AUGD', 
+                     EQ_diag="IDE", EQ_ed=0, smoothing=0.5)
+    plt.errorbar(data[0], data[1], stddev, fmt="+")
+    plt.show()
+    
+    
+    
 if(__name__ == "__main__"):
-    time_trace(35662, z_axis=True)
-#     plot_shot_geometry("/tokp/work/sdenk/Backup_PhD_stuff/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat", \
-#                        "/tokp/work/sdenk/Backup_PhD_stuff/DRELAX_Results_2nd_batch/GRAY_rays_35662_4.40.mat", 0, [], "X", \
-#                        "/afs/ipp-garching.mpg.de/home/s/sdenk/Documentation/Data/DistData/")  #94, 144
+#     plot_Thomson_edge_ne(35662, 3.84)
+    plot_ne_prof(35662, 4.4)
+#     time_trace(35662, z_axis=True)
+#     plot_shot_geometry("/tokp/work/sdenk/DRELAX_final/DRELAX_run_3224.mat", \
+#                        "/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3224.mat", 0, [44,88,136], "X", \
+#                        None)  #94, 144
     
 #     compare_IDI_IDF(35662, 4.41)
     

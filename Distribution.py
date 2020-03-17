@@ -222,15 +222,19 @@ class distribution:
         self.uxx = np.linspace(0, np.max(u), 75)
         self.f_cycl = np.zeros((len(self.rhop), len(self.ull), len(self.uxx)))
         self.f_cycl_log = np.zeros(self.f_cycl.shape)
-        print("Remapping distribution hold on ...")
         self.Te_init = Te_init
         self.ne_init = ne_init
-        ne_spl = InterpolatedUnivariateSpline(self.rhop_1D_profs[self.rhop_1D_profs < 1.0], self.ne_init[self.rhop_1D_profs < 1.0])
         self.ne = np.zeros(len(rhop))
         self.Te = np.zeros(len(rhop))
+        ne_spl = InterpolatedUnivariateSpline(self.rhop_1D_profs[self.rhop_1D_profs < 1.0], self.ne_init[self.rhop_1D_profs < 1.0])
+        uxx_mat, ull_mat = np.meshgrid(self.uxx, self.ull)
+        u_mat = np.sqrt(ull_mat**2 + uxx_mat**2)
+        pitch_mat = np.zeros(u_mat.shape)
+        pitch_mat[u_mat != 0.0] = np.arccos(ull_mat[u_mat != 0.0] / u_mat[u_mat != 0.0])
+        pitch_mat[u_mat == 0.0] = 0.0
         for i in range(len(self.rhop)):
-            # Remap for LFS
-            remap_f_Maj(self.u, self.pitch, self.f_log, i, self.ull, self.uxx, self.f_cycl_log[i], 1, 1, LUKE=True)
+            f_spl = RectBivariateSpline(self.u, self.pitch, self.f_log[i])
+            self.f_cycl_log[i] = f_spl(u_mat, pitch_mat, grid=False)
             self.ne[i], self.Te[i] = get_0th_and_2nd_moment(self.ull, self.uxx, np.exp(self.f_cycl_log[i]))
             print("Finished distribution profile slice {0:d}/{1:d}".format(i + 1, len(self.rhop)))
         self.ne = self.ne * ne_spl(self.rhop)

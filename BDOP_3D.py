@@ -503,7 +503,8 @@ def make_3DBDOP_cut_GUI(Results, fig,  time, ch, dist="Th", dist_mat_filename=No
 def make_3DBDOP_cut_standalone(matfilename, time, ch_list, m_list, dist, include_ECRH=False, \
                                single_Beam=False, m_ECRH_list=[2], only_contribution=False, \
                                single_ray_BPD=False, Teweight=False, ECRH_freq=140.e9, \
-                               wave_mat_filename=None, mat_for_distribution=None, rhop_range=[0,1.0]):
+                               wave_mat_filename=None, mat_for_distribution=None, \
+                               rhop_range=[0,1.0], BPD_fac=1.0):
     Results = ECRadResults()
     fig = plt.figure(figsize=(16.5, 8.5))
     Results.from_mat_file(matfilename)
@@ -511,15 +512,17 @@ def make_3DBDOP_cut_standalone(matfilename, time, ch_list, m_list, dist, include
                     single_Beam=single_Beam, m_ECRH_list=m_ECRH_list, only_contribution=only_contribution, \
                     single_ray_BPD=single_ray_BPD, Teweight=Teweight, ECRH_freq=ECRH_freq, \
                     mat_for_waves=wave_mat_filename, mat_for_distribution=mat_for_distribution, \
-                    rhop_range=rhop_range)
+                    rhop_range=rhop_range, BPD_fac=BPD_fac)
     plt.show()
 
 def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=False, \
                     single_Beam=False, m_ECRH_list=[2], only_contribution=False, \
                     single_ray_BPD=False, Teweight=False, ECRH_freq=140.e9, \
-                    mat_for_waves=None, mat_for_distribution=None,rhop_range=[0,1.0]):
+                    mat_for_waves=None, mat_for_distribution=None, rhop_range=[0,1.0], \
+                    BPD_fac=1.0):
     fig.text(0.025, 0.95, "a)")
     fig.text(0.55, 0.95, "b)")
+    distribution_rhop = None
     BDOP_list = []
     use_fit_for_s_important = False
     itime = np.argmin(np.abs(Results.Scenario.plasma_dict["time"] - time))
@@ -718,11 +721,13 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
         s_BPD_list.append(s_important)
         s_BPD_dict[str(ich)] = s_important
         label = "BPD"
+        if( BPD_fac != 1.0):
+            label += r" $\times " + "{0:d}".format(int(BPD_fac)) + " $"
         if(single_ray_BPD):
-            ax_depo.plot(rhop_binned, BPD_binned / np.max(BPD_binned), label="BPD", linestyle="-", color="blue")  # for channel {0:d}".format(ich)
-            ax_depo.plot(rhop_binned, BPD_ch_binned / np.max(BPD_ch_binned), label=r"BPD $5 \times 5$ rays", marker="+", linestyle="None", color="blue")  # for channel {0:d}".format(ich)
+            ax_depo.plot(rhop_binned, BPD_binned / np.max(BPD_binned) * BPD_fac, label=label, linestyle="-", color="blue")  # for channel {0:d}".format(ich)
+            ax_depo.plot(rhop_binned, BPD_ch_binned / np.max(BPD_ch_binned) * BPD_fac, label=r"BPD $5 \times 5$ rays", marker="+", linestyle="None", color="blue")  # for channel {0:d}".format(ich)
         else:
-            ax_depo.plot(rhop_binned, BPD_ch_binned / np.max(BPD_ch_binned), label="BPD", linestyle="-", color="blue")  # for channel {0:d}".format(ich)
+            ax_depo.plot(rhop_binned, BPD_ch_binned / np.max(BPD_ch_binned) * BPD_fac, label=label, linestyle="-", color="blue")  # for channel {0:d}".format(ich)
     f_inter, f_inter_scnd = make_f_inter(dist, EQObj, dist_obj=dist_obj, time=time)
     for ch, m_ch, s_important in zip(ch_list, m_list, s_BPD_list):
         svec, freq, Trad, T, = load_data_for_3DBDOP(Results, time, dist, ch) # expects channel number not channel index
@@ -797,6 +802,12 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
                 R_BPD_dict["ECRH" + "_" + str(ibeam)] = PDP_POI
                 rhop_BPD_dict["ECRH" + "_" + str(ibeam)] = PDP_POI_rhop
                 s_BPD_dict["ECRH" + "_" + str(ibeam)] = s_important
+            if(distribution_rhop is None):
+                # ECRH only case
+                if(len(s_important) > 1):
+                    distribution_rhop = np.abs(rhop_spl(s_important[1])) # Always the second s important
+                else:
+                    distribution_rhop = np.abs(rhop_spl(s_important[0]))
             label = "ECRH (Gray)"
             if(single_Beam or len(linear_beam.rays) == 1):
                 label += " linear damping"
@@ -816,7 +827,7 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
         ax_depo.plot(quasi_linear_beam.rhop, quasi_linear_beam.PW / np.max(quasi_linear_beam.PW), label="ECRH (RELAX)", linestyle="None", marker="^", color="black")
     te_ax = ax_depo.twinx()
     te_ax.plot(rhop_Te, np.exp(Te) * 1.e-3, "--", label=r"$T_\mathrm{e}$")
-    te_ax.set_ylabel(r"$T_\mathrm{e}$ [\si{\kilo\electronvolt}]")
+    te_ax.set_ylabel(r"$T_\mathrm{e}$\,[\si{\kilo\electronvolt}]")
     ax_depo.set_xlabel(r"$\rho_\mathrm{pol}$")
     if(len(BDOP_list) > 1):
         lns = ax_depo.get_lines() + te_ax.get_lines()
@@ -825,7 +836,7 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
         leg.get_frame().set_alpha(0.5)
         leg.draggable()
     if(include_ECRH):
-        ax_depo.set_ylabel(r"$D_\omega\, \mathrm{and} \, \mathrm{d}P/\mathrm{d}R\,[\si{{a.u.}}]$")
+        ax_depo.set_ylabel(r"$D_\omega\, \mathrm{and} \, \mathrm{d}P/\mathrm{d}V\,[\si{{a.u.}}]$")
     else:
         ax_depo.set_ylabel(r"$D_\omega\,[\si{{a.u.}}]$")
     steps = np.array([0.5, 1.0, 2.5, 5.0, 10.0])
@@ -841,7 +852,9 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
             ax_depo.vlines(rhop_BPD_dict[key], -300, 1000, linestyle="-.", color="blue")
         else:
             ax_depo.vlines(rhop_BPD_dict[key], -300, 1000, linestyle=":", color=color)
-    ax_depo.set_ylim(-0.01, 1.2)
+    ax_depo.set_ylim(0.0, 1.2)
+    te_ax.set_ylim(bottom=0)
+    ax_depo.set_xlim(0.0, 1.0)
     ax_reso = fig.add_subplot(122)
     mdict["BPD_vals"] = []
     mdict["BPD_rho"] = []
@@ -913,13 +926,14 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
 #                                hold='on', cmap=cm.get_cmap("plasma"))
     if(include_ECRH):
         cb_ECRH = fig.colorbar(cmaps[-1], pad=0.15, ticks=[0.0, 0.5, 1.0])
-        cb_ECRH.set_label(r"$\mathrm{d}P_\mathrm{ECRH}/d\mathrm{s} [\si{{a.u.}}]$")
+        cb_ECRH.set_label(r"$\mathrm{d}P_\mathrm{ECRH}/\mathrm{d}s\,[\si{{a.u.}}]$")
     if(Teweight):
         cb_dist = fig.colorbar(cont2, pad=0.15, ticks=[0.0, 0.5, 1.0])
         cb_dist.set_label(r"$f_\mathrm{MJ} u_\perp^2 / \gamma f_0$")
     if(found_one_cut):
-        cb = fig.colorbar(cmaps[0], ticks=[0.0, 0.5, 1.0])
-        cb.set_label(r"$D_\omega [\si{{a.u.}}]$")
+        if(len(ch_list) >  0):
+            cb = fig.colorbar(cmaps[0], ticks=[0.0, 0.5, 1.0])
+            cb.set_label(r"$D_\omega\,[\si{{a.u.}}]$")
         ax_reso.set_xlim(u_perp_range[0], u_perp_range[1])
         ax_reso.set_ylim(u_par_range[0], u_par_range[1])
         ax_reso.set_ylabel(r"$u_\parallel$")
@@ -935,10 +949,22 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
 if(__name__ == "__main__"):
 #     x = np.linspace(0,1,30)
 #     distribute_points(x, 0.2 + 5 * np.exp(-(x-0.5)**2 / 0.05**2), 30)
-    make_3DBDOP_cut_standalone("/tokp/work/sdenk/Backup_PhD_stuff/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat", \
-                               4.40, [144], [2], "Re", \
-                               include_ECRH=True, m_ECRH_list=[2], \
-                               ECRH_freq=105.e9, wave_mat_filename="/tokp/work/sdenk/Backup_PhD_stuff/DRELAX_Results_2nd_batch/GRAY_rays_35662_4.40.mat", \
-                               mat_for_distribution= "/tokp/work/sdenk/Backup_PhD_stuff/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat",\
-                                rhop_range=[0,0.3]) #20 # 48  # 94 # 144 -> second last each
+#     make_3DBDOP_cut_standalone("/tokp/work/sdenk/Backup_PhD_stuff/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat", \
+#                                4.40, [144], [2], "Re", \
+#                                include_ECRH=True, m_ECRH_list=[2], \
+#                                ECRH_freq=105.e9, wave_mat_filename="/tokp/work/sdenk/Backup_PhD_stuff/DRELAX_Results_2nd_batch/GRAY_rays_35662_4.40.mat", \
+#                                mat_for_distribution= "/tokp/work/sdenk/Backup_PhD_stuff/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat",\
+#                                 rhop_range=[0,0.3]) #20 # 48  # 94 # 144 -> second last each
+    make_3DBDOP_cut_standalone("/tokp/work/sdenk/DRELAX_final/DRELAX_run_3224.mat", \
+                                   3.84, [48], [2], "Re", \
+                                   include_ECRH=True, m_ECRH_list=[2], \
+                                   ECRH_freq=105.e9, wave_mat_filename="/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3224.mat", \
+                                   mat_for_distribution= "/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3224.mat",\
+                                   rhop_range=[0, 0.3], BPD_fac=1.0) #20 # 48  # 88 # 115 # 136 -> second last each
 
+#     make_3DBDOP_cut_standalone("/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3011.mat", \
+#                                3.84, [29], [2], "Re", \
+#                                include_ECRH=False, m_ECRH_list=[2], \
+#                                ECRH_freq=105.e9, wave_mat_filename="/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3011.mat", \
+#                                mat_for_distribution= "/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3011.mat",\
+#                                rhop_range=[0, 0.99]) #20 # 48  # 94 # 144 -> second last each
