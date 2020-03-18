@@ -297,6 +297,16 @@ class BDOP_3D:
         self.val_back = np.array(self.val_back) / I_norm
         self.f_back = np.array(self.f_back)
 
+
+def make_PowerDepo_3D_for_ray(ray, beam_freq, dist, m, B_ax, EqSlice, Te_spl, ne_spl, f_inter, N_pnts=100):
+    # Currently only supported for non-Gene distributions
+    ray_mask = np.logical_and(ray["rhop"] > 0.0, ray["rhop"] < 1.0)
+    s_beam_ray = ray["s"][ray_mask]
+    P_spl =  InterpolatedUnivariateSpline(s_beam_ray, ray["PW"][ray_mask] )
+    P_norm = P_spl(s_beam_ray) / P_spl.integral(s_beam_ray[0], s_beam_ray[-1])
+    s = distribute_points(ray["s"], P_spl(s_beam_ray, k=1), N_pnts)
+    return P_norm, PowerDepo_3D(self, s, P_norm, beam_freq, ray, f_inter, dist, B_ax, EqSlice, Te_spl, ne_spl, m=m, f_inter_scnd=None)
+
 class PowerDepo_3D:
     def __init__(self, s, P_norm, freq, ray, f_inter, dist, B_ax, EqSlice, Te_spl, ne_spl, m=2, f_inter_scnd=None):
         if(dist in ["Re", "ReComp"]):
