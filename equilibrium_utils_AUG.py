@@ -227,6 +227,74 @@ class EQData(EQDataExt):
         B_sign = np.sign(np.mean(EQSlice.Bt))
         EQSlice.inject_ripple(aug_bt_ripple(R, B_axis * B_sign))
         return EQSlice
+    
+    def make_E_Fit_EQDSK(self, working_dir, time, I_p):
+        EQDSK_file = open(os.path.join(working_dir, "g{0:d}_{1:05d}".format(self.shot, int(time*1.e3))), "w")
+        dummy = 0.0
+        EQ_t = self.GetSlice(time)
+        today = datetime.date.today()
+        # First line
+        EQDSK_file.write("{0:50s}".format("EFIT " + str(today.month) + "/" + str(today.day) + "/" + str(today.year) + " #" + str(shot) + \
+                                               " " + str(int(time*1.e3)) + "ms"))
+        # Second line
+        EQDSK_file.write("{0: 2d}{1: 4d}{2: 4d}\n".format(self.EQ_ed, len(EQ_t.R), len(EQ_t.z)))
+        # Third line
+        EQDSK_file.write("{0: 1.9e}{1: 1.9e}{2: 1.9e}{3: 1.9e}{4: 1.9e}\n".format(EQ_t.R[-1] - EQ_t.R[0], EQ_t.z[-1] - EQ_t.z[0], \
+                                                                                      1.65, EQ_t.R[0], np.mean(EQ_t.z)))
+        B_axis = np.double(self.get_B_on_axis(time)) * np.sign(np.mean(EQ_t.Bt.flatten()))
+        # Fourth line
+        EQDSK_file.write("{0: 1.9e}{1: 1.9e}{2: 1.9e}{3: 1.9e}{4: 1.9e}\n".format(EQ_t.R_ax, EQ_t.z_ax, \
+                                                                                      EQ_t.Psi_ax, EQ_t.Psi_sep, np.double(B_axis)))
+        
+        # Fifth line
+        EQDSK_file.write("{0: 1.9e}{1: 1.9e}{2: 1.9e}{3: 1.9e}{4: 1.9e}\n".format(I_p, EQ_t.Psi_ax, 0.0, EQ_t.R_ax, 0.0))
+        # Sixth line
+        EQDSK_file.write("{0: 1.9e}{1: 1.9e}{2: 1.9e}{3: 1.9e}{4: 1.9e}\n".format(EQ_t.z_ax, 0.0, EQ_t.Psi_sep, 0.0, 0.0))
+        N = len(EQ_t.R)
+        Psi = np.linspace(EQ_t.Psi_ax, EQ_t.Psi_sep, N)
+        rhop = np.sqrt((Psi - EQ_t.Psi_ax)/(EQ_t.Psi_sep - EQ_t.Psi_ax))
+        quant_dict = {}
+        quant_dict["q"] = self.getQuantity(rhop, "Qpsi", time)
+        quant_dict["pres"] = self.getQuantity(rhop, "Pres", time)
+        quant_dict["pprime"] = self.getQuantity(rhop, "dPres", time)
+        quant_dict["ffprime"] = self.getQuantity(rhop, "FFP", time)
+        ffp_spl = InterpolatedUnivariateSpline(rhop, quant_dict["ffprime"] )
+        f_sq_spl = ffp_spl.antiderivative(1)
+        f_spl = InterpolatedUnivariateSpline(rhop, np.sign(B_axis) * \
+                                             (np.sqrt(2.0 * f_sq_spl(rhop) +  \
+                                                      (EQ_t.R_ax * B_axis)**2)))
+        # Get the correct sign back since it is not included in ffprime
+        quant_dict["fdia"] = f_spl(rhop)
+        N_max = 5
+        format_str = " {0: 1.9e}"
+        for key in ["fdia", "pres", "ffprime", "pprime"]:
+            i = 0
+            while i < N:
+                EQDSK_file.write(format_str.format(quant_dict[key][i]))
+                i += 1
+                if(i %  N_max == 0):
+                    EQDSK_file.write("\n")
+        if(i % N_max != 0):
+            EQDSK_file.write("\n")
+        N_new = 0
+        for i in range(len(EQ_t.R)):
+            for j in range(len(EQ_t.z)):
+                EQDSK_file.write(format_str.format(EQ_t.Psi[i,j]))
+                N_new += 1
+                if(N_new == N_max):
+                    EQDSK_file.write("\n")
+                    N_new = 0
+        if(N_new != 0):
+            EQDSK_file.write("\n")
+        for key in ["q"]:
+            i = 0
+            while i < N:
+                EQDSK_file.write(format_str.format(quant_dict[key][i]))
+                i += 1
+                if(i %  N_max == 0):
+                    EQDSK_file.write("\n")
+        EQDSK_file.flush()
+        EQDSK_file.close()
 
 class aug_bt_ripple:
     def __init__(self, R0, Btf0):
