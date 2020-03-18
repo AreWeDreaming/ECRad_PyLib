@@ -6,6 +6,7 @@ Created on Oct 11, 2016
 import os
 import numpy as np
 import sys
+from Bio.SubsMat import AcceptedReplacementsMatrix
 sys.path.append("../ECRad_Pylib")
 from subprocess import call
 from scipy.io import savemat
@@ -418,8 +419,9 @@ def make_TORBEAM_no_data_load(working_dir, shot, time, rho_prof, Te_prof, ne_pro
         make_inbeam(TB_out_dir, launch, mode, time, 0, cyl=False, ITM=ITM, ITER=ITER, Z_eff=Z_eff)
         try:
             call([os.path.join(tb_lib_path, "a.out"), ""])
-        except OSError:
+        except OSError as e:
             print("Weird OS error")
+            print()
             os.chdir(org_path)
             return
         copyfile(os.path.join(TB_out_dir, "t1_LIB.dat"), \
@@ -552,27 +554,56 @@ def make_inbeam(working_dir, launch, mode, time, inbeam_no=0, cyl=False, ITM=Fal
             Z_eff_av = np.mean(Z_eff)
             inbeam_lines[i] = " xzeff =           {0:1.6f},\n".format(Z_eff_av)
             double_check_dict["xzeff_set"] = True
-        if(launch.gy_launch):
-            if(launch.curv_y == 0.e0):
-                print("Zero encountered in curvature")
-                print("Error!: Gyrotron data not properly read")
-                return
-            if("xryyb" in inbeam_lines[i]):
-                inbeam_lines[i] = " xryyb =           {0:1.6f},\n".format(launch.curv_y * 100.0)
-                double_check_dict["curv_y_set"] = True
-            elif("xrzzb" in inbeam_lines[i]):
-                inbeam_lines[i] = " xrzzb =           {0:1.6f},\n".format(launch.curv_z * 100.0)
-                double_check_dict["curv_z_set"] = True
-            elif("xwyyb" in inbeam_lines[i]):
-                inbeam_lines[i] = " xwyyb =           {0:1.6f},\n".format(launch.width_y * 100.0)
-                double_check_dict["width_y_set"] = True
-            elif("xwzzb" in inbeam_lines[i]):
-                inbeam_lines[i] = " xwzzb =           {0:1.6f},\n".format(launch.width_z * 100.0)
-                double_check_dict["width_z_set"] = True
-            elif("xpw0" in inbeam_lines[i]):
-                inbeam_lines[i] = " xpw0 =           {0:1.6f},\n".format(launch.PW / 1.e6)
-                double_check_dict["PW_set"] = True
-        else:
+        try:
+            if(launch.gy_launch):
+                if(launch.curv_y == 0.e0):
+                    print("Zero encountered in curvature")
+                    print("Error!: Gyrotron data not properly read")
+                    return
+                if("xryyb" in inbeam_lines[i]):
+                    inbeam_lines[i] = " xryyb =           {0:1.6f},\n".format(launch.curv_y * 100.0)
+                    double_check_dict["curv_y_set"] = True
+                elif("xrzzb" in inbeam_lines[i]):
+                    inbeam_lines[i] = " xrzzb =           {0:1.6f},\n".format(launch.curv_z * 100.0)
+                    double_check_dict["curv_z_set"] = True
+                elif("xwyyb" in inbeam_lines[i]):
+                    inbeam_lines[i] = " xwyyb =           {0:1.6f},\n".format(launch.width_y * 100.0)
+                    double_check_dict["width_y_set"] = True
+                elif("xwzzb" in inbeam_lines[i]):
+                    inbeam_lines[i] = " xwzzb =           {0:1.6f},\n".format(launch.width_z * 100.0)
+                    double_check_dict["width_z_set"] = True
+                elif("xpw0" in inbeam_lines[i]):
+                    inbeam_lines[i] = " xpw0 =           {0:1.6f},\n".format(launch.PW / 1.e6)
+                    double_check_dict["PW_set"] = True
+            else:
+                if("xryyb" in inbeam_lines[i]):
+                    if(launch.curv_y is not None):
+                        inbeam_lines[i] = " xryyb =           {0:1.6f},\n".format(launch.curv_y * 100.0)
+                    else:
+                        inbeam_lines[i] = " xryyb =           {0:1.6f},\n".format(0.8 * 100.0)
+                    double_check_dict["curv_y_set"] = True
+                elif("xrzzb" in inbeam_lines[i]):
+                    if(launch.curv_z is not None):
+                        inbeam_lines[i] = " xrzzb =           {0:1.6f},\n".format(launch.curv_z * 100.0)
+                    else:
+                        inbeam_lines[i] = " xrzzb =           {0:1.6f},\n".format(0.8 * 100.0)
+                    double_check_dict["curv_z_set"] = True
+                elif("xwyyb" in inbeam_lines[i]):
+                    if(launch.width_y is not None):
+                        inbeam_lines[i] = " xwyyb =           {0:1.6f},\n".format(launch.width_y * 100.0)
+                    else:
+                        inbeam_lines[i] = " xwyyb =           {0:1.6f},\n".format(0.02 * 100.0)
+                    double_check_dict["width_y_set"] = True
+                elif("xwzzb" in inbeam_lines[i]):
+                    if(launch.width_z is not None):
+                        inbeam_lines[i] = " xwzzb =           {0:1.6f},\n".format(launch.width_z * 100.0)
+                    else:
+                        inbeam_lines[i] = " xwzzb =           {0:1.6f},\n".format(0.02 * 100.0)
+                    double_check_dict["width_z_set"] = True
+                elif("xpw0" in inbeam_lines[i]):
+                    inbeam_lines[i] = " xpw0 =           {0:1.6f},\n".format(500.e3 / 1.e6)
+                    double_check_dict["PW_set"] = True
+        except AttributeError:
             if("xryyb" in inbeam_lines[i]):
                 if(launch.curv_y is not None):
                     inbeam_lines[i] = " xryyb =           {0:1.6f},\n".format(launch.curv_y * 100.0)

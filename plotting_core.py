@@ -175,12 +175,8 @@ class plotting_core:
         # No ne as of yet                                       #    y_range_in = self.y_range_list[0])  \,R = 0.90 $
 #        self.axlist[1],  self.y_range_list[1] = self.add_plot(self.axlist[1], data = [rhop_ne_vec, ne_vec], \
 #            name = r"IDA $n_\mathrm{e}$", marker = "-",color=(0.0,0.0,0.0), y_range_in = self.y_range_list[1], ax_flag = "ne")
-        self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[rhop_Te, Te], \
-                                                             name=r"$T_" + mathrm + "{e}$", coloumn=1, \
-                                                             marker="-", color=(0.0, 0.0, 0.0), \
-                                                             y_range_in=self.y_range_list[0], y_scale=1.0, \
-                                                             ax_flag=ax_flag)  # \times 100$
         rhop_max = 0.0
+        use_diag_rhop = False
         if(multiple_models):
             mask = np.zeros(len(Trad[0]), dtype=np.bool)
         else:
@@ -195,6 +191,7 @@ class plotting_core:
                     mask[str(diags[key].name)==diag_names] = True
             if(np.all(mask == False)):
                 mask[:] = True
+            use_diag_rhop = True
         else:
             mask[:] = True
         self.diag_marker_index[0] = 0
@@ -262,7 +259,7 @@ class plotting_core:
             self.model_marker_index[0] += 1
         if(multiple_models):
             primary = True
-            for rhop_entry, Trad_entry, diag_name_entry, label in zip(rhop, Trad, diag_names, label_list):
+            for rhop_entry, Trad_entry, diag_name_entry, label, rhop_prof, Te_entry in zip(rhop, Trad, diag_names, label_list, rhop_Te, Te):
                 try:
                     cur_mask = np.zeros(len(Trad_entry), dtype=np.bool)
                     cur_mask[:] = False
@@ -279,13 +276,15 @@ class plotting_core:
                     rhop_max = max(np.max(rhop_entry[cur_mask]), rhop_max)
                     if(primary):
                         marker = self.model_markers[0]
-                        primary = False
                     else:
                         marker = self.model_markers[self.model_marker_index[0]]
                         self.model_marker_index[0] += 1
+                    use_rhop = rhop_entry
+                    if(use_diag_rhop and len(cur_mask) == len(rhop[0])):
+                        use_rhop = rhop[0]
                     self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
-                                                                         data=[rhop_entry[cur_mask], Trad_entry[cur_mask]], \
-                                                                         name=nice_label, \
+                                                                         data=[use_rhop[cur_mask], Trad_entry[cur_mask]], \
+                                                                         name= nice_label, \
                                                                          marker=marker, color=self.model_colors[self.model_color_index[0]], \
                                                                          y_range_in=self.y_range_list[0], ax_flag=ax_flag)
                     self.model_color_index[0] += 1
@@ -298,6 +297,21 @@ class plotting_core:
                 except KeyError:
                     print("THe result with the name " + label + "caused an index error")
                     print("Most likely it does not have the correct amount of modeled channels for the currently selected diagnostic")
+                try:
+                    if(np.linalg.norm(Te_entry - Te[0]) > 1.e-3 or primary):
+                        self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[rhop_prof, Te_entry], \
+                                                                     name=r"$T_" + mathrm + "{e}$ " + nice_label, \
+                                                                     marker=self.line_markers[self.line_marker_index[0]], \
+                                                                     color=self.line_colors[self.line_color_index[0]], \
+                                                                     y_range_in=self.y_range_list[0], y_scale=1.0, \
+                                                                     ax_flag=ax_flag)  # \times 100$
+                        self.line_marker_index[0] += 1
+                        self.line_color_index[0] += 1
+                except Exception as e:
+                    print("Failed to plot Te for " + nice_label)
+                    print(e)
+                if(primary):
+                    primary = False
         else:
             rhop_max = max(np.max(rhop[mask]), rhop_max)
             self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
@@ -306,6 +320,12 @@ class plotting_core:
                                                                  marker="v", color=self.model_colors[self.model_color_index[0]], \
                                                                  y_range_in=self.y_range_list[0], ax_flag=ax_flag)
             self.model_color_index[0] += 1
+            self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[rhop_Te[0], Te[0]], \
+                                                             name=r"$T_" + mathrm + "{e}$", coloumn=1, \
+                                                             marker=self.line_markers[self.line_marker_index[0]], \
+                                                             color=self.line_colors[self.line_color_index[0]], \
+                                                             y_range_in=self.y_range_list[0], y_scale=1.0, \
+                                                             ax_flag=ax_flag)  # \times 100$
         if(rhop_max > 0.0):
             self.axlist[0].set_xlim(0.0, rhop_max * 1.05)
         self.create_legends("Te_no_ne" + twinx)
@@ -634,11 +654,12 @@ class plotting_core:
         i = 0
         heating_labels = [r"$P_\mathrm{ECRH}$", r"$P_\mathrm{NBI}$", r"$P_\mathrm{ICRH}$"]
         heating_color = ["blue", "red", "green"]
+        heating_marker = ["-", "--", ":"]
         for i, P_trace in enumerate(heating_array):
             if(np.any(P_trace[1] > 1.e-3)):
                 self.axlist[2], self.y_range_list[2] = self.add_plot(self.axlist[2], \
                                                                      data=[P_trace[0], P_trace[1]], \
-                                                                     color=heating_color[i], marker="-",  name=heating_labels[i],\
+                                                                     color=heating_color[i], marker=heating_marker[i],  name=heating_labels[i],\
                                                                      y_range_in=self.y_range_list[2], ax_flag="P_trace")
         self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                                                              data=[time, Te / 1.e3], \
@@ -651,7 +672,7 @@ class plotting_core:
         if(z_axis is not None):
             self.axlist[3], self.y_range_list[3] = self.add_plot(self.axlist[3], \
                                                                  data=[time_z_axis, z_axis/ 1.e-2], \
-                                                                 color="black", marker="--",  name=r"$z_\mathrm{axis}$", \
+                                                                 color="black", marker=":",  name=r"$z_\mathrm{axis}$", \
                                                                  y_range_in=self.y_range_list[3], ax_flag="z_trace")
         self.axlist[0].set_ylim(0.0, self.y_range_list[0][1])
         self.fig.suptitle(" \# {0:d}".format(shot), horizontalalignment='left', fontsize=plt.rcParams['axes.titlesize'])

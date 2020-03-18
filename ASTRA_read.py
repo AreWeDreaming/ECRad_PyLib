@@ -63,10 +63,18 @@ def remove_edge_diff(rhop, Xex, cut_off_point=0.75, decay_rate=125.0):
         
 if(__name__  == "__main__"):
     from plotting_configuration import plt
+    import os
     rhop, Xex = read_xi_astra("/afs/ipp/home/s/sdenk/Documentation/Data/DistData/ASTRA_35662_3_84.dat")
     Xex_simple = remove_edge_diff(rhop, Xex)
-    plt.plot(rhop, Xex)
-    plt.plot(rhop, Xex_simple, "--")
+    np.savetxt(os.path.join("/afs/ipp/home/s/sdenk/Documentation/Data/DistData/" "Assumed_CHI_E.dat"), \
+                       np.array([rhop, Xex_simple]).T)
+    plt.plot(rhop, Xex, label=r"$\chi_\mathrm{e}$")
+    plt.plot(rhop, Xex_simple, "--", label=r"$\chi_\mathrm{e,simpl}$")
+    plt.gca().set_xlabel(r"$\rho_\mathrm{pol}$")
+    plt.gca().set_ylabel(r"$\chi_\mathrm{e}\,[\si{\square\metre\per\second}]$")
+    plt.suptitle(r"\#35662, $t=\SI{3.84}{\second}$", fontsize=plt.rcParams['axes.titlesize'])
+    plt.legend()
+    plt.tight_layout()
     plt.show()
         
         

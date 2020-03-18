@@ -39,17 +39,17 @@ class ECRHLauncher:
     def inject_ECRad_ray_launch(self, ray_launch, ich):
         self.name = ray_launch["diag_name"][ich]
         self.R = ray_launch["R"][ich]
-        self.phi = np.deg2rad(ray_launch["phi"][ich])
+        self.phi = ray_launch["phi"][ich]
         self.z = ray_launch["z"][ich]
         self.x = self.R * np.cos(self.phi)
         self.y = self.R * np.sin(self.phi)
         self.error = 0
         self.curv_y = ray_launch["dist_focus"][ich]
         self.curv_z =  self.curv_y 
-        self.width_y = ray_launch["beam_width"][ich]
+        self.width_y = ray_launch["width"][ich]
         self.width_z = self.width_y
-        self.theta_pol = np.deg2rad(ray_launch["pol_ang"][ich])
-        self.phi_tor = np.deg2rad(ray_launch["tor_ang"][ich])
+        self.theta_pol =  ray_launch["theta_pol"][ich]
+        self.phi_tor = ray_launch["phi_tor"][ich]
         self.f = ray_launch["f"][ich]
         
         

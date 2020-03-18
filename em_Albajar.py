@@ -679,6 +679,8 @@ class em_abs_Alb:
         #    gene -> GENE calculated distribution -> gene_distribution_interpolator
         self.dist_mode = dist_mode
         self.B_min = None
+        self.N_res = 200
+        self.t = np.linspace(-1, 1, self.N_res)
 
     def refr_index(self, svec, omega, mode):
         # Calculate refractive index
@@ -1117,10 +1119,9 @@ class em_abs_Alb:
             self.resonant = False
             return 0.0, 0.0
         m_0 = np.sqrt(1.e0 - N_par ** 2) * omega_bar
-        t = np.linspace(-1.0, 1.0, 60)
         u_par = 1.e0 / np.sqrt(1.e0 - N_par ** 2) * (float(m) / m_0 * N_par + \
-                           np.sqrt((float(m) / m_0) ** 2 - 1.e0) * t)
-        u_perp_sq = ((float(m) / m_0) ** 2 - 1.e0) * (1.e0 - t ** 2)
+                           np.sqrt((float(m) / m_0) ** 2 - 1.e0) * self.t)
+        u_perp_sq = ((float(m) / m_0) ** 2 - 1.e0) * (1.e0 - self.t ** 2)
         u_perp_sq[u_perp_sq <= 0] += 1.e-7
         if(np.any(u_perp_sq < 0)):
             self.resonant = False
@@ -1152,22 +1153,21 @@ class em_abs_Alb:
             self.resonant = False
             return 0.0, 0.0, 0.0, 0.0
         m_0 = np.sqrt(1.e0 - N_par ** 2) * omega_bar
-        t = np.linspace(-1.0, 1.0, 60)
         if(np.any(((float(m) / m_0) ** 2 - 1.e0) < 0.0)):
             self.resonant = False
             return 0.0, 0.0, 0.0, 0.0
         u_par = 1.e0 / np.sqrt(1.e0 - N_par ** 2) * (float(m) / m_0 * N_par + \
-                           np.sqrt((float(m) / m_0) ** 2 - 1.e0) * t)
-        u_perp_sq = ((float(m) / m_0) ** 2 - 1.e0) * (1.e0 - t ** 2)
+                           np.sqrt((float(m) / m_0) ** 2 - 1.e0) * self.t)
+        u_perp_sq = ((float(m) / m_0) ** 2 - 1.e0) * (1.e0 - self.t ** 2)
         u_perp_sq[u_perp_sq <= 0] += 1.e-7
         if(np.any(u_perp_sq < 0)):
             self.resonant = False
             return 0.0, 0.0, 0.0, 0.0
         u_perp = np.sqrt(u_perp_sq)
         if(not float(m) < m_0):
-            c_abs = self.abs_Al_integrand_c_abs(t, [svec, X, Y, omega_bar, m_0, N_abs, N_par, N_perp, e, m])
+            c_abs = self.abs_Al_integrand_c_abs(self.t, [svec, X, Y, omega_bar, m_0, N_abs, N_par, N_perp, e, m])
             c_abs = np.sqrt((float(m) / m_0) ** 2 - 1.e0) * c_abs
-            j = self.abs_Al_integrand_j(t, [svec, X, Y, omega_bar, m_0, N_abs, N_par, N_perp, e, m])
+            j = self.abs_Al_integrand_j(self.t, [svec, X, Y, omega_bar, m_0, N_abs, N_par, N_perp, e, m])
             j = np.sqrt((float(m) / m_0) ** 2 - 1.e0) * j
         else:
             self.resonant = False
@@ -1200,19 +1200,18 @@ class em_abs_Alb:
             self.resonant = False
             return 0.0, 0.0, 0.0, 0.0
         m_0 = np.sqrt(1.e0 - N_par ** 2) * omega_bar
-        t = np.linspace(-1.0, 1.0, 60)
         # Weights not needed atm
         # t_weights = np.concatenate([[0.5 * (t[1] - t[0])], t[2:-1] - t[1:-2], 0.5 * (t[-1] - t[-2])])
         u_par = 1.e0 / np.sqrt(1.e0 - N_par ** 2) * (float(m) / m_0 * N_par + \
-                           np.sqrt((float(m) / m_0) ** 2 - 1.e0) * t)
-        u_perp_sq = ((float(m) / m_0) ** 2 - 1.e0) * (1.e0 - t ** 2)
+                           np.sqrt((float(m) / m_0) ** 2 - 1.e0) * self.t)
+        u_perp_sq = ((float(m) / m_0) ** 2 - 1.e0) * (1.e0 - self.t ** 2)
         u_perp_sq[u_perp_sq <= 0] += 1.e-7
         if(np.any(u_perp_sq < 0)):
             self.resonant = False
             return 0.0, 0.0, 0.0, 0.0
         u_perp = np.sqrt(u_perp_sq)
         if(not float(m) < m_0):
-            j = self.abs_Al_integrand_j(t, [svec, X, Y, omega_bar, m_0, N_abs, N_par, N_perp, e, m])
+            j = self.abs_Al_integrand_j(self.t, [svec, X, Y, omega_bar, m_0, N_abs, N_par, N_perp, e, m])
             j = np.sqrt((float(m) / m_0) ** 2 - 1.e0) * j
         else:
             self.resonant = False
@@ -2162,7 +2161,7 @@ class em_abs_Alb:
         mu = mass_e * c0 ** 2 / (e0 * svec.Te)
         omega_bar = omega / (svec.freq_2X * np.pi)
         m_0 = np.sqrt(1.e0 - svec.cos_theta ** 2) * omega_bar
-        t , weights = leggauss(40)
+        t , weights = leggauss(120)
         u_par = 1.e0 / np.sqrt(1.e0 - svec.cos_theta ** 2) * (float(m) / m_0 * svec.cos_theta + \
                            np.sqrt((float(m) / m_0) ** 2 - 1.e0) * t)
         gamma = m / omega_bar + svec.cos_theta * u_par
@@ -2194,10 +2193,9 @@ class em_abs_Alb:
         m_0 = np.sqrt(1.e0 - svec.cos_theta ** 2) * omega_bar
         if((float(m) / omega_bar) ** 2 < 1.e0 - svec.cos_theta ** 2):
             return [], [], [] , []
-        t = np.linspace(-1.e0, 1.e0, 60)
         m = 2
         u_par = 1.e0 / np.sqrt(1.e0 - svec.cos_theta ** 2) * (float(m) / m_0 * svec.cos_theta + \
-                           np.sqrt((float(m) / m_0) ** 2 - 1.e0) * t)
+                           np.sqrt((float(m) / m_0) ** 2 - 1.e0) * self.t)
         gamma = m / omega_bar + svec.cos_theta * u_par
         u_perp_sq = gamma ** 2 - 1.e0 - u_par ** 2
         u_perp_sq[u_perp_sq <= 0] += 1.e-7
