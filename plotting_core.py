@@ -644,7 +644,7 @@ class plotting_core:
             self.create_legends("errorbar_twinx")
         return self.fig
     
-    def time_trace(self, shot, time, Te, ne, heating_array=None, time_z_axis = None, z_axis=None):
+    def time_trace(self, shot, time, Te, ne, heating_array=None, time_z_axis = None, z_axis=None, vline=None):
         self.title = False   
         if(z_axis is not None):     
             self.setup_axes("twinx_double", None)
@@ -685,6 +685,9 @@ class plotting_core:
         else:
             self.create_legends("errorbar_double_twinx_single_second")
         self.axlist[0].get_xaxis().set_visible(False)
+        if(vline is not None):
+            self.axlist[0].vlines(vline, self.y_range_list[0][0], self.y_range_list[0][1], "r")
+            self.axlist[2].vlines(vline, self.y_range_list[1][0], self.y_range_list[1][1], "r")
         return self.fig
 
     def calib_evolution_Trad(self, diag, ch, ECRad_result_list, diag_data, std_dev_data, popt_list, pol_angle_list=None):
@@ -1675,9 +1678,9 @@ class plotting_core:
                         z = result.ray["z" + mode][itime][ich - 1][iray]                        
                         R = np.sqrt(x**2 + y**2)
                         self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
-                                                                 data=[R, z], \
-                                                                         color=self.model_colors[self.model_color_index[0]], marker="--", linewidth=1, \
-                                                                         y_range_in=self.y_range_list[0], ax_flag="Rz")
+                                                                             data=[R, z], \
+                                                                             color=self.model_colors[self.model_color_index[0]], marker="--", linewidth=1, \
+                                                                             y_range_in=self.y_range_list[0], ax_flag="Rz")
                         self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], data=[x, y], \
                                                                                  color=self.model_colors[self.model_color_index_2[0]], marker="--", linewidth=1, \
                                                                                  y_range_in=self.y_range_list_2[0], ax_flag="xy")
