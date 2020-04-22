@@ -481,7 +481,7 @@ def prepare_TB_data_no_data_load(working_dir, shot, time, rho_prof, Te_prof, ne_
 
 def make_inbeam(working_dir, launch, mode, time, inbeam_no=0, cyl=False, ITM=False, ITER=False, Z_eff=None):
     tb_lib_path = globalsettings.TB_path
-    inbeam_file = open(os.path.join(tb_lib_path, "inbeam.dat"))
+    inbeam_file = open(os.path.join(tb_lib_path, "inbeam_tracing.dat"))
     inbeam_lines = inbeam_file.readlines()
     inbeam_file.close()
     double_check_dict = {}

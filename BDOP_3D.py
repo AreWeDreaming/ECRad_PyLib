@@ -943,14 +943,14 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
 #                                hold='on', cmap=cm.get_cmap("plasma"))
     if(include_ECRH):
         cb_ECRH = fig.colorbar(cmaps[-1], pad=0.15, ticks=[0.0, 0.5, 1.0])
-        cb_ECRH.set_label(r"$\mathrm{d}P_\mathrm{ECRH}/\mathrm{d}s\,[\si{{a.u.}}]$")
+        cb_ECRH.set_label(r"$\mathrm{d}P^*_\mathrm{ECRH}/\mathrm{d}s\,[\si{{a.u.}}]$")
     if(Teweight):
         cb_dist = fig.colorbar(cont2, pad=0.15, ticks=[0.0, 0.5, 1.0])
         cb_dist.set_label(r"$f_\mathrm{MJ} u_\perp^2 / \gamma f_0$")
     if(found_one_cut):
         if(len(ch_list) >  0):
             cb = fig.colorbar(cmaps[0], ticks=[0.0, 0.5, 1.0])
-            cb.set_label(r"$D_\omega\,[\si{{a.u.}}]$")
+            cb.set_label(r"$D^*_\omega\,[\si{{a.u.}}]$")
         ax_reso.set_xlim(u_perp_range[0], u_perp_range[1])
         ax_reso.set_ylim(u_par_range[0], u_par_range[1])
         ax_reso.set_ylabel(r"$u_\parallel$")

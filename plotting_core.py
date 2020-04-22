@@ -37,23 +37,23 @@ class plotting_core:
         self.model_markers = ["^", "s", "v", "d", "o", "+", "*"  ]        
         self.line_markers = ["-", "--", ":", "-", "--", ":", "-", "--", ":"]
         self.diag_colors = [(0.0, 126.0 / 255, 0.0)]
-        self.model_colors = [(0.0, 0.3e0, 0.7e0), (0.0, 126.0 / 255, 1.0), (126.0 / 255, 126.0 / 255, 0.0)]
+        self.model_colors = [(0.0, 0.3e0, 0.7e0)]# , (0.0, 126.0 / 255, 1.0), (126.0 / 255, 126.0 / 255, 0.0)
         self.line_colors = [(0.0, 0.e0, 0.e0)]
         self.n_diag_colors = 8
         self.n_line_colors = 8
-        self.n_model_colors = 12
+        self.n_model_colors = 8
         self.diag_cmap = plt.cm.ScalarMappable(plt.Normalize(0, 1), "Paired")
-        self.line_cmap = plt.cm.ScalarMappable(plt.Normalize(0, 1), "Set1")
+        self.line_cmap = plt.cm.ScalarMappable(plt.Normalize(0, 1), "Dark2")
 #        try:
 #            self.model_cmap = plt.cm.ScalarMappable(plt.Normalize(0, 1), "nipy_spectral")
 #        except:
-        self.model_cmap = plt.cm.ScalarMappable(plt.Normalize(0, 1), "nipy_spectral")
+        self.model_cmap = plt.cm.ScalarMappable(plt.Normalize(0, 1), "tab10")
         n_diag_steps = np.linspace(0.0, 1.0, self.n_diag_colors)
         n_line_steps = np.linspace(0.0, 1.0, self.n_line_colors)
         model_steps = np.linspace(0.0, 1.0, self.n_model_colors)
-        self.diag_colors = np.concatenate([self.diag_colors, self.diag_cmap.to_rgba(n_diag_steps).T[0:3].T])
+        self.diag_colors = np.concatenate([self.diag_colors, self.diag_cmap.to_rgba(n_diag_steps).T[0:3].T])[::-1]
         self.line_colors = np.concatenate([self.line_colors, self.line_cmap.to_rgba(n_line_steps).T[0:3].T])
-        self.model_colors = np.concatenate([self.model_colors, self.model_cmap.to_rgba(model_steps).T[0:3].T[::-1]])
+        self.model_colors = np.concatenate([self.model_colors, self.model_cmap.to_rgba(model_steps).T[0:3].T])
         self.model_marker_index = [0]
         self.model_color_index = [0]
         self.diag_marker_index = [0]
@@ -201,20 +201,20 @@ class plotting_core:
                     data=[diags[key].rhop, diags[key].val],\
                     marker="--", \
                     color=self.diag_colors[self.diag_color_index[0]], \
-                    y_range_in=self.y_range_list[0], ax_flag=ax_flag)
+                    y_range_in=self.y_range_list[0], ax_flag=ax_flag, zorder=1)
             elif(diags[key].unc is None):
                 self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                     data=[diags[key].rhop, diags[key].val],\
                     marker=self.diag_markers[self.diag_marker_index], \
                     color=self.diag_colors[self.diag_color_index[0]], \
-                    y_range_in=self.y_range_list[0], ax_flag=ax_flag)
+                    y_range_in=self.y_range_list[0], ax_flag=ax_flag, zorder=1)
             else:
                 diag_mask = np.abs(diags[key].val * max_unc) > np.abs(diags[key].unc)
                 self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                     data=[diags[key].rhop[diag_mask], diags[key].val[diag_mask]], y_error=diags[key].unc[diag_mask], \
                     name=key, marker=self.diag_markers[self.diag_marker_index[0]], \
                     color=self.diag_colors[self.diag_color_index[0]], \
-                    y_range_in=self.y_range_list[0], ax_flag=ax_flag)
+                    y_range_in=self.y_range_list[0], ax_flag=ax_flag, zorder=1)
             self.diag_marker_index[0] += 1
             if(self.diag_marker_index[0] > len(self.diag_markers)):
                 print("Warning too many diagnostics to plot - ran out of unique markers")
@@ -1668,8 +1668,8 @@ class plotting_core:
                 filename = os.path.join(path, "Rz_beam_{0:1d}.dat".format(i))
                 filename_tor = os.path.join(path, "xy_beam_{0:1d}.dat".format(i))
         if(result is not None):
-            self.model_color_index[0] = 1
-            self.model_color_index_2[0] = 1
+            self.line_color_index[0] = 1
+            self.line_color_index_2[0] = 1
             for ich in channel_list:
                 if(result.Config.N_ray > 1):
                     for iray in range(result.Config.N_ray):
@@ -1679,10 +1679,10 @@ class plotting_core:
                         R = np.sqrt(x**2 + y**2)
                         self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                                                                              data=[R, z], \
-                                                                             color=self.model_colors[self.model_color_index[0]], marker="--", linewidth=1, \
+                                                                             color=self.line_colors[self.line_color_index[0]], marker="-", linewidth=2, \
                                                                              y_range_in=self.y_range_list[0], ax_flag="Rz")
                         self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], data=[x, y], \
-                                                                                 color=self.model_colors[self.model_color_index_2[0]], marker="--", linewidth=1, \
+                                                                                 color=self.line_colors[self.line_color_index_2[0]], marker="-", linewidth=2, \
                                                                                  y_range_in=self.y_range_list_2[0], ax_flag="xy")
                 else:
                     x = result.ray["x" + mode][itime][ich - 1]
@@ -1691,18 +1691,18 @@ class plotting_core:
                     R = np.sqrt(x**2 + y**2)
                     self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                                                              data=[R, z], \
-                                                                     color=self.model_colors[self.model_color_index[0]], marker="-", linewidth=1, \
+                                                                     color=self.line_colors[self.line_color_index[0]], marker="-", linewidth=2, \
                                                                      y_range_in=self.y_range_list[0], ax_flag="Rz")
                     self.axlist_2[0], self.y_range_list_2[0] = self.add_plot(self.axlist_2[0], data=[x, y], \
-                                                                             color=self.model_colors[self.model_color_index_2[0]], marker="-", linewidth=1, \
+                                                                             color=self.line_colors[self.line_color_index_2[0]], marker="-", linewidth=2, \
                                                                              y_range_in=self.y_range_list_2[0], ax_flag="xy")
-                if(self.model_color_index[0] >  len(self.model_colors)):
+                if(self.line_color_index[0] >  len(self.line_colors)):
                     print("Too many channels had to cycle colors")
-                    self.model_color_index[0] = 1
-                    self.model_color_index_2[0] = 1
+                    self.line_color_index[0] = 1
+                    self.line_color_index_2[0] = 1
                 else:
-                    self.model_color_index[0] += 1
-                    self.model_color_index_2[0] += 1
+                    self.line_color_index[0] += 1
+                    self.line_color_index_2[0] += 1
         for beam in linear_beam.rays:
             ray_count = 1
             pw_max = -np.inf
@@ -2933,24 +2933,7 @@ class plotting_core:
                     while(x_1 + step * x_scale <= plotxrange[1]):
                         x_1 += step * x_scale
                     x_1 += step * x_scale  # Due to the nature of arange we actually need a larger x_1
-                    # if(x_1 > plotxrange[1]):
-                    #    x_1 -= step * x_scale
-                    # x_0 = np.round(x_0, 3)
-                    # x_1 = np.round(x_1, 3)
-#                    N_x = int((x_1 - x_0) / x_scale / step + 0.5)
-#                    if(np.round(np.abs(x_1 - x_0) / N_x,3) != np.round(step * x_scale,3)):
-#                            change_x = False
-#                            print("Could not find step x major")
-#                            print("N , start, stop, step", N_x, x_0, x_1, np.abs(x_0 - x_1) / N_x / x_scale)
                     loc = np.arange(x_0, x_1, step * x_scale)
-#                    print("x_0", x_0)
-#                    print("x_1", x_1)
-#                    print("plot x range", plotxrange)
-#                    print(" x_step for ax: ", ax.get_lines()[0].get_label())
-#                    print("loc", loc)
-#                    print("Plot scale: ",x_scale)
-#                    print("x_step found", step, int(x_length / step))
-#                    print("x-length: ",(x_length / steps).astype(int))
                     if(change_x and ax.get_xaxis().get_scale() != "log"):
                         ax.get_xaxis().set_major_locator(FixedLocator(loc))
                     x_0 = np.floor(plotxrange[0] / x_scale) * x_scale
@@ -3031,61 +3014,6 @@ class plotting_core:
                 print("Plot scale: ", y_scale)
                 print("plot y range", plotyrange)
                 print("y-length: ", (y_length / steps).astype(int))
-#        for i in range(len(self.axlist_2)):
-#            if(x_step == 0 and int(x_length / step) <= 6 and int(x_length / step) >= 4):
-#                x_0 = int(plotxrange[0] / x_scale) * x_scale
-#                x_1 = x_0
-#                while(x_1 + step * x_scale < plotxrange[1]):
-#                    x_1 += step * x_scale
-#                N = (x_1 - x_0) / x_scale / step + 1
-#                loc = np.linspace(x_0, x_1, N, True)
-# #                    print("x_step found", step, int(x_length / step))
-# #                    print(" x_step for ax: ",i)
-# #                    print("loc", loc)
-# #                    print("Plot scale: ",x_scale)
-# #                    print("plot x range", plotxrange)
-# #                    print("x-length: ",(x_length / steps).astype(int))
-# #                    print("x_0", y_0)
-#                self.axlist_2[i].get_xaxis().set_major_locator(FixedLocator(loc))
-#                x_0 = int(plotxrange[0] / x_scale) * x_scale + 0.5 * step * x_scale
-#                x_1 = x_0
-#                while(x_1 + step * x_scale < plotxrange[1]):
-#                    x_1 += step * x_scale
-#                loc = np.linspace(x_0,x_1, N,True)
-#                self.axlist_2[i].get_xaxis().set_minor_locator(FixedLocator(loc))
-#                x_step = step
-#            if(y_step == 0 and int(y_length / step) <= 5 and int(y_length / step) >= 3):
-#                y_0 = int(plotyrange[0] / y_scale) * y_scale
-#                y_1 = y_0
-#                while(y_1 + step * y_scale < plotyrange[1]):
-#                    y_1 += step * y_scale
-#                N = (y_1 - y_0) / y_scale / step + 1
-#                loc = np.linspace(y_0, y_1, N, True)
-# #                    print("y_step found", step, int(y_length / step))
-# #                    print(" y_step for ax: ",i)
-# #                    print("loc", loc)
-# #                    print("Plot scale: ",y_scale)
-# #                    print("plot y range", plotyrange)
-# #                    print("y-length: ",(y_length / steps).astype(int))
-# #                    print("y_0", y_0)
-#                self.axlist_2[i].get_yaxis().set_major_locator(FixedLocator(loc))
-#                y_0 = int(plotyrange[0] / y_scale) * y_scale + 0.5 * step * y_scale
-#                y_1 = int(plotyrange[1] / y_scale) * y_scale + 0.5 * step * y_scale
-#                loc = np.linspace(y_0,y_1, N,True)
-#                self.axlist_2[i].get_yaxis().set_minor_locator(FixedLocator(loc))
-#                y_step = step
-#            if(x_step != 0.0 and y_step != 0.0):
-#                break
-#            if(x_step == 0.0):
-#                print("Failed to find x_step for fig2 ax: ",i)
-#                print("Plot scale: ",x_scale)
-#                print("plot x range", plotxrange)
-#                print("x-length: ",(x_length / steps).astype(int))
-#            if(y_step == 0.0):
-#                print("Failed to find y_step for fig2 ax: ",i)
-#                print("plot y range", plotyrange)
-#                print("Plot scale: ",y_scale)
-#                print("y-length: ",(y_length / steps).astype(int))
         if(self.fig_2 is None):
             return self.fig
         else:
@@ -3095,7 +3023,7 @@ class plotting_core:
     def add_plot(self, ax, y_range_in, filename=None, data=None, x_error=None, y_error=None, maxlines=0, name=None, first_invoke=None, \
                         marker=None, coloumn=1, color=None, mode=111, ax_flag=None, xlabel=None, ylabel=None, \
                         vline=None, x_scale=1.0, y_scale=1.0, log_flag=False, sample=1, label_x=True, \
-                        linewidth=plt.rcParams['lines.linewidth']):
+                        linewidth=plt.rcParams['lines.linewidth'], zorder=None):
         if(filename is None and data is None):
             return ax, None, [0.0, 0.0]
         if(data is not None):
@@ -3131,109 +3059,109 @@ class plotting_core:
             if(x_error is not None or y_error is not None):
                 if(x_error is None  and y_error is not None):
                     y_error = y_error * y_scale
-                    ax.errorbar(x[::sample], y[::sample], yerr=y_error[::sample], markeredgecolor='black', markeredgewidth=1.25)
+                    ax.errorbar(x[::sample], y[::sample], yerr=y_error[::sample], markeredgecolor='black', markeredgewidth=1.25, zorder=zorder)
                 elif(x_error is not None  and y_error is None):
                     x_error = x_error * x_scale
-                    ax.errorbar(x[::sample], y[::sample], xerr=x_error[::sample], markeredgecolor='black', markeredgewidth=1.25)
+                    ax.errorbar(x[::sample], y[::sample], xerr=x_error[::sample], markeredgecolor='black', markeredgewidth=1.25, zorder=zorder)
                 else:
                     x_error = x_error * x_scale
                     y_error = y_error * y_scale
                     ax.errorbar(x[::sample], y[::sample], xerr=x_error[::sample], yerr=y_error[::sample], \
-                                markeredgecolor='black', markeredgewidth=1.25)
+                                markeredgecolor='black', markeredgewidth=1.25, zorder=zorder)
             else:
                 ax.plot(x[::sample], y[::sample])
         elif(marker is not None and name is None and color is None):
             if(x_error is not None or y_error is not None):
                 if(x_error is None  and y_error is not None):
                     y_error = y_error * y_scale
-                    ax.errorbar(x[::sample], y[::sample], yerr=y_error[::sample], fmt=marker)
+                    ax.errorbar(x[::sample], y[::sample], yerr=y_error[::sample], fmt=marker, zorder=zorder)
                 elif(x_error is not None  and y_error is None):
                     x_error = x_error * x_scale
-                    ax.errorbar(x[::sample], y[::sample], xerr=x_error[::sample], fmt=marker)
+                    ax.errorbar(x[::sample], y[::sample], xerr=x_error[::sample], fmt=marker, zorder=zorder)
                 else:
                     y_error = y_error * y_scale
                     x_error = x_error * x_scale
-                    ax.errorbar(x[::sample], y[::sample], xerr=x_error[::sample], yerr=y_error[::sample], marker=marker)
+                    ax.errorbar(x[::sample], y[::sample], xerr=x_error[::sample], yerr=y_error[::sample], marker=marker, zorder=zorder)
             else:
-                ax.plot(x[::sample], y[::sample], marker, mfc=(0.0, 0.0, 0.0, 0.0))
+                ax.plot(x[::sample], y[::sample], marker, mfc=(0.0, 0.0, 0.0, 0.0), zorder=zorder)
         elif(marker is None and name is not None and color is None):
             if(x_error is not None or y_error is not None):
                 if(x_error is None  and y_error is not None):
                     y_error = y_error * y_scale
-                    ax.errorbar(x[::sample], y[::sample], yerr=y_error[::sample], label=name)
+                    ax.errorbar(x[::sample], y[::sample], yerr=y_error[::sample], label=name, zorder=zorder)
                 elif(x_error is not None  and y_error is None):
                     x_error = x_error * x_scale
-                    ax.errorbar(x[::sample], y[::sample], xerr=x_error[::sample], label=name)
+                    ax.errorbar(x[::sample], y[::sample], xerr=x_error[::sample], label=name, zorder=zorder)
                 else:
                     y_error = y_error * y_scale
                     x_error = x_error * x_scale
-                    ax.errorbar(x[::sample], y[::sample], xerr=x_error[::sample], yerr=y_error[::sample], label=name)
+                    ax.errorbar(x[::sample], y[::sample], xerr=x_error[::sample], yerr=y_error[::sample], label=name, zorder=zorder)
             else:
-                ax.plot(x[::sample], y[::sample], label=name, linewidth=linewidth)
+                ax.plot(x[::sample], y[::sample], label=name, linewidth=linewidth, zorder=zorder)
         elif(marker is not None and color is None and name is not None):
             if(x_error is not None or y_error is not None):
                 if(x_error is None  and y_error is not None):
                     y_error = y_error * y_scale
-                    ax.errorbar(x[::sample], y[::sample], yerr=y_error[::sample], fmt=marker, label=name)
+                    ax.errorbar(x[::sample], y[::sample], yerr=y_error[::sample], fmt=marker, label=name, zorder=zorder)
                 elif(x_error is not None  and y_error is None):
                     x_error = x_error * x_scale
-                    ax.errorbar(x[::sample], y[::sample], xerr=x_error[::sample], fmt=marker, label=name)
+                    ax.errorbar(x[::sample], y[::sample], xerr=x_error[::sample], fmt=marker, label=name, zorder=zorder)
                 else:
                     y_error = y_error * y_scale
                     x_error = x_error * x_scale
-                    ax.errorbar(x[::sample], y[::sample], xerr=x_error[::sample], yerr=y_error[::sample], fmt=marker, label=name)
+                    ax.errorbar(x[::sample], y[::sample], xerr=x_error[::sample], yerr=y_error[::sample], fmt=marker, label=name, zorder=zorder)
             else:
-                ax.plot(x[::sample], y[::sample], marker, label=name, linewidth=linewidth)
+                ax.plot(x[::sample], y[::sample], marker, label=name, linewidth=linewidth, zorder=zorder)
         elif(marker is None and color is not None and name is not None):
             if(x_error is not None or y_error is not None):
                 if(x_error is None  and y_error is not None):
                     y_error = y_error * y_scale
-                    ax.errorbar(x[::sample], y[::sample], y_err=y_error[::sample], label=name, color=color, mfc="none", mec=color)
+                    ax.errorbar(x[::sample], y[::sample], y_err=y_error[::sample], label=name, color=color, mfc="none", mec=color, zorder=zorder)
                 elif(x_error is not None  and y_error is None):
                     x_error = x_error * x_scale
-                    ax.errorbar(x[::sample], y[::sample], x_err=x_error[::sample], label=name, color=color, mfc="none", mec=color)
+                    ax.errorbar(x[::sample], y[::sample], x_err=x_error[::sample], label=name, color=color, mfc="none", mec=color, zorder=zorder)
                 else:
                     y_error = y_error * y_scale
                     x_error = x_error * x_scale
-                    ax.errorbar(x[::sample], y[::sample], x_err=x_error[::sample], y_err=y_error[::sample], label=name, color=color, mfc="none", mec=color)
+                    ax.errorbar(x[::sample], y[::sample], x_err=x_error[::sample], y_err=y_error[::sample], label=name, color=color, mfc="none", mec=color, zorder=zorder)
             else:
-                ax.plot(x[::sample], y[::sample], label=name, color=color, mfc="none", mec=color, linewidth=linewidth)
+                ax.plot(x[::sample], y[::sample], label=name, color=color, mfc="none", mec=color, linewidth=linewidth, zorder=zorder)
         else:
             if(marker != "D"):
                 if(x_error is not None or y_error is not None):
                     if(x_error is None  and y_error is not None):
                         y_error = y_error * y_scale
                         ax.errorbar(x[::sample], y[::sample], yerr=y_error[::sample], fmt=marker, \
-                                 label=name, color=color, mfc="none", mec=color)
+                                 label=name, color=color, mfc="none", mec=color, zorder=zorder)
                     elif(x_error is not None  and y_error is None):
                         x_error = x_error * x_scale
                         ax.errorbar(x[::sample], y[::sample], xerr=x_error[::sample], fmt=marker, \
-                                 label=name, color=color, mfc="none", mec=color)
+                                 label=name, color=color, mfc="none", mec=color, zorder=zorder)
                     else:
                         y_error = y_error * y_scale
                         x_error = x_error * x_scale
                         ax.errorbar(x[::sample], y[::sample], xerr=x_error[::sample], yerr=y_error[::sample], fmt=marker, \
-                                 label=name, color=color, mfc="none", mec=color)
+                                 label=name, color=color, mfc="none", mec=color, zorder=zorder)
                 else:
                     ax.plot(x[::sample], y[::sample], marker, linewidth=linewidth, \
-                                 label=name, color=color, mfc="none", mec=color)
+                                 label=name, color=color, mfc="none", mec=color, zorder=zorder)
             else:
                 if(x_error is not None or y_error is not None):
                     if(x_error is None  and y_error is not None):
                         y_error = y_error * y_scale
                         ax.errorbar(x[::sample], y[::sample], yerr=y_error[::sample], fmt=marker, \
-                                 label=name, color=color)
+                                 label=name, color=color, zorder=zorder)
                     elif(x_error is not None  and y_error is None):
                         x_error = x_error * x_scale
                         ax.errorbar(x[::sample], y[::sample], xerr=x_error[::sample], fmt=marker, \
-                                 label=name, color=color)
+                                 label=name, color=color, zorder=zorder)
                     else:
                         y_error = y_error * y_scale
                         x_error = x_error * x_scale
                         ax.errorbar(x[::sample], y[::sample], xerr=x_error[::sample], yerr=y_error[::sample], fmt=marker, \
                                  label=name, color=color)
                 else:
-                    ax.plot(x[::sample], y[::sample], marker, label=name, color=color, linewidth=linewidth)
+                    ax.plot(x[::sample], y[::sample], marker, label=name, color=color, linewidth=linewidth, zorder=zorder)
         if(log_flag == True and np.any(y > 0)):
             ax.set_yscale('log')
         if(y_range_in is not None):
