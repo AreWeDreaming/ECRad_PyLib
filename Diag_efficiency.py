@@ -6,6 +6,7 @@ Created on 11.06.2019
 
 from BDOP_3D import make_3DBDOP_for_ray, make_f_inter, make_PowerDepo_3D_for_ray
 from equilibrium_utils import EQDataExt
+from equilibrium_utils_AUG import EQData
 from ECRad_Results import ECRadResults
 from distribution_io import load_f_from_mat, read_dist_mat_to_beam, read_waves_mat_to_beam
 from distribution_functions import Juettner2D
@@ -122,36 +123,38 @@ def diag_weight(fig, Results, time_point, ch, DistWaveFile=None, ax=None):
     ax.set_aspect("equal")
     return fig
 
-def ECRH_weight(fig, Results, time_point, ibeam, DistWaveFile, beam_freq=105.e9, ax=None):
+def ECRH_weight(fig, Result_file, time_point, ibeam, DistWaveFile, beam_freq=105.e9, ax=None):
     # Currently only RELAX/LUKE distributions supported
     # Extension for GENE trivial though
     if(ax is None):
         ax = fig.add_subplot(111)
     harmonic_n = 2
+    Results = ECRadResults()
+    Results.from_mat_file(Result_file)
     itime = np.argmin(np.abs(time_point - Results.Scenario.plasma_dict["time"]))
     time_cor = Results.Scenario.plasma_dict["time"][itime]
     EQObj= EQDataExt(Results.Scenario.shot)
     EQObj.insert_slices_from_ext(Results.Scenario.plasma_dict["time"], Results.Scenario.plasma_dict["eq_data"])
     B_ax = EQObj.get_B_on_axis(time_cor)
     EqSlice = EQObj.GetSlice(time_point)
+    dist_wave_mat = loadmat(DistWaveFile)
     dist_obj = load_f_from_mat(DistWaveFile, True)
     f_inter, f_inter_scnd = make_f_inter(Results.Config.dstf, dist_obj=dist_obj, EQObj=EQObj, time=time_cor)
-    linear_beam = read_waves_mat_to_beam(DistWaveFile, EqSlice, use_wave_prefix=None)
-    PW_beam_spl = InterpolatedUnivariateSpline(linear_beam.rhop, linear_beam.PW_beam[ibeam])
-    PW_beam = PW_beam_spl.integral(0.0, 1.0)
+    linear_beam = read_waves_mat_to_beam(dist_wave_mat, EqSlice, use_wave_prefix=None)
     itme = np.argmin(np.abs(Results.Scenario.plasma_dict["time"] - time_point))
     Te_spl = InterpolatedUnivariateSpline(Results.Scenario.plasma_dict[Results.Scenario.plasma_dict["prof_reference"]][itime], \
-                                          Results.Scenario.plasma_dict["Te"][itme])
+                                          np.log(Results.Scenario.plasma_dict["Te"][itme]))
     ne_spl = InterpolatedUnivariateSpline(Results.Scenario.plasma_dict[Results.Scenario.plasma_dict["prof_reference"]][itime], \
-                                          Results.Scenario.plasma_dict["ne"][itme])
+                                          np.log(Results.Scenario.plasma_dict["ne"][itme]))
     m = 40
     n=  80
     u_perp_grid = np.linspace(0.0, np.max(dist_obj.u), m)
     u_par_grid = np.linspace(-np.max(dist_obj.u), np.max(f_inter.x), n)
     diag_weight_f = np.zeros((m,n))
-    diag_weight_rel = np.zeros((m,n))
-    for ray in range(linear_beam[ibeam]):
-        tot_pw_ray, cur_PDP = make_PowerDepo_3D_for_ray(ray, beam_freq, "Re", m, B_ax, EqSlice, Te_spl, ne_spl, f_inter, N_pnts=100)
+    for ray in linear_beam.rays[ibeam]:
+        tot_pw_ray, cur_PDP = make_PowerDepo_3D_for_ray(ray, beam_freq, "Re", harmonic_n, \
+                                                        B_ax, EqSlice, Te_spl, ne_spl, f_inter, \
+                                                        N_pnts=100, fast= True)
         for irhop, rhop in enumerate(cur_PDP.rho):
             print(irhop + 1, " / ", len(cur_PDP.rho))
             intercep_points = find_cell_interceps(u_par_grid, u_perp_grid, cur_PDP, irhop)
@@ -176,16 +179,13 @@ def ECRH_weight(fig, Results, time_point, ibeam, DistWaveFile, beam_freq=105.e9,
                     PDP_val_spl = InterpolatedUnivariateSpline(t, cur_PDP.val[irhop])
                 except Exception as e:
                     print(e)
-                PDP_val_rel_spl = InterpolatedUnivariateSpline(t, np.abs(cur_PDP.val[irhop] - cur_PDP.val_back[irhop]))
                 t1 = t_spl(intercep_point[0])
                 t2 = t_spl(intercep_points[i_intercep + 1][0])
-                diag_weight_f[j,i] += tot_pw_ray / PW_beam * \
+                diag_weight_f[j,i] += tot_pw_ray * \
                                         PDP_val_spl.integral(t1, t2)
-                diag_weight_rel[j,i] += tot_pw_ray / PW_beam  * \
-                                        PDP_val_rel_spl.integral(t1, t2)
     ax.contourf(u_perp_grid, u_par_grid, diag_weight_f.T / np.max(diag_weight_f.flatten()), \
-                 levels = np.linspace(0.01,1,10), cmap = plt.get_cmap("spring"))
-    m = cm.ScalarMappable(cmap=plt.cm.get_cmap("spring"))
+                 levels = np.linspace(0.01,1,10), cmap = plt.get_cmap("Greens"))
+    m = cm.ScalarMappable(cmap=plt.cm.get_cmap("Greens"))
     m.set_array(np.linspace(0.01, 1.0, 10))
     cb_diag = fig.colorbar(m, pad=0.15, ticks=[0.0, 0.5, 1.0])
     cb_diag.set_label(r"$\mathrm{d}P/\mathrm{d}s [\si{{a.u.}}]$")
@@ -195,29 +195,29 @@ def ECRH_weight(fig, Results, time_point, ibeam, DistWaveFile, beam_freq=105.e9,
     return fig
 
 
-def current_weight(DistWaveFile, fig=None, ax=None):
+def current_weight(DistWaveFile, shot, time, EQ_exp, EQ_diag, EQ_ed, fig=None, ax=None):
     dist_obj = load_f_from_mat(DistWaveFile, True)
     dist_mat = loadmat(DistWaveFile, squeeze_me=True)
     waves = read_dist_mat_to_beam(dist_mat, True)
     ECCD_weight = np.zeros(dist_obj.f_cycl[0].shape)
     j_spl = InterpolatedUnivariateSpline(waves.rhop, waves.j)
     j_tot = j_spl.integral(waves.rhop[0], waves.rhop[-1])
+    EQ_aug_obj = EQData(shot, EQ_exp=EQ_exp, EQ_diag=EQ_diag, EQ_ed=EQ_ed)
+    EQ_aug_obj.init_read_from_shotfile()
+    Vol = EQ_aug_obj.getQuantity(dist_obj.rhop, "Vol", time)
+    Vol_spl = InterpolatedUnivariateSpline(dist_obj.rhop, Vol)
     for irhop, rhop in enumerate(dist_obj.rhop):
-        weight = np.abs(waves.j[irhop] / j_tot)
-        print(rhop, weight)
+        weight = np.abs(waves.j[irhop] / j_tot) * Vol_spl(rhop, nu=1)
         for i, u_par in enumerate(dist_obj.ull):
             for j, u_perp  in enumerate(dist_obj.uxx):
                 f_diff = dist_obj.f_cycl[irhop][i,j] - Juettner2D(u_par, u_perp, dist_obj.Te[irhop])
                 ECCD_weight[i,j] += weight * f_diff * u_par  / np.sqrt(1.0 + u_par**2 + u_perp**2)
-    ECCD_weight += np.max(np.abs(ECCD_weight.flatten()))
     ECCD_weight /= np.max(np.abs(ECCD_weight.flatten()))
-    ECCD_weight -= 0.5
-    ECCD_weight *= 2.0
     if(fig is None):
         fig = plt.figure()
     if(ax is None):
         ax = fig.add_subplot(111)
-    ax.contourf(dist_obj.uxx, dist_obj.ull, ECCD_weight / np.max(ECCD_weight.flatten()), \
+    ax.contourf(dist_obj.uxx, dist_obj.ull, ECCD_weight, \
                  levels = np.linspace(-1,1,30), cmap = plt.get_cmap("coolwarm"))
     ax.set_ylabel(r"$u_\parallel$")
     ax.set_xlabel(r"$u_\perp$")
@@ -227,24 +227,29 @@ def current_weight(DistWaveFile, fig=None, ax=None):
     cb_j.set_label(r"$(f - f_0) \beta_\parallel [\si{{a.u.}}]$")
     ax.set_aspect("equal")
 #     plt.show()
+
 if(__name__ == "__main__"):
     fig = plt.figure(figsize=(12.5,8.5))
     ax = fig.add_subplot(111)
-#     current_weight("/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3204.mat",fig,ax)
-    ECRH_weight(fig, "/tokp/work/sdenk/DRELAX_35662_rdiff_prof/DRELAX_run_3204.mat", 3.84, 0, \
-                "/tokp/work/sdenk/DRELAX_35662_rdiff_prof/DRELAX_run_3204.mat", beam_freq=105.e9, ax=ax)
-#     diag_weight_stand_alone(fig, ax, "/tokp/work/sdenk/DRELAX_35662_rdiff_prof/DRELAX_run_3204.mat", 3.84, 88, \
-#                             "/tokp/work/sdenk/DRELAX_35662_rdiff_prof/DRELAX_run_3204.mat")
-    diag_weight_stand_alone(fig, ax, "/tokp/work/sdenk/DRELAX_35662_rdiff_prof/DRELAX_run_3204.mat", 3.84, 136, \
-                            "/tokp/work/sdenk/DRELAX_35662_rdiff_prof/DRELAX_run_3204.mat")
-    plt.show()
+    current_weight("/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3204.mat", 35662, 3.84, "AUGD", "IDE", 0,fig,ax)
+    diag_weight_stand_alone(fig, ax, "/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3204.mat", 3.84, 88, \
+                            "/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3204.mat")
+    diag_weight_stand_alone(fig, ax, "/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3204.mat", 3.84, 136, \
+                            "/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3204.mat")
+#     
+#     plt.pause(-1)
+    
 # #     plt.hold(True)
-#     current_weight("/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3224.mat",fig,ax)
+#     current_weight("/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3224.mat", 35662, 3.84, "AUGD", "IDE", 0, fig, ax)
+#     ECRH_weight(fig, "/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3224.mat", 3.84, 0, \
+# #                 "/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3224.mat", beam_freq=105.e9, ax=ax)
 #     diag_weight_stand_alone(fig, ax, "/tokp/work/sdenk/DRELAX_final/DRELAX_run_3224.mat", 3.84, 88, \
 #                             "/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3224.mat")
 #     diag_weight_stand_alone(fig, ax, "/tokp/work/sdenk/DRELAX_final/DRELAX_run_3224.mat", 3.84, 136, \
 #                             "/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3224.mat")
-#     plt.show()
+    ax.set_xlim(0.0, 0.3)
+    ax.set_ylim(-0.3, 0.3)
+    plt.show()
 #     plt.hold(True)
     
     

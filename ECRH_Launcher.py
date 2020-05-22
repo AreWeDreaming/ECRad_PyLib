@@ -26,8 +26,8 @@ class ECRHLauncher:
         self.R = gy.position.r
         self.phi = gy.position.phi
         self.z = gy.position.z
-        self.x = gy.position.r * np.cos(self.phi)
-        self.y = gy.position.r * np.sin(self.phi)
+        self.x = gy.position.r * np.cos(np.deg2rad(self.phi))
+        self.y = gy.position.r * np.sin(np.deg2rad(self.phi))
         self.error = 0
         self.curv_y = -1.0 / gy.beam.phaseellipse.invcurvrad[0]
         self.curv_z = -1.0 / gy.beam.phaseellipse.invcurvrad[1]
@@ -41,14 +41,14 @@ class ECRHLauncher:
         self.R = ray_launch["R"][ich]
         self.phi = ray_launch["phi"][ich]
         self.z = ray_launch["z"][ich]
-        self.x = self.R * np.cos(self.phi)
-        self.y = self.R * np.sin(self.phi)
+        self.x = self.R * np.cos(np.deg2rad(self.phi))
+        self.y = self.R * np.sin(np.deg2rad(self.phi))
         self.error = 0
         self.curv_y = ray_launch["dist_focus"][ich]
         self.curv_z =  self.curv_y 
         self.width_y = ray_launch["width"][ich]
         self.width_z = self.width_y
-        self.theta_pol =  ray_launch["theta_pol"][ich]
+        self.theta_pol = ray_launch["theta_pol"][ich]
         self.phi_tor = ray_launch["phi_tor"][ich]
         self.f = ray_launch["f"][ich]
         

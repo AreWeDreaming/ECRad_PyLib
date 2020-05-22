@@ -300,17 +300,22 @@ class BDOP_3D:
         self.f_back = np.array(self.f_back)
 
 
-def make_PowerDepo_3D_for_ray(ray, beam_freq, dist, m, B_ax, EqSlice, Te_spl, ne_spl, f_inter, N_pnts=100):
+def make_PowerDepo_3D_for_ray(ray, beam_freq, dist, m, B_ax, EqSlice, Te_spl, \
+                              ne_spl, f_inter, N_pnts=100, fast=False):
     # Currently only supported for non-Gene distributions
     ray_mask = np.logical_and(ray["rhop"] > 0.0, ray["rhop"] < 1.0)
     s_beam_ray = ray["s"][ray_mask]
     P_spl =  InterpolatedUnivariateSpline(s_beam_ray, ray["PW"][ray_mask] )
-    P_norm = P_spl(s_beam_ray) / P_spl.integral(s_beam_ray[0], s_beam_ray[-1])
-    s = distribute_points(ray["s"], P_spl(s_beam_ray, k=1), N_pnts)
-    return P_norm, PowerDepo_3D(self, s, P_norm, beam_freq, ray, f_inter, dist, B_ax, EqSlice, Te_spl, ne_spl, m=m, f_inter_scnd=None)
+    P_tot = P_spl.integral(s_beam_ray[0], s_beam_ray[-1])
+    s = distribute_points(s_beam_ray, P_spl(s_beam_ray, nu=1), N_pnts)
+    P_norm = P_spl(s) / P_tot
+    return P_tot, PowerDepo_3D(s, P_norm, beam_freq, ray, f_inter, dist, \
+                               B_ax, EqSlice, Te_spl, ne_spl, m=m, \
+                               f_inter_scnd=None, fast=fast)
 
 class PowerDepo_3D:
-    def __init__(self, s, P_norm, freq, ray, f_inter, dist, B_ax, EqSlice, Te_spl, ne_spl, m=2, f_inter_scnd=None):
+    def __init__(self, s, P_norm, freq, ray, f_inter, dist, B_ax, EqSlice, \
+                 Te_spl, ne_spl, m=2, f_inter_scnd=None, fast=False):
         if(dist in ["Re", "ReComp"]):
             dist_mode = "ext"
             res_dist = dist.replace("Comp", "")
@@ -409,6 +414,8 @@ class PowerDepo_3D:
             N, e = N_with_pol_vec(X, freq_2X / (2.0 * self.freq), np.sin(theta), np.cos(theta), 1)
             N_par = self.N_par_spl(s[i])
             print("N_abs, N_par in situ, N_par Gray", N, np.cos(theta) * N, N_par)
+            if(fast and P_norm[i] == 0):
+                continue
             if(self.em_abs_Alb_obj.is_resonant(rhop, Te, ne, \
                                                freq_2X, theta, self.freq, self.m)):
                 x, y, spline = self.f_inter.get_spline(rhop, Te)
@@ -938,14 +945,14 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
 #                                hold='on', cmap=cm.get_cmap("plasma"))
     if(include_ECRH):
         cb_ECRH = fig.colorbar(cmaps[-1], pad=0.15, ticks=[0.0, 0.5, 1.0])
-        cb_ECRH.set_label(r"$\mathrm{d}P_\mathrm{ECRH}/\mathrm{d}s\,[\si{{a.u.}}]$")
+        cb_ECRH.set_label(r"$\mathrm{d}P^*_\mathrm{ECRH}/\mathrm{d}s\,[\si{{a.u.}}]$")
     if(Teweight):
         cb_dist = fig.colorbar(cont2, pad=0.15, ticks=[0.0, 0.5, 1.0])
         cb_dist.set_label(r"$f_\mathrm{MJ} u_\perp^2 / \gamma f_0$")
     if(found_one_cut):
         if(len(ch_list) >  0):
             cb = fig.colorbar(cmaps[0], ticks=[0.0, 0.5, 1.0])
-            cb.set_label(r"$D_\omega\,[\si{{a.u.}}]$")
+            cb.set_label(r"$D^*_\omega\,[\si{{a.u.}}]$")
         ax_reso.set_xlim(u_perp_range[0], u_perp_range[1])
         ax_reso.set_ylim(u_par_range[0], u_par_range[1])
         ax_reso.set_ylabel(r"$u_\parallel$")

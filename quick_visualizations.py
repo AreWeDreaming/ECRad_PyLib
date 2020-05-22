@@ -33,16 +33,20 @@ from distribution_io import read_waves_mat_to_beam
 from scipy.io import loadmat
 from equilibrium_utils import EQDataExt
 
-def time_trace(shot, z_axis=False):
+def time_trace(shot, z_axis=False, vline= None):
     plasma_dict = load_IDA_data(shot)
     heating_array = get_shot_heating(shot)
     for i, heating in enumerate(heating_array):
         heating_array[i][0], heating_array[i][1] = moving_average(heating_array[i][0], heating_array[i][1], 5.e-2)
     if(z_axis):
         time_z_axis, z_axis = get_z_mag(shot)
+    else:
+        time_z_axis = None
+        z_axis = None
     fig = plt.figure(figsize=(12,6))
     pc_obj = plotting_core(fig)
-    fig = pc_obj.time_trace(shot, plasma_dict["time"], plasma_dict["Te"].T[0], plasma_dict["ne"].T[0], heating_array=heating_array, time_z_axis = time_z_axis, z_axis=z_axis)
+    fig = pc_obj.time_trace(shot, plasma_dict["time"], plasma_dict["Te"].T[0], plasma_dict["ne"].T[0], \
+                            heating_array=heating_array, time_z_axis = time_z_axis, z_axis=z_axis, vline=vline)
     pc_obj.gridspec.tight_layout(fig, h_pad=0.0)
     plt.show()
     
@@ -56,8 +60,8 @@ def plot_shot_geometry(ECRadResFile, wave_mat_file, itime, ch_list, mode_str, tb
             ECRadRes.Scenario.plasma_dict["eq_data"][itime].R, ECRadRes.Scenario.plasma_dict["eq_data"][itime].z - 0.01 ,\
             ECRadRes.Scenario.plasma_dict["eq_data"][itime].rhop, ECRadRes.Scenario.plasma_dict["eq_data"][itime].R_ax, \
             ECRadRes.Scenario.plasma_dict["eq_data"][itime].z_ax - 0.01, Beam, ECRadRes, [itime, ch_list], mode_str, tb_data_folder]
-    fig = plt.figure(figsize=(8,6))
-    fig_2 = plt.figure(figsize=(8.5,8.5))
+    fig = plt.figure(figsize=(12,8))
+    fig_2 = plt.figure(figsize=(8,8))
     pc_obj = plotting_core(fig, fig_2)
     pc_obj.beam_plot(args)
     plt.show()
@@ -90,11 +94,11 @@ def plot_Thomson_edge_ne(shot, time):
     
 if(__name__ == "__main__"):
 #     plot_Thomson_edge_ne(35662, 3.84)
-    plot_ne_prof(35662, 4.4)
-#     time_trace(35662, z_axis=True)
-#     plot_shot_geometry("/tokp/work/sdenk/DRELAX_final/DRELAX_run_3224.mat", \
-#                        "/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3224.mat", 0, [44,88,136], "X", \
-#                        None)  #94, 144
+#     plot_ne_prof(35662, 4.4)
+#     time_trace(35662, z_axis=False, vline=3.84)
+    plot_shot_geometry("/tokp/work/sdenk/DRELAX_final/DRELAX_run_3224.mat", \
+                       "/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3224.mat", 0, [44,88,136], "X", \
+                        None)  #94, 144
     
 #     compare_IDI_IDF(35662, 4.41)
     
