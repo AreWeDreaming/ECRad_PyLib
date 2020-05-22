@@ -356,3 +356,13 @@ def SynchrotonDistribution_approx(u, zeta, Te, ne, B):
     f *= 3.0 * (zeta ** 2 - 1.0) / 2.0
     f += g0
     return g0, g2, f
+
+
+if(__name__== "__main__"):
+    from plotting_configuration import plt
+    u_par = np.linspace(0,0.5,200)
+    u_perp = 0.0
+    Te = 6.e3
+    plt.plot(u_par, Juettner2D(u_par, u_perp, Te)/Maxwell2D(u_par, u_perp, Te), "-")
+    plt.show()
+    

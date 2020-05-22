@@ -1398,7 +1398,7 @@ class plotting_core:
                     tor_cont_list.append(rhop_axis_plane_root_spl.roots())
             tor_cont_list = np.hstack(np.array(tor_cont_list))
             rhop_axis_plane_root_spl = InterpolatedUnivariateSpline(R, rhop_axis_plane - 1.0)
-            sep_R = rhop_axis_plane_root_spl = rhop_axis_plane_root_spl.roots()
+            sep_R = rhop_axis_plane_root_spl.roots()
             for i in range(len(sep_R)):
                 self.axlist[1].add_patch(pltCircle([0.0, 0.0], sep_R[i], edgecolor='b', facecolor='none', linestyle="-"))
             self.axlist[1].add_patch(pltCircle([0.0, 0.0], Eq_Slice.R_ax, edgecolor='b', facecolor='none', linestyle="-"))
