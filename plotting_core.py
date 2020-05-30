@@ -573,74 +573,73 @@ class plotting_core:
         return self.fig, self.fig_2
 
 
-    def calib_evolution(self, diag, ch, ECRad_result_list, heating_array=None, time_ne = None, ne=None):
+    def calib_evolution(self, new_plot, diag, ch, result, heating_array=None, time_ne = None, ne=None):
         self.title = False
         extra_info = heating_array is not None and time_ne is not None and  ne is not None
         plot_power = False
-        if(extra_info):
+        if(extra_info and new_plot):
             for i, P_trace in enumerate(heating_array):
                 if(np.any(P_trace[1] > 1.e-3)):
                     plot_power = True
-        if(extra_info):
-            if(plot_power):
-                self.setup_axes("twinx_double", r"\"+\" = $c$, \"-\" = $T_\mathrm{rad,mod}$  " + diag, r"Rel. mean scatter for diagn. " + diag)
-            else:
-                self.setup_axes("twinx_double_single_second", r"\"+\" = $c$, \"-\" = $T_\mathrm{rad,mod}$  " + diag, r"Rel. mean scatter for diagn. " + diag)
-        else:
-            self.setup_axes("twinx", r"\"+\" = $c$, \"-\" = $T_\mathrm{rad,mod}$  " + diag, r"Rel. mean scatter for diagn. " + diag)
-        # \"--\" $= T_\mathrm{e}$
-        i = 0
-        for result in ECRad_result_list:
-            if(len(ECRad_result_list) - 1 == 0):
-                color = (0.0, 0.0, 1.0)
-                label_c = r"$\vert c \vert$"
-                label_Trad = r"$T_\mathrm{rad,mod}$"
-            else:
-                color = self.diag_cmap.to_rgba(float(i) / float(len(ECRad_result_list) - 1))
-                label_c = r"$\vert c \vert$" + r" ed {0:d} ch {1:d}".format(result.edition, ch + 1)
-                label_Trad = r"$T_\mathrm{rad,mod}$"  + r" ed {0:d} ch {1:d}".format(result.edition, ch + 1)
-            Trad = []
-            for itime in range(len(result.time)):
-                if(result.masked_time_points[diag][itime]):
-                    Trad.append(result.Trad[itime][result.Scenario.ray_launch[itime]["diag_name"]  == diag])
-            Trad = np.array(Trad)
-#            self.axlist[0].plot([], [], color=color, label=r"$T_\mathrm{rad, mod}$" + r" \# {0:d} ed {1:d} ch {2:d}".format(result.Config.shot, result.edition, ch + 1))
-            self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
-                data=[result.time[result.masked_time_points[diag]], np.abs(result.calib_mat[diag].T[ch])], \
-                y_error=result.std_dev_mat[diag].T[ch], \
-                name=label_c, marker="+", color=color, y_range_in=self.y_range_list[0], ax_flag="Calib_trace")
-            if(len(ECRad_result_list) - 1 == 0):
-                color = (0.0, 0.0, 0.0)
-            self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], \
-                data=[result.time[result.masked_time_points[diag]], Trad.T[ch]], \
-                color=color, marker="--",  name=label_Trad, y_range_in=self.y_range_list[1], ax_flag="Trad_trace")
+        if(new_plot):
+            self.reset()
             if(extra_info):
-                heating_labels = [r"$P_\mathrm{ECRH}$", r"$P_\mathrm{NBI}$", r"$P_\mathrm{ICRH}$"]
-                heating_color = ["blue", "red", "green"]
-                for i, P_trace in enumerate(heating_array):
-                    if(np.any(P_trace[1] > 1.e-3)):
-                        self.axlist[3], self.y_range_list[3] = self.add_plot(self.axlist[3], \
-                                                                             data=[P_trace[0], P_trace[1]], \
-                                                                             color=heating_color[i], marker="-",  name=heating_labels[i],\
-                                                                             y_range_in=self.y_range_list[3], ax_flag="P_trace")
-                self.axlist[2], self.y_range_list[2] = self.add_plot(self.axlist[2], \
-                                                                     data=[time_ne, ne / 1.e19], \
-                                                                     color="black", marker="--",  name=r"$n_\mathrm{e}$", \
-                                                                     y_range_in=self.y_range_list[2], ax_flag="ne_trace")
-            i += 1
-#         self.axlist[1].set_ylim(0.0, self.y_range_list[1][1])
-        self.axlist[0].set_ylim(0.0, self.y_range_list[0][1])
-        self.axlist[0].text(0.75, 0.05,  r" \# {0:d}".format(result.Scenario.shot),
-                verticalalignment='bottom', horizontalalignment='left',
-                transform=self.axlist[0].transAxes,
-                color='black', fontsize=plt.rcParams['axes.titlesize'])
-        if(extra_info):
-            if(plot_power):
-                self.create_legends("errorbar_double_twinx")
+                if(plot_power):
+                    self.setup_axes("twinx_double", r"\"+\" = $c$, \"-\" = $T_\mathrm{rad,mod}$  " + diag, r"Rel. mean scatter for diagn. " + diag)
+                else:
+                    self.setup_axes("twinx_double_single_second", r"\"+\" = $c$, \"-\" = $T_\mathrm{rad,mod}$  " + diag, r"Rel. mean scatter for diagn. " + diag)
             else:
-                self.create_legends("errorbar_double_twinx_single_second")
-            self.axlist[0].get_xaxis().set_visible(False)
+                self.setup_axes("twinx", r"\"+\" = $c$, \"-\" = $T_\mathrm{rad,mod}$  " + diag, r"Rel. mean scatter for diagn. " + diag)
+        label_c = r"$\vert c_{" + "{0:d}".format(ch + 1) + r"} \vert$" + r"\#{0:d} ed. {1:d} {2:s} ".format(result.Scenario.shot, result.edition, diag)
+        label_Trad = r"$T_\mathrm{rad,mod," + "{0:d}".format(ch + 1) + r"} \vert$"+ r"\#{0:d} ed. {1:d} {2:s} ".format(result.Scenario.shot, result.edition, diag)
+        Trad = []
+        color = self.line_colors[self.line_color_index[0]]
+        self.line_color_index[0] += 1
+        if(len(self.line_colors) <= self.line_color_index[0]):
+            self.line_color_index[0] = 0
+        for itime in range(len(result.time)):
+            if(result.masked_time_points[diag][itime]):
+                Trad.append(result.Trad[itime][result.Scenario.ray_launch[itime]["diag_name"]  == diag])
+        Trad = np.array(Trad)
+#            self.axlist[0].plot([], [], color=color, label=r"$T_\mathrm{rad, mod}$" + r" \# {0:d} ed {1:d} ch {2:d}".format(result.Config.shot, result.edition, ch + 1))
+        self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
+            data=[result.time[result.masked_time_points[diag]], np.abs(result.calib_mat[diag].T[ch])], \
+            y_error=result.std_dev_mat[diag].T[ch], \
+            name=label_c, marker="+", color=color, y_range_in=self.y_range_list[0], ax_flag="Calib_trace")
+        self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], \
+            data=[result.time[result.masked_time_points[diag]], Trad.T[ch]], \
+            color=color, marker="-",  name=label_Trad, y_range_in=self.y_range_list[1], ax_flag="Trad_trace")
+        if(extra_info and new_plot):
+            heating_labels = [r"$P_\mathrm{ECRH}$", r"$P_\mathrm{NBI}$", r"$P_\mathrm{ICRH}$"]
+            heating_color = ["blue", "red", "green"]
+            for i, P_trace in enumerate(heating_array):
+                if(np.any(P_trace[1] > 1.e-3)):
+                    self.axlist[3], self.y_range_list[3] = self.add_plot(self.axlist[3], \
+                                                                         data=[P_trace[0], P_trace[1]], \
+                                                                         color=heating_color[i], marker="-",  name=heating_labels[i],\
+                                                                         y_range_in=self.y_range_list[3], ax_flag="P_trace")
+            self.axlist[2], self.y_range_list[2] = self.add_plot(self.axlist[2], \
+                                                                 data=[time_ne, ne / 1.e19], \
+                                                                 color="black", marker="--",  name=r"$n_\mathrm{e}$", \
+                                                                 y_range_in=self.y_range_list[2], ax_flag="ne_trace")
+        self.axlist[0].set_ylim(0.0, self.y_range_list[0][1])
+        if(new_plot):
+            self.axlist[0].text(0.75, 0.05,  r" \# {0:d}".format(result.Scenario.shot),
+                    verticalalignment='bottom', horizontalalignment='left',
+                    transform=self.axlist[0].transAxes,
+                    color='black', fontsize=plt.rcParams['axes.titlesize'])
+            if(extra_info):
+                if(plot_power):
+                    self.create_legends("errorbar_double_twinx")
+                else:
+                    self.create_legends("errorbar_double_twinx_single_second")
+                self.axlist[0].get_xaxis().set_visible(False)
+            else:
+                self.create_legends("errorbar_twinx")
         else:
+            leg = self.axlist[0].get_legend()
+            if(leg is not None):
+                leg.remove()
             self.create_legends("errorbar_twinx")
         return self.fig
     
@@ -690,63 +689,55 @@ class plotting_core:
             self.axlist[2].vlines(vline, self.y_range_list[1][0], self.y_range_list[1][1], "r")
         return self.fig
 
-    def calib_evolution_Trad(self, diag, ch, ECRad_result_list, diag_data, std_dev_data, popt_list, pol_angle_list=None):
+    def calib_evolution_Trad(self, new_plot, diag, ch, result, diag_data, std_dev, popt, pol_angle_list=None):
         self.title = False
-        if(pol_angle_list is None):
-            self.setup_axes("single", r"\"+\" = $c$, \"-\" = $T_\mathrm{rad,mod}$  " + diag, r"Rel. mean scatter for diagn. " + diag)
-        else:
-            self.setup_axes("twinx", r"\"+\" = $c$, \"-\" = $T_\mathrm{rad,mod}$  " + diag, r"Rel. mean scatter for diagn. " + diag)
-        if(diag == "TDI"):
-            if(len(ECRad_result_list[0].Trad.T[ECRad_result_list[0].diag == "ECN"]) > 0):
-                actual_diag = "ECN"
+        if(new_plot):
+            if(pol_angle_list is None):
+                self.setup_axes("single", r"\"+\" = $c$, \"-\" = $T_\mathrm{rad,mod}$  " + diag, r"Rel. mean scatter for diagn. " + diag)
             else:
-                actual_diag = "ECO"
-        else:
-            actual_diag = diag
+                self.setup_axes("twinx", r"\"+\" = $c$, \"-\" = $T_\mathrm{rad,mod}$  " + diag, r"Rel. mean scatter for diagn. " + diag)
+        actual_diag = result.Scenario.used_diags_dict[diag].diag
         # \"--\" $= T_\mathrm{e}$
         i = 0
-        for result in ECRad_result_list:
-            label = r"$V_\mathrm{diag}^*$"
-            label_reg = "linear regression"
-            if(len(ECRad_result_list) - 1 == 0):
-                color = (0.0, 0.0, 1.0)
-            else:
-                color = self.diag_cmap.to_rgba(float(i) / float(len(ECRad_result_list) - 1))
-                label += " ed {0: d} ch. no. {1: d}".format(result.edition, ch + 1)
-                label_reg += " ed {0: d} ch. no. {1: d}".format(result.edition, ch + 1)
-            Trad = []
-            for itime in range(len(result.time)):
-                if(result.masked_time_points[diag][itime]):
-                    Trad.append(result.Trad[itime][result.Scenario.ray_launch[itime]["diag_name"]  == diag])
-            Trad = np.array(Trad)
-            self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
-                    data=[Trad.T[ch], \
-                          diag_data[i]], \
-                    y_error=std_dev_data[i], name=label, \
-                    marker="+", color=color, \
-                    y_range_in=self.y_range_list[0], ax_flag="V_vs_Trad_small", y_scale=1.e3)
-            if(pol_angle_list is not None):
-                self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], \
-                    data=[Trad.T, pol_angle_list[i][result.masked_time_points[actual_diag]]], \
-                    marker="*", color="red", name=r"$\theta_\mathrm{pol}$", \
-                    y_range_in=self.y_range_list[1], ax_flag="Ang_vs_Trad")
-            Trad_ax = np.linspace(0.0, np.max(Trad.T) * 1.2, 100)
-            art_data = Trad_ax * popt_list[i][1] + popt_list[i][0]
-            if(len(ECRad_result_list) - 1 == 0):
-                color = (0.0, 0.0, 0.0)
-            self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
-                data=[Trad_ax, art_data], \
-                y_range_in=self.y_range_list[0], marker="-", color=color, \
-                name=label_reg, ax_flag="V_vs_Trad_small", y_scale=1.e3)
+        label = r"$V_\mathrm{"+ str(ch + 1) + r"}^*$"
+        label_reg = "linear regression $c_{" + str(ch+1) + r"}$"
+        color = self.line_colors[self.line_color_index[0]]
+        self.line_color_index[0] += 1
+        if(len(self.line_colors) <= self.line_color_index[0]):
+            self.line_color_index[0] = 0
+        label += " ed {0: d} {1:s}".format(result.edition, diag)
+        label_reg += " ed {0: d} {1:s}".format(result.edition, diag)
+        Trad = []
+        for itime in range(len(result.time)):
+            if(result.masked_time_points[diag][itime]):
+                Trad.append(result.Trad[itime][result.Scenario.ray_launch[itime]["diag_name"]  == diag])
+        Trad = np.array(Trad)
+        self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
+                data=[Trad.T[ch], \
+                      diag_data], \
+                y_error=std_dev, name=label, \
+                marker="+", color=color, \
+                y_range_in=self.y_range_list[0], ax_flag="V_vs_Trad_small", y_scale=1.e3)
+        if(pol_angle_list is not None):
+            self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], \
+                data=[Trad.T, pol_angle_list[i][result.masked_time_points[actual_diag]]], \
+                marker="*", color="red", name=r"$\theta_\mathrm{pol}$", \
+                y_range_in=self.y_range_list[1], ax_flag="Ang_vs_Trad")
+        Trad_ax = np.linspace(0.0, np.max(Trad.T) * 1.2, 100)
+        art_data = Trad_ax * popt[1] + popt[0]
+        self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
+            data=[Trad_ax, art_data], \
+            y_range_in=self.y_range_list[0], marker="-", color=color, \
+            name=label_reg, ax_flag="V_vs_Trad_small", y_scale=1.e3)
+        if(not new_plot):
+            self.axlist[0].get_legend().remove()
         if(pol_angle_list is not None):
             self.create_legends("errorbar_twinx")
         else:
             self.create_legends("errorbar")
-        if(self.y_range_list[0][1] > 0.0):
-            self.axlist[0].set_ylim(0.0, self.y_range_list[0][1])
-        else:
-            self.axlist[0].set_ylim(self.y_range_list[0][0], 0.0)
-        self.axlist[0].set_xlim(0.0, np.max(Trad.T) * 1.2)
+        self.axlist[0].set_ylim(self.y_range_list[0][0], self.y_range_list[0][1])
+        if(np.max(Trad.T) * 1.2 > self.axlist[0].get_xlim()[1]):
+            self.axlist[0].set_xlim(0.0, np.max(Trad.T) * 1.2)
         return self.fig
 
     def calib_vs_launch(self, diag, ch, ECRad_result_list, pol_ang_list):
@@ -2533,12 +2524,12 @@ class plotting_core:
             labs = [l.get_label() for l in lns]
             leg = self.axlist[0].legend(lns, labs)
             leg.get_frame().set_alpha(0.5)
-            leg.draggable()
+            leg.set_draggable(True)
             lns = self.axlist[2].get_lines() + self.axlist[3].get_lines()
             labs = [l.get_label() for l in lns]
             leg = self.axlist[2].legend(lns, labs)
             leg.get_frame().set_alpha(0.5)
-            leg.draggable()
+            leg.set_draggable(True)
             labs = []
             lns_short = []
             for i in range(len(self.axlist_2)):
@@ -2550,29 +2541,29 @@ class plotting_core:
                         lns_short.append(lns[l])
             leg = self.axlist_2[1].legend(lns_short, labs)
             leg.get_frame().set_alpha(1.0)
-            leg.draggable()
+            leg.set_draggable(True)
             if(mode != "Ich_BD"):
                 lns = self.axlist[4].get_lines() + self.axlist[5].get_lines()
                 labs = [l.get_label() for l in lns]
                 leg = self.axlist[5].legend(lns, labs)
                 leg.get_frame().set_alpha(0.5)
-                leg.draggable()
+                leg.set_draggable(True)
                 lns = self.axlist[6].get_lines() + self.axlist[7].get_lines()
                 labs = [l.get_label() for l in lns]
                 leg = self.axlist[7].legend(lns, labs)
                 leg.get_frame().set_alpha(0.5)
-                leg.draggable()
+                leg.set_draggable(True)
                 if(mode != "Ich_compare"):
                     lns = self.axlist[8].get_lines()
                     labs = [l.get_label() for l in lns]
                     leg = self.axlist[8].legend(lns, labs)
                     leg.get_frame().set_alpha(0.5)
-                    leg.draggable()
+                    leg.set_draggable(True)
                     lns = self.axlist[9].get_lines()
                     labs = [l.get_label() for l in lns]
                     leg = self.axlist[9].legend(lns, labs)
                     leg.get_frame().set_alpha(0.5)
-                    leg.draggable()
+                    leg.set_draggable(True)
             else:
                 labs = []
                 lns_short = []
@@ -2584,7 +2575,7 @@ class plotting_core:
                             lns_short.append(lns[l])
                 leg2 = self.axlist_2[1].legend(lns_short, labs)
                 leg2.get_frame().set_alpha(0.5)
-                leg2.draggable()
+                leg2.set_draggable(True)
         elif(mode == "BDP"):
             labs = []
             lns_short = []
@@ -2596,7 +2587,7 @@ class plotting_core:
                         lns_short.append(lns[l])
             leg = self.axlist[1].legend(lns_short, labs, loc="best")
             leg.get_frame().set_alpha(0.5)
-            leg.draggable()
+            leg.set_draggable(True)
         elif(mode == "BPD_twix"):
             for i in range(0, 3, 2):
                 labs = []
@@ -2607,25 +2598,25 @@ class plotting_core:
                         labs.append(lns[l].get_label())
                         lns_short.append(lns[l])
                 leg = self.axlist[i + 1].legend(lns_short, labs, loc="best")
-                leg.draggable()
+                leg.set_draggable(True)
                 leg.get_frame().set_alpha(0.5)
         elif(mode == "double"):
             lns = self.axlist[0].get_lines() + self.axlist[1].get_lines()
             labs = [l.get_label() for l in lns]
             leg = self.axlist[0].legend(lns, labs)
             leg.get_frame().set_alpha(0.5)
-            leg.draggable()
+            leg.set_draggable(True)
             if(len(self.axlist_2) > 0):
                 lns = self.axlist_2[0].get_lines() + self.axlist_2[1].get_lines()
                 labs = [l.get_label() for l in lns]
                 leg2 = self.axlist_2[0].legend(lns, labs)
                 leg2.get_frame().set_alpha(0.5)
-                leg2.draggable()
+                leg2.set_draggable(True)
         elif(mode == "Te" or mode == "Te_no_ne"):
             for i in range(len(self.axlist)):
                 leg = self.axlist[i].legend(loc="best")
                 if(leg is not None):
-                    leg.draggable()
+                    leg.set_draggable(True)
             if(len(self.axlist_2) > 0):
                 try:
                     lns = self.axlist_2[0].get_lines() + self.axlist_2[1].get_lines()
@@ -2638,21 +2629,21 @@ class plotting_core:
                     leg2 = self.axlist_2[0].legend(lns_filtered, labs)
                     if(leg2 is not None):
                         leg2.get_frame().set_alpha(1)
-                        leg2.draggable()
+                        leg2.set_draggable(True)
                 except IndexError:
                     leg2 = self.axlist_2[0].legend()
                     if(leg2 is not None):
                         leg2.get_frame().set_alpha(1)
-                        leg2.draggable()
+                        leg2.set_draggable(True)
         elif(mode == "Te_twinx" or mode == "Te_no_ne_twinx"):
             lines, labels = self.axlist[0].get_legend_handles_labels()
             lines2, labels2 = self.axlist[1].get_legend_handles_labels()
             leg = self.axlist[1].legend(lines + lines2, labels + labels2, loc=0)
-            leg.draggable()
+            leg.set_draggable(True)
             if(mode == "Te_twinx"):
                 leg = self.axlist[2].legend(loc="best")
                 if(leg is not None):
-                    leg.draggable()
+                    leg.set_draggable(True)
             if(len(self.axlist_2) > 0):
                 try:
                     lns = self.axlist_2[0].get_lines() + self.axlist_2[1].get_lines()
@@ -2665,52 +2656,52 @@ class plotting_core:
                     leg2 = self.axlist_2[0].legend(lns_filtered, labs)
                     if(leg2 is not None):
                         leg2.get_frame().set_alpha(1)
-                        leg2.draggable()
+                        leg2.set_draggable(True)
                 except IndexError:
                     leg2 = self.axlist_2[0].legend()
                     if(leg2 is not None):
                         leg2.get_frame().set_alpha(1)
-                        leg2.draggable()
+                        leg2.set_draggable(True)
         elif(mode == "stacked_2_twinx"):
             lns = self.axlist[0].get_lines()
             labs = [l.get_label() for l in lns]
             leg = self.axlist[0].legend(lns, labs)
             leg.get_frame().set_alpha(1)
-            leg.draggable()
+            leg.set_draggable(True)
             lns = self.axlist[1].get_lines() + self.axlist[2].get_lines()
             labs = [l.get_label() for l in lns]
             leg = self.axlist[2].legend(lns, labs)
             leg.get_frame().set_alpha(1)
-            leg.draggable()
+            leg.set_draggable(True)
             lns = self.axlist[3].get_lines()
             labs = [l.get_label() for l in lns]
             leg = self.axlist[3].legend(lns, labs)
             leg.get_frame().set_alpha(1)
-            leg.draggable()
+            leg.set_draggable(True)
             lns = self.axlist[4].get_lines() + self.axlist[5].get_lines()
             labs = [l.get_label() for l in lns]
             leg = self.axlist[5].legend(lns, labs)
             # self.axlist[5].add_artist(leg)
             leg.get_frame().set_alpha(1.0)
-            leg.draggable()
+            leg.set_draggable(True)
         elif(mode == "stacked_1_twinx"):
             lns = self.axlist[0].get_lines()
             labs = [l.get_label() for l in lns]
             leg = self.axlist[0].legend(lns, labs)
-            leg.draggable()
+            leg.set_draggable(True)
             leg.get_frame().set_alpha(1)
             lns = self.axlist[1].get_lines() + self.axlist[2].get_lines()
             labs = [l.get_label() for l in lns]
             leg = self.axlist[2].legend(lns, labs)
             leg.get_frame().set_alpha(1)
-            leg.draggable()
+            leg.set_draggable(True)
             lns = self.axlist[3].get_lines()
             labs = [l.get_label() for l in lns]
             leg = self.axlist[3].legend(lns, labs)
-            leg.draggable()
+            leg.set_draggable(True)
             # self.axlist[5].add_artist(leg)
             leg.get_frame().set_alpha(1.0)
-            leg.draggable()
+            leg.set_draggable(True)
         elif(mode == "vessel"):
             for i in range(len(self.axlist)):
                 lns = self.axlist[i].get_lines()
@@ -2724,7 +2715,7 @@ class plotting_core:
                         except ValueError:
                             print("A label was skipped, because of wrong dimensions")
                 leg = self.axlist[i].legend(lns_short, labs)
-                leg.draggable()
+                leg.set_draggable(True)
             leg.get_frame().set_alpha(0.5)
             for i in range(len(self.axlist_2)):
                 lns = self.axlist_2[i].get_lines()
@@ -2736,7 +2727,7 @@ class plotting_core:
                         lns_short.append(lns[l])
                 leg = self.axlist_2[i].legend(lns_short, labs)
                 leg.get_frame().set_alpha(0.5)
-                leg.draggable()
+                leg.set_draggable(True)
         elif(mode == "errorbar"):
             for i in range(len(self.axlist)):
                 self.axlist[i].legend(loc="best")
@@ -2749,22 +2740,22 @@ class plotting_core:
             labels = labels_primary + labels_twinx
             leg = self.axlist[0].legend(handles, labels)
             leg.get_frame().set_alpha(1.0)
-            leg.draggable()
+            leg.set_draggable(True)
         elif(mode == "errorbar_double_twinx"):
             handles_primary, labels_primary = self.axlist[0].get_legend_handles_labels()
             handles_twinx, labels_twinx = self.axlist[1].get_legend_handles_labels()
             handles = handles_primary + handles_twinx
             labels = labels_primary + labels_twinx
-            leg = self.axlist[1].legend(handles, labels)
+            leg = self.axlist[0].legend(handles, labels)
             leg.get_frame().set_alpha(1.0)
-            leg.draggable()
+            leg.set_draggable(True)
             handles_primary, labels_primary = self.axlist[2].get_legend_handles_labels()
             handles_twinx, labels_twinx = self.axlist[3].get_legend_handles_labels()
             handles = handles_primary + handles_twinx
             labels = labels_primary + labels_twinx
             leg2 = self.axlist[3].legend(handles, labels)
             leg2.get_frame().set_alpha(1.0)
-            leg2.draggable()
+            leg2.set_draggable(True)
 #            lns = self.axlist[0].get_lines()
 #            lns = np.concatenate([lns, self.axlist[1].get_lines()])
 #            labs = []
@@ -2781,11 +2772,11 @@ class plotting_core:
             labels = labels_primary + labels_twinx
             leg = self.axlist[0].legend(handles, labels)
             leg.get_frame().set_alpha(1.0)
-            leg.draggable()
+            leg.set_draggable(True)
             handles, labels = self.axlist[2].get_legend_handles_labels()
             leg2 = self.axlist[2].legend(handles, labels)
             leg2.get_frame().set_alpha(1.0)
-            leg2.draggable()
+            leg2.set_draggable(True)
         elif(mode == "only_axis_1"):
             for i in range(len(self.axlist) - 1):
                 lns = self.axlist[i].get_lines()
@@ -2801,7 +2792,7 @@ class plotting_core:
                     #    print("Label " + lns[l].get_label() + " ignored")
                 leg = self.axlist[i].legend(lns_short, labs)
             leg.get_frame().set_alpha(1.0)
-            leg.draggable()
+            leg.set_draggable(True)
         elif(mode == "resonance"):
             i = 0
             lns = self.axlist[i].get_lines()
@@ -2826,7 +2817,7 @@ class plotting_core:
                 leg = self.axlist_2[0].legend(lns_short, labs)
             if(leg is not None):
                 leg.get_frame().set_alpha(1.0)
-                leg.draggable()
+                leg.set_draggable(True)
             i = 2
             lns = self.axlist_2[i].get_lines()
             labs = []
@@ -2838,7 +2829,7 @@ class plotting_core:
                 # else:
                 #    print("Label " + lns[l].get_label() + " ignored")
             leg = self.axlist_2[i].legend(lns_short, labs)
-            leg.draggable()
+            leg.set_draggable(True)
         else:
             for i in range(len(self.axlist)):
                 lns = self.axlist[i].get_lines()
@@ -2851,7 +2842,7 @@ class plotting_core:
                     # else:
                     #    print("Label " + lns[l].get_label() + " ignored")
                 leg = self.axlist[i].legend(lns_short, labs)
-                leg.draggable()
+                leg.set_draggable(True)
                 leg.get_frame().set_alpha(1.0)
             if(len(self.axlist_2) > 0):
                 for i in range(len(self.axlist_2)):
@@ -2866,7 +2857,7 @@ class plotting_core:
                         #    print("Label " + lns[l].get_label() + " ignored")
                     leg = self.axlist_2[i].legend(lns_short, labs)
                     leg.get_frame().set_alpha(0.5)
-                    leg.draggable()
+                    leg.set_draggable(True)
         # self.finishing_touches()
 
     # Once all information about a plot is known apply some finishing touches

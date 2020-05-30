@@ -679,7 +679,7 @@ class em_abs_Alb:
         #    gene -> GENE calculated distribution -> gene_distribution_interpolator
         self.dist_mode = dist_mode
         self.B_min = None
-        self.N_res = 100
+        self.N_res = 200
         self.t = np.linspace(-1, 1, self.N_res)
 
     def refr_index(self, svec, omega, mode):

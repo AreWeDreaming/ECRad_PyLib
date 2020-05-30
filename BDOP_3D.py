@@ -846,7 +846,7 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
     te_ax.plot(rhop_Te, np.exp(Te) * 1.e-3, "--", label=r"$T_\mathrm{e}$")
     te_ax.set_ylabel(r"$T_\mathrm{e}$\,[\si{\kilo\electronvolt}]")
     ax_depo.set_xlabel(r"$\rho_\mathrm{pol}$")
-    if(len(BDOP_list) > 1):
+    if(len(BDOP_list) > 1 or include_ECRH):
         lns = ax_depo.get_lines() + te_ax.get_lines()
         labs = [l.get_label() for l in lns]
         leg = ax_depo.legend(lns, labs)
@@ -973,7 +973,7 @@ if(__name__ == "__main__"):
 #                                mat_for_distribution= "/tokp/work/sdenk/Backup_PhD_stuff/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat",\
 #                                 rhop_range=[0,0.3]) #20 # 48  # 94 # 144 -> second last each
     make_3DBDOP_cut_standalone("/tokp/work/sdenk/DRELAX_final/DRELAX_run_3224.mat", \
-                                   3.84, [48], [2], "Re", \
+                                   3.84, [], [2], "Re", \
                                    include_ECRH=True, m_ECRH_list=[2], \
                                    ECRH_freq=105.e9, wave_mat_filename="/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3224.mat", \
                                    mat_for_distribution= "/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3224.mat",\

@@ -39,12 +39,21 @@ class Diag(BasicDiag):
         self.descriptions_dict["t_smooth"] = "time window for smoothing"
         self.data_types_dict["t_smooth"] = "real"
         self.mode_filter = mode_filter
+        self.properties.append("mode_filter")
+        self.descriptions_dict["mode_filter"] = "Filter MHD modes"
+        self.data_types_dict["mode_filter"] = "bool"
         self.mode_width = mode_width
+        self.properties.append("mode_width")
+        self.descriptions_dict["mode_width"] = "width of MHD mode [Hz]"
+        self.data_types_dict["mode_width"] = "real"
         self.freq_cut_off = freq_cut_off
-#        self.properties.append("mode_filter")
-#        self.descriptions_dict["mode_filter"] = "Shift beam waist"
-#        self.mode_harmonics = mode_harmonics
-#        
+        self.properties.append("freq_cut_off")
+        self.descriptions_dict["freq_cut_off"] = "low frequency cut of Fourier filter [Hz]"
+        self.data_types_dict["freq_cut_off"] = "real"
+        self.mode_harmonics = mode_harmonics
+        self.properties.append("mode_harmonics")
+        self.descriptions_dict["mode_harmonics"] = "harmonics to consider in filter"
+        self.data_types_dict["mode_harmonics"] = "integer"
 
 
 class ECI_diag(Diag):
