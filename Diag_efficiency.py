@@ -3,10 +3,11 @@ Created on 11.06.2019
 
 @author: sdenk
 '''
-
+from GlobalSettings import globalsettings
 from BDOP_3D import make_3DBDOP_for_ray, make_f_inter, make_PowerDepo_3D_for_ray
 from equilibrium_utils import EQDataExt
-from equilibrium_utils_AUG import EQData
+if(globalsettings.AUG):
+    from equilibrium_utils_AUG import EQData
 from ECRad_Results import ECRadResults
 from distribution_io import load_f_from_mat, read_dist_mat_to_beam, read_waves_mat_to_beam
 from distribution_functions import Juettner2D

@@ -3,6 +3,7 @@ Created on Mar 23, 2016
 
 @author: sdenk
 '''
+from GlobalSettings import globalsettings
 from scipy.interpolate import InterpolatedUnivariateSpline
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
@@ -13,8 +14,9 @@ import os
 from Distribution import f_interpolator
 from distribution_io import read_waves_mat_to_beam, read_dist_mat_to_beam, \
                             load_f_from_mat
-from distribution_functions import Juettner2D                           
-from equilibrium_utils_AUG import EQData
+from distribution_functions import Juettner2D
+if(globalsettings.AUG):
+    from equilibrium_utils_AUG import EQData
 from equilibrium_utils import EQDataExt
 from em_Albajar import em_abs_Alb, distribution_interpolator, s_vec, N_with_pol_vec
 import scipy.constants as cnst

@@ -63,6 +63,10 @@ class ECRadConfig:
         except KeyError:
             self.parallel_cores = 16
         try:
+            self.use_ext_rays = mdict["use_ext_rays"]
+        except KeyError:
+            self.use_ext_rays = False
+        try:
             self.wall_time = mdict["wall_time"]
         except KeyError:
             self.wall_time = 2
@@ -164,6 +168,7 @@ class ECRadConfig:
         mdict["large_ds"] = self.large_ds
         mdict["small_ds"] = self.small_ds
         mdict["max_points_svec"] = self.max_points_svec
+        mdict["use_ext_rays"] = self.use_ext_rays
         if(write_mat):
             try:
                 savemat(path, mdict, appendmat=False)
@@ -212,6 +217,7 @@ def provide_default_mdict():
     mdict["large_ds"] = 2.5e-3
     mdict["small_ds"] = 2.5e-4
     mdict["max_points_svec"] = 20000
+    mdict["use_ext_rays"] = False
     return mdict
 
 # InvokeECRad = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/Ecfm_Model_new/ecfm_model"

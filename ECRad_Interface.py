@@ -75,7 +75,8 @@ def GetECRadExec(Config, Scenario, time):
         InvokeECRad = ECRadVers + " " + Config.scratch_dir
     return InvokeECRad
 
-def prepare_input_files(Config, Scenario, index, copy_dist=True):
+def prepare_input_files(Config, Scenario, index, copy_dist=True, \
+                        ext_result = None):
     working_dir = Config.scratch_dir
     # eq_exp = Config.EQ_exp always exp
     ECRad_data_path = os.path.join(working_dir, "ECRad_data", "")
@@ -163,12 +164,20 @@ def prepare_input_files(Config, Scenario, index, copy_dist=True):
     input_file.write("{0:1.12E}".format(Config.R_shift) + "\n")
     input_file.write("{0:1.12E}".format(Config.z_shift) + "\n")
     input_file.write("{0:10d}".format(Config.max_points_svec) + "\n")
+    if(Config.use_ext_rays):
+        input_file.write("T\n")
+    else:
+        input_file.write("F\n")
     if(Scenario.use3Dscen.used):
         input_file.write("T\n")
     else:
         input_file.write("F\n")
     input_file.flush()
     input_file.close()
+    if(Config.use_ext_rays):
+        if(ext_result is None):
+            raise ValueError("Told to write external rays. but no external result provided")
+        write_ext_ray_input(ECRad_data_path, Config, Scenario, index, ext_result)
     if(Scenario.use3Dscen.used):
         try:
             use3dconfigfile = open(os.path.join(ECRad_data_path, "equ3D_info"), "w")
@@ -230,6 +239,42 @@ def prepare_input_files(Config, Scenario, index, copy_dist=True):
 
     return True
 
+def write_ext_ray_input(ECRad_data_path, Config, Scenario, index, ext_results):
+    ext_ray_path = os.path.join(ECRad_data_path, "ext_rays")
+    os.mkdir(ext_ray_path)
+    if(len(Scenario.ray_launch[index]["f"]) != len(ext_results.Scenario.ray_launch[index]["f"]) or \
+       Config.N_ray != ext_results.Config.N_ray or Config.considered_modes != \
+       ext_results.Config.considered_modes):
+        print("Number of channels, rays and mode selection must remain unchanged when using external rays")
+        raise ValueError("Forbidden modification of the ECRad configuration or diagnostic selection")
+    for ich in range(len(ext_results.Scenario.ray_launch[index]["f"])):
+        for imode, mode in enumerate(ext_results.modes):
+            if(ext_results.Config.N_ray > 1):
+                for iray in range(len(ext_results.ray["s" + mode][index][ich])):
+                    ray_file_name = "raydata_{0:03d}_{1:03d}_{2:03d}.dat".format(ich+1,imode+1,iray+1)
+                    ext_ray_file = open(os.path.join(ext_ray_path, ray_file_name),"w")
+                    ext_ray_file.write("{0: 6d}".format(len(ext_results.ray["s" + mode][index][ich][iray])) + "\n")
+                    for i in range(len(ext_results.ray["s" + mode][index][ich][iray])):
+                        line = ""
+                        line += "{0: 1.12E}".format(ext_results.ray["s" + mode][index][ich][iray][i])
+                        for key in ["x","y","z", "Nx", "Ny", "Nz", "Bx", "By", "Bz", "rhop", "ne", "Te", "Nc", "v_g_perp"]:
+                            line += " {0: 1.12E}".format(ext_results.ray[key + mode][index][ich][iray][i])
+                        ext_ray_file.write(line + "\n")
+            else:
+                iray = 0
+                ray_file_name = "raydata_{0:03d}_{1:03d}_{2:03d}.dat".format(ich+1,imode+1,iray+1)
+                ext_ray_file = open(os.path.join(ext_ray_path, ray_file_name),"w")
+                ext_ray_file.write("{0: 6d}".format(len(ext_results.ray["s" + mode][index][ich])) + "\n")
+                for i in range(len(ext_results.ray["s" + mode][index][ich])):
+                    line = ""
+                    line += "{0: 1.12E}".format(ext_results.ray["s" + mode][index][ich][i])
+                    for key in ["x","y","z", "Nx", "Ny", "Nz", "Bx", "By", "Bz", "rhop", "ne", "Te", "Nc", "v_g_perp"]:
+                        line += " {0: 1.12E}".format(ext_results.ray[key + mode][index][ich][i])
+                    ext_ray_file.write(line + "\n")
+            ext_ray_file.flush()
+            ext_ray_file.close()
+                    
+                    
 
 def get_ECE_launch_info(shot, diag):
     from shotfile_handling_AUG import get_ECE_launch_params

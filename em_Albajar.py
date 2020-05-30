@@ -10,9 +10,8 @@ from scipy.integrate import quad
 from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
 from numpy.polynomial.legendre import leggauss
 from scipy.optimize import brentq, newton
-from scipy.misc import factorial
 import sys
-from scipy.special import kve, erfc
+from scipy.special import kve, erfc, factorial
 try:
     from scipy.special import loggamma as log_gm_fun, wofz
 except ImportError:

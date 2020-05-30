@@ -6,7 +6,6 @@ Created on Oct 11, 2016
 import os
 import numpy as np
 import sys
-from Bio.SubsMat import AcceptedReplacementsMatrix
 sys.path.append("../ECRad_Pylib")
 from subprocess import call
 from scipy.io import savemat
