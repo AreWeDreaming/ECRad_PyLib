@@ -2533,12 +2533,12 @@ class plotting_core:
             labs = [l.get_label() for l in lns]
             leg = self.axlist[0].legend(lns, labs)
             leg.get_frame().set_alpha(0.5)
-            leg.draggable()
+            leg.set_draggable(True)
             lns = self.axlist[2].get_lines() + self.axlist[3].get_lines()
             labs = [l.get_label() for l in lns]
             leg = self.axlist[2].legend(lns, labs)
             leg.get_frame().set_alpha(0.5)
-            leg.draggable()
+            leg.set_draggable(True)
             labs = []
             lns_short = []
             for i in range(len(self.axlist_2)):
@@ -2550,29 +2550,29 @@ class plotting_core:
                         lns_short.append(lns[l])
             leg = self.axlist_2[1].legend(lns_short, labs)
             leg.get_frame().set_alpha(1.0)
-            leg.draggable()
+            leg.set_draggable(True)
             if(mode != "Ich_BD"):
                 lns = self.axlist[4].get_lines() + self.axlist[5].get_lines()
                 labs = [l.get_label() for l in lns]
                 leg = self.axlist[5].legend(lns, labs)
                 leg.get_frame().set_alpha(0.5)
-                leg.draggable()
+                leg.set_draggable(True)
                 lns = self.axlist[6].get_lines() + self.axlist[7].get_lines()
                 labs = [l.get_label() for l in lns]
                 leg = self.axlist[7].legend(lns, labs)
                 leg.get_frame().set_alpha(0.5)
-                leg.draggable()
+                leg.set_draggable(True)
                 if(mode != "Ich_compare"):
                     lns = self.axlist[8].get_lines()
                     labs = [l.get_label() for l in lns]
                     leg = self.axlist[8].legend(lns, labs)
                     leg.get_frame().set_alpha(0.5)
-                    leg.draggable()
+                    leg.set_draggable(True)
                     lns = self.axlist[9].get_lines()
                     labs = [l.get_label() for l in lns]
                     leg = self.axlist[9].legend(lns, labs)
                     leg.get_frame().set_alpha(0.5)
-                    leg.draggable()
+                    leg.set_draggable(True)
             else:
                 labs = []
                 lns_short = []
@@ -2584,7 +2584,7 @@ class plotting_core:
                             lns_short.append(lns[l])
                 leg2 = self.axlist_2[1].legend(lns_short, labs)
                 leg2.get_frame().set_alpha(0.5)
-                leg2.draggable()
+                leg2.set_draggable(True)
         elif(mode == "BDP"):
             labs = []
             lns_short = []
@@ -2596,7 +2596,7 @@ class plotting_core:
                         lns_short.append(lns[l])
             leg = self.axlist[1].legend(lns_short, labs, loc="best")
             leg.get_frame().set_alpha(0.5)
-            leg.draggable()
+            leg.set_draggable(True)
         elif(mode == "BPD_twix"):
             for i in range(0, 3, 2):
                 labs = []
@@ -2607,25 +2607,25 @@ class plotting_core:
                         labs.append(lns[l].get_label())
                         lns_short.append(lns[l])
                 leg = self.axlist[i + 1].legend(lns_short, labs, loc="best")
-                leg.draggable()
+                leg.set_draggable(True)
                 leg.get_frame().set_alpha(0.5)
         elif(mode == "double"):
             lns = self.axlist[0].get_lines() + self.axlist[1].get_lines()
             labs = [l.get_label() for l in lns]
             leg = self.axlist[0].legend(lns, labs)
             leg.get_frame().set_alpha(0.5)
-            leg.draggable()
+            leg.set_draggable(True)
             if(len(self.axlist_2) > 0):
                 lns = self.axlist_2[0].get_lines() + self.axlist_2[1].get_lines()
                 labs = [l.get_label() for l in lns]
                 leg2 = self.axlist_2[0].legend(lns, labs)
                 leg2.get_frame().set_alpha(0.5)
-                leg2.draggable()
+                leg2.set_draggable(True)
         elif(mode == "Te" or mode == "Te_no_ne"):
             for i in range(len(self.axlist)):
                 leg = self.axlist[i].legend(loc="best")
                 if(leg is not None):
-                    leg.draggable()
+                    leg.set_draggable(True)
             if(len(self.axlist_2) > 0):
                 try:
                     lns = self.axlist_2[0].get_lines() + self.axlist_2[1].get_lines()
@@ -2638,21 +2638,21 @@ class plotting_core:
                     leg2 = self.axlist_2[0].legend(lns_filtered, labs)
                     if(leg2 is not None):
                         leg2.get_frame().set_alpha(1)
-                        leg2.draggable()
+                        leg2.set_draggable(True)
                 except IndexError:
                     leg2 = self.axlist_2[0].legend()
                     if(leg2 is not None):
                         leg2.get_frame().set_alpha(1)
-                        leg2.draggable()
+                        leg2.set_draggable(True)
         elif(mode == "Te_twinx" or mode == "Te_no_ne_twinx"):
             lines, labels = self.axlist[0].get_legend_handles_labels()
             lines2, labels2 = self.axlist[1].get_legend_handles_labels()
             leg = self.axlist[1].legend(lines + lines2, labels + labels2, loc=0)
-            leg.draggable()
+            leg.set_draggable(True)
             if(mode == "Te_twinx"):
                 leg = self.axlist[2].legend(loc="best")
                 if(leg is not None):
-                    leg.draggable()
+                    leg.set_draggable(True)
             if(len(self.axlist_2) > 0):
                 try:
                     lns = self.axlist_2[0].get_lines() + self.axlist_2[1].get_lines()
@@ -2665,52 +2665,52 @@ class plotting_core:
                     leg2 = self.axlist_2[0].legend(lns_filtered, labs)
                     if(leg2 is not None):
                         leg2.get_frame().set_alpha(1)
-                        leg2.draggable()
+                        leg2.set_draggable(True)
                 except IndexError:
                     leg2 = self.axlist_2[0].legend()
                     if(leg2 is not None):
                         leg2.get_frame().set_alpha(1)
-                        leg2.draggable()
+                        leg2.set_draggable(True)
         elif(mode == "stacked_2_twinx"):
             lns = self.axlist[0].get_lines()
             labs = [l.get_label() for l in lns]
             leg = self.axlist[0].legend(lns, labs)
             leg.get_frame().set_alpha(1)
-            leg.draggable()
+            leg.set_draggable(True)
             lns = self.axlist[1].get_lines() + self.axlist[2].get_lines()
             labs = [l.get_label() for l in lns]
             leg = self.axlist[2].legend(lns, labs)
             leg.get_frame().set_alpha(1)
-            leg.draggable()
+            leg.set_draggable(True)
             lns = self.axlist[3].get_lines()
             labs = [l.get_label() for l in lns]
             leg = self.axlist[3].legend(lns, labs)
             leg.get_frame().set_alpha(1)
-            leg.draggable()
+            leg.set_draggable(True)
             lns = self.axlist[4].get_lines() + self.axlist[5].get_lines()
             labs = [l.get_label() for l in lns]
             leg = self.axlist[5].legend(lns, labs)
             # self.axlist[5].add_artist(leg)
             leg.get_frame().set_alpha(1.0)
-            leg.draggable()
+            leg.set_draggable(True)
         elif(mode == "stacked_1_twinx"):
             lns = self.axlist[0].get_lines()
             labs = [l.get_label() for l in lns]
             leg = self.axlist[0].legend(lns, labs)
-            leg.draggable()
+            leg.set_draggable(True)
             leg.get_frame().set_alpha(1)
             lns = self.axlist[1].get_lines() + self.axlist[2].get_lines()
             labs = [l.get_label() for l in lns]
             leg = self.axlist[2].legend(lns, labs)
             leg.get_frame().set_alpha(1)
-            leg.draggable()
+            leg.set_draggable(True)
             lns = self.axlist[3].get_lines()
             labs = [l.get_label() for l in lns]
             leg = self.axlist[3].legend(lns, labs)
-            leg.draggable()
+            leg.set_draggable(True)
             # self.axlist[5].add_artist(leg)
             leg.get_frame().set_alpha(1.0)
-            leg.draggable()
+            leg.set_draggable(True)
         elif(mode == "vessel"):
             for i in range(len(self.axlist)):
                 lns = self.axlist[i].get_lines()
@@ -2724,7 +2724,7 @@ class plotting_core:
                         except ValueError:
                             print("A label was skipped, because of wrong dimensions")
                 leg = self.axlist[i].legend(lns_short, labs)
-                leg.draggable()
+                leg.set_draggable(True)
             leg.get_frame().set_alpha(0.5)
             for i in range(len(self.axlist_2)):
                 lns = self.axlist_2[i].get_lines()
@@ -2736,7 +2736,7 @@ class plotting_core:
                         lns_short.append(lns[l])
                 leg = self.axlist_2[i].legend(lns_short, labs)
                 leg.get_frame().set_alpha(0.5)
-                leg.draggable()
+                leg.set_draggable(True)
         elif(mode == "errorbar"):
             for i in range(len(self.axlist)):
                 self.axlist[i].legend(loc="best")
@@ -2749,7 +2749,7 @@ class plotting_core:
             labels = labels_primary + labels_twinx
             leg = self.axlist[0].legend(handles, labels)
             leg.get_frame().set_alpha(1.0)
-            leg.draggable()
+            leg.set_draggable(True)
         elif(mode == "errorbar_double_twinx"):
             handles_primary, labels_primary = self.axlist[0].get_legend_handles_labels()
             handles_twinx, labels_twinx = self.axlist[1].get_legend_handles_labels()
@@ -2757,14 +2757,14 @@ class plotting_core:
             labels = labels_primary + labels_twinx
             leg = self.axlist[1].legend(handles, labels)
             leg.get_frame().set_alpha(1.0)
-            leg.draggable()
+            leg.set_draggable(True)
             handles_primary, labels_primary = self.axlist[2].get_legend_handles_labels()
             handles_twinx, labels_twinx = self.axlist[3].get_legend_handles_labels()
             handles = handles_primary + handles_twinx
             labels = labels_primary + labels_twinx
             leg2 = self.axlist[3].legend(handles, labels)
             leg2.get_frame().set_alpha(1.0)
-            leg2.draggable()
+            leg2.set_draggable(True)
 #            lns = self.axlist[0].get_lines()
 #            lns = np.concatenate([lns, self.axlist[1].get_lines()])
 #            labs = []
@@ -2781,11 +2781,11 @@ class plotting_core:
             labels = labels_primary + labels_twinx
             leg = self.axlist[0].legend(handles, labels)
             leg.get_frame().set_alpha(1.0)
-            leg.draggable()
+            leg.set_draggable(True)
             handles, labels = self.axlist[2].get_legend_handles_labels()
             leg2 = self.axlist[2].legend(handles, labels)
             leg2.get_frame().set_alpha(1.0)
-            leg2.draggable()
+            leg2.set_draggable(True)
         elif(mode == "only_axis_1"):
             for i in range(len(self.axlist) - 1):
                 lns = self.axlist[i].get_lines()
@@ -2801,7 +2801,7 @@ class plotting_core:
                     #    print("Label " + lns[l].get_label() + " ignored")
                 leg = self.axlist[i].legend(lns_short, labs)
             leg.get_frame().set_alpha(1.0)
-            leg.draggable()
+            leg.set_draggable(True)
         elif(mode == "resonance"):
             i = 0
             lns = self.axlist[i].get_lines()
@@ -2826,7 +2826,7 @@ class plotting_core:
                 leg = self.axlist_2[0].legend(lns_short, labs)
             if(leg is not None):
                 leg.get_frame().set_alpha(1.0)
-                leg.draggable()
+                leg.set_draggable(True)
             i = 2
             lns = self.axlist_2[i].get_lines()
             labs = []
@@ -2838,7 +2838,7 @@ class plotting_core:
                 # else:
                 #    print("Label " + lns[l].get_label() + " ignored")
             leg = self.axlist_2[i].legend(lns_short, labs)
-            leg.draggable()
+            leg.set_draggable(True)
         else:
             for i in range(len(self.axlist)):
                 lns = self.axlist[i].get_lines()
@@ -2851,7 +2851,7 @@ class plotting_core:
                     # else:
                     #    print("Label " + lns[l].get_label() + " ignored")
                 leg = self.axlist[i].legend(lns_short, labs)
-                leg.draggable()
+                leg.set_draggable(True)
                 leg.get_frame().set_alpha(1.0)
             if(len(self.axlist_2) > 0):
                 for i in range(len(self.axlist_2)):
@@ -2866,7 +2866,7 @@ class plotting_core:
                         #    print("Label " + lns[l].get_label() + " ignored")
                     leg = self.axlist_2[i].legend(lns_short, labs)
                     leg.get_frame().set_alpha(0.5)
-                    leg.draggable()
+                    leg.set_draggable(True)
         # self.finishing_touches()
 
     # Once all information about a plot is known apply some finishing touches
