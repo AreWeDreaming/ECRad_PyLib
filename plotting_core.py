@@ -806,6 +806,14 @@ class plotting_core:
         linear_beam = args[3]
         quasi_linear_beam = args[4]
         dist_obj = args[5]
+        if(len(args) > 6):
+            plot_Te = args[6]
+        else:
+            plot_Te = True
+        if(not plot_Te):
+            mode = r"QL_calc_small"
+        else:
+            mode = r"QL_calc"
         f_ind = np.argmax(quasi_linear_beam.PW)
         Te_spl = InterpolatedUnivariateSpline(dist_obj.rhop_1D_profs, dist_obj.Te_init)
         ne_spl = InterpolatedUnivariateSpline(dist_obj.rhop_1D_profs, dist_obj.ne_init)
@@ -815,7 +823,7 @@ class plotting_core:
         Te_cur = Te_spl(quasi_linear_beam.rhop[f_ind])
         ne_cur = ne_spl(quasi_linear_beam.rhop[f_ind])
         print("Te_cur", Te_cur)
-        self.setup_axes(r"QL_calc", r"Power depostion and driven current \#" + str(shot) + \
+        self.setup_axes(mode, r"Power depostion and driven current \#" + str(shot) + \
                         r" $t = " + self.make_SI_string("{0:1.2f}".format(float(time)), r"\second") + r'$', \
                         r"Distribution function slice at " + r"$\rho_\mathrm{pol} =" + \
                         self.make_num_string("{0:1.2f}".format(dist_obj.rhop[f_ind])) + r"$")
@@ -918,26 +926,28 @@ class plotting_core:
                 self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], data=[rhop_tb_profs , j_beams * renorm * scale], \
                     name=r"TORBEAM".format(ibeam + 1), marker="--", \
                          y_range_in=self.y_range_list[1], ax_flag=ax_flag_j)
-        self.axlist[2], self.y_range_list[2] = self.add_plot(self.axlist[2], data=[dist_obj.rhop_1D_profs, \
-                                                                                   dist_obj.Te_init], \
-                    name=r"initial $T_\mathrm{e}$", marker="-", color="black", \
-                         y_range_in=self.y_range_list[2], y_scale=1.e-3, ax_flag="Te")
-        self.axlist[2], self.y_range_list[2] = self.add_plot(self.axlist[2], data=[dist_obj.rhop, \
-                                                                                   dist_obj.Te], \
-                    name=r"$T_\mathrm{e}\mathrm{\, from\, distribution}$", marker="--", color="blue", \
-                         y_range_in=self.y_range_list[2], y_scale=1.e-3, ax_flag="Te")
-        self.axlist[3], self.y_range_list[3] = self.add_plot(self.axlist[3], data=[dist_obj.rhop_1D_profs, \
-                                                                                   dist_obj.ne_init], \
-                    name=r"initiall $n_\mathrm{e}$", marker="-", color="green", \
-                         y_range_in=self.y_range_list[3], y_scale=1.e-20, ax_flag="ne")
-        self.axlist[3], self.y_range_list[3] = self.add_plot(self.axlist[3], data=[dist_obj.rhop, \
-                                                                                   dist_obj.ne], \
-                    name=r"$n_\mathrm{e}\mathrm{\, from\, distribution}$", marker="--", color=[0.5, 0.0, 0.5], \
-                         y_range_in=self.y_range_list[3], y_scale=1.e-20, ax_flag="ne")
+        if(plot_Te):
+            self.axlist[2], self.y_range_list[2] = self.add_plot(self.axlist[2], data=[dist_obj.rhop_1D_profs, \
+                                                                                       dist_obj.Te_init], \
+                        name=r"initial $T_\mathrm{e}$", marker="-", color="black", \
+                             y_range_in=self.y_range_list[2], y_scale=1.e-3, ax_flag="Te")
+            self.axlist[2], self.y_range_list[2] = self.add_plot(self.axlist[2], data=[dist_obj.rhop, \
+                                                                                       dist_obj.Te], \
+                        name=r"$T_\mathrm{e}\mathrm{\, from\, distribution}$", marker="--", color="blue", \
+                             y_range_in=self.y_range_list[2], y_scale=1.e-3, ax_flag="Te")
+            self.axlist[3], self.y_range_list[3] = self.add_plot(self.axlist[3], data=[dist_obj.rhop_1D_profs, \
+                                                                                       dist_obj.ne_init], \
+                        name=r"initiall $n_\mathrm{e}$", marker="-", color="green", \
+                             y_range_in=self.y_range_list[3], y_scale=1.e-20, ax_flag="ne")
+            self.axlist[3], self.y_range_list[3] = self.add_plot(self.axlist[3], data=[dist_obj.rhop, \
+                                                                                       dist_obj.ne], \
+                        name=r"$n_\mathrm{e}\mathrm{\, from\, distribution}$", marker="--", color=[0.5, 0.0, 0.5], \
+                             y_range_in=self.y_range_list[3], y_scale=1.e-20, ax_flag="ne")
         plt.setp(self.axlist[0].get_xticklabels(), visible=False)
         self.axlist[0].set_xlabel("")
-        plt.setp(self.axlist[1].get_xticklabels(), visible=False)
-        self.axlist[1].set_xlabel("")
+        if(plot_Te):
+            plt.setp(self.axlist[1].get_xticklabels(), visible=False)
+            self.axlist[1].set_xlabel("")
         self.axlist[0].set_xlim(0.0, 1.0)
         levels = np.linspace(-13, 5, 100)
         try:
@@ -1043,6 +1053,8 @@ class plotting_core:
                          y_range_in=self.y_range_list[1], ax_flag="j_eccd")
         for beam in linear_beam.rays:
             n_ray = int(len(beam) / 10)
+            if(n_ray == 0):
+                n_ray = 1
             for ray in np.array(beam)[::n_ray]:
                 self.axlist[2], self.y_range_list[2] = self.add_plot(self.axlist[2], \
                                                                      data=[ray["rhop"], \
@@ -2297,6 +2309,26 @@ class plotting_core:
             self.x_share_list = [None, 0, 0, 0, 0]
             self.y_share_list = [None, None, None, None]  # Note the twinx axes!
             self.twinx_y_share = [None, None, None, None]
+            self.y_range_list = []
+            self.layout_2 = [2, 1, 2]
+            self.grid_locations_2 = [[0, 0], [0, 1]]
+            self.twinx_array_2 = [False, False]
+            self.x_share_list_2 = [None, None]
+            self.y_share_list_2 = [None, None]  # Note the twinx axes!
+            self.y_range_list_2 = []
+            steps = np.array([1.0, 5.0, 10.0])
+            steps_y = steps
+            steps_2 = steps
+            steps_2_y = steps_y
+            self.gridspec = plt.GridSpec(self.layout[1], self.layout[2])
+            self.gridspec_2 = plt.GridSpec(self.layout_2[1], self.layout_2[2])
+        elif(mode == "QL_calc_small"):
+            self.layout = [2, 2, 1]
+            self.grid_locations = [[0, 0], [1, 0]]
+            self.twinx_array = [False, False]
+            self.x_share_list = [None, 0, 0]
+            self.y_share_list = [None, None]  # Note the twinx axes!
+            self.twinx_y_share = [None, None]
             self.y_range_list = []
             self.layout_2 = [2, 1, 2]
             self.grid_locations_2 = [[0, 0], [0, 1]]
