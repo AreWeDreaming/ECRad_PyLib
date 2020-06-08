@@ -29,6 +29,7 @@ from equilibrium_utils_AUG import EQData
 from shotfile_handling_AUG import get_data_calib
 from scipy.io import loadmat
 from ECRad_Results import ECRadResults
+from distribution_functions import Juettner2D
 
 
 def debug_append_ECRadResults(filename):

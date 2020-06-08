@@ -110,6 +110,18 @@ def export_gene_fortran_friendly(wpath, rhop, beta_par, mu_norm, ne, f, f0, B0):
     thefile.close()
     print("Gene distribution ready")
 
+# def generate_single_thermal(rhop, Te):
+#     u = np.linspace(0.0, 3.0, 200)
+#     pitch = np.linspace(0, np.pi,400)
+#     f = np.zeros((len(u), len(pitch)))
+#     u_assist = np.zeros(len(pitch))
+#     for i,u_single in enumerate(u):
+#         u_assist[:] = u_single
+#         f[i] = Juettner2D_cycl(u_assist, Te)
+#     return distribution(None, np.array([rhop]), u, pitch, np.array([f]), \
+#                         np.array([rhop]), np.array([rhop]), np.array([Te]), np.array([1.0]))
+#     
+
 def load_f_from_mat(filename, use_dist_prefix=False):
     # Load distribution object from .mat file created by AECM GUI
     mdict = loadmat(filename, squeeze_me=True)
@@ -122,9 +134,14 @@ def load_f_from_mat(filename, use_dist_prefix=False):
     elif(use_dist_prefix):
         dist_prefix = "dist_"
     if(dist_prefix + "rhot_prof" not in mdict):
-        return distribution(None, mdict[dist_prefix + "rhop_prof"], mdict[dist_prefix + "u"], mdict[dist_prefix + "pitch"], mdict[dist_prefix + "f"], mdict[dist_prefix + "rhot_1D_profs"], mdict[dist_prefix + "rhop_1D_profs"], mdict[dist_prefix + "Te_init"], mdict[dist_prefix + "ne_init"])
+        return distribution(None, mdict[dist_prefix + "rhop_prof"], mdict[dist_prefix + "u"], mdict[dist_prefix + "pitch"], mdict[dist_prefix + "f"], \
+                            mdict[dist_prefix + "rhot_1D_profs"], mdict[dist_prefix + "rhop_1D_profs"], mdict[dist_prefix + "Te_init"], \
+                            mdict[dist_prefix + "ne_init"])
     else:
-        return distribution(mdict[dist_prefix + "rhot_prof"], mdict[dist_prefix + "rhop_prof"], mdict[dist_prefix + "u"], mdict[dist_prefix + "pitch"], mdict[dist_prefix + "f"], mdict[dist_prefix + "rhot_1D_profs"], mdict[dist_prefix + "rhop_1D_profs"], mdict[dist_prefix + "Te_init"], mdict[dist_prefix + "ne_init"])
+        return distribution(mdict[dist_prefix + "rhot_prof"], mdict[dist_prefix + "rhop_prof"], \
+                            mdict[dist_prefix + "u"], mdict[dist_prefix + "pitch"], mdict[dist_prefix + "f"], 
+                            mdict[dist_prefix + "rhot_1D_profs"], mdict[dist_prefix + "rhop_1D_profs"], \
+                            mdict[dist_prefix + "Te_init"], mdict[dist_prefix + "ne_init"])
 
 def read_waves_mat_to_beam(waves_mat, EQSlice, use_wave_prefix=False):
     # Load waves object from .mat file created by AECM GUI (GRAY or TORAYFOM)

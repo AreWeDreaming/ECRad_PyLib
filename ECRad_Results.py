@@ -78,48 +78,35 @@ class ECRadResults:
         self.resonance["R_warm_secondary"] = []
         self.resonance["z_warm_secondary"] = []
         self.resonance["rhop_warm_secondary"] = []
-        self.ray["sX"] = []
-        self.ray["xX"] = []
-        self.ray["yX"] = []
-        self.ray["zX"] = []
-        self.ray["rhopX"] = []
-        self.ray["HX"] = []
-        self.ray["NX"] = []
-        self.ray["NcX"] = []
-        self.ray["XX"] = []
-        self.ray["YX"] = []
-        self.ray["thetaX"] = []
-        self.ray["BPDX"] = []
-        self.ray["BPD_secondX"] = []
-        self.ray["emX"] = []
-        self.ray["em_secondX"] = []
-        self.ray["abX"] = []
-        self.ray["ab_secondX"] = []
-        self.ray["TX"] = []
-        self.ray["T_secondX"] = []
-        self.ray["TeX"] = []
-        self.ray["neX"] = []
-        self.ray["sO"] = []
-        self.ray["xO"] = []
-        self.ray["yO"] = []
-        self.ray["zO"] = []
-        self.ray["rhopO"] = []
-        self.ray["HO"] = []
-        self.ray["NO"] = []
-        self.ray["NcO"] = []
-        self.ray["XO"] = []
-        self.ray["YO"] = []
-        self.ray["thetaO"] = []
-        self.ray["BPDO"] = []
-        self.ray["BPD_secondO"] = []
-        self.ray["emO"] = []
-        self.ray["em_secondO"] = []
-        self.ray["abO"] = []
-        self.ray["ab_secondO"] = []
-        self.ray["TO"] = []
-        self.ray["T_secondO"] = []
-        self.ray["TeO"] = []
-        self.ray["neO"] = []
+        for mode in ["X", "O"]:
+            self.ray["s" + mode] = []
+            self.ray["x" + mode] = []
+            self.ray["y" + mode] = []
+            self.ray["z" + mode] = []
+            self.ray["Nx" + mode] = []
+            self.ray["Ny" + mode] = []
+            self.ray["Nz" + mode] = []
+            self.ray["Bx" + mode] = []
+            self.ray["By" + mode] = []
+            self.ray["Bz" + mode] = []
+            self.ray["rhop" + mode] = []
+            self.ray["H" + mode] = []
+            self.ray["N" + mode] = []
+            self.ray["Nc" + mode] = []
+            self.ray["X" + mode] = []
+            self.ray["Y" + mode] = []
+            self.ray["theta" + mode] = []
+            self.ray["BPD" + mode] = []
+            self.ray["BPD_second" + mode] = []
+            self.ray["em" + mode] = []
+            self.ray["em_second" + mode] = []
+            self.ray["ab" + mode] = []
+            self.ray["ab_second" + mode] = []
+            self.ray["T" + mode] = []
+            self.ray["T_second" + mode] = []
+            self.ray["Te" + mode] = []
+            self.ray["ne" + mode] = []
+            self.ray["v_g_perp" + mode] = []
         self.weights = {}
         self.weights["ray"] = []
         self.weights["freq"] = []
@@ -204,25 +191,15 @@ class ECRadResults:
         Ich_folder = os.path.join(self.Config.scratch_dir, "ECRad_data", Ich_folder)
         # Ray_folder = os.path.join(self.Config.scratch_dir, "ECRad_data", "ray")
         # Append new empty list for this time point
-        if("X" in self.modes):
+        for mode in self.modes:
             for key in self.resonance:
-                if(key.endswith("X")):
+                if(key.endswith(mode)):
                     self.resonance[key].append([])
             for key in self.ray:
-                if(key.endswith("X")):
+                if(key.endswith(mode)):
                     self.ray[key].append([])
             for key in self.BPD:
-                if(key.endswith("X")):
-                    self.BPD[key].append([])
-        if("O" in self.modes):
-            for key in self.resonance:
-                if(key.endswith("O")):
-                    self.resonance[key].append([])
-            for key in self.ray:
-                if(key.endswith("O")):
-                    self.ray[key].append([])
-            for key in self.BPD:
-                if(key.endswith("O")):
+                if(key.endswith(mode)):
                     self.BPD[key].append([])
         # Now add los info into this list for each channel
         if(np.isscalar(Trad_file.T[0])):
@@ -230,259 +207,109 @@ class ECRadResults:
         else:
             N_ch = len(Trad_file.T[0])
         for i in range(N_ch):
-            if("X" in self.modes):
+            for mode in self.modes:
                 try:
-                    BDOP_X = np.loadtxt(os.path.join(Ich_folder, "BPDX{0:03n}.dat".format(i + 1)))
+                    BDOP = np.loadtxt(os.path.join(Ich_folder, "BPD" + mode + "{0:03d}.dat".format(i + 1)))
                 except IOError:
                     raise IndexError("Failed to load BPD")  # Raise this as an Index error to communicate that results no l
-                if(len(BDOP_X) > 0):
-                    self.BPD["rhopX"][-1].append(BDOP_X.T[0])
-                    self.BPD["BPDX"][-1].append(BDOP_X.T[1])
-                    self.BPD["BPD_secondX"][-1].append(BDOP_X.T[2])
+                if(len(BDOP) > 0):
+                    self.BPD["rhop" + mode][-1].append(BDOP.T[0])
+                    self.BPD["BPD" + mode][-1].append(BDOP.T[1])
+                    self.BPD["BPD_second" + mode][-1].append(BDOP.T[2])
                     if(self.Config.N_ray > 1):
                         for key in self.ray:
-                            if(key.endswith("X")):
+                            if(key.endswith(mode)):
                                 self.ray[key][-1].append([])
                         try:
-                            Ray_file = np.loadtxt(os.path.join(Ich_folder, "BPD_ray{0:03d}ch{1:03d}_X.dat".format(1, i + 1)))
+                            Ray_file = np.loadtxt(os.path.join(Ich_folder, "BPD_ray{0:03d}ch{1:03d}_{2:s}.dat".format(1, i + 1, mode)))
                         except IOError:
                             raise IndexError("Failed to load Ray")
                         if(len(Ray_file) > 0):
                             for i_ray in range(self.Config.N_ray):
-                                if(i_ray >= 1 and not os.path.isfile(os.path.join(Ich_folder, "BPD_ray{0:03d}ch{1:03d}_X.dat".format(i_ray + 1, i + 1)))):
+                                if(i_ray >= 1 and not os.path.isfile(os.path.join(Ich_folder, "BPD_ray{0:03d}ch{1:03d}_{2:s}.dat".format(i_ray + 1, i + 1, mode)))):
                                     too_few_rays = True
                                     break
                                 # Ray_file = np.loadtxt(os.path.join(Ray_folder, "Ray{0:03n}ch{1:03n}_X.dat".format(i_ray + 1, i + 1)).replace(",", ""))
                                 try:
-                                    Ray_file = np.loadtxt(os.path.join(Ich_folder, "BPD_ray{0:03d}ch{1:03d}_X.dat".format(i_ray + 1, i + 1)))
+                                    Ray_file = np.loadtxt(os.path.join(Ich_folder, "BPD_ray{0:03d}ch{1:03d}_{2:s}.dat".format(i_ray + 1, i + 1, mode)))
                                 except IOError:
                                     raise IndexError("Failed to load Ray")
-                                self.ray["sX"][-1][-1].append(Ray_file.T[0])
-                                self.ray["xX"][-1][-1].append(Ray_file.T[1])
-                                self.ray["yX"][-1][-1].append(Ray_file.T[2])
-                                self.ray["zX"][-1][-1].append(Ray_file.T[3])
-                                self.ray["rhopX"][-1][-1].append(Ray_file.T[4])
-                                self.ray["BPDX"][-1][-1].append(Ray_file.T[5])
-                                self.ray["BPD_secondX"][-1][-1].append(Ray_file.T[6])
-                                self.ray["emX"][-1][-1].append(Ray_file.T[7])
-                                self.ray["em_secondX"][-1][-1].append(Ray_file.T[8])
-                                self.ray["abX"][-1][-1].append(Ray_file.T[9])
-                                self.ray["ab_secondX"][-1][-1].append(Ray_file.T[10])
-                                self.ray["TX"][-1][-1].append(Ray_file.T[11])
-                                self.ray["T_secondX"][-1][-1].append(Ray_file.T[12])
-                                self.ray["TeX"][-1][-1].append(Ray_file.T[13])
-                                self.ray["HX"][-1][-1].append(Ray_file.T[14])
-                                self.ray["NX"][-1][-1].append(Ray_file.T[15])
-                                self.ray["NcX"][-1][-1].append(Ray_file.T[16])
-                                self.ray["thetaX"][-1][-1].append(Ray_file.T[17])
-                                Bx = Ray_file.T[21]
-                                By = Ray_file.T[22]
-                                Bz = Ray_file.T[23]
+                                self.ray["s" + mode][-1][-1].append(Ray_file.T[0])
+                                self.ray["x" + mode][-1][-1].append(Ray_file.T[1])
+                                self.ray["y" + mode][-1][-1].append(Ray_file.T[2])
+                                self.ray["z" + mode][-1][-1].append(Ray_file.T[3])
+                                self.ray["rhop" + mode][-1][-1].append(Ray_file.T[4])
+                                self.ray["BPD" + mode][-1][-1].append(Ray_file.T[5])
+                                self.ray["BPD_second" + mode][-1][-1].append(Ray_file.T[6])
+                                self.ray["em" + mode][-1][-1].append(Ray_file.T[7])
+                                self.ray["em_second" + mode][-1][-1].append(Ray_file.T[8])
+                                self.ray["ab" + mode][-1][-1].append(Ray_file.T[9])
+                                self.ray["ab_second" + mode][-1][-1].append(Ray_file.T[10])
+                                self.ray["T" + mode][-1][-1].append(Ray_file.T[11])
+                                self.ray["T_second" + mode][-1][-1].append(Ray_file.T[12])
+                                self.ray["ne" + mode][-1][-1].append(Ray_file.T[13])
+                                self.ray["Te" + mode][-1][-1].append(Ray_file.T[14])
+                                self.ray["H" + mode][-1][-1].append(Ray_file.T[15])
+                                self.ray["N" + mode][-1][-1].append(Ray_file.T[16])
+                                self.ray["Nc" + mode][-1][-1].append(Ray_file.T[17])
+                                self.ray["theta" + mode][-1][-1].append(Ray_file.T[18])
+                                self.ray["Nx" + mode][-1][-1].append(Ray_file.T[19])
+                                self.ray["Ny" + mode][-1][-1].append(Ray_file.T[20])
+                                self.ray["Nz" + mode][-1][-1].append(Ray_file.T[21])
+                                self.ray["Bx" + mode][-1][-1].append(Ray_file.T[22])
+                                self.ray["By" + mode][-1][-1].append(Ray_file.T[23])
+                                self.ray["Bz" + mode][-1][-1].append(Ray_file.T[24])
+                                self.ray["v_g_perp" + mode][-1][-1].append(Ray_file.T[25])
                                 itime = np.argmin(np.abs(self.Scenario.plasma_dict["time"] - time))
                                 omega = 2.0 * np.pi * self.Scenario.ray_launch[itime]["f"][i]
-                                self.ray["YX"][-1][-1].append(cnst.e * np.sqrt(Bx**2 + By**2 + Bz**2) / \
-                                                              (cnst.m_e * omega))
-                                if(self.Scenario.profile_dimension == 1):
-                                    ne_spl = InterpolatedUnivariateSpline(self.Scenario.plasma_dict[self.Scenario.plasma_dict["prof_reference"]][itime], \
-                                                                          np.log(self.Scenario.plasma_dict["ne"][itime]), ext=3)
-                                    self.ray["XX"][-1][-1].append(cnst.e**2 * np.exp(ne_spl(self.ray["rhopX"][-1][-1][-1]))/ \
-                                                                  (cnst.m_e * cnst.epsilon_0 * omega**2))
-                                    self.ray["neX"][-1][-1].append(np.exp(ne_spl(self.ray["rhopX"][-1][-1][-1])))
-                                else:
-                                    ne_spl = RectBivariateSpline(self.Scenario.plasma_dict["eq_data"][itime].R, \
-                                                                 self.Scenario.plasma_dict["eq_data"][itime].R, \
-                                                                 np.log(self.Scenario.plasma_dict["ne"][itime]), ext=3)
-                                    R_ray = self.ray["RX"][-1][-1][-1]
-                                    z_ray = self.ray["zX"][-1][-1][-1]
-                                    R_ray[np.logical_or(R_ray > np.max(self.Scenario.plasma_dict["eq_data"][itime].R), \
-                                                        R_ray < np.min(self.Scenario.plasma_dict["eq_data"][itime].R) )] = \
-                                         np.max(self.Scenario.plasma_dict["eq_data"][itime].R)
-                                    z_ray[np.logical_or(z_ray > np.max(self.Scenario.plasma_dict["eq_data"][itime].z), \
-                                                        z_ray < np.min(self.Scenario.plasma_dict["eq_data"][itime].z) )] = \
-                                         np.max(self.Scenario.plasma_dict["eq_data"][itime].z)
-                                    self.ray["XX"][-1][-1].append(cnst.e**2 * np.exp(ne_spl(R_ray, z_ray, grid=False))/ \
-                                                                  (cnst.m_e * cnst.epsilon_0 * omega**2))
-                                    self.ray["XX"][-1][-1][-1][np.logical_or(R_ray >= np.max(self.Scenario.plasma_dict["eq_data"][itime].R), \
-                                                                             z_ray >= np.max(self.Scenario.plasma_dict["eq_data"][itime].z) )] = 0.0
+                                self.ray["Y" + mode][-1][-1].append(cnst.e * np.sqrt(self.ray["Bx" + mode][-1][-1][-1]**2 + \
+                                                                                     self.ray["By" + mode][-1][-1][-1]**2 + \
+                                                                                     self.ray["Bz" + mode][-1][-1][-1]**2) / \
+                                                                                     (cnst.m_e * omega))
+                                self.ray["X" + mode][-1][-1].append(cnst.e**2 * self.ray["ne" + mode][-1][-1][-1] / \
+                                                              (cnst.m_e * cnst.epsilon_0 * omega**2))
                                                                                 
                     else:
                         try:
-                            Ray_file = np.loadtxt(os.path.join(Ich_folder, "BPD_ray{0:03d}ch{1:03d}_X.dat".format(1, i + 1)))
-                        except IOError:
+                            Ray_file = np.loadtxt(os.path.join(Ich_folder, "BPD_ray{0:03d}ch{1:03d}_{2:s}.dat".format(1, i + 1, mode)))
+                        except (IOError,ValueError) as e:
+                            print(e)
                             raise IndexError("Failed to load Ray")  # Raise this as an Index error to communicate that results no
-                        if(len(Ray_file) > 0):  # Can be empty if mode is skipped because of ext. pol. coeff.= 0
-                            self.ray["sX"][-1].append(Ray_file.T[0])
-                            self.ray["xX"][-1].append(Ray_file.T[1])
-                            self.ray["yX"][-1].append(Ray_file.T[2])
-                            self.ray["zX"][-1].append(Ray_file.T[3])
-                            self.ray["rhopX"][-1].append(Ray_file.T[4])
-                            self.ray["BPDX"][-1].append(Ray_file.T[5])
-                            self.ray["BPD_secondX"][-1].append(Ray_file.T[6])
-                            self.ray["emX"][-1].append(Ray_file.T[7])
-                            self.ray["em_secondX"][-1].append(Ray_file.T[8])
-                            self.ray["abX"][-1].append(Ray_file.T[9])
-                            self.ray["ab_secondX"][-1].append(Ray_file.T[10])
-                            self.ray["TX"][-1].append(Ray_file.T[11])
-                            self.ray["T_secondX"][-1].append(Ray_file.T[12])
-                            self.ray["TeX"][-1].append(Ray_file.T[13])
-                            self.ray["HX"][-1].append(Ray_file.T[14])
-                            self.ray["NX"][-1].append(Ray_file.T[15])
-                            self.ray["NcX"][-1].append(Ray_file.T[16])
-                            self.ray["thetaX"][-1].append(Ray_file.T[17])
-                            Bx = Ray_file.T[21]
-                            By = Ray_file.T[22]
-                            Bz = Ray_file.T[23]
+                        if(len(Ray_file) > 0):
+                            self.ray["s" + mode][-1].append(Ray_file.T[0])
+                            self.ray["x" + mode][-1].append(Ray_file.T[1])
+                            self.ray["y" + mode][-1].append(Ray_file.T[2])
+                            self.ray["z" + mode][-1].append(Ray_file.T[3])
+                            self.ray["rhop" + mode][-1].append(Ray_file.T[4])
+                            self.ray["BPD" + mode][-1].append(Ray_file.T[5])
+                            self.ray["BPD_second" + mode][-1].append(Ray_file.T[6])
+                            self.ray["em" + mode][-1].append(Ray_file.T[7])
+                            self.ray["em_second" + mode][-1].append(Ray_file.T[8])
+                            self.ray["ab" + mode][-1].append(Ray_file.T[9])
+                            self.ray["ab_second" + mode][-1].append(Ray_file.T[10])
+                            self.ray["T" + mode][-1].append(Ray_file.T[11])
+                            self.ray["T_second" + mode][-1].append(Ray_file.T[12])
+                            self.ray["ne" + mode][-1].append(Ray_file.T[13])
+                            self.ray["Te" + mode][-1].append(Ray_file.T[14])
+                            self.ray["H" + mode][-1].append(Ray_file.T[15])
+                            self.ray["N" + mode][-1].append(Ray_file.T[16])
+                            self.ray["Nc" + mode][-1].append(Ray_file.T[17])
+                            self.ray["theta" + mode][-1].append(Ray_file.T[18])
+                            self.ray["Nx" + mode][-1].append(Ray_file.T[19])
+                            self.ray["Ny" + mode][-1].append(Ray_file.T[20])
+                            self.ray["Nz" + mode][-1].append(Ray_file.T[21])
+                            self.ray["Bx" + mode][-1].append(Ray_file.T[22])
+                            self.ray["By" + mode][-1].append(Ray_file.T[23])
+                            self.ray["Bz" + mode][-1].append(Ray_file.T[24])
+                            self.ray["v_g_perp" + mode][-1].append(Ray_file.T[25])
                             itime = np.argmin(np.abs(self.Scenario.plasma_dict["time"] - time))
                             omega = 2.0 * np.pi * self.Scenario.ray_launch[itime]["f"][i]
-                            self.ray["YX"][-1].append(cnst.e * np.sqrt(Bx**2 + By**2 + Bz**2) / \
-                                                          (cnst.m_e * omega))
-                            if(self.Scenario.profile_dimension == 1):
-                                ne_spl = InterpolatedUnivariateSpline(self.Scenario.plasma_dict[self.Scenario.plasma_dict["prof_reference"]][itime], \
-                                                                      np.log(self.Scenario.plasma_dict["ne"][itime]), ext=1)
-                                self.ray["XX"][-1].append(cnst.e**2 * np.exp(ne_spl(self.ray["rhopX"][-1][-1]))/ \
-                                                              (cnst.m_e * cnst.epsilon_0* omega**2))
-                                self.ray["neX"][-1].append(np.exp(ne_spl(self.ray["rhopX"][-1][-1])))
-                            elif(self.Scenario.profile_dimension == 3):
-                                ne_spl = RectBivariateSpline(self.Scenario.plasma_dict["eq_data"][itime].R, \
-                                                             self.Scenario.plasma_dict["eq_data"][itime].z, \
-                                                             np.log(self.Scenario.plasma_dict["ne"][itime]))
-                                R_ray = self.ray["RX"][-1][-1]
-                                z_ray = self.ray["zX"][-1][-1]
-                                R_ray[np.logical_or(R_ray > np.max(self.Scenario.plasma_dict["eq_data"][itime].R), \
-                                                    R_ray < np.min(self.Scenario.plasma_dict["eq_data"][itime].R) )] = \
-                                     np.max(self.Scenario.plasma_dict["eq_data"][itime].R)
-                                z_ray[np.logical_or(z_ray > np.max(self.Scenario.plasma_dict["eq_data"][itime].z), \
-                                                    z_ray < np.min(self.Scenario.plasma_dict["eq_data"][itime].z) )] = \
-                                     np.max(self.Scenario.plasma_dict["eq_data"][itime].z)
-                                self.ray["XX"][-1].append(cnst.e**2 * np.exp(ne_spl(R_ray, z_ray, grid=False))/ \
-                                                              (cnst.m_e * cnst.epsilon_0 * omega**2))
-                                self.ray["XX"][-1][-1][np.logical_or(R_ray >= np.max(self.Scenario.plasma_dict["eq_data"][itime].R), \
-                                                                         z_ray >= np.max(self.Scenario.plasma_dict["eq_data"][itime].z) )] = 0.0
-                            else:
-                                print("Three dimensional profiles not supported for Stix parameters X and Y")
-                                break
-            if("O" in self.modes):
-                try:
-                    BDOP_O = np.loadtxt(os.path.join(Ich_folder, "BPDO{0:03d}.dat".format(i + 1)))
-                except IOError:
-                    raise IndexError("Failed to load BPD")  # Raise this as an Index error to communicate that results no l
-                self.BPD["rhopO"][-1].append(BDOP_O.T[0])
-                self.BPD["BPDO"][-1].append(BDOP_O.T[1])
-                self.BPD["BPD_secondO"][-1].append(BDOP_O.T[2])
-                if(self.Config.N_ray > 1):
-                    for key in self.ray:
-                        if(key.endswith("O")):
-                            self.ray[key][-1].append([])
-                    try:
-                        Ray_file = np.loadtxt(os.path.join(Ich_folder, "BPD_ray{0:03d}ch{1:03d}_O.dat".format(1, i + 1)))
-                    except IOError:
-                        raise IndexError("Failed to load Ray")  # Raise this as an Index error to communicate that results no l
-                    if(len(Ray_file) > 0):  # Can be empty if mode is skipped because of ext. pol. coeff.= 0
-                        for i_ray in range(self.Config.N_ray):
-                            if(i_ray >= 1 and not os.path.isfile(os.path.join(Ich_folder, "BPD_ray{0:03d}ch{1:03d}_X.dat".format(i_ray + 1, i + 1)))):
-                                too_few_rays = True
-                                break
-                            try:
-                                Ray_file = np.loadtxt(os.path.join(Ich_folder, "BPD_ray{0:03d}ch{1:03d}_O.dat".format(i_ray + 1, i + 1)))
-                            except IOError:
-                                raise IndexError("Failed to load Ray")
-                            self.ray["sO"][-1][-1].append(Ray_file.T[0])
-                            self.ray["xO"][-1][-1].append(Ray_file.T[1])
-                            self.ray["yO"][-1][-1].append(Ray_file.T[2])
-                            self.ray["zO"][-1][-1].append(Ray_file.T[3])
-                            self.ray["rhopO"][-1][-1].append(Ray_file.T[4])
-                            self.ray["BPDO"][-1][-1].append(Ray_file.T[5])
-                            self.ray["BPD_secondO"][-1][-1].append(Ray_file.T[6])
-                            self.ray["emO"][-1][-1].append(Ray_file.T[7])
-                            self.ray["em_secondO"][-1][-1].append(Ray_file.T[8])
-                            self.ray["abO"][-1][-1].append(Ray_file.T[9])
-                            self.ray["ab_secondO"][-1][-1].append(Ray_file.T[10])
-                            self.ray["TO"][-1][-1].append(Ray_file.T[11])
-                            self.ray["T_secondO"][-1][-1].append(Ray_file.T[12])
-                            self.ray["TeO"][-1][-1].append(Ray_file.T[7])
-                            self.ray["HO"][-1][-1].append(Ray_file.T[8])
-                            self.ray["NO"][-1][-1].append(Ray_file.T[9])
-                            self.ray["NcO"][-1][-1].append(Ray_file.T[10])
-                            self.ray["thetaO"][-1][-1].append(Ray_file.T[11])
-                            itime = np.argmin(np.abs(self.Scenario.plasma_dict["time"] - time))
-                            omega = 2.0 * np.pi * self.Scenario.ray_launch[itime]["f"][i]
-                            self.ray["YO"][-1][-1].append(cnst.e * np.sqrt(Bx**2 + By**2 + Bz**2) / \
-                                                          (cnst.m_e * omega))
-                            if(self.Scenario.profile_dimension == 1):
-                                ne_spl = InterpolatedUnivariateSpline(self.Scenario.plasma_dict[self.Scenario.plasma_dict["prof_reference"]][itime], \
-                                                                      np.log(self.Scenario.plasma_dict["ne"][itime]), ext=3)
-                                self.ray["XO"][-1][-1].append(cnst.e**2 * np.exp(ne_spl(self.ray["rhopO"][-1][-1][-1]))/ \
-                                                              (cnst.m_e * cnst.epsilon_0 * omega**2))
-                                self.ray["neO"][-1][-1].append(np.exp(ne_spl(self.ray["rhopO"][-1][-1][-1])))
-                            else:
-                                ne_spl = RectBivariateSpline(self.Scenario.plasma_dict["eq_data"][itime].R, \
-                                                             self.Scenario.plasma_dict["eq_data"][itime].R, \
-                                                             np.log(self.Scenario.plasma_dict["ne"][itime]), ext=3)
-                                R_ray = self.ray["R"][-1][-1][-1]
-                                z_ray = self.ray["z"][-1][-1][-1]
-                                R_ray[np.logical_or(R_ray > np.max(self.Scenario.plasma_dict["eq_data"][itime].R), \
-                                                    R_ray < np.min(self.Scenario.plasma_dict["eq_data"][itime].R) )] = \
-                                     np.max(self.Scenario.plasma_dict["eq_data"][itime].R)
-                                z_ray[np.logical_or(z_ray > np.max(self.Scenario.plasma_dict["eq_data"][itime].z), \
-                                                    z_ray < np.min(self.Scenario.plasma_dict["eq_data"][itime].z) )] = \
-                                     np.max(self.Scenario.plasma_dict["eq_data"][itime].z)
-                                self.ray["XO"][-1][-1].append(cnst.e**2 * np.exp(ne_spl(R_ray, z_ray, grid=False))/ \
-                                                              (cnst.m_e * cnst.epsilon_0 * omega**2))
-                                self.ray["XO"][-1][-1][-1][np.logical_or(R_ray >= np.max(self.Scenario.plasma_dict["eq_data"][itime].R), \
-                                                                         z_ray >= np.max(self.Scenario.plasma_dict["eq_data"][itime].z) )] = 0.0
-                else:
-                    try:
-                        Ray_file = np.loadtxt(os.path.join(Ich_folder, "BPD_ray{0:03d}ch{1:03d}_O.dat".format(1, i + 1)))
-                    except IOError:
-                        raise IndexError("Failed to load Ray")
-                    if(len(Ray_file) > 0):
-                        self.ray["sO"][-1].append(Ray_file.T[0])
-                        self.ray["xO"][-1].append(Ray_file.T[1])
-                        self.ray["yO"][-1].append(Ray_file.T[2])
-                        self.ray["zO"][-1].append(Ray_file.T[3])
-                        self.ray["rhopO"][-1].append(Ray_file.T[4])
-                        self.ray["BPDO"][-1].append(Ray_file.T[5])
-                        self.ray["BPD_secondO"][-1].append(Ray_file.T[6])
-                        self.ray["emO"][-1].append(Ray_file.T[7])
-                        self.ray["em_secondO"][-1].append(Ray_file.T[8])
-                        self.ray["abO"][-1].append(Ray_file.T[9])
-                        self.ray["ab_secondO"][-1].append(Ray_file.T[10])
-                        self.ray["TO"][-1].append(Ray_file.T[11])
-                        self.ray["T_secondO"][-1].append(Ray_file.T[12])
-                        self.ray["TeO"][-1].append(Ray_file.T[13])
-                        self.ray["HO"][-1].append(Ray_file.T[14])
-                        self.ray["NO"][-1].append(Ray_file.T[15])
-                        self.ray["NcO"][-1].append(Ray_file.T[16])
-                        self.ray["thetaO"][-1].append(Ray_file.T[17])
-                        itime = np.argmin(np.abs(self.Scenario.plasma_dict["time"] - time))
-                        omega = 2.0 * np.pi * self.Scenario.ray_launch[itime]["f"][i]
-                        self.ray["YO"][-1].append(cnst.e * np.sqrt(Bx**2 + By**2 + Bz**2) / \
-                                                      (cnst.m_e * omega))
-                        if(self.Scenario.profile_dimension == 1):
-                            ne_spl = InterpolatedUnivariateSpline(self.Scenario.plasma_dict[self.Scenario.plasma_dict["prof_reference"]][itime], \
-                                                                  np.log(self.Scenario.plasma_dict["ne"][itime]), ext=1)
-                            self.ray["XO"][-1].append(cnst.e**2 * np.exp(ne_spl(self.ray["rhopO"][-1][-1]))/ \
-                                                          (cnst.m_e * cnst.epsilon_0* omega**2))
-                            self.ray["neO"][-1].append(np.exp(ne_spl(self.ray["rhopO"][-1][-1])))
-                        elif(self.Scenario.profile_dimension == 3):
-                            ne_spl = RectBivariateSpline(self.Scenario.plasma_dict["eq_data"][itime].R, \
-                                                         self.Scenario.plasma_dict["eq_data"][itime].z, \
-                                                         np.log(self.Scenario.plasma_dict["ne"][itime]))
-                            R_ray = self.ray["R"][-1][-1]
-                            z_ray = self.ray["z"][-1][-1]
-                            R_ray[np.logical_or(R_ray > np.max(self.Scenario.plasma_dict["eq_data"][itime].R), \
-                                                R_ray < np.min(self.Scenario.plasma_dict["eq_data"][itime].R) )] = \
-                                 np.max(self.Scenario.plasma_dict["eq_data"][itime].R)
-                            z_ray[np.logical_or(z_ray > np.max(self.Scenario.plasma_dict["eq_data"][itime].z), \
-                                                z_ray < np.min(self.Scenario.plasma_dict["eq_data"][itime].z) )] = \
-                                 np.max(self.Scenario.plasma_dict["eq_data"][itime].z)
-                            self.ray["XX"][-1].append(cnst.e**2 * np.exp(ne_spl(R_ray, z_ray, grid=False))/ \
+                            self.ray["Y" + mode][-1].append(cnst.e * np.sqrt(self.ray["Bx" + mode][-1][-1]**2 + \
+                                                                                     self.ray["By" + mode][-1][-1]**2 + \
+                                                                                     self.ray["Bz" + mode][-1][-1]**2) / \
+                                                                                     (cnst.m_e * omega))
+                            self.ray["X" + mode][-1].append(cnst.e**2 * self.ray["ne" + mode][-1][-1] / \
                                                           (cnst.m_e * cnst.epsilon_0 * omega**2))
-                            self.ray["XX"][-1][-1][np.logical_or(R_ray >= np.max(self.Scenario.plasma_dict["eq_data"][itime].R), \
-                                                                     z_ray >= np.max(self.Scenario.plasma_dict["eq_data"][itime].z) )] = 0.0
-                        else:
-                            print("Three dimensional profiles not supported for Stix parameters X and Y")
-                            break
         self.weights["ray"].append(np.loadtxt(os.path.join(self.Config.scratch_dir, "ECRad_data", "ray_weights.dat"), ndmin=2))
         self.weights["freq"].append(np.loadtxt(os.path.join(self.Config.scratch_dir, "ECRad_data", "freq_weights.dat"), ndmin=2))
         self.resonance["s_cold"].append(sres_file.T[0])
@@ -563,7 +390,6 @@ class ECRadResults:
         except IOError as e:
             print(e)
             print("Error: " + filename + " does not exist")
-            return False
         # Loading from .mat sometimes adds single entry arrays that we don't want
         at_least_1d_keys = ["calib_diags", "time"]
         at_least_2d_keys = ["Trad", "Trad_comp", "tau", "tau_comp", \
@@ -757,98 +583,57 @@ class ECRadResults:
 #            self.los["rhopX"] = mdict["LOS-rhopX"]
 #            self.los["TeX"] = mdict["LOS-TeX"]
             try:
-                self.ray["sX"] = mdict["sX"]
-                self.ray["xX"] = mdict["xX"]
-                self.ray["yX"] = mdict["yX"]
-                self.ray["zX"] = mdict["zX"]
-                self.ray["HX"] = mdict["HX"]
-                self.ray["NX"] = mdict["NX"]
-                self.ray["NcX"] = mdict["NcX"]
-                try:
-                    self.ray["rhopX"] = mdict["rhopX"]
-                    self.ray["TeX"] = mdict["TeX"]
-                    self.ray["BPDX"] = mdict["ray_BPDX"]
-                    self.ray["BPD_secondX"] = mdict["ray_BPD_secondX"]
-                except KeyError:
-                    print("Warning! Some BPD Ray information mssing in loaded .mat file. Is this an old file?")
-                try:
-                    self.ray["XX"] = mdict["XX"]
-                    self.ray["YX"] = mdict["YX"]
-                except KeyError:
-                    print("Warning! Some BPD Ray information mssing in loaded .mat file. Is this an old file?")
-                try:
-                    self.ray["neX"] = mdict["neX"]
-                except KeyError:
-                    print("Warning! Some BPD Ray information mssing in loaded .mat file. Is this an old file?")
-                try:
-                    self.ray["emX"] = mdict["ray_emX"]
-                    self.ray["em_secondX"] = mdict["ray_em_secondX"]
-                    self.ray["abX"] = mdict["ray_abX"]
-                    self.ray["ab_secondX"] = mdict["ray_ab_secondX"]
-                    self.ray["TX"] = mdict["ray_TX"]
-                    self.ray["T_secondX"] = mdict["ray_T_secondX"]
-                    self.ray["TeX"] = mdict["TeX"]
-                except KeyError:
-                    print("Warning! Some BPD Ray information mssing in loaded .mat file. Is this an old file?")
+                for mode in self.modes:
+                    self.ray["s" + mode] = mdict["s" + mode]
+                    self.ray["x" + mode] = mdict["x" + mode]
+                    self.ray["y" + mode] = mdict["y" + mode]
+                    self.ray["z" + mode] = mdict["z" + mode]
+                    self.ray["H" + mode] = mdict["H" + mode]
+                    self.ray["N" + mode] = mdict["N" + mode]
+                    self.ray["Nc" + mode] = mdict["Nc" + mode]
+                    try:
+                        self.ray["rhop" + mode] = mdict["rhop" + mode]
+                        self.ray["Te" + mode] = mdict["Te" + mode]
+                        self.ray["BPD" + mode] = mdict["ray_BPD" + mode]
+                        self.ray["BPD_second" + mode] = mdict["ray_BPD_second" + mode]
+                    except KeyError:
+                        print("Warning! Some BPD Ray information mssing in loaded .mat file. Is this an old file?")
+                    try:
+                        self.ray["X" + mode] = mdict["X" + mode]
+                        self.ray["Y" + mode] = mdict["Y" + mode]
+                    except KeyError:
+                        print("Warning! Some BPD Ray information mssing in loaded .mat file. Is this an old file?")
+                    try:
+                        self.ray["ne" + mode] = mdict["ne" + mode]
+                    except KeyError:
+                        print("Warning! Some BPD Ray information mssing in loaded .mat file. Is this an old file?")
+                    try:
+                        self.ray["em" + mode] = mdict["ray_em" + mode]
+                        self.ray["em_second" + mode] = mdict["ray_em_second" + mode]
+                        self.ray["ab" + mode] = mdict["ray_ab" + mode]
+                        self.ray["ab_second" + mode] = mdict["ray_ab_second" + mode]
+                        self.ray["T" + mode] = mdict["ray_T" + mode]
+                        self.ray["T_second" + mode] = mdict["ray_T_second" + mode]
+                        self.ray["Te" + mode] = mdict["Te" + mode]
+                    except KeyError:
+                        print("Warning! Some BPD Ray information mssing in loaded .mat file. Is this an old file?")
+                    try:
+                        self.ray["theta" + mode] = mdict["theta" + mode]
+                    except KeyError:
+                        print("Warning! theta not found in loaded .mat file. Is this an old file?")
+                    try:
+                        self.ray["ne" + mode] = mdict["ne" + mode]
+                        self.ray["Nx" + mode] = mdict["Nx" + mode]
+                        self.ray["Ny" + mode] = mdict["Ny" + mode]
+                        self.ray["Nz" + mode] = mdict["Nz" + mode]
+                        self.ray["Bx" + mode] = mdict["Bx" + mode]
+                        self.ray["By" + mode] = mdict["By" + mode]
+                        self.ray["Bz" + mode] = mdict["Bz" + mode]
+                        self.ray["v_g_perp" + mode] = mdict["v_g_perp" + mode]
+                    except KeyError:
+                        print("Warning! v_g_perp not found in loaded .mat file. Is this an old file?")
             except KeyError:
                 print("Warning! No Ray information in loaded .mat file. Is this an old file?")
-            try:
-                self.ray["thetaX"] = mdict["thetaX"]
-            except KeyError:
-                print("Warning! theta not found in loaded .mat file. Is this an old file?")
-        if("O" in self.modes):
-            try:
-                self.BPD["BPDO"] = mdict["BPDO"]
-            except KeyError:
-                self.BPD["BPDO"] = mdict["BDP_O"]
-            try:
-                self.BPD["BPD_secondO"] = mdict["BPD_secondO"]
-            except KeyError:
-                self.BPD["BPD_secondO"] = mdict["BPD_O_comp"]
-            try:
-                self.BPD["rhopO"] = mdict["BPDrhopO"]
-            except KeyError:
-                self.BPD["rhopO"] = mdict["LOS-rhopO"]
-#            self.los["sO"] = mdict["LOS-sO"]
-#            self.los["RO"] = mdict["LOS-RO"]
-#            self.los["zO"] = mdict["LOS-zO"]
-#            self.los["rhopO"] = mdict["LOS-rhopO"]
-#            self.los["TeO"] = mdict["LOS-TeO"]
-            try:
-                self.ray["sO"] = mdict["sO"]
-                self.ray["xO"] = mdict["xO"]
-                self.ray["yO"] = mdict["yO"]
-                self.ray["zO"] = mdict["zO"]
-                self.ray["HO"] = mdict["HO"]
-                self.ray["NO"] = mdict["NO"]
-                self.ray["NcO"] = mdict["NcO"]
-                try:
-                    self.ray["rhopO"] = mdict["rhopO"]
-                    self.ray["TeO"] = mdict["TeO"]
-                    self.ray["BPDO"] = mdict["ray_BPDO"]
-                    self.ray["BPD_secondO"] = mdict["ray_BPD_secondO"]
-                except KeyError:
-                    print("Warning! Some BPD Ray information mssing in loaded .mat file. Is this an old file?")
-                try:
-                    self.ray["XO"] = mdict["XO"]
-                    self.ray["YO"] = mdict["YO"]
-                except KeyError:
-                    print("Warning! Some BPD Ray information mssing in loaded .mat file. Is this an old file?")
-                try:
-                    self.ray["emO"] = mdict["ray_emO"]
-                    self.ray["em_secondO"] = mdict["ray_em_secondO"]
-                    self.ray["abO"] = mdict["ray_abO"]
-                    self.ray["ab_secondO"] = mdict["ray_ab_secondO"]
-                    self.ray["TO"] = mdict["ray_TO"]
-                    self.ray["T_secondO"] = mdict["ray_T_secondO"]
-                except KeyError:
-                    print("Warning! Some BPD Ray information mssing in loaded .mat file. Is this an old file?")
-            except KeyError:
-                print("Warning! No Ray information in loaded .mat file. Is this an old file?")
-            try:
-                self.ray["thetaO"] = mdict["thetaO"]
-            except KeyError:
-                print("Warning! theta not found in loaded .mat file. Is this an old file?")
         self.init = True
         return True
 
@@ -916,65 +701,39 @@ class ECRadResults:
             mdict["R_warm_secondary"] = self.resonance["R_warm_secondary"]
             mdict["z_warm_secondary"] = self.resonance["z_warm_secondary"]
             mdict["rhop_warm_secondary"] = self.resonance["rhop_warm_secondary"]
-        if("X" in self.modes and self.Config.extra_output):
-            mdict["BPDX"] = self.BPD["BPDX"]
-            mdict["BPD_secondX"] = self.BPD["BPD_secondX"]
-            mdict["BPDrhopX"] = self.BPD["rhopX"]
-#            mdict["LOS-sX"] = self.los["sX"]
-#            # print(mdict["LOS-sX"])
-#            mdict["LOS-RX"] = self.los["RX"]
-#            mdict["LOS-zX"] = self.los["zX"]
-#            mdict["LOS-rhopX"] = self.los["rhopX"]
-#            mdict["LOS-TeX"] = self.los["TeX"]
-            mdict["sX"] = self.ray["sX"]
-            mdict["xX"] = self.ray["xX"]
-            mdict["yX"] = self.ray["yX"]
-            mdict["zX"] = self.ray["zX"]
-            mdict["rhopX"] = self.ray["rhopX"]
-            mdict["HX"] = self.ray["HX"]
-            mdict["NX"] = self.ray["NX"]
-            mdict["NcX"] = self.ray["NcX"]
-            mdict["thetaX"] = self.ray["thetaX"]
-            mdict["XX"] = self.ray["XX"]
-            mdict["YX"] = self.ray["YX"]
-            mdict["TeX"] = self.ray["TeX"]
-            mdict["ray_BPDX"] = self.ray["BPDX"]
-            mdict["ray_BPD_secondX"] = self.ray["BPD_secondX"]
-            mdict["ray_emX"] = self.ray["emX"]
-            mdict["ray_em_secondX"] = self.ray["em_secondX"]
-            mdict["ray_abX"] = self.ray["abX"]
-            mdict["ray_ab_secondX"] = self.ray["ab_secondX"]
-            mdict["ray_TX"] = self.ray["TX"]
-            mdict["ray_T_secondX"] = self.ray["T_secondX"]
-        if("O" in self.modes and self.Config.extra_output):
-            mdict["BPDO"] = self.BPD["BPDO"]
-            mdict["BPD_secondO"] = self.BPD["BPD_secondO"]
-            mdict["BPDrhopO"] = self.BPD["rhopO"]
-#            mdict["LOS-sO"] = self.los["sO"]
-#            mdict["LOS-RO"] = self.los["RO"]
-#            mdict["LOS-zO"] = self.los["zX"]
-#            mdict["LOS-rhopO"] = self.los["rhopO"]
-#            mdict["LOS-TeO"] = self.los["TeO"]
-            mdict["sO"] = self.ray["sO"]
-            mdict["xO"] = self.ray["xO"]
-            mdict["yO"] = self.ray["yO"]
-            mdict["zO"] = self.ray["zO"]
-            mdict["rhopO"] = self.ray["rhopO"]
-            mdict["HO"] = self.ray["HO"]
-            mdict["NO"] = self.ray["NO"]
-            mdict["NcO"] = self.ray["NcO"]
-            mdict["thetaO"] = self.ray["thetaO"]
-            mdict["XO"] = self.ray["XO"]
-            mdict["YO"] = self.ray["YO"]
-            mdict["TeO"] = self.ray["TeO"]
-            mdict["ray_BPDO"] = self.ray["BPDO"]
-            mdict["ray_BPD_secondO"] = self.ray["BPD_secondO"]
-            mdict["ray_emO"] = self.ray["emO"]
-            mdict["ray_em_secondO"] = self.ray["em_secondO"]
-            mdict["ray_abO"] = self.ray["abO"]
-            mdict["ray_ab_secondO"] = self.ray["ab_secondO"]
-            mdict["ray_TO"] = self.ray["TO"]
-            mdict["ray_T_secondO"] = self.ray["T_secondO"]
+        if(self.Config.extra_output):
+            for mode in self.modes:
+                mdict["BPD" + mode] = self.BPD["BPD" + mode]
+                mdict["BPD_second" + mode] = self.BPD["BPD_second" + mode]
+                mdict["BPDrhop" + mode] = self.BPD["rhop" + mode]
+                mdict["s" + mode] = self.ray["s" + mode]
+                mdict["x" + mode] = self.ray["x" + mode]
+                mdict["y" + mode] = self.ray["y" + mode]
+                mdict["z" + mode] = self.ray["z" + mode]
+                mdict["Nx" + mode] = self.ray["Nx" + mode]
+                mdict["Ny" + mode] = self.ray["Ny" + mode]
+                mdict["Nz" + mode] = self.ray["Nz" + mode]
+                mdict["Bx" + mode] = self.ray["Bx" + mode]
+                mdict["By" + mode] = self.ray["By" + mode]
+                mdict["Bz" + mode] = self.ray["Bz" + mode]
+                mdict["rhop" + mode] = self.ray["rhop" + mode]
+                mdict["H" + mode] = self.ray["H" + mode]
+                mdict["N" + mode] = self.ray["N" + mode]
+                mdict["Nc" + mode] = self.ray["Nc" + mode]
+                mdict["theta" + mode] = self.ray["theta" + mode]
+                mdict["v_g_perp" + mode] = self.ray["v_g_perp" + mode]
+                mdict["X" + mode] = self.ray["X" + mode]
+                mdict["Y" + mode] = self.ray["Y" + mode]
+                mdict["Te" + mode] = self.ray["Te" + mode]
+                mdict["ne" + mode] = self.ray["ne" + mode]
+                mdict["ray_BPD" + mode] = self.ray["BPD" + mode]
+                mdict["ray_BPD_second" + mode] = self.ray["BPD_second" + mode]
+                mdict["ray_em" + mode] = self.ray["em" + mode]
+                mdict["ray_em_second" + mode] = self.ray["em_second" + mode]
+                mdict["ray_ab" + mode] = self.ray["ab" + mode]
+                mdict["ray_ab_second" + mode] = self.ray["ab_second" + mode]
+                mdict["ray_T" + mode] = self.ray["T" + mode]
+                mdict["ray_T_second" + mode] = self.ray["T_second" + mode]
         if(len(self.calib) > 0):
             mdict["calib"] = []
             mdict["calib_mat"] = []

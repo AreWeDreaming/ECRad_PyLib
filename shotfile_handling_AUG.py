@@ -19,9 +19,15 @@ from plotting_configuration import *
 from Diags import Diag
 from shutil import copyfile
 from data_processing import remove_mode
+
 AUG_profile_diags = ["IDA", "RMD", "CEC", "VTA", "CEZ", "COZ", "CUZ"]
 
-
+def get_HEP_ne(shot, exp="AUGD", ed=0):
+    sf = dd.shotfile(diagnostic="HEP", pulseNumber=shot, experiment=exp,edition=ed)
+    ne = sf.getSignalGroup("ne", dtype=np.double)
+    time = sf.getTimeBase("ne", dtype=np.double).data
+    rho_pol = sf.getAreaBase("ne", dtype=np.double).data
+    return time, rho_pol, ne
 
 def shotfile_exists(shot, diag):
     if(hasattr(diag, "diag")):
@@ -1835,7 +1841,8 @@ def compare_IDE_to_MBI(shot):
 if(__name__ == '__main__'):
 #     make_plasma_mat_for_testing("/tokp/work/sdenk/ECRad/32934.mat", 32934, [3.298], "AUGD", "EQH", 0, \
 #                                 bt_vac_correction=1.005, IDA_exp="AUGD", IDA_ed=0)
-    print(get_RELAX_target_current(35662, 6.12, exp="AUGD", ed=0, smoothing=2.e-2))
+#     print(get_RELAX_target_current(35662, 6.12, exp="AUGD", ed=0, smoothing=2.e-2))
+    print(get_Vloop(35662, 3.84))
 #     compare_IDE_to_MBI(35662)
 #    pass
 #     print(get_RELAX_target_current(33697, 4.8, exp="AUGD", ed=0, smoothing=1.e-3))

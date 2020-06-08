@@ -14,6 +14,7 @@ from scipy.interpolate import RectBivariateSpline, InterpolatedUnivariateSpline
 from equilibrium_utils import EQDataExt, EQDataSlice, eval_spline, special_points
 from Geometry_utils import get_contour, get_Surface_area_of_torus, get_arclength, get_av_radius
 from scipy import __version__ as scivers
+from scipy import constants as cnst
 from get_ECRH_config import get_ECRH_viewing_angles
 import scipy.optimize as scopt
 from map_equ import equ_map
@@ -226,6 +227,74 @@ class EQData(EQDataExt):
         B_sign = np.sign(np.mean(EQSlice.Bt))
         EQSlice.inject_ripple(aug_bt_ripple(R, B_axis * B_sign))
         return EQSlice
+    
+    def make_E_Fit_EQDSK(self, working_dir, time, I_p):
+        EQDSK_file = open(os.path.join(working_dir, "g{0:d}_{1:05d}".format(self.shot, int(time*1.e3))), "w")
+        dummy = 0.0
+        EQ_t = self.GetSlice(time)
+        today = datetime.date.today()
+        # First line
+        EQDSK_file.write("{0:50s}".format("EFIT " + str(today.month) + "/" + str(today.day) + "/" + str(today.year) + " #" + str(shot) + \
+                                               " " + str(int(time*1.e3)) + "ms"))
+        # Second line
+        EQDSK_file.write("{0: 2d}{1: 4d}{2: 4d}\n".format(self.EQ_ed, len(EQ_t.R), len(EQ_t.z)))
+        # Third line
+        EQDSK_file.write("{0: 1.9e}{1: 1.9e}{2: 1.9e}{3: 1.9e}{4: 1.9e}\n".format(EQ_t.R[-1] - EQ_t.R[0], EQ_t.z[-1] - EQ_t.z[0], \
+                                                                                      1.65, EQ_t.R[0], np.mean(EQ_t.z)))
+        B_axis = np.double(self.get_B_on_axis(time)) * np.sign(np.mean(EQ_t.Bt.flatten()))
+        # Fourth line
+        EQDSK_file.write("{0: 1.9e}{1: 1.9e}{2: 1.9e}{3: 1.9e}{4: 1.9e}\n".format(EQ_t.R_ax, EQ_t.z_ax, \
+                                                                                      EQ_t.Psi_ax, EQ_t.Psi_sep, np.double(B_axis)))
+        
+        # Fifth line
+        EQDSK_file.write("{0: 1.9e}{1: 1.9e}{2: 1.9e}{3: 1.9e}{4: 1.9e}\n".format(I_p, EQ_t.Psi_ax, 0.0, EQ_t.R_ax, 0.0))
+        # Sixth line
+        EQDSK_file.write("{0: 1.9e}{1: 1.9e}{2: 1.9e}{3: 1.9e}{4: 1.9e}\n".format(EQ_t.z_ax, 0.0, EQ_t.Psi_sep, 0.0, 0.0))
+        N = len(EQ_t.R)
+        Psi = np.linspace(EQ_t.Psi_ax, EQ_t.Psi_sep, N)
+        rhop = np.sqrt((Psi - EQ_t.Psi_ax)/(EQ_t.Psi_sep - EQ_t.Psi_ax))
+        quant_dict = {}
+        quant_dict["q"] = self.getQuantity(rhop, "Qpsi", time)
+        quant_dict["pres"] = self.getQuantity(rhop, "Pres", time)
+        quant_dict["pprime"] = self.getQuantity(rhop, "dPres", time)
+        quant_dict["ffprime"] = self.getQuantity(rhop, "FFP", time)
+        ffp_spl = InterpolatedUnivariateSpline(rhop, quant_dict["ffprime"] )
+        f_sq_spl = ffp_spl.antiderivative(1)
+        f_spl = InterpolatedUnivariateSpline(rhop, np.sign(B_axis) * \
+                                             (np.sqrt(2.0 * f_sq_spl(rhop) +  \
+                                                      (EQ_t.R_ax * B_axis)**2)))
+        # Get the correct sign back since it is not included in ffprime
+        quant_dict["fdia"] = f_spl(rhop)
+        N_max = 5
+        format_str = " {0: 1.9e}"
+        for key in ["fdia", "pres", "ffprime", "pprime"]:
+            i = 0
+            while i < N:
+                EQDSK_file.write(format_str.format(quant_dict[key][i]))
+                i += 1
+                if(i %  N_max == 0):
+                    EQDSK_file.write("\n")
+        if(i % N_max != 0):
+            EQDSK_file.write("\n")
+        N_new = 0
+        for i in range(len(EQ_t.R)):
+            for j in range(len(EQ_t.z)):
+                EQDSK_file.write(format_str.format(EQ_t.Psi[i,j]))
+                N_new += 1
+                if(N_new == N_max):
+                    EQDSK_file.write("\n")
+                    N_new = 0
+        if(N_new != 0):
+            EQDSK_file.write("\n")
+        for key in ["q"]:
+            i = 0
+            while i < N:
+                EQDSK_file.write(format_str.format(quant_dict[key][i]))
+                i += 1
+                if(i %  N_max == 0):
+                    EQDSK_file.write("\n")
+        EQDSK_file.flush()
+        EQDSK_file.close()
 
 class aug_bt_ripple:
     def __init__(self, R0, Btf0):
@@ -256,17 +325,44 @@ class aug_bt_ripple:
                       self.K1 * R_vec[2] ** 2)) * R_vec[2] * np.sin(psi)
 
         return B_ripple
+    
+def compare_f_dia(shot, time, EQ_exp, EQ_diag, EQ_ed):
+    from plotting_configuration import plt
+    EQObj = EQData(shot, EQ_exp=EQ_exp, EQ_diag=EQ_diag, EQ_ed=EQ_ed)
+    EQ_t = EQObj.GetSlice(time)
+    rho = np.linspace(0.0, 1.0, 100)
+    ffp = EQObj.getQuantity(rho, "FFP", time)
+    ffp_spl = InterpolatedUnivariateSpline(rho, ffp)
+    f_sq_spl = ffp_spl.antiderivative(1)
+    magn_field_axis = EQObj.MBI_shot.getSignal("BTFABB", \
+                                              tBegin=time - 5.e-5, tEnd=time + 5.e-5)
+    f_spl = InterpolatedUnivariateSpline(rho, np.sign(magn_field_axis) * \
+                                                               (np.sqrt(2.0 * f_sq_spl(rho) + \
+                                                                        (EQ_t.R_ax * magn_field_axis)**2)))
+    psi_prof = EQObj.rhop_to_Psi(time, rho)
+    plt.plot(psi_prof, f_spl(rho))
+    gpol = EQObj.getQuantity(rho, "Jpol", time) * cnst.mu_0 / 2.0 / np.pi
+    plt.plot(psi_prof, gpol, "--")
+    plt.show()
+        
 
 if(__name__ == "__main__"):
-    from plotting_configuration import *
-    EQ_obj = EQData(33697)
-    time = 4.80
-    rhop = np.linspace(0.025, 0.99, 10)
-    EQSlice = EQ_obj.GetSlice(time)
-    plt.contour(EQSlice.R, EQSlice.z, EQSlice.rhop.T, levels=rhop)
-#    print("R_aus", "z_aus", EQ_obj.get_R_aus(time, rhop))
-#    EQ_obj = EQData(33697, EQ_diag="IDE")
-#    R_av = EQ_obj.get_mean_r(time, [0.08])
-#    plt.figure()
-#    plt.plot(rhop, R_av)
-    plt.show()
+#     compare_f_dia(35662, 3.84, EQ_exp="AUGD", EQ_diag="IDE", EQ_ed=2)
+#     from plotting_configuration import *
+    EQ_obj = EQData(35662, EQ_diag="IDE")
+    EQSlice = EQ_obj.GetSlice(3.84)
+    np.savetxt(os.path.join(os.path.expanduser("~"), "Documentation", "Data", "35662_R.dat"), EQSlice.R)
+    np.savetxt(os.path.join(os.path.expanduser("~"), "Documentation", "Data", "35662_z.dat"), EQSlice.z)
+    np.savetxt(os.path.join(os.path.expanduser("~"), "Documentation", "Data", "35662_Br.dat"), EQSlice.Br)
+    np.savetxt(os.path.join(os.path.expanduser("~"), "Documentation", "Data", "35662_Bt.dat"), EQSlice.Bt)
+    np.savetxt(os.path.join(os.path.expanduser("~"), "Documentation", "Data", "35662_Bz.dat"), EQSlice.Bz)
+#     time = 4.80
+#     rhop = np.linspace(0.025, 0.99, 10)
+#     EQSlice = EQ_obj.GetSlice(time)
+#     plt.contour(EQSlice.R, EQSlice.z, EQSlice.rhop.T, levels=rhop)
+# #    print("R_aus", "z_aus", EQ_obj.get_R_aus(time, rhop))
+# #    EQ_obj = EQData(33697, EQ_diag="IDE")
+# #    R_av = EQ_obj.get_mean_r(time, [0.08])
+# #    plt.figure()
+# #    plt.plot(rhop, R_av)
+#     plt.show()
