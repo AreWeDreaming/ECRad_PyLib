@@ -130,6 +130,160 @@ def check_neighbor(x1_cp, y1_cp, x2_cp, y2_cp, x, y, z):
         add_point = False
     return add_point
 
+class Contouring():
+    def __init__(self, x, y, Z):
+        if(np.any(np.array(Z.shape) < 4)):
+            raise ValueError("Need more than 4 entries to find contours")
+        self.nx = len(x)
+        self.ny = len(y)
+        if(Z.shape != (self.nx,self.ny)):
+            raise ValueError("x, y improperly shaped")
+        self.x = x
+        self.y = y
+        self.Z = Z
+        
+    def find_contours(self, h):
+        # Contour for single level
+        # Sign changes of Z-h are recoreded in pen_points
+        # The recorded points are always above or left the penetration point
+        # Negative indices indicate a horizontal sign change
+        self.pen_points = []
+        #horizontal
+        for i in range(0, self.nx-1):
+            for j in range(0, self.ny):
+                if((self.Z[i,j] -h) * (self.Z[i + 1,j] - h) < 0.0):
+                    self.pen_points.append(-np.array([i,j]))
+        # Edge
+        for i in range(self.nx-1, self.nx):
+            for j in range(0, self.ny):
+                if((self.Z[i,j] -h) * (self.Z[i - 1,j] - h) < 0.0):
+                    if(np.all(np.sum(np.abs(self.pen_points - (-np.array([i - 1,j]))),axis=1) > 0)):
+                        self.pen_points.append(-np.array([i - 1,j]))
+        #Vertical
+        for i in range(0, self.nx):
+            for j in range(0, self.ny-1):
+                if((self.Z[i,j] - h) * (self.Z[i,j + 1] - h) < 0.0):
+                    self.pen_points.append(np.array([i,j]))
+        #Edge
+        for i in range(0, self.nx):
+            for j in range(self.ny-1, self.ny):
+                if((self.Z[i,j] - h) * (self.Z[i,j - 1] - h) < 0.0):
+                    if(np.all(np.sum(np.abs(self.pen_points - (-np.array([i,j-1]))),axis=1) > 0)):
+                        self.pen_points.append(np.array([i,j-1]))
+        if(len(self.pen_points) == 0):
+            self.contours_found = False
+            return
+        self.contours_found = True
+        self.finished_points = []
+        self.contour_lines = [[]]
+        self.contour_indices = [[]]
+        self.contour_closed = []
+        next_point = self.pen_points[0]
+        Z_spl = RectBivariateSpline(self.x, self.y, self.Z - h)
+        N_int = 10
+        x_int = np.zeros(N_int)
+        y_int = np.zeros(N_int)
+        # Open contourlines are reversed to avoid bad starting points
+        reversed = False
+        # Assemble contours
+        while True:
+            if(len(self.pen_points) == len(self.finished_points)):
+                break
+            if(np.any(next_point < 0)):
+                # Horiontal penetration point
+                x_int[:] = np.linspace(self.x[-next_point[0]], self.x[-next_point[0] + 1], N_int)
+                y_int[:] = self.y[-next_point[1]]
+                Z_int = Z_spl(x_int, y_int, grid=False)
+                root_spl = InterpolatedUnivariateSpline(x_int, Z_int)
+                roots = root_spl.roots()
+                if(len(roots) != 1):
+                    plt.contour(self.x, self.y, self.Z.T - h, levels=[0.0])
+                    plt.vlines(self.x, np.min(self.y), np.max(self.y))
+                    plt.hlines(self.y, np.min(self.x), np.max(self.x))
+                    plt.plot(x_int, y_int, "r--")
+                    plt.show()
+                    raise ValueError("Found either no or multiple roots")
+                self.contour_lines[-1].append([roots.item(), y_int[0]])
+            else:
+                # Horiontal penetration point
+                x_int[:] = self.x[next_point[0]]
+                y_int[:] = np.linspace(self.y[next_point[1]], self.y[next_point[1] + 1], N_int)
+                Z_int = Z_spl(x_int, y_int, grid=False)
+                root_spl = InterpolatedUnivariateSpline(y_int, Z_int)
+                roots = root_spl.roots()
+                if(len(roots) != 1):
+                    plt.contour(self.x, self.y, self.Z.T - h, levels=[0.0])
+                    plt.vlines(self.x, np.min(self.y), np.max(self.y))
+                    plt.hlines(self.y, np.min(self.x), np.max(self.x))
+                    plt.plot(x_int, y_int, "r--")
+                    plt.show()
+                    raise ValueError("Found either no or multiple roots")
+                self.contour_lines[-1].append([x_int[0], roots.item()])
+            self.contour_indices[-1].append(next_point)
+            self.finished_points.append(next_point)
+            # Find the next point
+            found_next, isclosed, next_point = self._find_next(next_point)
+            if(not found_next):
+                self.contour_closed.append(isclosed)
+                if(isclosed):
+                    # Close the contour
+                    self.contour_lines[-1].append(self.contour_lines[-1][0])
+                elif(not reversed):
+                    self.contour_lines[-1] = self.contour_lines[-1][::-1]
+                    self.contour_indices[-1] = self.contour_indices[-1][::-1]
+                    reversed = True
+                    found_next, isclosed, next_point = self._find_next(self.contour_indices[-1][-1])
+                if(not found_next):
+                    reversed = False
+                    self.contour_lines[-1] = np.array(self.contour_lines[-1])
+                    if(len(self.finished_points) >= len(self.pen_points)):
+                        break
+                    next_point = None
+                    for candidate in self.pen_points:
+                        if(np.all(np.sum(np.abs(self.finished_points - candidate), axis=1) != 0)):
+                            next_point = candidate
+                            break
+                    if(next_point is None):
+                        print("Warning some points of the contour were apperently double booked")
+                        print("Number of points not contoured/double booked",  len(self.pen_points) - len(self.finished_points) )
+                        return
+                    else:
+                        self.contour_lines.append([])
+                            
+    def _find_next(self, point):
+        hor_index_inc = np.array([1,0])
+        ver_index_inc = np.array([0,1])
+        found_next = False
+        isclosed = False
+        next_point = None
+        if(np.any(point < 0)):
+            # Two horizontal neighbours (negative)
+            # and four vertical neighbours (positive(
+            for candidate in [point - ver_index_inc, \
+                              point + ver_index_inc , \
+                              -point, -point + hor_index_inc, \
+                              -point - ver_index_inc, \
+                              -point - ver_index_inc + hor_index_inc]:
+                if(np.any(np.sum(np.abs(self.pen_points - candidate), axis=1) == 0)):
+                    if(np.sum(np.abs(candidate - self.contour_lines[-1][0])) == 0):
+                        isclosed = True
+                    if(np.all(np.sum(np.abs(self.finished_points - candidate), axis=1) != 0)):
+                        return True, isclosed, candidate
+        else:
+            # Four horizontal neighbours (negative)
+            # and two vertical neighbours (positive(
+            for candidate in [point - hor_index_inc, \
+                              point + hor_index_inc , \
+                              -point, -point - ver_index_inc, \
+                              -point + hor_index_inc, \
+                              -point - ver_index_inc + hor_index_inc]:
+                if(np.any(np.sum(np.abs(self.pen_points - candidate), axis=1) == 0)):
+                    if(np.sum(np.abs(candidate - self.contour_lines[-1][0])) == 0):
+                        isclosed = True
+                    if(np.all(np.sum(np.abs(self.finished_points - candidate), axis=1) != 0)):
+                        return True, isclosed, candidate
+        return found_next, isclosed, next_point
+
 def get_contour(x, y, z_in, val):
     # Only works if z has exactly a single, convex, nested and closed contour
     # Easiest if we look for the zero contour
@@ -299,10 +453,23 @@ def test_wn_PnPoly():
 
 
 if(__name__ == "__main__"):
-    n_surf = np.array([-0.158822604797721, 0.976942169466021, -0.142686291297696])
-    n_surf /= np.sqrt(np.sum(n_surf ** 2))
-    vec_in = np.array([0.4, 0.2, 0.8])
-    print(Snellius_3D(vec_in, n_surf, 1.0, 0.88))
+    x = np.linspace(1.0, 2.0, 20)
+    y = np.linspace(-1.0, 1.0, 20)
+    y_mesh, x_mesh = np.meshgrid(y,x)
+    Z = np.sqrt((x_mesh - 1.5)**2 + y_mesh**2)
+    cont_maker = Contouring(x,y,Z)
+    h = 0.55
+    cont_maker.find_contours(h)
+    plt.contour(x, y, Z.T, levels=[h])
+    plt.vlines(x, np.min(y), np.max(y))
+    plt.hlines(y, np.min(x), np.max(x))
+    for cont in cont_maker.contour_lines:
+        plt.plot(cont.T[0], cont.T[1], "--")
+    plt.show()
+#     n_surf = np.array([-0.158822604797721, 0.976942169466021, -0.142686291297696])
+#     n_surf /= np.sqrt(np.sum(n_surf ** 2))
+#     vec_in = np.array([0.4, 0.2, 0.8])
+#     print(Snellius_3D(vec_in, n_surf, 1.0, 0.88))
 
 
 #    print("Norm before", np.sqrt(np.sum(vec_in ** 2)))

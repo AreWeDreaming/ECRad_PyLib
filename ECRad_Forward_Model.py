@@ -7,8 +7,9 @@ from Forward_Model import ForwardModel
 from ECRad_F2PY_Interface import ECRadF2PYInterface
 import os
 import numpy as np
+from Generic_ECE_Diag import ECEDiag
 
-class W7XECRadForwardModel(ForwardModel):
+class ECRadForwardModel(ForwardModel):
     # Provides simple python interface to run ECRad
     # For the moment ECRad is run as an application and not a library
     def __init__(self, Scenario, Config):
@@ -41,25 +42,30 @@ class W7XECRadForwardModel(ForwardModel):
     def is_ready(self):
         return self.ready
     
-    def set_static_parameters(self, time, rho, Te, ne, equilibrium, diag_configuration):
-        from Diags import EXT_diag
+    def set_static_parameters(self, time, rho, Te, ne, diag_configuration, \
+                              rho_ref = "rhop_prof", eq_slice=None, eq3D=None):
         # Here very specific types of rho Te ne, equilibrium, diag_configuration
         self.Scenario.plasma_dict = {}
         self.Scenario.plasma_dict["time"] = np.atleast_1d(time)
-        self.Scenario.plasma_dict["rhot_prof"] = np.atleast_2d(rho) #
         self.Scenario.plasma_dict["Te"] = np.atleast_2d(Te)
         self.Scenario.plasma_dict["ne"] = np.atleast_2d(ne)
-        self.Scenario.plasma_dict["prof_reference"] = "rhot_prof"
-        self.Scenario.use3Dscen = equilibrium # Has be an instance of Use3DScenario
-        ext_diag = EXT_diag("EXT")
+        self.Scenario.plasma_dict["prof_reference"] = rho_ref
+        self.Scenario.plasma_dict[self.Scenario.plasma_dict["prof_reference"]] = np.atleast_2d(rho)
+        if(eq_slice is not None):
+            self.Scenario.plasma_dict["eq_data"] = [eq_slice] # Has be an instance of EQDataSlice
+        elif(eq_slice is not None):
+            self.Scenario.use3Dscen = eq3D
+        else:
+            raise ValueError("ECRad forward model needs to be initialized with either a 2D or 3D equilibrium.")
+        ext_diag = ECEDiag("EXT")
         ext_diag.set_from_mat(diag_configuration) # Has to point to a .mat file containing an ECRad Scenario configuration
         self.Scenario.avail_diags_dict.update({"EXT":  ext_diag})
         self.Scenario.used_diags_dict.update({"EXT":  ext_diag})
         # Currently only single time point analysis supported, hence itime has to be zero
         # ECrad logs the used geometry in this folder
         # This unnecessary here, so ECRad needs to be changed to not write this file -> TODO
-        if(not os.path.isdir(os.path.join(self.Config.working_dir, "ecfm_data"))):
-            os.mkdir(os.path.join(self.Config.scratch_dir, "ecfm_data"))
+        if(not os.path.isdir(os.path.join(self.Config.working_dir, "ECRad_data"))):
+            os.mkdir(os.path.join(self.Config.scratch_dir, "ECRad_data"))
         self.ecrad_f2py_interface.set_config_and_diag(self.Config, self.Scenario, 0)
         self.rho = self.ecrad_f2py_interface.set_equilibrium(self.Scenario, 0)
         self.ready = True
@@ -124,71 +130,4 @@ class W7XECRadForwardModel(ForwardModel):
 #         return self.Results
 #     
 
-def test_ECRad_fm(working_dir, data_file, ne_prof_data, equilibrium_file, equilibrium_type, \
-                  wall_file, ecrad_config_file, ecrad_scenario_file, B_scale=1.0):
-    from Data_Set import DataSet
-    from Profile_Parametrization import UnivariateLSQSpline
-    from ECRad_Scenario import Use3DScenario
-    from plotting_configuration import plt
-    from ECRad_Results import ECRadResults
-    from scipy.interpolate import InterpolatedUnivariateSpline
-    time  = 4.45
-    ECE_data = np.loadtxt(os.path.join(working_dir,data_file), skiprows=12)
-    Result = ECRadResults()
-    ecrad_scenario_file =  os.path.join(working_dir,ecrad_scenario_file)
-    ecrad_config_file = os.path.join(working_dir,ecrad_config_file)
-    Result.from_mat_file(ecrad_scenario_file)
-    # *1.e3, because  the ECRad ascii output file is in keV but the result file used in the forward model uses eV
-    # Te only loaded for convenience here, but it is not used
-    rhot, ne, Te, Zeff = np.loadtxt(os.path.join(working_dir,ne_prof_data), skiprows=3, unpack=True)
-    Te *= 1.e3
-    Use3DScen = Use3DScenario()
-    Use3DScen.used = True
-    Use3DScen.equilibrium_file = os.path.join(working_dir,equilibrium_file)
-    Use3DScen.equilibrium_type = equilibrium_type
-    Use3DScen.vessel_filename = os.path.join(working_dir,wall_file)
-    Use3DScen.B_ref = B_scale
-    forward_model = W7XECRadForwardModel(ecrad_scenario_file, ecrad_config_file)
-    # Change some settings used keywords
-    forward_model.config_model(working_dir=working_dir, \
-                               scratch_dir = working_dir, \
-                               extra_output = False, \
-                               parallel = True, \
-                               parallel_cores = 1, \
-                               debug = False)
-    # ECRad cannot directly use the profile_parametrization
-    # Therefore, a profile is used as an intermediary
-    rho = np.linspace(0.0, 1.0, 200)
-    # Create spline here since ECRad wants Te and ne to have the same rho axis
-    ne_spl = InterpolatedUnivariateSpline(rhot, np.log(ne))
-    Te_spl = InterpolatedUnivariateSpline(rhot, np.log(Te))
-    forward_model.set_static_parameters(time, rho, np.exp(Te_spl(rho)), np.exp(ne_spl(rho)), Use3DScen, ecrad_scenario_file)
-    # the set static parpameters methods computes resonances for the ECE assuming straight lines of sight
-    # This could in principle be used in the next step for the inital guess via the spline fit
-    # Currently there is a bug in ECRad which causes the resonances in straight ray mode to be all zero
-    # Hence the workaround below
-    # TODO -> Fix
-    data = [DataSet("ECE", "radiometer", [2.149, 2.151], \
-                    measurements=ECE_data.T[3] * 1.e3, uncertainties=ECE_data.T[-3] * 1.e3, \
-                    positions=Result.resonance["rhop_cold"][0])]
-    profile_parametrization = UnivariateLSQSpline()
-    # Use maximum of data to guess highest Te
-    profile_parametrization.make_initital_guess(data=data[0].measurements, unc=data[0].uncertainties, \
-                                                rho=data[0].positions)
-    Te = profile_parametrization.eval(rho)
-    # Make rays
-    forward_model.pre_optimization_tuneup(profile_parametrization)
-    Trad = forward_model.eval(profile_parametrization)
-    plt.plot(forward_model.rho, Trad * 1.e-3, "+")
-    plt.errorbar(forward_model.rho, data[0].measurements * 1.e-3, yerr=data[0].uncertainties / 1.e3, marker= "o", linestyle="")
-    plt.show()
-    
-
-if(__name__ =="__main__"):
-    test_ECRad_fm("/gss_efgw_work/work/g2sdenk/ECRad_runs/", \
-                  "ECE_res.txt", "plasma_profiles.txt", \
-                  "VMEC.txt", "VMEC", "W7X_wall_SI.dat" , \
-                  "ECRad_20180823016002_EXT_ed20.mat", \
-                  "ECRad_20180823016002_EXT_ed20.mat", \
-                  B_scale = 0.9209027777777778)
-    
+\
