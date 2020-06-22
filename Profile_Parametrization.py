@@ -26,6 +26,8 @@ class ProfileParametrization:
         self.bounds = None
         self.fixed = None
         self.n_param = 0
+        self.axis_bounds = None
+        self.points = 0
         # In case the Profile_Parametrization needs some set up
         pass
     
@@ -67,6 +69,15 @@ class ProfileParametrization:
         if(len(parameters) != self.n_param):
             raise ValueError("The number of parameters must not be changed")
         self.parameters = parameters
+        
+    def set_axis(self, points, axis_bounds):
+        # Number of points in target profile
+        self.points = points
+        # Bounds covered by profile
+        self.axis_bounds = axis_bounds
+        
+    def get_axis(self):
+        return np.linspace(self.axis_bounds[0], self.axis_bounds[1], self.points)
         
         
         
@@ -110,35 +121,42 @@ class UnivariateLSQSpline(ProfileParametrization):
         self.name = "Univariate Least-Square Spline"
         self.type = "Te"
         self.parameters = None
+        self.c = None
+        self.knot_pos = np.array([0.15,0.30, 0.45, 0.55, 0.70, 0.80, 0.86, 0.91, \
+                                  0.95, 0.97, 0.98, 0.99, 1.01, 1.02, 1.03, 1.05, 1.09, 1.15])
         
-    def make_initital_guess(self, data=None, unc=None, rho=None):
+    def make_initital_guess(self, data=None, unc=None, rho=None, mask=None):
         if(data is None or rho is None):
             raise ValueError("data and rho are necessary for the UnivariateLSQSpline inteprolation")
         x = np.copy(rho)
         y = np.copy(data)
-        x = x[y > 0.0]
+        if(mask is not None):
+            x=x[mask]
+            y=y[mask]
         if(unc is not None):
             # Use gaussian error propagation to calcuate error of log(y)
             w = np.copy(unc)
-            w = w[y > 0.0]
-            w = w / y[y > 0.0]
+            if(mask is not None):
+                w = w[mask]
+            w = w / y
             w = 1.0 / w #  turn error into weights
         else:
             w = 1.0
-        y = y[y > 0.0]
         y = np.log(y)
-        y = y[np.logical_and(x>0.0, x<1.0)]
-        w = w[np.logical_and(x>0.0, x<1.0)]
-        x = x[np.logical_and(x>0.0, x<1.0)]
         # To construct the spline we must have data for rho = 0 and rho=1
         # Use extrapoliation of InterpolatedUnivariateSpline to get these points
         sort = np.argsort(x)
-#         plt.plot(x,y, "+")
+        x = np.concatenate([[self.axis_bounds[0]], x[sort], [self.axis_bounds[1]]])
+        y = np.concatenate([[np.max(y)], y[sort], [np.min(y)]])
+        w = np.concatenate([[np.mean(w)], w[sort], [np.mean(w)]])
         self.order = 3
-        self.t = np.linspace(0.1, 0.9, 7)
-        self.t = np.r_[(0.0,)*(self.order+1),self.t, (1.0,)*(self.order+1)]
-        self.spl = make_lsq_spline(x[sort], y[sort], t=self.t, k=self.order, w=w[sort])
-        self.parameters = self.spl.c
+        self.t = self.knot_pos[np.logical_and(self.knot_pos > self.axis_bounds[0], \
+                                              self.knot_pos < self.axis_bounds[1])]
+        self.t = np.r_[(self.axis_bounds[0],)*(self.order+1), self.t, (self.axis_bounds[1],)*(self.order+1)]
+        self.spl = make_lsq_spline(x, y, t=self.t, k=self.order, w=w)
+        self.c = np.copy(self.spl.c)
+        self.parameters = self.spl.c[1:]
+        
 #         print(self.t)
 #         print(self.parameters)
         self.n_param = len(self.parameters)
@@ -155,7 +173,9 @@ class UnivariateLSQSpline(ProfileParametrization):
         
     
     def eval(self, rho, dn=0):
-        spl = BSpline(self.t, self.parameters, k=self.order)
+        self.c[1:] = self.parameters
+        self.c[:2] = self.parameters[0]
+        spl = BSpline(self.t, self.c, k=self.order)
         #self.spl.k = self.parameters
         if(dn == 0):
             return(np.exp(spl(rho)))
@@ -167,7 +187,22 @@ class UnivariateLSQSpline(ProfileParametrization):
         else:
             raise(ValueError("dn in UnivariateLSQSpline is " + str(dn) + " only 0, 1,2 are supported"))
 
-# if(__name__== "__main__"):
+
+
+if(__name__== "__main__"):
+    from plotting_configuration import plt
+    x_test_data = np.linspace(0.05, 1.15, 50)
+    test_data = (10*np.exp(-x_test_data**2/0.5**2) * (1.0 - 0.1*(0.5 - np.random.rand(50))))
+    unc = np.ones(50)
+#     plt.errorbar(x_test_data, test_data,unc, linestyle="none", marker="+")
+#     plt.show()
+    profile_parametrization = UnivariateLSQSpline()
+    profile_parametrization.set_axis(200, [0.0, 1.2])
+    profile_parametrization.make_initital_guess(test_data, unc, x_test_data)
+    plt.errorbar(x_test_data, test_data,unc)
+    plt.plot(profile_parametrization.get_axis(), \
+             profile_parametrization.eval(profile_parametrization.get_axis()))
+    plt.show()
 #     profile_parametrization = TravisTeProfile()
 #     from plotting_configuration import plt
 #     rho = np.linspace(0.0, 1.0, 100)
