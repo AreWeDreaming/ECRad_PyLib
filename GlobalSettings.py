@@ -50,8 +50,8 @@ class GlobalSettingsITM:
         if(os.getenv("SYS") == 'amd64_sles12'  or os.getenv("SYS") == 'amd64_sles15'):
             self.SLES12 = True
         self.Phoenix = "phoenix" in wx.PlatformInfo
-        self.ECRadRoot = "/gss_efgw_work/work/g2sdenk/ECRad/"
-        self.ECRadLibDir = os.path.join(self.ECRadRoot, "$SYS")
+        self.ECRadRoot = "/afs/eufus.eu/g2itmdev/user/g2sdenk/git/augd_ecrad"
+        self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot,os.environ['SYS'])
         self.ECRadPylibRoot = "../ECRad_Pylib/"
         self.ECRadGUIRoot = "../ECRad_GUI/"
         self.ECRadPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRad")
@@ -76,7 +76,7 @@ class GlobalSettingsAUG:
             self.ECRadRoot = "/afs/ipp-garching.mpg.de/home/s/sdenk/ECRad_testing/augd_ecrad"
         else:
             self.ECRadRoot = "../augd_ecrad/"
-        self.ECRadLibDir = os.path.join(self.ECRadRoot, "$SYS")
+        self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot,os.environ['SYS'])
 #         self.ECRadRoot =      # "/afs/ipp/home/s/sdenk/ECRad_testing/augd_ecrad/"# "/afs/ipp/home/r/rrf/F90/IDA/augd_ecrad/"
         self.ECRadPylibRoot = "../ECRad_Pylib/"
         self.ECRadGUIRoot = "../ECRad_GUI/"

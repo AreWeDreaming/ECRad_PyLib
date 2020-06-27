@@ -12,6 +12,8 @@ class BasicDiag:
         self.exp = exp
         self.diag = diag
         self.ed = ed
+        self.mode_filter = False
+        self.t_smooth = 1.e-3
         
 class ECEDiag(BasicDiag):
     '''

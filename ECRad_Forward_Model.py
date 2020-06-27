@@ -8,6 +8,7 @@ from ECRad_F2PY_Interface import ECRadF2PYInterface
 import os
 import numpy as np
 from Generic_ECE_Diag import ECEDiag
+from Data_Set import DataSet
 
 class ECRadForwardModel(ForwardModel):
     # Provides simple python interface to run ECRad
@@ -34,10 +35,20 @@ class ECRadForwardModel(ForwardModel):
         self.rho = None
         self.Trad = None
         self.tau = None
+        self.SOL_Te = 1.e1 # 10 eV
         
     def setup_data_mask(self, data, user_mask):
         # Takes instance of the data_set argument and sets up the mask
-        self.mask = np.zeros(data.measurements.shape)
+        # Forward models are in charge of deciding if data is trustworthy
+        # The mask is used for the optimization
+        self.mask = np.ones(data.measurements.shape,dtype=np.bool)
+        # This sets up a static data_mask that excludes bad measurements 
+        self.make_data_preselection(data)
+        
+    def make_data_preselection(self, data):
+        self.data_mask = np.ones(data.measurements.shape,dtype=np.bool)
+        self.data_mask[data.measurements > 12.e3] = False
+        self.data_mask[data.measurements < 0.0] = False
         
     def is_ready(self):
         return self.ready
@@ -80,7 +91,7 @@ class ECRadForwardModel(ForwardModel):
         fm_flag[:] = True
         self.ecrad_f2py_interface.set_fm_flag(fm_flag)
         self.ecrad_f2py_interface.set_grid_update(True)
-        self.Scenario.plasma_dict["Te"][0] = model.eval(self.Scenario.plasma_dict["rhot_prof"][0])
+        self.Scenario.plasma_dict["Te"][0] = model.eval(self.Scenario.plasma_dict[self.Scenario.plasma_dict["prof_reference"]][0])
         self.rho = self.ecrad_f2py_interface.make_rays(self.Scenario, 0)
         Trad_fm, tau_fm = self.ecrad_f2py_interface.eval_Trad(self.Scenario, self.Config, 0)
         fm_flag[:] = False
@@ -97,7 +108,19 @@ class ECRadForwardModel(ForwardModel):
         fm_flag[tau_fm < 0.5] = False     
         self.ecrad_f2py_interface.set_fm_flag(fm_flag)
         self.ecrad_f2py_interface.set_grid_update(False)
+        # Which channels are useful
+        self.mask[:] = self.data_mask
+        self.mask = tau_fm >= 0.5
+        if(np.all(tau_fm < 0.5)):
+            self.make_data_preselection()
         
+    def initial_guess_data(self, data):
+        initial_guess_data_set = DataSet("ECE_init", data.type, data.time_window, \
+                                         data.measurements, data.uncertainties, \
+                                         data.positions)
+        initial_guess_data_set.measurements[initial_guess_data_set.positions > 1.0] = self.SOL_Te
+        initial_guess_data_set.uncertainties[initial_guess_data_set.positions > 1.0] *= 10
+        return initial_guess_data_set
         
     def config_model(self, *args, **kwargs):
         for key in kwargs:
@@ -110,7 +133,7 @@ class ECRadForwardModel(ForwardModel):
         if(not self.ready):
             raise AttributeError("W7XECRadInterface Instance was not properly initialized before first call to eval")
         # Again zero hardcoded here atm
-        self.Scenario.plasma_dict["Te"][0] = model.eval(self.Scenario.plasma_dict["rhot_prof"][0])
+        self.Scenario.plasma_dict["Te"][0] = model.eval(self.Scenario.plasma_dict[self.Scenario.plasma_dict["prof_reference"]][0])
         self.Trad, self.tau = self.ecrad_f2py_interface.eval_Trad(self.Scenario, self.Config, 0)
         return self.Trad
         

@@ -86,6 +86,8 @@ class MaximumPosterior(ObjectiveFunction):
         self.deriv_zero_on_axis_weight = 1.0
         self.curv_pnts = 200
         self.cauchy_a0 = 0.5
+        self.SOL_constraint = 1
+        self.SOL_max_Te = 100.e0 # Everything in eV at the moment 
         
         
         
@@ -96,14 +98,18 @@ class MaximumPosterior(ObjectiveFunction):
         self.profile_parametrization.set_parameters(parameters)
         # Likelihood (logarithmic)
         for data_set, forward_model in zip(self.data, self.forward_models):
-            obj_f +=  forward_model.norm * (self.cauchy_a0 + 0.5) * np.sum(np.log( 2.0 * self.cauchy_a0 + ((data_set.measurements - forward_model.eval(self.profile_parametrization)) / data_set.uncertainties)**2))
+            if(np.any(forward_model.mask)):
+                obj_f +=  forward_model.norm * (self.cauchy_a0 + 0.5) * np.sum(np.log( 2.0 * self.cauchy_a0 + ((data_set.measurements[forward_model.mask] - forward_model.eval(self.profile_parametrization)[forward_model.mask]) / data_set.uncertainties[forward_model.mask])**2))
         # Prior -> only curvature atm
         if(self.obj_func_eval_cnt > 0 and (self.obj_func_eval_cnt + 1) % 10 == 0):
             print("likelihood_only", obj_f)
         # Curvature constraint
-        rho =   np.linspace(0.0, 1.0, 200)
+        rho = self.profile_parametrization.get_axis()
         obj_f += np.sum((self.profile_parametrization.eval(rho, dn=2)**2 / \
                         self.profile_parametrization.eval(rho)**2)) / self.curv_constr_weight / self.curv_pnts**2
+        Te_SOL = self.profile_parametrization.eval(rho[rho>1.0])
+        # Maximum SOL Te prior
+        obj_f += self.SOL_constraint*np.sum(Te_SOL[Te_SOL>self.SOL_max_Te])    
         # dval/drho|_(rho=0)=0 constraint
         obj_f += (self.profile_parametrization.eval(0.0, dn=1)/self.profile_parametrization.eval(0.0))**2 / self.deriv_zero_on_axis_weight                    
         self.obj_func_eval_cnt += 1
