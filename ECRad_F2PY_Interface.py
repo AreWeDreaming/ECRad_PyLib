@@ -95,20 +95,23 @@ class ECRadF2PYInterface:
         self.update_grid = update_grid
 
 if(__name__ == "__main__"):
+    ECRad_folder = "/mnt/c/Users/Severin/ECRad/"
+    ECRad_file = os.path.join(ECRad_folder, "ECRad_35662_EXT_ed1.mat")
+#     ECRad_file = "/gss_efgw_work/work/g2sdenk/ECRad_runs/ECRad_20180823016002_EXT_ed20.mat"
     Scenario = ECRadScenario(True)
     Config = ECRadConfig(True)
-    Config.from_mat_file(path ="/gss_efgw_work/work/g2sdenk/ECRad_runs/ECRad_20180823016002_EXT_ed20.mat")
-    Scenario.from_mat(path_in ="/gss_efgw_work/work/g2sdenk/ECRad_runs/ECRad_20180823016002_EXT_ed20.mat")
-    Config.working_dir = "/gss_efgw_work/work/g2sdenk/ECRad_runs/"
+    Config.from_mat_file(path =ECRad_file)
+    Scenario.from_mat(path_in =ECRad_file)
+    Config.working_dir = ECRad_folder
     Config.scratch_dir = Config.working_dir
     Config.extra_output =False
-    Scenario.use3Dscen.equilibrium_file = "/gss_efgw_work/work/g2sdenk/ECRad_runs/VMEC.txt"
-    Scenario.use3Dscen.vessel_filename = "/gss_efgw_work/work/g2sdenk/ECRad_runs/W7X_wall_SI.dat"
+#     Scenario.use3Dscen.equilibrium_file = "/gss_efgw_work/work/g2sdenk/ECRad_runs/VMEC.txt"
+#     Scenario.use3Dscen.vessel_filename = "/gss_efgw_work/work/g2sdenk/ECRad_runs/W7X_wall_SI.dat"
     Config.batch = False
     ecrad_f2py_interface = ECRadF2PYInterface()
     ecrad_f2py_interface.set_config_and_diag(Config, Scenario, 0)
     rhop_out = ecrad_f2py_interface.set_equilibrium(Scenario, 0 )
-    rhop = Scenario.plasma_dict["rhot_prof"][0]
+    rhop = Scenario.plasma_dict["rhop_prof"][0]
     ne = Scenario.plasma_dict["ne"][0]
     Te = Scenario.plasma_dict["Te"][0]
     rhop_out = ecrad_f2py_interface.make_rays(Scenario, 0)

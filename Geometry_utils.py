@@ -224,10 +224,10 @@ class Contouring():
             # Find the next point
             found_next, isclosed, next_point = self._find_next(next_point)
             if(not found_next):
-                self.contour_closed.append(isclosed)
                 if(isclosed):
                     # Close the contour
                     self.contour_lines[-1].append(self.contour_lines[-1][0])
+                    self.contour_indices[-1].append(self.contour_indices[-1][0])
                 elif(not reversed):
                     self.contour_lines[-1] = self.contour_lines[-1][::-1]
                     self.contour_indices[-1] = self.contour_indices[-1][::-1]
@@ -235,7 +235,9 @@ class Contouring():
                     found_next, isclosed, next_point = self._find_next(self.contour_indices[-1][-1])
                 if(not found_next):
                     reversed = False
+                    self.contour_closed.append(isclosed)
                     self.contour_lines[-1] = np.array(self.contour_lines[-1])
+                    self.contour_indices[-1] = np.array(self.contour_indices[-1])
                     if(len(self.finished_points) >= len(self.pen_points)):
                         break
                     next_point = None
@@ -249,6 +251,7 @@ class Contouring():
                         return
                     else:
                         self.contour_lines.append([])
+                        self.contour_indices.append([])
                             
     def _find_next(self, point):
         hor_index_inc = np.array([1,0])
@@ -265,7 +268,7 @@ class Contouring():
                               -point - ver_index_inc, \
                               -point - ver_index_inc + hor_index_inc]:
                 if(np.any(np.sum(np.abs(self.pen_points - candidate), axis=1) == 0)):
-                    if(np.sum(np.abs(candidate - self.contour_lines[-1][0])) == 0):
+                    if(np.sum(np.abs(candidate - self.contour_indices[-1][0])) == 0):
                         isclosed = True
                     if(np.all(np.sum(np.abs(self.finished_points - candidate), axis=1) != 0)):
                         return True, isclosed, candidate
@@ -278,7 +281,7 @@ class Contouring():
                               -point + hor_index_inc, \
                               -point - ver_index_inc + hor_index_inc]:
                 if(np.any(np.sum(np.abs(self.pen_points - candidate), axis=1) == 0)):
-                    if(np.sum(np.abs(candidate - self.contour_lines[-1][0])) == 0):
+                    if(np.sum(np.abs(candidate - self.contour_indices[-1][0])) == 0):
                         isclosed = True
                     if(np.all(np.sum(np.abs(self.finished_points - candidate), axis=1) != 0)):
                         return True, isclosed, candidate

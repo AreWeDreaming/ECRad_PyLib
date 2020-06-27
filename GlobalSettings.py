@@ -76,6 +76,7 @@ class GlobalSettingsAUG:
             self.ECRadRoot = "/afs/ipp-garching.mpg.de/home/s/sdenk/ECRad_testing/augd_ecrad"
         else:
             self.ECRadRoot = "../augd_ecrad/"
+        self.ECRadLibDir = os.path.join(self.ECRadRoot, "$SYS")
 #         self.ECRadRoot =      # "/afs/ipp/home/s/sdenk/ECRad_testing/augd_ecrad/"# "/afs/ipp/home/r/rrf/F90/IDA/augd_ecrad/"
         self.ECRadPylibRoot = "../ECRad_Pylib/"
         self.ECRadGUIRoot = "../ECRad_GUI/"
@@ -98,6 +99,7 @@ class GlobalSettingsAUGEXT:
         self.ECRadRoot ="../augd_ecrad"
         self.ECRadPylibRoot = "../ECRad_Pylib/"
         self.ECRadGUIRoot = "../ECRad_GUI/"
+        self.ECRadLibDir = os.path.join(self.ECRadRoot, "$SYS")
         try:
             self.ECRadPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRad")
         except KeyError:
