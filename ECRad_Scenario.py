@@ -4,22 +4,20 @@ Created on Mar 20, 2019
 @author: sdenk
 '''
 from collections import OrderedDict as od
-import getpass
 import os
 from scipy.io import loadmat, savemat
-import sys
-from GlobalSettings import globalsettings
+from Global_Settings import globalsettings
 import numpy as np
-from equilibrium_utils import EQDataSlice, special_points, EQDataExt
-from Diags import Diag, ECRH_diag, ECI_diag, EXT_diag
-from distribution_io import load_f_from_mat
-from Distribution import Gene, Gene_BiMax
+from Basic_Methods.Equilibrium_Utils import EQDataSlice, special_points
+from Diag_Types import Diag, ECRH_diag, ECI_diag, EXT_diag
+from Distribution_IO import load_f_from_mat
+from Distribution_Classes import Gene, GeneBiMax
 if(globalsettings.AUG):
     from ECRad_DIAG_AUG import DefaultDiagDict
 elif(globalsettings.TCV):
     from ECRad_DIAG_TCV import DefaultDiagDict
 else:
-    from Diags import DefaultDiagDict
+    from Diag_Types import DefaultDiagDict
 # THis class holds all the input data provided to ECRad with the exception of the ECRad configuration
 
 class ECRadScenario:
@@ -375,7 +373,7 @@ class ECRadScenario:
             if(dstf == "Ge"):
                 self.GENE_obj = Gene(filename, self.plasma_dict["time"][it], self.plasma_dict["eq_data"][it])
             else:
-                self.GENE_obj = Gene_BiMax(filename, self.plasma_dict["time"][it], self.plasma_dict["eq_data"][it])
+                self.GENE_obj = GeneBiMax(filename, self.plasma_dict["time"][it], self.plasma_dict["eq_data"][it])
                 self.GENE_obj.make_bi_max()
             return True
         except Exception as e:
@@ -462,7 +460,7 @@ class Use3DScenario:
                     if( self.type_dict[key] == "string"):
                         if(len(getattr(self, key)) == 0):
                             setattr(self, key, "")
-                except KeyError as e:
+                except KeyError:
                     print("Failed to read " + key.replace("Use_3D_","") + " from .mat file.")
                     print("Using default value")
             self.used = bool(mdict["Use_3D_used"])

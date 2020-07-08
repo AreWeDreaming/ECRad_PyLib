@@ -359,7 +359,7 @@ def SynchrotonDistribution_approx(u, zeta, Te, ne, B):
 
 
 if(__name__== "__main__"):
-    from plotting_configuration import plt
+    from Plotting_Configuration import plt
     u_par = np.linspace(0,0.5,200)
     u_perp = 0.0
     Te = 6.e3

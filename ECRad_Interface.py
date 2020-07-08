@@ -3,26 +3,21 @@ Created on Dec 9, 2015
 
 @author: sdenk
 '''
-from GlobalSettings import globalsettings
+from Global_Settings import globalsettings
 import os
 import numpy as np
 import sys
 sys.path.append("../ECRad_Pylib")
-from Diags import Diag
 if(globalsettings.AUG):
     vessel_file = os.path.join(globalsettings.ECRadPylibRoot,'ASDEX_Upgrade_vessel.txt')
-from shutil import copy, copyfile, rmtree
+from shutil import copyfile, rmtree
 from scipy.io import loadmat
-import scipy.constants as cnst
-from equilibrium_utils import EQDataExt
-from em_Albajar import s_vec, em_abs_Alb
-from distribution_io import export_gene_fortran_friendly, \
-                            export_gene_bimax_fortran_friendly, \
-                            load_f_from_mat, export_fortran_friendly
+from Basic_Methods.Equilibrium_Utils import EQDataExt
+from Em_Albajar import SVec, EmAbsAlb
+from Distribution_IO import export_gene_fortran_friendly, \
+                            export_gene_bimax_fortran_friendly, export_fortran_friendly
 from scipy.interpolate import InterpolatedUnivariateSpline
-from Geometry_utils import get_Surface_area_of_torus
-from shutil import rmtree
-from TB_communication import make_topfile_no_data_load, make_Te_ne_files
+from TB_Communication import make_topfile_no_data_load, make_Te_ne_files
 
 def GetECRadExec(Config, Scenario, time):
     # Determine OMP stacksize
@@ -277,9 +272,8 @@ def write_ext_ray_input(ECRad_data_path, Config, Scenario, index, ext_results):
                     
 
 def get_ECE_launch_info(shot, diag):
-    from shotfile_handling_AUG import get_ECE_launch_params
-    from equilibrium_utils_AUG import EQData
-    import geo_los
+    from Shotfile_Handling_AUG import get_ECE_launch_params
+    import Geo_Los
     N = 200
     ECE_launch = get_ECE_launch_params(shot, diag)
     ECE_launch["phi"] = np.zeros(len(ECE_launch["f"]))
@@ -327,7 +321,7 @@ def get_ECE_launch_info(shot, diag):
                 print("wg", ECE_launch["waveguide"][ich])
                 raise ValueError
         if(ECE_launch["waveguide"][ich] != wg_last):
-            R, z = geo_los.geo_los(shot, ECE_launch["waveguide"][ich], ECE_launch["z_lens"], R, z)
+            R, z = Geo_Los.geo_los(shot, ECE_launch["waveguide"][ich], ECE_launch["z_lens"], R, z)
             R1 = R[0]
             R2 = R[-1]
             z1 = z[0]
@@ -342,7 +336,7 @@ def get_ECE_launch_info(shot, diag):
     ECE_launch["phi"][:] += (8.5e0) * 22.5
     ECE_launch["dist_focus"][:] = 2.131
     ECE_launch["width"][:] = 17.17e-2
-    del(geo_los) # Delete to avoid problems with conflicting libraries
+    del(Geo_Los) # Delete to avoid problems with conflicting libraries
     return ECE_launch
 
 def get_diag_launch(shot, time, used_diag_dict, gy_dict=None, ECI_dict=None):
@@ -809,11 +803,11 @@ def read_svec_dict_from_file(folder, ich, mode="X"):  # ch no. starts from 1
     svec["ne"] = svec_block.T[4][svec_block.T[3] != -1.0]
     svec["Te"] = svec_block.T[5][svec_block.T[3] != -1.0]
     svec["theta"] = svec_block.T[6][svec_block.T[3] != -1.0]
-    Abs_obj = em_abs_Alb()
+    Abs_obj = EmAbsAlb()
     svec["freq_2X"] = svec_block.T[-1][svec_block.T[3] != -1.0]
     svec["N_abs"] = []
     for i in range(len(svec["s"])):
-        svec_cur = s_vec(svec["rhop"][i], svec["Te"][i], svec["ne"][i], svec["freq_2X"][i], svec["theta"][i])
+        svec_cur = SVec(svec["rhop"][i], svec["Te"][i], svec["ne"][i], svec["freq_2X"][i], svec["theta"][i])
         N = Abs_obj.refr_index(svec_cur, freqs[ich - 1] * 2.0 * np.pi, mode)
         svec["N_abs"].append(N)
     svec["N_abs"] = np.array(svec["N_abs"])

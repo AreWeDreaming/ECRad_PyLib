@@ -9,7 +9,7 @@ from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
 import scipy.constants as cnst
 from scipy.integrate import simps 
 from scipy.integrate import nquad
-from distribution_functions import Juettner2D, Juettner1D, rel_thermal_beta
+from Distribution_Functions import Juettner2D, Juettner1D, rel_thermal_beta
 
 def zeros_mom_non_rel(betall, betaxx, f_spl):
     return 2.0 * np.pi * betaxx * np.exp(f_spl(betall, betaxx))

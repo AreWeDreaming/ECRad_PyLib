@@ -6,13 +6,14 @@ Created on Nov 9, 2016
 import numpy as np
 import os
 from scipy.interpolate import InterpolatedUnivariateSpline
-from em_Albajar import em_abs_Alb, s_vec, distribution_interpolator, \
-                                        gene_distribution_interpolator
+from Em_Albajar import EmAbsAlb, SVec, DistributionInterpolator, \
+                                       GeneDistributionInterpolator
 from scipy.integrate import ode, quad
 from scipy import constants as cnst
-from plotting_configuration import *
-from electron_distribution_utils import f_interpolator, \
-                                        get_dist_moments_non_rel, load_f_from_ASCII
+from Plotting_Configuration import plt
+from Distribution_Classes import FInterpolator
+from Distribution_Helper_Functions import get_dist_moments_non_rel
+from Distribution_IO import load_f_from_ASCII
 
 class rad_transp_data:
     def __init__(self, rhop_spl, ne_spl, Te_spl, theta_spl, omega_c_spl, omega, dist="thermal", store_results=False, f_interpolator=None, B0=None, B_min_spline=None):
@@ -22,7 +23,7 @@ class rad_transp_data:
         self.theta_spl = theta_spl
         self.omega_c_spl = omega_c_spl
         self.omega = omega
-        self.abs_obj = em_abs_Alb()
+        self.abs_obj = EmAbsAlb()
         self.dist = dist
         self.abs_obj.dist_mode = dist
         self.store_results = store_results
@@ -42,7 +43,7 @@ class rad_transp_data:
 #        Te = self.Te_spl(s)
         theta = self.theta_spl(s)
         omega_c = self.omega_c_spl(s)
-        return s_vec(rhop, Te, ne, omega_c / np.pi, theta)
+        return SVec(rhop, Te, ne, omega_c / np.pi, theta)
 
     def get_j_alpha(self, s):
         svec = self.get_s_vec(s)
@@ -50,11 +51,11 @@ class rad_transp_data:
             u, pitch, spline = self.f_inter.get_spline(svec.rhop, svec.Te)
             if(self.dist == "ext"):
                 self.abs_obj.Bmin = self.B_min_spline(svec.rhop).item()
-                self.abs_obj.ext_dist = distribution_interpolator(u, pitch, spline)
+                self.abs_obj.ext_dist = DistributionInterpolator(u, pitch, spline)
             elif(self.dist == "gene"):
                 self.abs_obj.B_min = self.f_inter.B0
-                self.abs_obj.ext_dist = gene_distribution_interpolator(u, pitch, spline)
-        c_abs, j, pol_coeff = self.abs_obj.abs_Albajar(svec, self.omega, 1)
+                self.abs_obj.ext_dist = GeneDistributionInterpolator(u, pitch, spline)
+        c_abs, j = self.abs_obj.abs_Albajar(svec, self.omega, 1)[0:2]
         if(self.store_results):
             self.new_svec.append(svec)
             self.abs.append(c_abs)
@@ -67,12 +68,12 @@ class rad_transp_data:
             u, pitch, spline = self.f_inter.get_spline(svec.rhop, svec.Te)
             if(self.dist == "ext"):
                 self.abs_obj.Bmin = self.B_min_spline(svec.rhop).item()
-                self.abs_obj.ext_dist = distribution_interpolator(u, pitch, spline)
+                self.abs_obj.ext_dist = DistributionInterpolator(u, pitch, spline)
             elif(self.dist == "gene"):
                 self.abs_obj.Bmin = self.f_inter.B0
-                self.abs_obj.ext_dist = gene_distribution_interpolator(u, pitch, spline)
-            self.abs_obj.ext_dist = distribution_interpolator(u, pitch, spline)
-        c_abs, j, pol_coeff = self.abs_obj.abs_Albajar(svec, self.omega, 1)
+                self.abs_obj.ext_dist = GeneDistributionInterpolator(u, pitch, spline)
+            self.abs_obj.ext_dist = DistributionInterpolator(u, pitch, spline)
+        c_abs = self.abs_obj.abs_Albajar(svec, self.omega, 1)[0]
         return c_abs
 
 def dIds(s, I, rad_trans_obj):
@@ -111,7 +112,7 @@ def solve_rad_transp(folder, shot, time, ch, dist, eq_diag="EQH"):
     # svec.T[5] Te
     rhop_vec_B_min = np.linspace(0.0, 1.2, 200)
     if(dist == "ext"):
-        f_inter = f_interpolator(folder, dist="Re")
+        f_inter = FInterpolator(folder, dist="Re")
         B_min_vec = make_B_min(shot, time, rhop_vec_B_min, diag=eq_diag)
         B_min_spline = InterpolatedUnivariateSpline(rhop_vec_B_min, B_min_vec)
         rad_transp_obj = rad_transp_data(rhop_spl, ne_spl, Te_spl, theta_spl, omega_c_spl, omega, \
@@ -119,9 +120,9 @@ def solve_rad_transp(folder, shot, time, ch, dist, eq_diag="EQH"):
                                          B_min_spline=B_min_spline)
     elif(dist == "gene" or dist == "gene0"):
         if(dist == "gene0"):
-            f_inter = f_interpolator(folder, dist="Ge0")
+            f_inter = FInterpolator(folder, dist="Ge0")
         else:
-            f_inter = f_interpolator(folder, dist="Ge")
+            f_inter = FInterpolator(folder, dist="Ge")
         B0 = f_inter.B0
         rad_transp_obj = rad_transp_data(rhop_spl, ne_spl, Te_spl, theta_spl, omega_c_spl, omega, dist="gene", \
                                          store_results=False, f_interpolator=f_inter, B0=B0)
@@ -130,7 +131,7 @@ def solve_rad_transp(folder, shot, time, ch, dist, eq_diag="EQH"):
     Y_res_spl = InterpolatedUnivariateSpline(svec.T[0][i_min:i_max], svec.T[8][i_min:i_max] * 2 * np.pi / omega - 1)
     s_difficult = Y_res_spl.roots()
     print("s_res", s_difficult)
-    tau, tau_err = quad(alpha, 0, s_max, rad_transp_obj, points=s_difficult)
+    tau = quad(alpha, 0, s_max, rad_transp_obj, points=s_difficult)[0]
     print("tau", tau)
     ode_obj = ode(dIds)
     ode_obj.set_integrator("vode", atol=1.e-5, max_step=0.00005, nsteps=100000)  # , ixpr=True, max_hnil =1, dopri5
@@ -167,7 +168,7 @@ def make_j_alpha_along_s(folder, shot, time, ch, dist, eq_diag="EQH"):
     # svec.T[5] Te
     rhop_vec_B_min = np.linspace(0.0, 1.2, 200)
     if(dist == "ext"):
-        f_inter = f_interpolator(folder, dist="Re")
+        f_inter = FInterpolator(folder, dist="Re")
         B_min_vec = make_B_min(shot, time, rhop_vec_B_min, diag=eq_diag)
         B_min_spline = InterpolatedUnivariateSpline(rhop_vec_B_min, B_min_vec)
         rad_transp_obj = rad_transp_data(rhop_spl, ne_spl, Te_spl, theta_spl, omega_c_spl, omega, \
@@ -175,9 +176,9 @@ def make_j_alpha_along_s(folder, shot, time, ch, dist, eq_diag="EQH"):
                                          B_min_spline=B_min_spline)
     elif(dist == "gene" or dist == "gene0"):
         if(dist == "gene0"):
-            f_inter = f_interpolator(folder, dist="Ge0")
+            f_inter = FInterpolator(folder, dist="Ge0")
         else:
-            f_inter = f_interpolator(folder, dist="Ge")
+            f_inter = FInterpolator(folder, dist="Ge")
         B0 = f_inter.B0
         rad_transp_obj = rad_transp_data(rhop_spl, ne_spl, Te_spl, theta_spl, omega_c_spl, omega, dist="gene", \
                                          store_results=True, f_interpolator=f_inter, B0=B0)

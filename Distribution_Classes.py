@@ -10,11 +10,10 @@ from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
 import scipy.constants as cnst
 import h5py
 import os
-from distribution_helper_functions import get_dist_moments_non_rel, get_0th_and_2nd_moment,remap_f_Maj
-from plotting_configuration import *
-from distribution_functions import Juettner1D
+from Distribution_Helper_Functions import get_dist_moments_non_rel, get_0th_and_2nd_moment
+from Distribution_Functions import Juettner1D
 
-class beam:
+class Beam:
     # For ECRH beams. Rays structure contains information on the individual rays forming the beam.
     def __init__(self, rhot, rhop, PW, j, PW_tot, j_tot, PW_beam=None, j_beam=None, rays=None):
         self.rhot = rhot
@@ -82,7 +81,7 @@ class Gene:
         rhopindex = np.argsort(self.rhop)
         self.rhop = self.rhop[rhopindex]
         
-class Gene_BiMax(Gene):
+class GeneBiMax(Gene):
     # Creates artifical GENE distribution based on the BiMaxwellian
     def __init__(self, path, shot, time=None, EqSlice=None, it=0, EQObj = None):
         Gene.__init__(self, path, shot, time, EqSlice, it, EQObj)
@@ -99,7 +98,7 @@ class Gene_BiMax(Gene):
         
 # Provides radial interpolation distribution functions
 
-class f_interpolator:
+class FInterpolator:
     # Radial interpolation of distribution function
     # This method is completely analog to the ECRad implementation and even uses the same spline routines
     def __init__(self, working_dir=None, dist_obj=None, rhop_Bmin=None, Bmin=None, dist="Re", order=3, EqSlice=None):
@@ -186,7 +185,7 @@ class f_interpolator:
     
         
 
-class distribution_momentum_interpolator:
+class DistributionMomentumInterpolator:
     # Simple class to interpolate in momentum space
     # Initialized with a RectBivariateSpline
     def __init__(self, x, y, spline):
@@ -198,7 +197,7 @@ class distribution_momentum_interpolator:
         self.spline(x_eval, y_eval, grid=False)
         
 
-class distribution:
+class Distribution:
     # Distribution class for bounce averaged distributions, for example from RELAX or LUKE
     def __init__(self, rhot, rhop, u, pitch, f, rhot_1D_profs, rhop_1D_profs, Te_init, ne_init, B_min=None):
         self.rhot = rhot

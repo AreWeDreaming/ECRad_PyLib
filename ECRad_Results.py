@@ -4,15 +4,14 @@ Created on Dec 17, 2015
 @author: sdenk
 '''
 import numpy as np
-from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
 np.set_printoptions(threshold=10)
 import os
-from GlobalSettings import globalsettings
+from Global_Settings import globalsettings
 from scipy.io import savemat, loadmat
 from scipy import constants as cnst
 from ECRad_Config import ECRadConfig
 from ECRad_Scenario import ECRadScenario
-from ndarray_helper import ndarray_math_operation, ndarray_check_for_None
+from Ndarray_Helper import ndarray_math_operation, ndarray_check_for_None
 
 
 class ECRadResults:
@@ -830,8 +829,3 @@ class ECRadResults:
             x = self.ray["xO"]
             y = self.ray["yO"]
         return x,y
-    
-    def find_resonance(self, itime, mode_str=None):
-        if(mode_str == None):
-            res = np.copy(self.resonance["rhop_cold"][itime])
-        

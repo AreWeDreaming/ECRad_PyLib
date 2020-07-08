@@ -45,7 +45,7 @@ def eval_func(mode, x, p):
 
 
 if(__name__ == "__main__"):
-    from plotting_configuration import *
+    import matplotlib.pyplot as plt
     x = np.linspace(0, 1, 100)
     y = np.linspace(0, 4, 100)
     y += (0.5 - np.random.rand(100)) * 0.1 * y

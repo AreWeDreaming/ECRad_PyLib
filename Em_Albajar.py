@@ -7,18 +7,16 @@ stand_alone = False
 import numpy as np
 import scipy.constants as cnst
 from scipy.integrate import quad
-from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
 from numpy.polynomial.legendre import leggauss
 from scipy.optimize import brentq, newton
-import sys
-from scipy.special import kve, erfc, factorial
+from scipy.special import kve
 try:
     from scipy.special import loggamma as log_gm_fun, wofz
 except ImportError:
     print("Failed to import loggamma, log_gm_fun and woft some absorption routines might not work")
     print("If you are an ECRad_GUI user this error should not cause any issues!")
 if(not stand_alone):
-    from plotting_configuration import *
+    from Plotting_Configuration import plt
 mass_e = cnst.m_e
 e0 = cnst.e
 c0 = cnst.c
@@ -253,7 +251,7 @@ class Bornatici_abs:
         omega_c = svec.freq_2X * np.pi
         X = omega_p ** 2 / omega ** 2
         Y = omega_c / omega
-        N_abs, e = N_with_pol_vec(X, Y, 1.0, 0.0, 1)
+        N_abs = N_with_pol_vec(X, Y, 1.0, 0.0, 1)[0]
         mu = cnst.m_e * cnst.c ** 2 / (svec.Te * cnst.e)
         beta_t = np.sqrt(1.e0 - (kve(1, mu) / kve(2, mu) + 3.e0 / mu) ** (-2))
         if(n == 2 and mean):
@@ -263,7 +261,7 @@ class Bornatici_abs:
             if(z > 0):
                 An = 0
             else:
-                An, F = self.An_2(z, X, Y, N_abs)
+                An = self.An_2(z, X, Y, N_abs)[0]
         else:
             a_n = X * Y / (1.0 - Y ** 2 - X ** 2)  # 3.1.14a
             An = N_abs ** (2 * n - 3) * np.abs(1.0 + a_n ** 2)  # 3.1.37 and 3.1.12
@@ -308,7 +306,7 @@ class Bornatici_abs:
         X = omega_p ** 2 / omega ** 2
         Y = omega_c / omega
         n_fac = 1
-        N_abs, e = N_with_pol_vec(X, Y, np.sin(svec.theta), np.cos(svec.theta), 1)
+        N_abs = N_with_pol_vec(X, Y, np.sin(svec.theta), np.cos(svec.theta), 1)[0]
         mu = cnst.m_e * cnst.c ** 2 / (svec.Te * cnst.e)
         beta_t = np.sqrt(1.e0 - (kve(1, mu) / kve(2, mu) + 3.e0 / mu) ** (-2))
         for n in range(n_min, 3):
@@ -342,7 +340,7 @@ class Bornatici_abs:
         X = omega_p ** 2 / omega ** 2
         Y = omega_c / omega
         n_fac = 1
-        N_abs, e = N_with_pol_vec(X, Y, np.sin(svec.theta), np.cos(svec.theta), 1)
+        N_abs = N_with_pol_vec(X, Y, np.sin(svec.theta), np.cos(svec.theta), 1)[0]
         mu = cnst.m_e * cnst.c ** 2 / (svec.Te * cnst.e)
         beta_t = np.sqrt(1.e0 - (kve(1, mu) / kve(2, mu) + 3.e0 / mu) ** (-2))
         for n in range(n_min, n_max + 1):
@@ -370,19 +368,19 @@ def get_abs(s, args):
     nmax = args[4]
     if(np.isscalar(s)):
         svec.freq_2X = freq / (R0 + s) * R0
-        c_abs, j = abs_obj.abs_Albajar(svec, freq * 2.0 * np.pi, 1, nmax)
+        c_abs = abs_obj.abs_Albajar(svec, freq * 2.0 * np.pi, 1, nmax)[0]
         return c_abs
     else:
         c_abs_arr = np.zeros(len(s))
         for i in range(len(s)):
             svec.freq_2X = freq / (R0 + s[i]) * R0
-            c_abs, j = abs_obj.abs_Albajar(svec, freq * 2.0 * np.pi, 1, nmax)
+            c_abs  = abs_obj.abs_Albajar(svec, freq * 2.0 * np.pi, 1, nmax)[0]
             c_abs_arr[i] = c_abs
         return c_abs
 
 def abs_Te():
     # Compares absorption coefficients
-    abs_obj = em_abs_Alb()
+    abs_obj = EmAbsAlb()
     Te_arr = np.logspace(2, 5, 100)
     tau_slab_arr = []
     tau_plasma_arr = []
@@ -398,36 +396,36 @@ def abs_Te():
     nmin = 2
     nmax = 3
     theta = 85.0 / 180.0 * np.pi
-    svec = s_vec(0.2, 1.e3, 1.5e19, freq, theta)
+    svec = SVec(0.2, 1.e3, 1.5e19, freq, theta)
     bornat = Bornatici_abs()
     for Te in Te_arr:
-        svec = s_vec(0.2, Te, 1.5e19, freq, theta)
+        svec = SVec(0.2, Te, 1.5e19, freq, theta)
         if((Te > 20 and nmax < 4) or (Te > 50 and nmax < 5) or (Te > 80 and nmax < 6)):
             nmax += 1
-#        tau_slab_arr.append(quad(get_abs, s[0], s[-1], args=[abs_obj, svec, freq, R0, nmax], \
-#                            points=[0])[0])
+        tau_slab_arr.append(quad(get_abs, s[0], s[-1], args=[abs_obj, svec, freq, R0, nmax], \
+                            points=[0])[0])
         tau_bornat.append(bornat.tau_bornatici(freq * 2.0 * np.pi, svec, R0, nmin, nmax))
         tau_suttrop.append(3.9e-22 * svec.ne * svec.Te)
         print(Te, tau_bornat[-1])
-#    for Te in Te_arr:
-#        svec = s_vec(0.2, Te, 1.5e19, freq_TCV, theta)
-#        if((Te > 20 and nmax < 4) or (Te > 50 and nmax < 5) or (Te > 80 and nmax < 6)):
-#            nmax += 1
-#        tau_slab_TCV_arr.append(quad(get_abs, s[0], s[-1], args=[abs_obj, svec, freq_TCV, R0_TCV, nmax], \
-#                            points=[0])[0])
-# #        tau_bornat.append(tau_bornatici(freq * 2.0 * np.pi, svec, R0, nmin, nmax))
-#        print(Te, tau_slab_TCV_arr[-1])
+    for Te in Te_arr:
+        svec = SVec(0.2, Te, 1.5e19, freq_TCV, theta)
+        if((Te > 20 and nmax < 4) or (Te > 50 and nmax < 5) or (Te > 80 and nmax < 6)):
+            nmax += 1
+        tau_slab_TCV_arr.append(quad(get_abs, s[0], s[-1], args=[abs_obj, svec, freq_TCV, R0_TCV, nmax], \
+                            points=[0])[0])
+        #        tau_bornat.append(tau_bornatici(freq * 2.0 * np.pi, svec, R0, nmin, nmax))
+        print(Te, tau_slab_TCV_arr[-1])
     ds = 1.0
     R0 = 1.65
     s = np.linspace(-0.5 * ds, +0.5 * ds, 10)
-#    for Te in Te_arr:
-#        svec = s_vec(0.2, Te, 5.e19, freq, theta)
-#        if((Te > 20 and nmax < 4) or (Te > 50 and nmax < 5) or (Te > 80 and nmax < 6)):
-#            nmax += 1
-#        tau_plasma_arr.append(quad(get_abs, s[0], s[-1], args=[abs_obj, svec, freq, R0, nmax], \
-#                            points=[0])[0])
-#        print(Te, tau_slab_arr[-1])
-#        tau_bornat.append(tau_bornatici(freq * 2.0 * np.pi, svec, R0, nmin, nmax))
+    for Te in Te_arr:
+        svec = SVec(0.2, Te, 5.e19, freq, theta)
+        if((Te > 20 and nmax < 4) or (Te > 50 and nmax < 5) or (Te > 80 and nmax < 6)):
+            nmax += 1
+        tau_plasma_arr.append(quad(get_abs, s[0], s[-1], args=[abs_obj, svec, freq, R0, nmax], \
+                            points=[0])[0])
+        print(Te, tau_slab_arr[-1])
+        tau_bornat.append(bornat.tau_bornatici(freq * 2.0 * np.pi, svec, R0, nmin, nmax))
 #    plt.loglog(Te_arr / 1.e3, tau_slab_arr, label=r"$\tau_\omega[\SI{2}{\centi\metre}\mathrm{\,slab}]$ Albajar")
 #    plt.loglog(Te_arr / 1.e3, tau_plasma_arr, label=r"$\tau_\omega[\SI{1}{\metre}\mathrm{\,plasma}]$ ASDEX Upgrade")
 #    plt.loglog(Te_arr / 1.e3, tau_slab_TCV_arr, label=r"$\tau_\omega[\SI{2}{\centi\metre}\mathrm{\,slab}]$ TCV")
@@ -462,7 +460,7 @@ def cyl_to_pol(u_par, u_perp, zeta):
 #        plt.show()
         return u, pitch
 
-class distribution_interpolator:
+class DistributionInterpolator:
 # Used to interpolate electron momentum distribution given in momentum and pitch
     def __init__(self, u , pitch, spl=None, Te_perp=None, Te_par=None):
         self.u_min = np.min(u)
@@ -564,7 +562,7 @@ class distribution_interpolator:
             print("Selected mode {0:s} not supported".format(mode))
             raise ValueError
 
-class gene_distribution_interpolator:
+class GeneDistributionInterpolator:
     # Same as distribution_interpolator with slight changes to support the distribution coordinate system used in GENE
     def __init__(self, vpar , mu, spl=None, Te_perp=None, Te_par=None):
         self.vpar_min = np.min(vpar)
@@ -655,7 +653,7 @@ class gene_distribution_interpolator:
             print("Selected mode {0:s} not supported".format(mode))
             raise ValueError
 
-class s_vec:
+class SVec:
     # Structure that stores all information at LOS point s that is required to calculate the absorption coefficient / emissivity
     def __init__(self, rhop, Te, ne, freq_2X, theta):
         self.rhop = rhop
@@ -666,7 +664,7 @@ class s_vec:
         self.cos_theta = np.cos(theta)
         self.sin_theta = np.sin(theta)
 
-class em_abs_Alb:
+class EmAbsAlb:
 # Provides absorption coefficeint and emissivity according to [2]
 # [2] F. Albajar, N. Bertelli, M. Bornatici, and F. Engelmann, Plasma Physics and Controlled Fusion 49, 15 (2007), ISSN 0741-3335.
 
@@ -694,14 +692,14 @@ class em_abs_Alb:
         Y = svec.freq_2X * np.pi * mass_e / w_mass_e / omega
         omega_p = e0 * np.sqrt(svec.ne / (eps0 * w_mass_e))
         X = omega_p ** 2 / omega ** 2
-        N_abs, e = N_with_pol_vec(X, Y, svec.sin_theta, svec.cos_theta, mode)
+        N_abs = N_with_pol_vec(X, Y, svec.sin_theta, svec.cos_theta, mode)[0]
         return N_abs
 
     def is_resonant(self, rhop, Te, ne, freq_2X, theta, freq, m):
-        svec = s_vec(rhop, Te, ne, freq_2X, theta)
+        svec = SVec(rhop, Te, ne, freq_2X, theta)
         mode = 1
         omega = freq * 2.e0 * np.pi
-        u_par, u_perp = self.abs_Albajar_resonance_line(svec, omega, mode, m=m)
+        self.abs_Albajar_resonance_line(svec, omega, mode, m=m)
         return self.resonant
 
     def j_abs_Alb(self, rhop, Te, ne, freq_2X, theta, freq, ext_dist=None, B_min=None, dist_source='FP', calc_abs=True, m=2):
@@ -716,7 +714,7 @@ class em_abs_Alb:
         # Ext. dist. is expected to be a distribution_interpolator obj
         # B_min smallest magnetic field on current flux surface [T]
         # m harmonic number
-        svec = s_vec(rhop, Te, ne, freq_2X, theta)
+        svec = SVec(rhop, Te, ne, freq_2X, theta)
         mode = 1
         omega = freq * 2.e0 * np.pi
         if(ext_dist is None):
@@ -1112,7 +1110,7 @@ class em_abs_Alb:
         omega_p = e0 * np.sqrt(svec.ne / (eps0 * w_mass_e))
         X = omega_p ** 2 / omega ** 2
         omega_bar = omega / omega_c
-        N_abs, e = N_with_pol_vec(X, Y, svec.sin_theta, svec.cos_theta, mode)
+        N_abs = N_with_pol_vec(X, Y, svec.sin_theta, svec.cos_theta, mode)[0]
         N_par = svec.cos_theta * N_abs
         if(N_par ** 2 >= 1.0 or N_abs <= 0.0 or N_abs > 1.0):
             self.resonant = False
@@ -1296,7 +1294,7 @@ class em_abs_Alb:
         Y = omega_c / omega
         cos_theta = np.cos(theta)
         sin_theta = np.sin(theta)
-        N_abs, e = N_with_pol_vec(X, Y, sin_theta, cos_theta, mode)
+        N_abs = N_with_pol_vec(X, Y, sin_theta, cos_theta, mode)[0]
         return omega - self.eval_omega(u_par, gamma, omega_c, N_abs * cos_theta, n)
 
     def calc_omega(self, u_par, gamma, theta, omega_c, omega_p, mode, n):
@@ -2186,7 +2184,6 @@ class em_abs_Alb:
         # Implementation of Hutchinson emissivity - only use for small Te
         # NOT Valdiated!
         omega_c = svec.freq_2X * np.pi
-        omega_p = e0 * np.sqrt(svec.ne / (eps0 * mass_e))
         omega_bar = omega / omega_c
         mu = mass_e * c0 ** 2 / (e0 * svec.Te)
         m_0 = np.sqrt(1.e0 - svec.cos_theta ** 2) * omega_bar

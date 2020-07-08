@@ -6,7 +6,7 @@ Created on Jun 19, 2019
 import numpy as np
 from scipy.signal import medfilt
 from scipy import fftpack
-from Fitting import make_fit
+from Basic_Methods.Data_Fitting import make_fit
 # Can be used to filter modes from data
 # Useful to reduce systematic uncertainties in calibration of discharges with modes
 def remove_mode(t, s, harmonics=None, mode_width=100.0, low_freq=100.0):
@@ -25,7 +25,7 @@ def remove_mode(t, s, harmonics=None, mode_width=100.0, low_freq=100.0):
     p_est[1] = sample_freq[mask][i_max]
     p_est[2] = mode_width
     try:
-        p, err = make_fit("gauss", sample_freq[mask], power[mask], p_est=p_est)
+        p = make_fit("gauss", sample_freq[mask], power[mask], p_est=p_est)[0]
     except RuntimeError:
         print("Warning mode not filtered!")
         return s, 0.0, 0.0

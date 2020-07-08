@@ -4,18 +4,10 @@ Created on Dec 29, 2015
 @author: sdenk
 '''
 import numpy as np
-from Fitting import make_fit
-from GlobalSettings import globalsettings
+from Basic_Methods.Data_Fitting import make_fit
+from Global_Settings import globalsettings
 if(globalsettings.AUG):
-    from shotfile_handling_AUG import get_data_calib
-#from plotting_configuration import *
-from data_processing import smooth
-
-'''
-Created on Jan 17, 2019
-
-@author: sdenk
-'''
+    from Shotfile_Handling_AUG import get_data_calib
 
 
 def calibrate(shot, timepoints, Trad_matrix, calib_diag, aux_diag, masked_channels=None):

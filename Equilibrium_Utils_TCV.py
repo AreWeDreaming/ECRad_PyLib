@@ -4,7 +4,7 @@ Created on Jan 29, 2017
 @author: sdenk
 '''
 import numpy as np
-from equilibrium_utils import EQDataExt
+from Basic_Methods.Equilibrium_Utils import EQDataExt
 
 def get_current(nshot, tshot, npts):
     raise(ValueError('Routine get_current not available for TCV'))
@@ -14,7 +14,7 @@ def get_current(nshot, tshot, npts):
 
 def make_rhop_signed_axis(shot, time, R, rhop, f, f2=None, eq_exp='AUGD', eq_diag='EQH', eq_ed=0, external_folder=''):
     eq_obj = EQData(shot, external_folder=external_folder, eq_exp=eq_exp, eq_diag=eq_diag, eq_ed=eq_ed)
-    R_ax, z_ax = eq_obj.get_axis(time)
+    R_ax = eq_obj.get_axis(time)[0]
     HFS = R < R_ax
     last_HFS = HFS[0]
     profile_cnt = 0

@@ -2,8 +2,19 @@
 Created on Jun 19, 2019
 
 @author: sdenk
+This module is outdated.
 '''
 
+import os
+import numpy as np
+from threading import Lock
+from scipy.optimize import least_squares
+from WX_Events import ThreadFinishedEvt, Unbound_EVT_FIT_FINISHED
+import wx
+from time import sleep
+from subprocess import Popen, call
+from Distribution_Functions import Gauss_norm
+from scipy.interpolate import InterpolatedUnivariateSpline
 # Basic routines to fit model distribution function data to measurements
 # Most likely outdated, has not been maintained since 2015
 def fit_TRad(args):
@@ -16,10 +27,8 @@ def fit_TRad(args):
     ECE_data = args[6]
     ECE_y_err = args[7]
     thread_Lock = Lock()
-    ifixb = np.zeros(len(beta), np.int)
     sd_beta = np.zeros(len(beta))
     sd_beta[:] = -1.0  # No fit
-    x = np.linspace(0, 1, len(ECE_data))
     if(dstf == "BM" or dstf == "BJ"):
         model_func = evaluate_bi_max
         if(dstf == "BJ"):
@@ -135,7 +144,7 @@ def make_bi_max(beta, bi_max_filename):
 def evaluate_drift_m(beta, x, exec_efcm_model, trad_filename, drift_m_filename):
     make_drift_m(beta, x, drift_m_filename)
     call(exec_efcm_model)
-    return read_file(trad_filename)[1]
+    return np.loadtxt(trad_filename, unpack=True)[1]
 
 def make_drift_m(beta, drift_m_filename):
     drift_m = open(drift_m_filename, "w")

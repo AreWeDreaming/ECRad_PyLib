@@ -2,17 +2,15 @@
 Created on Mar 30, 2017
 
 @author: sdenk
+This module has not been modified since 2017 and it is severely out of date.
 '''
-
+from Global_Settings import globalsettings
 import sys
-from shotfile_handling_AUG import get_ECI_launch
 from ECRad_Config import ECRadConfig
-from Diags import  Diag, ECRH_diag, ECI_diag, EXT_diag, TCV_diag, TCV_CCE_diag
-from ECRad_Interface import load_plasma_from_mat, prepare_input_file
-from equilibrium_utils_AUG import EQData
-from shotfile_handling_AUG import load_IDA_data, get_diag_data_no_calib, get_freqs, get_divertor_currents, filter_CTA, get_data_calib, get_ECI_launch
-from ECRad_DIAG_AUG import DefaultDiagDict
-from get_ECRH_config import get_ECRH_viewing_angles
+from Diag_Types import  Diag, ECRH_diag, ECI_diag
+from ECRad_Interface import load_plasma_from_mat, prepare_input_files
+from Shotfile_Handling_AUG import load_IDA_data, get_ECI_launch
+from Get_ECRH_Config import get_ECRH_viewing_angles
 import numpy as np
 from ECRad_Results import ECRadResults
 import os
@@ -39,9 +37,9 @@ def run_ECRad():
         print("Initialization failed.")
         print("Error:", e)
         print("Usage: python run_ECRad_no_GUI.py <shotno> <diag id>")
-        if(TCV):
+        if(globalsettings.TCV):
             print("Possible diag ids: UCE, LCE, VCE, CCE")
-        elif(AUG):
+        elif(globalsettings.AUG):
             print("Possible diag ids: ECE, CTA, CTC, IEC, ECN, ECO")
         else:
             print("Only AUG or TCV supported at this time")
@@ -54,18 +52,15 @@ def run_ECRad():
         print("Failed to load user config at : ")
         print(os.path.join(working_dir, "UserConfig.mat"))
     Config.working_dir = working_dir
-    if(TCV):
+    if(globalsettings.TCV):
         Config.time, Config.plasma_dict = load_plasma_from_mat(Config, shot_data_file)
         if(diag_id in ["UCE", "LCE", "VCE"]):
             Config.used_diags_dict.update({diag_id: Diag(diag_id, "TCV", diag_id, 0)})
-        elif(diag_id == "CCE"):
-            launch_geo = make_CCE_diag_launch(shot, shot_data_file)
-            Config.used_diags_dict.update({diag_id: TCV_CCE_diag(diag_id, "TCV", diag_id, 0, launch_geo)})
         else:
             print("Selected diag_id {0:s} is not supported for TCV".format(diag_id))
             return -1
         Config.Ext_plasma = True
-    elif(AUG):
+    elif(globalsettings.AUG):
         Config.time, Config.plasma_dict = load_IDA_data(shot, timepoints=None, exp="AUGD", ed=0)
         if(diag_id == "ECE"):
             Config.used_diags_dict.update({diag_id: Diag(diag_id, "AUGD", 'RMD', 0)})
@@ -125,15 +120,13 @@ def run_ECRad():
         Config.plasma_dict["ne_rhop_scale"] = Config.plasma_dict["ne_rhop_scale"][actual_times]
         if(Config.plasma_dict["eq_data"] is not None):
             Config.plasma_dict["eq_data"] = Config.plasma_dict["eq_data"][actual_times]
-    if(Config.debug and AUG and not itm):
-        InvokeECRad = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/ECRad_Model_new/ECRad_model"
-    elif(not Config.debug and AUG and not itm):
+    if(not Config.debug and globalsettings.AUG):
         InvokeECRad = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/ECRad_Model/ECRad_model"
-    elif(AUG and itm):
+    elif(globalsettings.AUG):
         InvokeECRad = "/marconi_work/eufus_gw/work/g2sdenk/ECRad_Model_parallel/ECRad_model"
-    elif(TCV and Config.debug):
+    elif(globalsettings.TCV and Config.debug):
         InvokeECRad = "../ECRad_Model_TCV/ECRad_model"
-    elif(TCV):
+    elif(globalsettings.TCV):
         InvokeECRad = "../ECRad_Model_TCV_no_debug/ECRad_model"
     else:
         print('Neither AUG nor TCV selected - no Machine!!')
@@ -164,7 +157,7 @@ def run_ECRad_from_script(working_dir, shot, Config, InvokeECRad, args):
                         print("Error when reading viewing angles")
                         print("Launch aborted")
                         return
-        if(not prepare_input_file(Config.time, next_time_index_to_analyze, Config)):
+        if(not prepare_input_files(Config.time, next_time_index_to_analyze, Config)):
             print("Error!! Launch aborted")
             return None
         print("-------- Launching ECRad -----------\n")

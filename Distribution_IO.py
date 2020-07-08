@@ -11,13 +11,13 @@ from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
 from scipy.integrate import simps
 import os
 from scipy.io import loadmat
-from Distribution import distribution, beam, Gene
-from distribution_helper_functions import fill_zeros_with_thermal,check_distribution
-from plotting_configuration import *
+from Distribution_Classes import Distribution, Beam, Gene
+from Distribution_Helper_Functions import fill_zeros_with_thermal,check_distribution, \
+                                          get_dist_moments_non_rel, get_dist_moments
+from Plotting_Configuration import plt, MaxNLocator
 from scipy import constants as cnst
 import h5py
-from distribution_functions import BiMaxwell2DV,Maxwell2D_beta,BiMaxwellJuettner2DV,Juettner2D,SynchrotonDistribution
-from distribution_helper_functions import get_dist_moments_non_rel, get_dist_moments
+from Distribution_Functions import BiMaxwell2DV,Maxwell2D_beta,BiMaxwellJuettner2DV,Juettner2D,SynchrotonDistribution
 
 
 def export_fortran_friendly(args):
@@ -134,11 +134,11 @@ def load_f_from_mat(filename, use_dist_prefix=False):
     elif(use_dist_prefix):
         dist_prefix = "dist_"
     if(dist_prefix + "rhot_prof" not in mdict):
-        return distribution(None, mdict[dist_prefix + "rhop_prof"], mdict[dist_prefix + "u"], mdict[dist_prefix + "pitch"], mdict[dist_prefix + "f"], \
+        return Distribution(None, mdict[dist_prefix + "rhop_prof"], mdict[dist_prefix + "u"], mdict[dist_prefix + "pitch"], mdict[dist_prefix + "f"], \
                             mdict[dist_prefix + "rhot_1D_profs"], mdict[dist_prefix + "rhop_1D_profs"], mdict[dist_prefix + "Te_init"], \
                             mdict[dist_prefix + "ne_init"])
     else:
-        return distribution(mdict[dist_prefix + "rhot_prof"], mdict[dist_prefix + "rhop_prof"], \
+        return Distribution(mdict[dist_prefix + "rhot_prof"], mdict[dist_prefix + "rhop_prof"], \
                             mdict[dist_prefix + "u"], mdict[dist_prefix + "pitch"], mdict[dist_prefix + "f"], 
                             mdict[dist_prefix + "rhot_1D_profs"], mdict[dist_prefix + "rhop_1D_profs"], \
                             mdict[dist_prefix + "Te_init"], mdict[dist_prefix + "ne_init"])
@@ -189,7 +189,7 @@ def read_waves_mat_to_beam(waves_mat, EQSlice, use_wave_prefix=False):
             rays[-1][-1]["omega_c"] = cnst.e * B_tot_spl(rays[-1][-1]["R"], rays[-1][-1]["z"], grid=False) / cnst.m_e
     PW_beam = np.array(PW_beam)
     j_beam = np.array(j_beam)
-    return beam(waves_mat[wave_prefix + "rhot_prof"], rho_prof, PW, j, PW_tot, j_tot, PW_beam, j_beam, rays)
+    return Beam(waves_mat[wave_prefix + "rhot_prof"], rho_prof, PW, j, PW_tot, j_tot, PW_beam, j_beam, rays)
 
 def read_dist_mat_to_beam(dist_mat, use_dist_prefix=True):
     # Load waves object from .mat file created by AECM GUI (RELAX)
@@ -206,7 +206,7 @@ def read_dist_mat_to_beam(dist_mat, use_dist_prefix=True):
     PW = dist_mat[dist_prefix + "PW_prof"]
     PW_tot = dist_mat[dist_prefix + "PW_tot"]
     j_tot = dist_mat[dist_prefix + "j_tot"]
-    return beam(dist_mat[dist_prefix + "rhot_prof"], rho_prof, PW, j, PW_tot, j_tot, None, None, None)
+    return Beam(dist_mat[dist_prefix + "rhot_prof"], rho_prof, PW, j, PW_tot, j_tot, None, None, None)
 
 def load_f_from_ASCII(path, rhop_in=None, Gene=False):
 # Directly loads the ascii distribution files that are used by ECRad
@@ -231,7 +231,7 @@ def load_f_from_ASCII(path, rhop_in=None, Gene=False):
             for irhop in range(len(rhop)):
                 Fe[irhop, :, :] = np.loadtxt(os.path.join(path, "fu{0:03d}.dat".format(irhop)))
             B_min = B_min_spline
-        return distribution(None, rhop, x, y, np.exp(Fe), None, rhop_ne, Te, ne, B_min=B_min)
+        return Distribution(None, rhop, x, y, np.exp(Fe), None, rhop_ne, Te, ne, B_min=B_min)
     else:
         x = np.loadtxt(os.path.join(path, "vpar.dat"), skiprows=1)
         y = np.loadtxt(os.path.join(path, "mu.dat"), skiprows=1)
@@ -267,7 +267,6 @@ def read_LUKE_data(path, rhop_max=1.5, no_preprocessing=True, Flip=False):
         y = LUKE_f["mhu"][0]
         print("mu", np.shape(y))
         y = np.arcsin(y)
-        mu = y
         u = x
         Fe = np.swapaxes(Fe, 2, 0)
         Fe = np.swapaxes(Fe, 1, 2)
@@ -285,7 +284,7 @@ def read_LUKE_data(path, rhop_max=1.5, no_preprocessing=True, Flip=False):
             if(not check_distribution(rhop, x, y, Fe)):
                 print("Distribution in bad shape - output only for diagnostics !")
                 # raise ValueError
-        dist_obj = distribution(None, rhop, x, y, Fe, None, rhop_vec_ne, Te, ne)
+        dist_obj = Distribution(None, rhop, x, y, Fe, None, rhop_vec_ne, Te, ne)
         return dist_obj
     except IOError as e:
         print(e)
@@ -299,9 +298,9 @@ def read_LUKE_profiles(path):
         scalar = LUKE_mat["data_proc"].scalar
         radial = LUKE_mat["data_proc"].radial
         waves = LUKE_mat["data_proc"].wave
-        quasi_linear_beam = beam(radial.xrhoT, radial.xrhoP, radial.P_tot * 1.e6, radial.J_tot * 1.e6, \
+        quasi_linear_beam = Beam(radial.xrhoT, radial.xrhoP, radial.P_tot * 1.e6, radial.J_tot * 1.e6, \
                                  scalar.p_rf_2piRp * 1.e6, scalar.I_tot * 1.e6)
-        linear_beam = beam(radial.xrhoT, radial.xrhoP, (waves.wxP_rf_lin[0] + waves.wxP_rf_lin[1]) * 1.e6, np.zeros(len(radial.xrhoP)), \
+        linear_beam = Beam(radial.xrhoT, radial.xrhoP, (waves.wxP_rf_lin[0] + waves.wxP_rf_lin[1]) * 1.e6, np.zeros(len(radial.xrhoP)), \
                                  scalar.p_rf_2piRp_lin * 1.e6, 0.0, \
                                  PW_beam=[waves.wxP_rf[0], waves.wxP_rf[1]], j_beam=[np.zeros(len(radial.xrhoP)), np.zeros(len(radial.xrhoP))])
         return quasi_linear_beam, linear_beam
@@ -753,7 +752,7 @@ def make_bimaxjuett_from_GENE(path, shot, time, wpath_parent, subdir_list):
 
 
 def make_test_f(rpath):
-    rhop_prof, Te_vec = np.loadtxt(os.path.join(rpath, "Te_file.dat"), skiprows=1, unpack=True)
+    Te_vec = np.loadtxt(os.path.join(rpath, "Te_file.dat"), skiprows=1, unpack=True)[1]
     rhop_prof, ne_vec = np.loadtxt(os.path.join(rpath, "ne_file.dat"), skiprows=1, unpack=True)
     rhop = np.linspace(0.001, 0.5, 60)
     m = 200
@@ -767,10 +766,10 @@ def make_test_f(rpath):
                 Fe[i, j, :] = Juettner2D(u[j], 0, Te_spl(rhop[i]))
     # plt.plot(np.arange(0,1.5,0.01),Fe[2,:,0])
     # plt.show()
-    return distribution(None, rhop, u, pitch, Fe, None, rhop_prof, Te_vec, ne_vec)
+    return Distribution(None, rhop, u, pitch, Fe, None, rhop_prof, Te_vec, ne_vec)
 
 def make_synchroton_f(rpath, B):
-    rhop_prof, Te_vec = np.loadtxt(os.path.join(rpath, "Te_file.dat"), skiprows=1, unpack=True)
+    Te_vec = np.loadtxt(os.path.join(rpath, "Te_file.dat"), skiprows=1, unpack=True)[1]
     rhop_prof, ne_vec = np.loadtxt(os.path.join(rpath, "ne_file.dat"), skiprows=1, unpack=True)
     rhop = np.linspace(0.001, 0.5, 60)
     m = 200
@@ -785,9 +784,9 @@ def make_synchroton_f(rpath, B):
         for j in range(len(u)):
                     Fe[i, j, :] = Juettner2D(u[j], 0, Te_spl(rhop[i]))
                     if(u[j] > 0.2):
-                        g0, g2, f = SynchrotonDistribution(u[j], zeta, Te_spl(rhop[i]), ne_spl(rhop[i]), B, 1.0)
+                        f = SynchrotonDistribution(u[j], zeta, Te_spl(rhop[i]), ne_spl(rhop[i]), B, 1.0)[2]
                         Fe[i, j, :] *= (1.0 + f)
-    return distribution(None, rhop, u, pitch, Fe, None, rhop_prof, Te_vec, ne_vec)     
+    return Distribution(None, rhop, u, pitch, Fe, None, rhop_prof, Te_vec, ne_vec)     
 
 def plot_dist_moments(path, shot, time, eq_exp='AUGD', eq_diag='EQH', eq_ed=0):
     rhop_Gene, R, z, beta_par, mu_norm, f, f0, g, Te, ne, B0 = make_dist_from_Gene_input(path, shot, time, debug=False)
@@ -815,7 +814,7 @@ def plot_dist_moments(path, shot, time, eq_exp='AUGD', eq_diag='EQH', eq_ed=0):
 #    plt.plot(rhop, 1.e2 * (1.0 - Te / Te_spl(rhop)), ":k", label=r"$1 - \tilde{T}_\mathrm{e} / T_\mathrm{e}$")
     lns = ax.get_lines()  # + ax2.get_lines()
     labs = [l.get_label() for l in lns]
-    leg = ax.legend(lns, labs)
+    ax.legend(lns, labs)
     plt.show()
 
 def calculate_and_export_gene_bimax_fortran_friendly(args):

@@ -3,33 +3,35 @@ Created on Apr 12, 2016
 
 @author: sdenk
 '''
-import ECRad_Results
-from TB_communication import read_topfile
+from TB_Communication import read_topfile
 working_dir = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/Ecfm_Model/"
 import sys
 sys.path.append("/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib")
 sys.path.append("../ECRad_Pylib")
 # from kk_abock import kk as KKeqi
 # from kk_extra import kk_extra
-from Diags import ECRH_diag
-import dd
-from plotting_configuration import *
+from Diag_Types import ECRH_diag
+from Global_Settings import globalsettings
+if(globalsettings.AUG):
+    import dd
+from Plotting_Configuration import plt
 import numpy as np
 import os
 from scipy import constants as cnst
-from plotting_core import plotting_core
-import matplotlib.patches as patches
+from Plotting_Core import PlottingCore
 from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
 from scipy.integrate import simps
-from em_Albajar import em_abs_Alb, s_vec
-from em_Albajar import em_abs_Alb, distribution_interpolator, gene_distribution_interpolator, s_vec
-from TB_communication import make_topfile_from_ext_data
-from equilibrium_utils import EQDataExt
-from equilibrium_utils_AUG import EQData
-from shotfile_handling_AUG import get_data_calib
+from Em_Albajar import EmAbsAlb, SVec, DistributionInterpolator, GeneDistributionInterpolator
+from ECRad_Interface import read_svec_dict_from_file
+from TB_Communication import make_topfile_from_ext_data
+from Basic_Methods.Equilibrium_Utils import EQDataExt
+from Equilibrium_Utils_AUG import EQData
+from Shotfile_Handling_AUG import get_data_calib
 from scipy.io import loadmat
 from ECRad_Results import ECRadResults
-from distribution_functions import Juettner2D
+from Distribution_Functions import Juettner2D, Gauss_norm, Gauss_not_norm, \
+                                   Juettner2D_bidrift, multi_slope, RunAway2D
+from Distribution_IO import load_f_from_ASCII, read_LUKE_data
 
 
 def debug_append_ECRadResults(filename):
@@ -123,34 +125,6 @@ def compare_ECRad_results_R(result_file_list, time, ch, ir=1):
     plt.show()
 
 
-def compare_EQData(shot, time, exp, diag, ed):
-    EQ_obj = EQData(shot, EQ_exp=exp, EQ_diag=diag, EQ_ed=ed)
-    EQEQU_obj = EQDataEQU(shot, EQ_exp=exp, EQ_diag=diag, EQ_ed=ed)
-    EQ_slice = EQ_obj.GetSlice(time,B_vac_correction=False)
-    sliceEQU = EQEQU_obj.GetSlice(time,B_vac_correction=False)
-    quantname = "Bt"
-    quant = getattr(EQ_slice, quantname)
-    quantEQU = getattr(sliceEQU, quantname)
-    levels = np.linspace(np.round(np.min(quant),1), np.round(np.max(quant)), 12)
-    plt.contour(EQ_slice.R, EQ_slice.z, quant.T, levels = levels, colors="k",linestyles="-")
-    plt.contour(sliceEQU.R, sliceEQU.z, quantEQU.T, levels = levels, colors="r", linestyles="--")
-    plt.show()
-    plt.hold(True)
-
-
-def inspect_EQData(shot, time, exp, diag, ed):
-    EQ_obj = EQData(shot, EQ_exp=exp, EQ_diag=diag, EQ_ed=ed)
-    EQEQU_obj = EQDataEQU(shot, EQ_exp=exp, EQ_diag=diag, EQ_ed=ed)
-    EQ_slice = EQ_obj.GetSlice(time)
-#     sliceEQU = EQEQU_obj.GetSlice(time)
-    quantname = "rhop"
-    quant = getattr(EQ_slice, quantname)
-#     quantEQU = getattr(sliceEQU, quantname)
-    levels = np.linspace(np.round(np.min(quant),1), np.round(np.max(quant)), 12)
-    plt.contour(EQ_slice.R, EQ_slice.z, quant.T, levels = levels, colors="k",linestyles="-")
-#     plt.contour(sliceEQU.R, sliceEQU.z, quantEQU.T, levels = levels, colors="r", linestyles="--")
-    plt.show()
-    plt.hold(True)
 
 def debug_f_remap(working_dir):
     fig_list = []
@@ -184,7 +158,7 @@ def debug_f_remap(working_dir):
                 ilabel += 1
             lns = ax_list[-1].get_lines()
             labs = [l.get_label() for l in lns]
-            leg = ax_list[-1].legend(lns, labs)
+            ax_list[-1].legend(lns, labs)
         except IOError:
             print(data_to_plot[i] + " not available at " + os.path.join(working_dir, data_to_plot[i]))
     plt.show()
@@ -192,8 +166,7 @@ def debug_f_remap(working_dir):
 def debug_f_inter(path, shot, time, channelno, dstf, mode, rhop_in, HFS, beta, \
                                     eq_exp="AUGD", eq_diag="EQH", eq_ed=0, bt_vac_correction=1.005):
         ecfm_data = os.path.join(path, "ecfm_data")
-        svec_dict, ece_freq = read_svec_dict_from_file(ecfm_data, channelno, mode=mode)
-        omega = ece_freq * 2.0 * np.pi
+        svec_dict = read_svec_dict_from_file(ecfm_data, channelno, mode=mode)[0]
         flag_use_ASCII = True
         Te_ext = -1
         if(np.abs(mode) != 1):
@@ -213,10 +186,10 @@ def debug_f_inter(path, shot, time, channelno, dstf, mode, rhop_in, HFS, beta, \
         ne_vec = ne_data.T[1]
         Te_spl = InterpolatedUnivariateSpline(rhop_vec_Te, Te_vec)
         ne_spl = InterpolatedUnivariateSpline(rhop_vec_ne, ne_vec)
-        Alb = em_abs_Alb()
+        Alb = EmAbsAlb()
         rhop = rhop_in
         EQ_obj = EQData(int(shot), EQ_exp=eq_exp, EQ_diag=eq_diag, EQ_ed=int(eq_ed), bt_vac_correction=bt_vac_correction)
-        B0 = make_B_min(int(shot), float(time), rhop_in, exp=eq_exp, diag=eq_diag, ed=int(eq_ed))[0]
+        B0 = EQ_obj.get_B_min(time, rhop_in, append_B_ax=True)
         if(dstf == "Re" or dstf == "Lu"):
             if(flag_use_ASCII):
                 f_folder = os.path.join(ecfm_data, "f" + dstf)
@@ -235,11 +208,7 @@ def debug_f_inter(path, shot, time, channelno, dstf, mode, rhop_in, HFS, beta, \
                 y = dist_obj.rhop
                 Fe = dist_obj.f
             else:
-                ipsi, psi, x, y, Fe = read_Fe(ecfm_data)
-                rhop = np.sqrt(psi)
-                irhop = np.argmin(np.abs(rhop - rhop_in))
-                rhop = rhop[irhop]
-                Fe = Fe[irhop]
+                raise ValueError
             # bt_vac correction not necessary here since constant factor that cancels out for B/B_min
         elif(dstf != "Ge"):
             if(dstf == "DM"):
@@ -307,16 +276,14 @@ def debug_f_inter(path, shot, time, channelno, dstf, mode, rhop_in, HFS, beta, \
             # np.abs(g)
             Alb.B_min = B0
         if(dstf != "Ge"):
-            dist_obj = distribution_interpolator(x, y, RectBivariateSpline(x, y, Fe))
+            dist_obj = DistributionInterpolator(x, y, RectBivariateSpline(x, y, Fe))
             Alb.dist_mode = "ext"
             Alb.ext_dist = dist_obj
             Alb.B_min = B0
-            pmax = max(x)
         else:
-            dist_obj = gene_distribution_interpolator(beta_par, mu_norm, RectBivariateSpline(beta_par, mu_norm, Fe))
+            dist_obj = GeneDistributionInterpolator(beta_par, mu_norm, RectBivariateSpline(beta_par, mu_norm, Fe))
             Alb.dist_mode = "gene"
             Alb.ext_dist = dist_obj
-            pmax = np.max(2 * beta_par)
         if(np.min(svec_dict["rhop"]) > rhop):
             print("LOS does not intersect requested flux surface")
             print("Smallest rhop on LOS", np.min(svec_dict["rhop"]))
@@ -359,7 +326,7 @@ def debug_f_inter(path, shot, time, channelno, dstf, mode, rhop_in, HFS, beta, \
         else:
             Te = Te_ext
         ne = ne_spl(rhop)
-        svec = s_vec(rhop, Te, ne, omega_c / np.pi, theta)
+        svec = SVec(rhop, Te, ne, omega_c / np.pi, theta)
         print("svec", rhop, Te, ne, omega_c / np.pi, theta)
         for i_upar in range(len(beta_par)):
             u_par = np.zeros(npts)
@@ -367,7 +334,6 @@ def debug_f_inter(path, shot, time, channelno, dstf, mode, rhop_in, HFS, beta, \
             u_perp = np.sqrt(mu_smooth * 2.0 * B0) / np.sqrt(1.0 - beta_par[i_upar] ** 2 - mu_smooth * 2.0 * B0)
             u_par = beta_par[i_upar] / np.sqrt(1.0 - beta_par[i_upar] ** 2 - mu_smooth * 2.0 * B0)
             u_perp_grid = np.sqrt(mu_norm * 2.0 * B0) / np.sqrt(1.0 - beta_par[i_upar] ** 2 - mu_norm * 2.0 * B0)
-            u_par_grid = beta_par[i_upar] / np.sqrt(1.0 - beta_par[i_upar] ** 2 - mu_norm * 2.0 * B0)
             log10_f_along_res = []
             if(dstf != "Ge"):
                 Alb.dist_mode = "ext"
@@ -398,10 +364,10 @@ def check_Bi_max_spline():
         lines2[:] = mu[i]
         plt.plot(vpar, lines2, "--b")
     plt.plot(b.T[0], b.T[1], "*")
-    figure2 = plt.figure()
+    plt.figure()
     plt.plot(b.T[0], b.T[2], "-")
     plt.plot(b.T[0], b.T[3], "+")
-    figure3 = plt.figure()
+    plt.figure()
     plt.plot(b.T[1], b.T[2], "-")
     plt.plot(b.T[1], b.T[3], "+")
     plt.show()
@@ -445,8 +411,6 @@ def check_ray_bundle(working_dir, shotno, time, N_ray, channel=1, mode="X", tor_
     else:
         for i in range(len(crossX.T[::20])):
             ax.plot(crossX.T[::20][i], crossY.T[::20][i], "-k")
-    if(not tor_view):
-        plotting_core.plot_EQH_vessel(shotno, time, ax)
     # ax.add_patch(patches.Rectangle(\
     #    (1, -1.27), 1.27, 2.54, fill=False, edgecolor="red"))
     # ax.add_patch(patches.Rectangle(\
@@ -459,8 +423,8 @@ def validate_theta_along_los(ida_working_dir, ed, ch):
         ecfm_data = os.path.join(ida_working_dir, "OERT", "ecfm_data")
     else:
         ecfm_data = os.path.join(ida_working_dir, "OERT", "ed_" + str(ed), "ecfm_data")
-    ida_svec_dict, freq = read_svec_dict_from_file(ida_ecfm_data, ch)
-    ecfm_svec_dict, freq = read_svec_dict_from_file(ecfm_data, ch)
+    ida_svec_dict = read_svec_dict_from_file(ida_ecfm_data, ch)[0]
+    ecfm_svec_dict = read_svec_dict_from_file(ecfm_data, ch)[0]
     fig1 = plt.figure(figsize=(12.0, 8.5))
     ax1 = fig1.add_subplot(111)
     ax1.plot(ida_svec_dict["R"], ida_svec_dict["z"], "-r", label=r"IDA")
@@ -489,8 +453,8 @@ def compare_LOS_Rz(working_dir, ida_working_dir, chno):
     plt.show()
     
 def compare_quant_on_LOS(working_dir, ida_working_dir, chno):
-    svec_ECRad, freq = read_svec_dict_from_file(working_dir, chno)
-    svec_IDA, freq = read_svec_dict_from_file(ida_working_dir, chno)
+    svec_ECRad = read_svec_dict_from_file(working_dir, chno)[0]
+    svec_IDA = read_svec_dict_from_file(ida_working_dir, chno)[0]
     scale_dict = {}
     scale_dict["ne"] = 1.e19
     scale_dict["Te"] = 1.e3
@@ -498,7 +462,7 @@ def compare_quant_on_LOS(working_dir, ida_working_dir, chno):
     scale_dict["z"] = 1.e-2
     scale_dict["freq_2X"] = 100.e9
     scale_dict["rhop"] = 1.e0
-    for quant, deriv in zip(["R", "z"], [0,0]):
+    for quant in ["R", "z"]:
         if(quant not in ["R", "z"]):
             mask_ECRad = svec_ECRad["rhop"] >= 0
             mask_IDA = svec_IDA["rhop"] >= 0
@@ -521,8 +485,8 @@ def compare_quant_on_LOS(working_dir, ida_working_dir, chno):
     plt.show()
     
 def compare_quant_on_LOS_rel(working_dir, ida_working_dir, chno):
-    svec_ECRad, freq = read_svec_dict_from_file(working_dir, chno)
-    svec_IDA, freq = read_svec_dict_from_file(ida_working_dir, chno)
+    svec_ECRad = read_svec_dict_from_file(working_dir, chno)[0]
+    svec_IDA = read_svec_dict_from_file(ida_working_dir, chno)[0]
     scale_dict = {}
     x_quant = "R"
     scale_dict["ne"] = 1.e19
@@ -532,7 +496,6 @@ def compare_quant_on_LOS_rel(working_dir, ida_working_dir, chno):
     scale_dict["freq_2X"] = 100.e9
     scale_dict["rhop"] = 1.e0
     scale_dict["theta"] = 2.0 * np.pi
-    s_R_spl = InterpolatedUnivariateSpline(svec_ECRad["s"], svec_ECRad["R"])
     for quant, deriv in zip(["freq_2X","ne", "z"], [0,0,0,0]):
         if(False):#quant not in ["R", "z"]
             mask_ECRad = svec_ECRad["rhop"] >= 0
@@ -570,8 +533,8 @@ def compare_res_pos(working_dir, ida_working_dir, channel_num_as_x=False):
     plt.show()
     
 def compare_ds(working_dir, ida_working_dir, chno):
-    svec_ECRad, freq = read_svec_dict_from_file(working_dir, chno)
-    svec_IDA, freq = read_svec_dict_from_file(ida_working_dir, chno)
+    svec_ECRad = read_svec_dict_from_file(working_dir, chno)[0]
+    svec_IDA = read_svec_dict_from_file(ida_working_dir, chno)[0]
     res_ECRad = np.loadtxt(os.path.join(working_dir, "sres.dat"))
     res_IDA = np.loadtxt(os.path.join(ida_working_dir, "sres.dat"))
     ds_ECRad = svec_ECRad["s"][1:] - svec_ECRad["s"][:-1]
@@ -587,8 +550,8 @@ def compare_ds(working_dir, ida_working_dir, chno):
     plt.show()   
     
 def compare_ds_rel(working_dir, ida_working_dir, chno):
-    svec_ECRad, freq = read_svec_dict_from_file(working_dir, chno)
-    svec_IDA, freq = read_svec_dict_from_file(ida_working_dir, chno)
+    svec_ECRad = read_svec_dict_from_file(working_dir, chno)[0]
+    svec_IDA = read_svec_dict_from_file(ida_working_dir, chno)[0]
     res_IDA = np.loadtxt(os.path.join(ida_working_dir, "sres.dat"))
     ds_ECRad = svec_ECRad["s"][1:] - svec_ECRad["s"][:-1]
     ds_spl_ECRad=InterpolatedUnivariateSpline(svec_ECRad["s"][:-1], ds_ECRad)
@@ -616,9 +579,9 @@ def compare_rhop(working_dir, ida_working_dir, chno):
     levels = np.linspace(plt_range[0],plt_range[1], 30)
     plt.contourf(IDA_topdata["R"], IDA_topdata["z"], IDA_rhop.T - ECRad_rhop.T, levels=levels, cmap=plt.cm.get_cmap("plasma"))
     plt.contour(ECRad_topdata["R"], ECRad_topdata["z"], ECRad_rhop.T, levels=levels_rhop, colors="k", linestyles="-")
-    fig = plt.figure()
-    svec_ECRad, freq = read_svec_dict_from_file(working_dir, chno)
-    svec_IDA, freq = read_svec_dict_from_file(ida_working_dir, chno)
+    plt.figure()
+    svec_ECRad = read_svec_dict_from_file(working_dir, chno)[0]
+    svec_IDA = read_svec_dict_from_file(ida_working_dir, chno)[0]
     quant = "rhop"
     if(quant not in ["R", "z"]):
         mask_ECRad = svec_ECRad["rhop"] >= 0
@@ -634,11 +597,10 @@ def compare_rhop(working_dir, ida_working_dir, chno):
              rhop_spl( svec_IDA["R"][mask_IDA],svec_IDA["z"][mask_IDA], grid=False), "--r", label="IDA")
     plt.legend()
     plt.show()
-    plt.hold(True)
     
 def compare_LOS_dev(working_dir, ida_working_dir, chno):
-    svec_ECRad, freq = read_svec_dict_from_file(working_dir, chno)
-    svec_IDA, freq = read_svec_dict_from_file(ida_working_dir, chno)
+    svec_ECRad = read_svec_dict_from_file(working_dir, chno)[0]
+    svec_IDA = read_svec_dict_from_file(ida_working_dir, chno)[0]
     mask_ECRad = svec_ECRad["rhop"] >= 0
     mask_IDA = svec_IDA["rhop"] >= 0
     for quant, deriv in zip(["ne", "Te"], [0,0]):
@@ -661,7 +623,8 @@ def compare_topfiles(working_dir, ida_working_dir, shot=None, time=None, EQ_exp=
     IDA_topdata = read_topfile(ida_working_dir)
     ref_path = "/tokp/work/sdenk/"
     if(shot is not None):
-        make_topfile(ref_path, shot, time, EQ_exp, EQ_diag, EQ_ed, bt_vac_correction=1.005, copy_Te_ne=False)
+        raise ValueError("This routine needs to be fixed before usage")
+        make_topfile_from_ext_data(ref_path, shot, time, EQ_exp, EQ_diag, EQ_ed, bt_vac_correction=1.005, copy_Te_ne=False)
         IDA_topdata = read_topfile(ref_path)
     quant = "Bt"
     level_dict = {}
@@ -679,14 +642,14 @@ def compare_topfiles(working_dir, ida_working_dir, shot=None, time=None, EQ_exp=
     plt.contourf(IDA_topdata["R"], IDA_topdata["z"], IDA_topdata[quant].T - ECRad_topdata[quant].T, levels=levels, cmap=plt.cm.get_cmap("plasma"))
     plt.contour(ECRad_topdata["R"], ECRad_topdata["z"],ECRad_topdata[quant].T, levels=level_dict[quant], colors="k", linestyles="-")
     plt.show()
-    plt.hold(True)
     
 def compare_topfiles_cut(working_dir, ida_working_dir, shot=None, time=None, EQ_exp=None, EQ_diag=None, EQ_ed=None, btf_cor=None):
     ECRad_topdata = read_topfile(working_dir)
     IDA_topdata = read_topfile(ida_working_dir)
     ref_path = "/tokp/work/sdenk/"
     if(shot is not None):
-        make_topfile(ref_path, shot, time, EQ_exp, EQ_diag, EQ_ed, bt_vac_correction=1.005, copy_Te_ne=False)
+        raise ValueError("This routine needs to be fixed before usage")
+        make_topfile_from_ext_data(ref_path, shot, time, EQ_exp, EQ_diag, EQ_ed, bt_vac_correction=1.005, copy_Te_ne=False)
         ECRad_topdata = read_topfile(ref_path)
     quant = "Psi"
     level_dict = {}
@@ -696,17 +659,14 @@ def compare_topfiles_cut(working_dir, ida_working_dir, shot=None, time=None, EQ_
     level_dict["Bz"] = np.linspace(-200.e-3, 200.e-3, 13)
 #     plt.contour(ECRad_topdata["R"], ECRad_topdata["z"], ECRad_topdata["Psi"].T, levels=level_dict["Psi"], colors="k", linestyles="-")
 #     plt.contour(IDA_topdata["R"], IDA_topdata["z"], IDA_topdata["Psi"].T, levels=level_dict["Psi"], colors="r", linestyles="--")
-    plt_range = np.array([np.min(IDA_topdata[quant].T - ECRad_topdata[quant].T), np.max(IDA_topdata[quant].T - ECRad_topdata[quant].T)])
-    quant_av = np.mean(np.abs(ECRad_topdata[quant]).flatten())
     plt.plot(ECRad_topdata["R"], ECRad_topdata[quant][:,len(ECRad_topdata["z"]) / 2], "-k")
     plt.plot(IDA_topdata["R"], IDA_topdata[quant][:,len(IDA_topdata["z"]) / 2], "--r")
     plt.show()
-    plt.hold(True)    
 
 def compare_topfiles_B_tot(working_dir, ida_working_dir):
     ECRad_topdata = read_topfile(working_dir,)
     IDA_topdata = read_topfile(ida_working_dir)
-    fig1 = plt.figure()
+    plt.figure()
     level_dict = {}
     level_dict["Btot"] = np.linspace(-3.0, -1.2, 13)
     Btot_ECRad = np.zeros(ECRad_topdata["Bt"].shape)
@@ -727,10 +687,9 @@ def compare_topfiles_B_tot(working_dir, ida_working_dir):
 #     plt.imshow(1.0 - Btot_IDA/Btot_ECRad, interpolation=None, cmap=plt.cm.get_cmap("plasma"))
 #     plt.contour(ECRad_topdata["R"], ECRad_topdata["z"],Btot_ECRad.T, levels=level_dict[quant], colors="k", linestyles="-")
     plt.show()
-    plt.hold(True)
 
 def inspect_svec(working_dir, chno):
-    svec_ECRad, freq = read_svec_dict_from_file(working_dir, chno)
+    svec_ECRad = read_svec_dict_from_file(working_dir, chno)[0]
     mask_ECRad = svec_ECRad["rhop"] >= 0
     scale_dict= {}
     scale_dict["ne"] = 1.e19
@@ -747,10 +706,9 @@ def inspect_svec(working_dir, chno):
         plt.plot(ECRadx, ECRadquant / scale_dict[quant], label=quant.replace("_", " "))
     plt.legend()
     plt.show()
-    plt.hold(True)
 
 def calculate_coupling(path, channel):
-    svec_X, freq = read_svec_dict_from_file(os.path.join(path, "ecfm_data"), channel)
+    svec_X = read_svec_dict_from_file(os.path.join(path, "ecfm_data"), channel)[0]
     svec_O, freq = read_svec_dict_from_file(os.path.join(path, "ecfm_data"), channel, "O")
     N_X_spl = InterpolatedUnivariateSpline(svec_X["s"][svec_X["rhop"] != -1], svec_X["N_abs"][svec_X["rhop"] != -1])
     N_O_spl = InterpolatedUnivariateSpline(svec_O["s"][svec_O["rhop"] != -1], svec_O["N_abs"][svec_O["rhop"] != -1])
@@ -763,8 +721,8 @@ def calculate_coupling(path, channel):
     plt.show()
 
 def plot_resonance_line(freq_2X, freq, theta):
-    abs_a = em_abs_Alb()
-    svec = s_vec(0.2, 8.e3, 1.5e19, freq_2X, np.pi / 180.0 * theta)
+    abs_a = EmAbsAlb()
+    svec = SVec(0.2, 8.e3, 1.5e19, freq_2X, np.pi / 180.0 * theta)
     u_par, u_perp = abs_a.abs_Albajar_resonance_line(svec, freq * 2.e0 * np.pi, 1, 2)
     plt.plot(u_par, u_perp)
 
@@ -787,7 +745,6 @@ def R_wall_behavior(folder, R_init):
 def double_check_alpha_integration(folder, ch):
     ichdata = np.loadtxt(os.path.join(folder, "ecfm_data", "IchTB", "Irhopch" + "{0:03d}".format(ch) + ".dat"))
     Tdata = np.loadtxt(os.path.join(folder, "ecfm_data", "IchTB", "Trhopch" + "{0:03d}".format(ch) + ".dat"))
-    Traddata = np.loadtxt(os.path.join(folder, "ecfm_data", "X_TRadM_therm.dat"))
     abs_spl = InterpolatedUnivariateSpline(ichdata.T[0], ichdata.T[5])
     T = np.zeros(len(ichdata.T[0]))
     for i in range(len(ichdata.T[0])):
@@ -845,8 +802,8 @@ def test_get_diag_data(shot, times, diag):
         res = []
         for i in range(len(times)):
             res.append(np.linspace(1, N, N))
-        std_dev_data, data = get_data_calib(diag_id=diag, shot=shot, time=times, exp="AUGD", ed=0, calib=calib, std_dev_calib=std_dev_calib, \
-                       ext_resonances=res, name="", t_smooth=1.e-3)
+        data = get_data_calib(diag_id=diag, shot=shot, time=times, exp="AUGD", ed=0, calib=calib, std_dev_calib=std_dev_calib, \
+                       ext_resonances=res, name="", t_smooth=1.e-3)[1]
     elif(diag == "ECN"):
         N = 160
         calib = np.zeros(N)
@@ -855,8 +812,8 @@ def test_get_diag_data(shot, times, diag):
         res = []
         for i in range(len(times)):
             res.append(np.linspace(1, N, N))
-        std_dev_data, data = get_data_calib(diag_id=diag, shot=shot, time=times, exp="AUGD", ed=0, calib=calib, std_dev_calib=std_dev_calib, \
-                       ext_resonances=res, name="", t_smooth=1.e-3)
+        data = get_data_calib(diag_id=diag, shot=shot, time=times, exp="AUGD", ed=0, calib=calib, std_dev_calib=std_dev_calib, \
+                       ext_resonances=res, name="", t_smooth=1.e-3)[1]
     elif(diag == "ECO"):
         N = 120
         calib = np.zeros(N)
@@ -865,8 +822,8 @@ def test_get_diag_data(shot, times, diag):
         res = []
         for i in range(len(times)):
             res.append(np.linspace(1, N, N))
-        std_dev_data, data = get_data_calib(diag_id=diag, shot=shot, time=times, exp="AUGD", ed=0, calib=calib, std_dev_calib=std_dev_calib, \
-                       ext_resonances=res, name="", t_smooth=1.e-3)
+        data = get_data_calib(diag_id=diag, shot=shot, time=times, exp="AUGD", ed=0, calib=calib, std_dev_calib=std_dev_calib, \
+                       ext_resonances=res, name="", t_smooth=1.e-3)[1]
     print(data[1].shape)
     plt.plot(data[0][0], data[1][0])
     plt.show()

@@ -16,7 +16,7 @@ from scipy.interpolate import RectBivariateSpline, splev, splrep, InterpolatedUn
 from equilibrium_utils_AUG import EQData
 import scipy.constants as cnst
 from plotting_configuration import *
-from Diags import Diag
+from Diag_Types import Diag
 from shutil import copyfile
 from data_processing import remove_mode
 

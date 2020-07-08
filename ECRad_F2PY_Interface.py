@@ -3,14 +3,14 @@ Created on Nov 22, 2019
 
 @author: g2sdenk
 '''
-from GlobalSettings import globalsettings
+from Global_Settings import globalsettings
 from ECRad_Scenario import ECRadScenario
 from ECRad_Config import ECRadConfig
 import os
 import sys
 import numpy as np
 sys.path.append(globalsettings.ECRadRoot)
-from plotting_configuration import plt
+from Plotting_Configuration import plt
 from ECRad_Interface import GetECRadExec
 
 

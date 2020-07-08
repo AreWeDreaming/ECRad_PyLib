@@ -126,8 +126,6 @@ def ElmExtract(time, nshot, syncSetting=None, plot=False, preFac=0.1, postFac=0.
         syncSetting = defaultSetting
 
     # Relative time of the considered region
-    t_start = syncSetting['t_start']
-    t_end = syncSetting['t_end']
 
     good_jtime = np.arange(np.size(time))
     deleteIdx = []

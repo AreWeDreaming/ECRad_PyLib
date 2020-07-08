@@ -8,7 +8,7 @@ def ndarray_math_operation(ndarray, operation):
     try:
         ndarray = operation(ndarray)
     except AttributeError:
-        for i, sub_ndarray in enumerate(ndarray):
+        for i in range(len(ndarray)):
             ndarray[i]= ndarray_math_operation(ndarray[i], operation)
     return ndarray
 
@@ -16,7 +16,7 @@ def ndarray_check_for_None(ndarray):
     any_None = False
     try:
         len(ndarray)
-        for i, sub_ndarray in enumerate(ndarray):
+        for i in range(len(ndarray)):
             if(ndarray_check_for_None(ndarray[i])):
                 return True
     except TypeError:

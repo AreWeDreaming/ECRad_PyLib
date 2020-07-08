@@ -3,25 +3,21 @@ Created on Mar 23, 2016
 
 @author: sdenk
 '''
-from GlobalSettings import globalsettings
-from scipy.interpolate import InterpolatedUnivariateSpline
-from mpl_toolkits.mplot3d import Axes3D
+from Global_Settings import globalsettings
 from matplotlib import cm
-from matplotlib.ticker import LinearLocator, FormatStrFormatter
-from plotting_configuration import *
+from Plotting_Configuration import plt, MaxNLocator
 import numpy as np
-import os
-from Distribution import f_interpolator
-from distribution_io import read_waves_mat_to_beam, read_dist_mat_to_beam, \
+from Distribution_Classes import FInterpolator
+from Distribution_IO import read_waves_mat_to_beam, read_dist_mat_to_beam, \
                             load_f_from_mat
-from distribution_functions import Juettner2D
+from Distribution_Functions import Juettner2D
 if(globalsettings.AUG):
-    from equilibrium_utils_AUG import EQData
-from equilibrium_utils import EQDataExt
-from em_Albajar import em_abs_Alb, distribution_interpolator, s_vec, N_with_pol_vec
+    from Equilibrium_Utils_AUG import EQData
+from Basic_Methods.Equilibrium_Utils import EQDataExt
+from Em_Albajar import EmAbsAlb, DistributionInterpolator, SVec, N_with_pol_vec
 import scipy.constants as cnst
 from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
-from scipy.io import loadmat, savemat
+from scipy.io import loadmat
 import scipy.odr as odr
 from ECRad_Results import ECRadResults
 
@@ -35,14 +31,14 @@ def make_f_inter(dist, EQObj, working_dir=None, dist_obj=None, time=None):
         res_dist = "thermal"
     EqSlice = EQObj.GetSlice(time)
     if(res_dist == "thermal"):
-        f_inter = f_interpolator(dist=res_dist)
+        f_inter = FInterpolator(dist=res_dist)
     elif(working_dir is not None):
-        f_inter = f_interpolator(working_dir=working_dir, dist=res_dist, EqSlice=EqSlice)
+        f_inter = FInterpolator(working_dir=working_dir, dist=res_dist, EqSlice=EqSlice)
     else:
         rhop_Bmin, Bmin = EQObj.get_B_min(time, dist_obj.rhop, append_B_ax=True)
-        f_inter = f_interpolator(dist_obj=dist_obj, dist=res_dist, rhop_Bmin=rhop_Bmin, Bmin=Bmin)
+        f_inter = FInterpolator(dist_obj=dist_obj, dist=res_dist, rhop_Bmin=rhop_Bmin, Bmin=Bmin)
     if(dist == "Ge"):
-        f_inter_scnd = f_interpolator(working_dir, dist="Ge0", EqSlice=EqSlice)
+        f_inter_scnd = FInterpolator(working_dir, dist="Ge0", EqSlice=EqSlice)
         return f_inter, f_inter_scnd # Gene f0 distribution
     else:
         return f_inter, None # None will be replaced with f_inter based on thermal distribution
@@ -133,9 +129,6 @@ def distribute_points(x, weight, N_pnts):
         else:
             x_weighted.append(x[val == cum_weight][0])
     return np.array(x_weighted)
-#     plt.plot(x, weight, "^")
-#     plt.plot(x_weighted, weight_spl(x_weighted), "+")
-#     plt.show()
 
 class BDOP_3D:
     def __init__(self, s, svec, freq, Trad, T, f_inter, dist, B_ax, m=2, f_inter_scnd=None):
@@ -147,7 +140,7 @@ class BDOP_3D:
             dist_mode = "gene"
         else:
             dist_mode = "thermal"
-        em_abs_Alb_obj = em_abs_Alb()
+        em_abs_Alb_obj = EmAbsAlb()
         em_abs_Alb_obj.dist_mode = dist_mode
         self.f_inter = f_inter
         if(dist == "Ge"):
@@ -178,7 +171,7 @@ class BDOP_3D:
         self.u_par_range = [np.inf, -np.inf]
         self.u_perp_range = [0.0, -np.inf]
         if(f_inter_scnd is None):
-            self.f_inter_scnd = f_interpolator(None, dist="thermal")
+            self.f_inter_scnd = FInterpolator(None, dist="thermal")
         else:
             self.f_inter_scnd = f_inter_scnd
         self.u_par_max = -np.inf
@@ -209,7 +202,7 @@ class BDOP_3D:
                 self.zeta.append(np.pi * freq_2X * cnst.m_e / (cnst.e * B0))
             if(em_abs_Alb_obj.is_resonant(rhop, Te, ne, freq_2X, theta, freq, m)):
                 x, y, spline = self.f_inter.get_spline(rhop, Te)
-                dist_inter_slice = distribution_interpolator(x, y, spline)
+                dist_inter_slice = DistributionInterpolator(x, y, spline)
                 if(dist == "Ge"):
                     em_abs_Alb_obj.j_abs_Alb(rhop, Te, ne, \
                                              freq_2X, theta, freq, dist_inter_slice, B0, m=m)
@@ -264,12 +257,12 @@ class BDOP_3D:
                         self.u_par_range[1] = np.max(self.u_par[-1])
                     if(np.max(self.u_perp[-1]) > self.u_perp_range[1]):
                         self.u_perp_range[1] = np.max(self.u_perp[-1])
-                    cur_svec = s_vec(rhop, Te, ne, \
+                    cur_svec = SVec(rhop, Te, ne, \
                                      freq_2X, theta)
                     mu = cnst.c ** 2 * cnst.m_e / (Te * cnst.e)
                     self.f.append(em_abs_Alb_obj.dist(self.u_par[-1], self.u_perp[-1], mu, cur_svec))
                     u, pitch, spline = self.f_inter_scnd.get_spline(rhop, Te)
-                    dist_inter_slice = distribution_interpolator(u, pitch, spline)
+                    dist_inter_slice = DistributionInterpolator(u, pitch, spline)
                     if(dist == "Ge"):
                         em_abs_Alb_obj.j_abs_Alb(rhop, Te, ne, \
                                                  freq_2X, theta, freq, dist_inter_slice, B0)
@@ -318,16 +311,12 @@ class PowerDepo_3D:
                  Te_spl, ne_spl, m=2, f_inter_scnd=None, fast=False):
         if(dist in ["Re", "ReComp"]):
             dist_mode = "ext"
-            res_dist = dist.replace("Comp", "")
         elif(dist == "Ge"):
             dist_mode = "gene"
-            res_dist = dist
         elif(dist == "TB"):
             dist_mode = "thermal"
-            res_dist = "thermal"
         elif(dist == "ReTh"):
             dist_mode = "thermal"
-            res_dist = "thermal"
         else:
             print("dist not supported", dist)
         self.m = m
@@ -338,7 +327,7 @@ class PowerDepo_3D:
         # svec.T[8] freq_2X
         # svec.T[4] ne
         # svec.T[5] Te
-        self.em_abs_Alb_obj = em_abs_Alb()
+        self.em_abs_Alb_obj = EmAbsAlb()
         self.em_abs_Alb_obj.dist_mode = dist_mode
         if(dist == "Ge"):
             self.B0 = self.f_inter.B0
@@ -359,7 +348,7 @@ class PowerDepo_3D:
         self.f_back = []
         self.dist = dist
         if(f_inter_scnd is None):
-            self.f_inter_scnd = f_interpolator(None, dist="thermal")
+            self.f_inter_scnd = FInterpolator(None, dist="thermal")
         else:
             self.f_inter_scnd = f_inter_scnd
         self.u_par_min = np.Inf
@@ -411,7 +400,7 @@ class PowerDepo_3D:
             freq_2X = self.freq_2X_spl(s[i])
             omega_p = cnst.e * np.sqrt(ne / (cnst.epsilon_0 * cnst.m_e))
             X = omega_p ** 2 / (2.0 * np.pi * self.freq) ** 2
-            N, e = N_with_pol_vec(X, freq_2X / (2.0 * self.freq), np.sin(theta), np.cos(theta), 1)
+            N = N_with_pol_vec(X, freq_2X / (2.0 * self.freq), np.sin(theta), np.cos(theta), 1)[0]
             N_par = self.N_par_spl(s[i])
             print("N_abs, N_par in situ, N_par Gray", N, np.cos(theta) * N, N_par)
             if(fast and P_norm[i] == 0):
@@ -419,7 +408,7 @@ class PowerDepo_3D:
             if(self.em_abs_Alb_obj.is_resonant(rhop, Te, ne, \
                                                freq_2X, theta, self.freq, self.m)):
                 x, y, spline = self.f_inter.get_spline(rhop, Te)
-                dist_inter_slice = distribution_interpolator(x, y, spline)
+                dist_inter_slice = DistributionInterpolator(x, y, spline)
                 if(self.f_inter.B_min_spline(rhop).item() == 0.0):
                     self.zeta.append(1.0)
                 else:
@@ -482,13 +471,13 @@ class PowerDepo_3D:
                         self.u_par_range[1] = np.max(self.u_par[-1])
                     if(np.max(self.u_perp[-1]) > self.u_perp_range[1]):
                         self.u_perp_range[1] = np.max(self.u_perp[-1])
-                    cur_svec = s_vec(rhop, Te, ne, \
+                    cur_svec = SVec(rhop, Te, ne, \
                                  freq_2X, theta)
                     mu = cnst.c ** 2 * cnst.m_e / (Te * cnst.e)
-                    c_abs, j = self.em_abs_Alb_obj.abs_Albajar(cur_svec, 2.0 * np.pi * self.freq, 1, n_max=3, n_min=2)
+                    self.em_abs_Alb_obj.abs_Albajar(cur_svec, 2.0 * np.pi * self.freq, 1, n_max=3, n_min=2)
                     self.f.append(self.em_abs_Alb_obj.dist(self.u_par[-1], self.u_perp[-1], mu, cur_svec))
                     u, pitch, spline = self.f_inter_scnd.get_spline(rhop, Te)
-                    dist_inter_slice = distribution_interpolator(u, pitch, spline)
+                    dist_inter_slice = DistributionInterpolator(u, pitch, spline)
             else:
                 print("Channel not resonant at rhop = ", rhop)
             # plt.plot(u_par[-1], val[-1])
@@ -676,7 +665,6 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
         BPD_POI_rhop = []
         s_BPD_max = s_ray[np.argmax(BPD_ray)]
         rhop_cropped = np.linspace(rhop_range[0], rhop_range[1], n_rhop)
-        BPD_croped = np.zeros(n_rhop)
         BPD_ch_cropped = np.zeros(n_rhop)
         for i in range(len(rhop_cropped)):
             # Recalculate BDOP for an unsigned rhop grid
@@ -912,7 +900,7 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
                 i_start = i_end - 2
             if(not got_f):
                 x, y, spline = BDOP.f_inter.get_spline(distribution_rhop, np.exp(Te_spline(distribution_rhop)))
-                dist_inter = distribution_interpolator(x, y, spline)
+                dist_inter = DistributionInterpolator(x, y, spline)
                 if(dist not in ["Ge", "GeComp", "Th"]):
                     zeta = BDOP.zeta[i_s]
                 got_f = True

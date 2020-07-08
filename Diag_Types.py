@@ -4,7 +4,6 @@ Created on Feb 2, 2017
 @author: sdenk
 '''
 import numpy as np
-import os
 from collections import OrderedDict as od
 from scipy.io import loadmat
 
@@ -205,7 +204,6 @@ class EXT_diag(BasicDiag):  #  Makes no sense to inherit properties we do not wa
         
     def set_from_mat(self, ray_launch_file):
         mdict = loadmat(ray_launch_file, squeeze_me=True)
-        itime = 0 # Only first time point imported -> limitation of current ext diag
         if(np.ndim(mdict["launch_f"]) == 1):
             self.f = mdict["launch_f"]
             self.df = mdict["launch_df"]

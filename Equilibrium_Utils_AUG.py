@@ -4,21 +4,17 @@ Created on Jan 29, 2017
 @author: sdenk
 '''
 import sys
-import ctypes as ct
 import os
 sys.path.append('/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib')
 import dd
 import numpy as np
-from scipy.optimize import minimize
-from scipy.interpolate import RectBivariateSpline, InterpolatedUnivariateSpline
-from equilibrium_utils import EQDataExt, EQDataSlice, eval_spline, special_points
-from Geometry_utils import get_contour, get_Surface_area_of_torus, get_arclength, get_av_radius
+from scipy.interpolate import InterpolatedUnivariateSpline
+from Basic_Methods.Equilibrium_Utils import EQDataExt, EQDataSlice, special_points
 from scipy import __version__ as scivers
 from scipy import constants as cnst
-from get_ECRH_config import get_ECRH_viewing_angles
-import scipy.optimize as scopt
 from map_equ import equ_map
 vessel_bd_file = "ASDEX_Upgrade_vessel.txt"
+from datetime import datetime
 
 def eval_R(x):
     return -x[0] ** 3
@@ -36,14 +32,14 @@ def check_Bt_vac_source(shot):
         print("No MBI shotfile. No Bt source!")
         return False, 1.0
     try:
-        signal = MBI_shot.getSignal("BTFABB")
+        MBI_shot.getSignal("BTFABB")
         return True, 1.005
     except:
         return True, 1.01
 
 def make_rhop_signed_axis(shot, time, R, rhop, f, f2=None, eq_exp='AUGD', eq_diag='EQH', eq_ed=0, external_folder=''):
     eq_obj = EQData(shot, external_folder=external_folder, eq_exp=eq_exp, eq_diag=eq_diag, eq_ed=eq_ed)
-    R_ax, z_ax = eq_obj.get_axis(time)
+    R_ax = eq_obj.get_axis(time)[0]
     HFS = R < R_ax
     last_HFS = HFS[0]
     profile_cnt = 0
@@ -119,7 +115,7 @@ class EQData(EQDataExt):
         # Adapted from mod_eqi.f90 by R. Fischer
         rv = 2.40
         vz = 0.e0
-        Br_out, Bz_out, Bt_out = self.equ.rz2brzt(np.array([rv]), np.array([vz]), time)
+        Bt_out = self.equ.rz2brzt(np.array([rv]), np.array([vz]), time)[2]
         Bt_out = np.asscalar(Bt_out)
         Btf0_eq = Bt_out
         Btf0_eq = Btf0_eq * rv / self.R0
@@ -167,7 +163,6 @@ class EQData(EQDataExt):
                 self.init_read_from_shotfile()
             rhot = self.equ.rho2rho(rhop, t_in=time, coord_out="rho_tor")
             try:
-                i = len(time)
                 return rhot 
             except TypeError:
                 return rhot[0] # equ routines always return arrays
@@ -181,7 +176,6 @@ class EQData(EQDataExt):
                 self.init_read_from_shotfile()
             rhop = self.equ.rho2rho(rhot, t_in=time, coord_in='rho_tor', coord_out="rho_pol")
             try:
-                i = len(time)
                 return rhop 
             except TypeError:
                 return rhop[0] # equ routines always return arrays
@@ -195,7 +189,6 @@ class EQData(EQDataExt):
                 self.init_read_from_shotfile()
             Psi = self.equ.rho2rho(rhop, t_in=time, coord_out="Psi")
             try:
-                i = len(time)
                 return Psi 
             except TypeError:
                 return Psi[0] # equ routines always return arrays
@@ -222,13 +215,13 @@ class EQData(EQDataExt):
         return quantspl(psi_in)
 
     def add_ripple_to_slice(self, time, EQSlice):
-        R, z = self.get_axis(time)
+        R = self.get_axis(time)[0]
         B_axis = self.get_B_on_axis(time)
         B_sign = np.sign(np.mean(EQSlice.Bt))
         EQSlice.inject_ripple(aug_bt_ripple(R, B_axis * B_sign))
         return EQSlice
     
-    def make_E_Fit_EQDSK(self, working_dir, time, I_p):
+    def make_E_Fit_EQDSK(self, working_dir, shot, time, I_p):
         EQDSK_file = open(os.path.join(working_dir, "g{0:d}_{1:05d}".format(self.shot, int(time*1.e3))), "w")
         dummy = 0.0
         EQ_t = self.GetSlice(time)
@@ -327,7 +320,7 @@ class aug_bt_ripple:
         return B_ripple
     
 def compare_f_dia(shot, time, EQ_exp, EQ_diag, EQ_ed):
-    from plotting_configuration import plt
+    from Plotting_Configuration import plt
     EQObj = EQData(shot, EQ_exp=EQ_exp, EQ_diag=EQ_diag, EQ_ed=EQ_ed)
     EQ_t = EQObj.GetSlice(time)
     rho = np.linspace(0.0, 1.0, 100)

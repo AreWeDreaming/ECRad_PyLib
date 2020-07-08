@@ -6,8 +6,7 @@ Created on Sep 7, 2017
 
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
-from plotting_configuration import *
-import scipy.optimize as scopt
+import matplotlib.pyplot as plt
 from scipy import __version__ as scivers
 
 
@@ -184,7 +183,7 @@ class Contouring():
         x_int = np.zeros(N_int)
         y_int = np.zeros(N_int)
         # Open contourlines are reversed to avoid bad starting points
-        reversed = False
+        contour_reversed = False
         # Assemble contours
         while True:
             if(len(self.pen_points) == len(self.finished_points)):
@@ -228,13 +227,13 @@ class Contouring():
                     # Close the contour
                     self.contour_lines[-1].append(self.contour_lines[-1][0])
                     self.contour_indices[-1].append(self.contour_indices[-1][0])
-                elif(not reversed):
+                elif(not contour_reversed):
                     self.contour_lines[-1] = self.contour_lines[-1][::-1]
                     self.contour_indices[-1] = self.contour_indices[-1][::-1]
-                    reversed = True
+                    contour_reversed = True
                     found_next, isclosed, next_point = self._find_next(self.contour_indices[-1][-1])
                 if(not found_next):
-                    reversed = False
+                    contour_reversed = False
                     self.contour_closed.append(isclosed)
                     self.contour_lines[-1] = np.array(self.contour_lines[-1])
                     self.contour_indices[-1] = np.array(self.contour_indices[-1])
@@ -399,9 +398,6 @@ def get_contour(x, y, z_in, val):
 #    plt.plot(x_cont, y_cont, "-")
     plt.show()
     return closed_info, sorted_conts
-
-import numpy as np
-from plotting_configuration import *
 
 def isLeft(P0, P1, P2):
     return (P1[0] - P0[0]) * (P2[1] - P0[1]) - \

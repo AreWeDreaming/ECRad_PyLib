@@ -3,7 +3,7 @@ Created on 09.05.2019
 
 @author: sdenk
 '''
-from ndarray_helper import ndarray_check_for_None
+from Ndarray_Helper import ndarray_check_for_None
 from ECRad_Results import ECRadResults
 import glob
 import os

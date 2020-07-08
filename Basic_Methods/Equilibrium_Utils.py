@@ -3,13 +3,12 @@ Created on Jan 29, 2017
 
 @author: sdenk
 '''
-import sys
 import os
 import numpy as np
 from scipy.optimize import minimize
 from scipy.interpolate import RectBivariateSpline, InterpolatedUnivariateSpline
 import copy
-from Geometry_utils import get_contour, get_Surface_area_of_torus, get_arclength, get_av_radius
+from Basic_Methods.Geometry_Utils import get_contour, get_Surface_area_of_torus, get_arclength, get_av_radius
 from scipy import __version__ as scivers
 import scipy.optimize as scopt
 
@@ -238,7 +237,7 @@ class EQDataExt:
         R = cur_slice.R
         z = cur_slice.z
         rhop = cur_slice.rhop
-        info, cont = get_contour(R, z, rhop, rhop_in)
+        cont = get_contour(R, z, rhop, rhop_in)[1]
         return cont.flatten()
 
     def get_mean_r(self, time, rhop):
@@ -391,65 +390,4 @@ class EQDataExt:
         rhop_spl = RectBivariateSpline(cur_slice.R, cur_slice.z, rhop)
         return rhop_spl(R, z, grid=False)
 
-    def read_from_EFIT(self, filename):
-        EQDSK_file = open(filename, "r")
-        lines = EQDSK_file.readlines()
-        i = 0
-        i =+ 1 # No need for the header
-        # Second line
-        ed, NR, Nz = np.fromstring(lines[i], dtype = np.int, sep=" ")
-        # Third line does not contain anything interesting
-        i +=1
-        # Fourth line
-        R_ax, z_ax, Psi_ax, Psi_sep, B_axis = np.fromstring(lines[i], dtype = np.float, sep=" ")
-        # Fifth line is useess
-        i += 1
-        # Sixth line too
-        i += 1
-        EQDSK_file.write("{0: 1.9e}{1: 1.9e}{2: 1.9e}{3: 1.9e}{4: 1.9e}\n".format(EQ_t.z_ax, 0.0, EQ_t.Psi_sep, 0.0, 0.0))
-        N = len(EQ_t.R)
-        Psi = np.linspace(EQ_t.Psi_ax, EQ_t.Psi_sep, N)
-        rhop = np.sqrt((Psi - EQ_t.Psi_ax)/(EQ_t.Psi_sep - EQ_t.Psi_ax))
-        quant_dict = {}
-        quant_dict["q"] = EQObj.getQuantity(rhop, "Qpsi", time)
-        quant_dict["pres"] = EQObj.getQuantity(rhop, "Pres", time)
-        quant_dict["pprime"] = EQObj.getQuantity(rhop, "dPres", time)
-        quant_dict["ffprime"] = EQObj.getQuantity(rhop, "FFP", time)
-        ffp_spl = InterpolatedUnivariateSpline(rhop, quant_dict["ffprime"] )
-        f_sq_spl = ffp_spl.antiderivative(1)
-        f_spl = InterpolatedUnivariateSpline(rhop, np.sign(B_axis) * \
-                                             (np.sqrt(2.0 * f_sq_spl(rhop) +  \
-                                                      (EQ_t.R_ax * B_axis)**2)))
-        # Get the correct sign back since it is not included in ffprime
-        quant_dict["fdia"] = f_spl(rhop)
-        N_max = 5
-        format_str = " {0: 1.9e}"
-        for key in ["fdia", "pres", "ffprime", "pprime"]:
-            i = 0
-            while i < N:
-                EQDSK_file.write(format_str.format(quant_dict[key][i]))
-                i += 1
-                if(i %  N_max == 0):
-                    EQDSK_file.write("\n")
-        if(i % N_max != 0):
-            EQDSK_file.write("\n")
-        N_new = 0
-        for i in range(len(EQ_t.R)):
-            for j in range(len(EQ_t.z)):
-                EQDSK_file.write(format_str.format(EQ_t.Psi[i,j]))
-                N_new += 1
-                if(N_new == N_max):
-                    EQDSK_file.write("\n")
-                    N_new = 0
-        if(N_new != 0):
-            EQDSK_file.write("\n")
-        for key in ["q"]:
-            i = 0
-            while i < N:
-                EQDSK_file.write(format_str.format(quant_dict[key][i]))
-                i += 1
-                if(i %  N_max == 0):
-                    EQDSK_file.write("\n")
-        special_pnts = special(opt.x[0], opt.x[1], psi_ax, 2.17, 0.0, special[1])
-        return EQDataSlice(time, R, z, Psi, B_r, B_t, B_z, special_pnts, rhop=rhop)
 

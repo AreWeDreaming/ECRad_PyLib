@@ -1,10 +1,6 @@
 # -*- coding: utf-8 -*-
-from collections import OrderedDict as od
-import getpass
 import os
 from scipy.io import loadmat, savemat
-import sys
-import numpy as np
 
 class ECRadConfig:
     def __init__(self, noLoad =False):

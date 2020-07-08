@@ -8,15 +8,7 @@ import numpy as np
 import sys
 sys.path.append("../ECRad_Pylib")
 from subprocess import call
-from scipy.io import savemat
-from GlobalSettings import globalsettings
-if(globalsettings.AUG):
-    try:    
-        from shotfile_handling_AUG import load_IDA_data, get_Vloop, get_RELAX_target_current, get_total_current, make_ext_data_for_testing_from_data
-        from equilibrium_utils_AUG import EQData
-    except (OSError,ImportError):
-        print("Failed to access dd routines in TB_communication.py - setting AUG to False")
-        globalsettings.AUG = False
+from Global_Settings import globalsettings
 from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
 from scipy.optimize import minimize
 from plotting_configuration import *
@@ -418,7 +410,7 @@ def make_TORBEAM_no_data_load(working_dir, shot, time, rho_prof, Te_prof, ne_pro
         make_inbeam(TB_out_dir, launch, mode, time, 0, cyl=False, ITM=ITM, ITER=ITER, Z_eff=Z_eff)
         try:
             call([os.path.join(tb_lib_path, "a.out"), ""])
-        except OSError as e:
+        except OSError:
             print("Weird OS error")
             print()
             os.chdir(org_path)
@@ -674,7 +666,7 @@ def eval_Psi(params, args):
 def make_mdict_from_TB_files(path, eq_only=False):
     mdict = {}
     tb_file = open(path)
-    cur_line = tb_file.readline()
+    tb_file.readline()
     cur_line = np.fromstring(tb_file.readline(), dtype=np.int, sep=" ")
     m = cur_line[0]
     n = cur_line[1]
@@ -801,4 +793,4 @@ class launch:
         self.gy_launch = True
 
 if(__name__ == "__main__"):
-    make_Ext_data_from_TB_files("/tokp/work/sdenk/ECRad2/ECRad_data/topfile", "/tokp/work/sdenk/ECRad2/Ext_data/", False)
+    pass

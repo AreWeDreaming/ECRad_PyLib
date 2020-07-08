@@ -3,20 +3,19 @@ Created on 11.06.2019
 
 @author: sdenk
 '''
-from GlobalSettings import globalsettings
+from Global_Settings import globalsettings
 from BDOP_3D import make_3DBDOP_for_ray, make_f_inter, make_PowerDepo_3D_for_ray
-from equilibrium_utils import EQDataExt
+from Basic_Methods.Equilibrium_Utils import EQDataExt
 if(globalsettings.AUG):
-    from equilibrium_utils_AUG import EQData
+    from Equilibrium_Utils_AUG import EQData
 from ECRad_Results import ECRadResults
-from distribution_io import load_f_from_mat, read_dist_mat_to_beam, read_waves_mat_to_beam
-from distribution_functions import Juettner2D
+from Distribution_IO import load_f_from_mat, read_dist_mat_to_beam, read_waves_mat_to_beam
+from Distribution_Functions import Juettner2D, rel_thermal_beta
 from matplotlib import cm                                        
 import numpy as np
-from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
-from plotting_configuration import *
+from scipy.interpolate import InterpolatedUnivariateSpline
+from Plotting_Configuration import plt
 from scipy.io import loadmat
-from distribution_functions import rel_thermal_beta
 import scipy.constants as cnst
 
 def find_cell_interceps(u_par_grid, u_perp_grid, cur_BDOP, irhop):
@@ -25,7 +24,7 @@ def find_cell_interceps(u_par_grid, u_perp_grid, cur_BDOP, irhop):
     u_perp_at_u_par_interceps = u_perp_spl(u_par_interceps)
     u_perp_interceps = []
     u_par_at_u_perp_inteceps = []
-    for i, u_perp_intercep in enumerate(u_perp_grid):
+    for u_perp_intercep in u_perp_grid:
         u_perp_interceps_spl = InterpolatedUnivariateSpline(cur_BDOP.u_par[irhop], cur_BDOP.u_perp[irhop] - u_perp_intercep)
         roots = u_perp_interceps_spl.roots()
         if(len(roots) > 0):
@@ -56,10 +55,10 @@ def diag_weight(fig, Results, time_point, ch, DistWaveFile=None, ax=None):
     B_ax = EQObj.get_B_on_axis(time_cor)
     if(DistWaveFile is not None):
         dist_obj = load_f_from_mat(DistWaveFile, True)
-        f_inter, f_inter_scnd = make_f_inter(Results.Config.dstf, dist_obj=dist_obj, EQObj=EQObj, time=time_cor)
+        f_inter = make_f_inter(Results.Config.dstf, dist_obj=dist_obj, EQObj=EQObj, time=time_cor)[0]
     else:
         dist_obj = None
-        f_inter, f_inter_scnd  = make_f_inter("Th", EQObj=EQObj, time=time_cor)
+        f_inter = make_f_inter("Th", EQObj=EQObj, time=time_cor)[0]
     m= 40
     n= 80
     if(dist_obj is None):
@@ -82,7 +81,7 @@ def diag_weight(fig, Results, time_point, ch, DistWaveFile=None, ax=None):
     diag_weight_rel = np.zeros((m,n))
     for ir in range(Results.Config.N_ray):
         cur_BDOP = make_3DBDOP_for_ray(Results, time_cor, ch, ir, harmonic_n, B_ax, f_inter=f_inter)
-        for irhop, rhop in enumerate(cur_BDOP.rho):
+        for irhop, in range(len(cur_BDOP.rho)):
             print(irhop + 1, " / ", len(cur_BDOP.rho))
             intercep_points = find_cell_interceps(u_par_grid, u_perp_grid, cur_BDOP, irhop)
             for i_intercep,intercep_point in enumerate(intercep_points[:-1]):
@@ -140,7 +139,7 @@ def ECRH_weight(fig, Result_file, time_point, ibeam, DistWaveFile, beam_freq=105
     EqSlice = EQObj.GetSlice(time_point)
     dist_wave_mat = loadmat(DistWaveFile)
     dist_obj = load_f_from_mat(DistWaveFile, True)
-    f_inter, f_inter_scnd = make_f_inter(Results.Config.dstf, dist_obj=dist_obj, EQObj=EQObj, time=time_cor)
+    f_inter = make_f_inter(Results.Config.dstf, dist_obj=dist_obj, EQObj=EQObj, time=time_cor)[0]
     linear_beam = read_waves_mat_to_beam(dist_wave_mat, EqSlice, use_wave_prefix=None)
     itme = np.argmin(np.abs(Results.Scenario.plasma_dict["time"] - time_point))
     Te_spl = InterpolatedUnivariateSpline(Results.Scenario.plasma_dict[Results.Scenario.plasma_dict["prof_reference"]][itime], \
@@ -156,7 +155,7 @@ def ECRH_weight(fig, Result_file, time_point, ibeam, DistWaveFile, beam_freq=105
         tot_pw_ray, cur_PDP = make_PowerDepo_3D_for_ray(ray, beam_freq, "Re", harmonic_n, \
                                                         B_ax, EqSlice, Te_spl, ne_spl, f_inter, \
                                                         N_pnts=100, fast= True)
-        for irhop, rhop in enumerate(cur_PDP.rho):
+        for irhop in range(len(cur_PDP.rho)):
             print(irhop + 1, " / ", len(cur_PDP.rho))
             intercep_points = find_cell_interceps(u_par_grid, u_perp_grid, cur_PDP, irhop)
             for i_intercep,intercep_point in enumerate(intercep_points[:-1]):
