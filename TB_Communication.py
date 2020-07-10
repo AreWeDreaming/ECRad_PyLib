@@ -11,7 +11,7 @@ from subprocess import call
 from Global_Settings import globalsettings
 from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
 from scipy.optimize import minimize
-from plotting_configuration import *
+from Plotting_Configuration import plt
 from shutil import copyfile
 
 tb_path = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/torbeam_repo/TORBEAM/branches/lib-OUT/"
