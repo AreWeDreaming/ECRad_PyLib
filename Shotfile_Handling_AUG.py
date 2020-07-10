@@ -15,7 +15,6 @@ root = "/afs/ipp-garching.mpg.de/home/s/sdenk/"
 from scipy.interpolate import RectBivariateSpline, InterpolatedUnivariateSpline, UnivariateSpline, interp1d
 from Equilibrium_Utils_AUG import EQData
 import scipy.constants as cnst
-from plotting_configuration import *
 from Diag_Types import Diag
 from Basic_Methods.Data_Processing import remove_mode
 from Get_ECRH_Config import get_ECRH_viewing_angles
