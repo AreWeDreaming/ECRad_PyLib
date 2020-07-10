@@ -10,16 +10,16 @@ import os
 # import kk
 sys.path.append('/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib')
 import dd
-from scipy.signal import medfilt, argrelmax
+from scipy.signal import medfilt
 root = "/afs/ipp-garching.mpg.de/home/s/sdenk/"
-from scipy.interpolate import RectBivariateSpline, splev, splrep, InterpolatedUnivariateSpline, interp1d, UnivariateSpline, interp1d
-from equilibrium_utils_AUG import EQData
+from scipy.interpolate import RectBivariateSpline, InterpolatedUnivariateSpline, UnivariateSpline, interp1d
+from Equilibrium_Utils_AUG import EQData
 import scipy.constants as cnst
 from plotting_configuration import *
 from Diag_Types import Diag
-from shutil import copyfile
-from data_processing import remove_mode
-
+from Basic_Methods.Data_Processing import remove_mode
+from Get_ECRH_Config import get_ECRH_viewing_angles
+from Plotting_Configuration import plt
 AUG_profile_diags = ["IDA", "RMD", "CEC", "VTA", "CEZ", "COZ", "CUZ"]
 
 def get_HEP_ne(shot, exp="AUGD", ed=0):
@@ -32,7 +32,7 @@ def get_HEP_ne(shot, exp="AUGD", ed=0):
 def shotfile_exists(shot, diag):
     if(hasattr(diag, "diag")):
         try:
-            sf = dd.shotfile(diagnostic=diag.diag, pulseNumber=shot, experiment=diag.exp, edition=diag.ed)
+            dd.shotfile(diagnostic=diag.diag, pulseNumber=shot, experiment=diag.exp, edition=diag.ed)
             return True
         except dd.PyddError:
             return False
@@ -622,7 +622,7 @@ def get_data_calib(diag, shot=0, time=None, eq_exp="AUGD", eq_diag="EQH", \
                         temp_sig = signals[i][it0:it1]
                     mode_sys_dev = 0.0
                     if(diag.mode_filter):
-                        sig, mode_size, phase = remove_mode(diag_time[it0:it1], temp_sig, harmonics=diag.mode_harmonics, mode_width=diag.mode_width, low_freq=diag.freq_cut_off)
+                        sig, mode_size = remove_mode(diag_time[it0:it1], temp_sig, harmonics=diag.mode_harmonics, mode_width=diag.mode_width, low_freq=diag.freq_cut_off)[0]
                         mode_sys_dev = mode_size
                     else:
                         sig = np.copy(temp_sig)
@@ -637,7 +637,7 @@ def get_data_calib(diag, shot=0, time=None, eq_exp="AUGD", eq_diag="EQH", \
             else:
                 sig = signals[i][it0:it1] * 1.e-3  # eV -> keV
                 if(diag.mode_filter):
-                    sig, mode_size, phase = remove_mode(diag_time[it0:it1], sig, harmonics=diag.mode_harmonics, mode_width=diag.mode_width, low_freq=diag.freq_cut_off)
+                    sig, mode_size = remove_mode(diag_time[it0:it1], sig, harmonics=diag.mode_harmonics, mode_width=diag.mode_width, low_freq=diag.freq_cut_off)[0]
                     sys_dev_data[-1][-1] += mode_size
                 sig, std_dev = smooth(sig, median , use_std_err)
                 data[-1].append(sig)
@@ -700,7 +700,7 @@ def get_CTA_no_pinswitch(shot, diag, exp, ed, ch_in=None, t_shift_back=175.e-6, 
     t = t - 4.1e-4
     t1_offset = np.argmin(np.abs(t - 0.005))
     t2_offset = np.argmin(np.abs(t - 0.015))
-    offset, scatter = smooth(pin_switch[t1_offset:t2_offset], True)
+    offset = smooth(pin_switch[t1_offset:t2_offset], True)[0]
     pin_switch -= offset
     threshhold = 0.06
     sig_list = []
@@ -735,7 +735,7 @@ def get_CTA_no_pinswitch(shot, diag, exp, ed, ch_in=None, t_shift_back=175.e-6, 
         else:
             ch_str = "ch" + "{0:d}    ".format(ch + 1)
         signal = diag_shotfile.getSignal(ch_str)
-        offset, scatter = smooth(signal[t1_offset:t2_offset], True)
+        offset = smooth(signal[t1_offset:t2_offset], True)[0]
         signal -= offset
         signal = np.array(np.split(signal, edges))
         for i in range(len(edges)):
@@ -854,7 +854,7 @@ def get_ECE_launch_params(shot, diag):
         ECE_launch_dict["f"] = ECE_launch_dict["f"][available == 1]
         ECE_launch_dict["df"] = ECE_launch_dict["df"][available == 1]
         ECE_launch_dict["waveguide"] = ECE_launch_dict["waveguide"][available == 1]
-    except dd.PyddError as e:
+    except dd.PyddError:
         print("Failed to read " + diag.diag + " shotfile.")
         print("Is this an old shotfile?")
         raise IOError("Shofile read failed")
@@ -944,8 +944,8 @@ def get_ECI_launch(diag, shot):
     for key in ['freq', 'x', "y", "z", "tor_ang", "pol_ang", "dist_foc", "w"]:
     # Store the launch data in a one dimensional array with one entry for each channel (i.e. len = len(freq) * len(x)
         ECI_launch_dict[key] = []
-        for i_LOS, quant in enumerate(ECEI_data["x"]):
-            for i_FREQ, freq in enumerate(ECEI_data["freq"]):
+        for i_LOS in range(len(ECEI_data["x"])):
+            for i_FREQ in range(len(enumerate(ECEI_data["freq"]))):
                 if(key is "freq"):
                     ECI_launch_dict[key].append(ECEI_data[key][i_FREQ])
                 else:
@@ -981,9 +981,9 @@ def get_shot_heating(shot):
         data.append([t, signal])
     try:
         ICP = dd.shotfile('ICP', int(shot))
-        signal = NIS.getSignal(\
+        signal = ICP.getSignal(\
                       "Picr") * 1.e-6
-        t = NIS.getTimeBase("Picr")
+        t = ICP.getTimeBase("Picr")
         data.append([t, signal ])
     except:
         print("No ICRH shot file for current shot")
@@ -1100,7 +1100,6 @@ def get_cold_resonances_S_ECE(shot, time, diag_name, R_min, R_max, z_min, z_max,
     x[0] = gy.x
     x[1] = gy.y
     x[2] = gy.z
-    norm = np.sqrt(gy.R ** 2 + gy.z ** 2)
     t1 = np.argmin(np.abs(gy.time - time + 0.005))
     t2 = np.argmin(np.abs(gy.time - time - 0.005))
     if(t1 == t2):
@@ -1586,9 +1585,9 @@ def make_ext_data_for_testing_grids(ext_data_folder, shot, times, eq_exp, eq_dia
             np.sin(np.arcsin(z_mat / np.sqrt(R_mat ** 2 + z_mat ** 2)) * 90)) + 1.e16
         np.savetxt(os.path.join(ext_data_folder, "Te{0:d}".format(index)), Te.T)
         np.savetxt(os.path.join(ext_data_folder, "ne{0:d}".format(index)), ne.T)
-        fig1 = plt.figure()
+        plt.figure()
         plt.contourf(EQ_t.R, EQ_t.z, ne * 1.e-19, levels=np.linspace(0, 8, 30))
-        fig2 = plt.figure()
+        plt.figure()
         plt.contourf(EQ_t.R, EQ_t.z, Te, levels=np.linspace(0, 5000, 30))
         plt.show()
         index += 1
@@ -1645,10 +1644,10 @@ def export_ASDEX_Upgrade_grid(ext_data_folder, shot, times, eq_exp, eq_diag, eq_
         Te = np.reshape(Te, EQ_t.rhop.shape)
         print(np.max(Te), np.min(Te))
         np.savetxt(os.path.join(ext_data_folder, "Te{0:d}".format(index)), Te)
-        fig1 = plt.figure()
+        plt.figure()
         # plt.contourf(EQ_t.R, EQ_t.z, ne.T * 1.e-19, levels=np.linspace(0, 8, 30))
         plt.imshow(ne[:, ::-1].T / np.max(ne))
-        fig2 = plt.figure()
+        plt.figure()
         plt.imshow(Te[:, ::-1].T / np.max(Te))
         index += 1
         plt.show()
@@ -1663,17 +1662,17 @@ def get_RELAX_target_current(shot, time, exp="AUGD", ed=0, smoothing=1.e-3):
     Bootstrap_cur = IDF.getSignal("bscd_tot", tBegin=time - smoothing * 0.5, tEnd=time + smoothing * 0.5)
     NBCD_cur = IDF.getSignal("nbcd_tot", tBegin=time - smoothing * 0.5, tEnd=time + smoothing * 0.5)
     if(len(Ohmic_cur) > 10):
-        Ohmic_cur, y_err = smooth(Ohmic_cur, True)
-        ECCD_cur, y_err = smooth(ECCD_cur, True)
-        Bootstrap_cur, y_err = smooth(Bootstrap_cur, True)
-        NBCD_cur, y_err = smooth(NBCD_cur, True)
+        Ohmic_cur = smooth(Ohmic_cur, True)[0]
+        ECCD_cur = smooth(ECCD_cur, True)[0]
+        Bootstrap_cur = smooth(Bootstrap_cur, True)[0]
+        NBCD_cur = smooth(NBCD_cur, True)[0]
     else:
         Ohmic_cur = np.mean(Ohmic_cur)
         ECCD_cur = np.mean(ECCD_cur)
         Bootstrap_cur = np.mean(Bootstrap_cur)
         NBCD_cur = np.mean(NBCD_cur)
     if(len(I_tor) > 10):
-        I_tor, y_err = smooth(I_tor, True)
+        I_tor = smooth(I_tor, True)[0]
     else:
         I_tor = np.mean(I_tor)
     print("Total current", I_tor * 1.e-6, "MA")
@@ -1698,7 +1697,7 @@ def get_total_current(shot, time, exp="AUGD", diag="FPC", ed=0, smoothing=1.e-3)
     else:
         Ip = I_diag.getSignal("Itor", tBegin=time - smoothing * 0.5, tEnd=time + smoothing * 0.5)
     if(len(Ip) > 10):
-        Ip, y_err = smooth(Ip, True)
+        Ip = smooth(Ip, True)[0]
     else:
         Ip = np.mean(Ip)
     return Ip
@@ -1780,12 +1779,7 @@ def get_ECE_spectrum(shotno, time, diag, Te):
         output = []
     return output
 
-def get_CXRS_prof(shot, time, diag):
-    Eq = EQData(shot, eq_experiment, eq_diag, 0)
-    EQ_Slice = Eq.GetSlice(time)
-    rhot = EQ_Slice.rhot
-    R = EQ_Slice.R
-    z = EQ_Slice.z
+
 
 def test_FPC():
     FPC_shot = dd.shotfile("FPC", int(32028))
