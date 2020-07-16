@@ -26,8 +26,9 @@ class ECRadScenario:
             self.scenario_file = os.path.join(os.path.expanduser("~"), ".ECRad_GUI_last_scenario.mat")
             try:
                 self.from_mat(path_in=self.scenario_file)
-            except (IOError,KeyError):
+            except Exception as e:
                 print("Failed to import last used Scenario")
+                print("Cause: " + str(e))
                 self.reset()
         else:
             self.reset()
