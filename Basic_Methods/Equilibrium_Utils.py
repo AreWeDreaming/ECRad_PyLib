@@ -13,7 +13,7 @@ from scipy import __version__ as scivers
 import scipy.optimize as scopt
 
 def eval_spline(x_vec, spl):
-    return np.array([spl[0](x_vec[0], x_vec[1])])
+    return np.array([spl[0](x_vec[0], x_vec[1], grid=False)])
 
 def eval_spline_grad(x_vec, spl):
     return np.array([[spl[0].ev(x_vec[0], x_vec[1], dx=1, dy=0), spl[0].ev(x_vec[0], x_vec[1], dx=0, dy=1)]])
@@ -195,7 +195,7 @@ class EQDataExt:
         z = cur_slice.z
         Psi = np.copy(cur_slice.Psi)
         if(Psi.shape[0] != len(R)):
-            Psi = Psi
+            Psi = Psi.T
         special = cur_slice.special
         if(Psi[len(R) // 2][len(z) // 2] > special[1]):
         # We want a minimum in the flux at the magn. axis
@@ -206,7 +206,7 @@ class EQDataExt:
         R_init = np.array([R[indicies[0]], z[indicies[1]]])
 #         print(R_init)
         opt = minimize(eval_spline, R_init, args=[psi_spl], \
-                 bounds=[[np.min(R), np.max(R)], [np.min(z), np.max(z)]])
+                       bounds=[[np.min(R), np.max(R)], [np.min(z), np.max(z)]])
 #         print("Magnetic axis position: ", opt.x[0], opt.x[1])
         if(get_Psi):
             return opt.x[0], opt.x[1], psi_spl(opt.x[0], opt.x[1])

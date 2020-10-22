@@ -94,7 +94,7 @@ def make_topfile_no_data_load(working_dir, shot, time, R, z, Psi, Br, Bt, Bz, Ps
     # Note this routine uses MBI-BTFABB for a correction of the toroidal magentic field
     # Furthermore, an empirical vacuum BTF correction factor of bt_vac_correction is applied
     # This creates a topfile that is consistent with the magnetic field used in OERT
-    print("Creating topfile for #{0:n} t = {1:1.2f}".format(shot, time))
+    print("Creating topfile for #{0:d} t = {1:1.2f}".format(shot, time))
     if(ITM):
         columns = len(z) - 1
     else:
@@ -102,7 +102,7 @@ def make_topfile_no_data_load(working_dir, shot, time, R, z, Psi, Br, Bt, Bz, Ps
         columns -= 1
     topfile = open(os.path.join(working_dir, "topfile"), "w")
     topfile.write('Number of radial and vertical grid points for discharge :{0:5d}: {1:1.4f}\n'.format(shot, time))
-    topfile.write('   {0: 8n} {1: 8n}\n'.format(len(R), len(z)))
+    topfile.write('   {0: 8d} {1: 8d}\n'.format(len(R), len(z)))
     topfile.write('Inside and Outside radius and psi_sep\n')
     topfile.write('   {0: 1.8E}  {1: 1.8E}  {2: 1.8E}'.format(R[0], R[-1], 1.0))
     # Normalize PSI
@@ -231,8 +231,8 @@ def make_topfile_from_ext_data(working_dir, shot, time, EQ, rhop, Te, ne, grid=F
     columns -= 1
     print("Magnetic axis position: ", "{0:1.3f}".format(EQ.special[0]))
     topfile = open(os.path.join(working_dir, "topfile"), "w")
-    topfile.write('Number of radial and vertical grid points in AUGD:EQH:{0:5n}: {1:1.4f}\n'.format(shot, time))
-    topfile.write('   {0: 8n} {1: 8n}\n'.format(len(EQ.R), len(EQ.z)))
+    topfile.write('Number of radial and vertical grid points in AUGD:EQH:{0:5d}: {1:1.4f}\n'.format(shot, time))
+    topfile.write('   {0: 8d} {1: 8d}\n'.format(len(EQ.R), len(EQ.z)))
     topfile.write('Inside and Outside radius and psi_sep\n')
     topfile.write('   {0: 1.8E}  {1: 1.8E}  {2: 1.8E}'.format(EQ.R[0], EQ.R[-1], \
         EQ.special[1]))
@@ -331,8 +331,8 @@ def make_topfile_from_ext_data(working_dir, shot, time, EQ, rhop, Te, ne, grid=F
         ne_file = open(os.path.join(working_dir, "ne_file.dat"), "w")
         ne_tb_file = open(os.path.join(working_dir, "ne.dat"), "w")
         lines = 150
-        ne_file.write("{0: 7n}".format(lines) + "\n")
-        ne_tb_file.write("{0: 7n}".format(lines) + "\n")
+        ne_file.write("{0: 7d}".format(lines) + "\n")
+        ne_tb_file.write("{0: 7d}".format(lines) + "\n")
         ne_spline = InterpolatedUnivariateSpline(rhop, ne, k=1)
         rhop_short = np.linspace(np.min(rhop), np.max(rhop), lines)
         for i in range(len(rhop_short)):
@@ -345,8 +345,8 @@ def make_topfile_from_ext_data(working_dir, shot, time, EQ, rhop, Te, ne, grid=F
     else:
         print("Copying Te and ne matrix")
         Te_ne_matfile = open(os.path.join(working_dir, "Te_ne_matfile"), "w")
-        Te_ne_matfile.write('Number of radial and vertical grid points in AUGD:EQH:{0:5n}: {1:1.4f}\n'.format(shot, time))
-        Te_ne_matfile.write('   {0: 8n} {1: 8n}\n'.format(len(EQ.R), len(EQ.z)))
+        Te_ne_matfile.write('Number of radial and vertical grid points in AUGD:EQH:{0:5d}: {1:1.4f}\n'.format(shot, time))
+        Te_ne_matfile.write('   {0: 8d} {1: 8d}\n'.format(len(EQ.R), len(EQ.z)))
         Te_ne_matfile.write('Radial grid coordinates\n')
         cnt = 0
         for i in range(len(EQ.R)):
@@ -460,12 +460,12 @@ def prepare_TB_data_no_data_load(working_dir, shot, time, rho_prof, Te_prof, ne_
         new_rho_prof = rho_prof
         Te_new = Te_prof / 1.e3
         ne_new = ne_prof / 1.e19
-    Te_file.write("{0: 7n}\n".format(len(new_rho_prof)))
+    Te_file.write("{0: 7d}\n".format(len(new_rho_prof)))
     for i in range(len(new_rho_prof)):
         Te_file.write("{0: 1.12E} {1: 1.12E}\n".format(new_rho_prof[i], Te_new[i]))
     Te_file.close()
     ne_file = open(os.path.join(working_dir, "ne.dat"), "w")
-    ne_file.write("{0: 7n}\n".format(len(new_rho_prof)))
+    ne_file.write("{0: 7d}\n".format(len(new_rho_prof)))
     for i in range(len(new_rho_prof)):
         ne_file.write("{0: 1.12E} {1: 1.12E}\n".format(new_rho_prof[i], ne_new[i]))
     ne_file.close()
@@ -500,7 +500,7 @@ def make_inbeam(working_dir, launch, mode, time, inbeam_no=0, cyl=False, ITM=Fal
             print(launch.f)
             return
         if("nmod" in inbeam_lines[i]):
-            inbeam_lines[i] = " nmod = {0: n},\n".format(mode)
+            inbeam_lines[i] = " nmod = {0: d},\n".format(mode)
             double_check_dict["mode_set"] = True
         elif("xtordeg" in inbeam_lines[i]):
             if(not ITER):

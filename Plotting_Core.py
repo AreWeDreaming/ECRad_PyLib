@@ -291,21 +291,22 @@ class PlottingCore:
                 except KeyError:
                     print("THe result with the name " + label + "caused an index error")
                     print("Most likely it does not have the correct amount of modeled channels for the currently selected diagnostic")
-                try:
-                    if(np.linalg.norm(Te_entry - Te[0]) > 1.e-3 or primary):
-                        self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[rhop_prof, Te_entry], \
-                                                                     name=r"$T_" + mathrm + "{e}$ " + nice_label, \
-                                                                     marker=self.line_markers[self.line_marker_index[0]], \
-                                                                     color=self.line_colors[self.line_color_index[0]], \
-                                                                     y_range_in=self.y_range_list[0], y_scale=1.0, \
-                                                                     ax_flag=ax_flag)  # \times 100$
-                        self.line_marker_index[0] += 1
-                        self.line_color_index[0] += 1
-                except Exception as e:
-                    print("Failed to plot Te for " + nice_label)
-                    print(e)
-                if(primary):
-                    primary = False
+                if(rhop_prof is not None):
+                    try:
+                        if(np.linalg.norm(Te_entry - Te[0]) > 1.e-3 or primary):
+                            self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[rhop_prof, Te_entry], \
+                                                                         name=r"$T_" + mathrm + "{e}$ " + nice_label, \
+                                                                         marker=self.line_markers[self.line_marker_index[0]], \
+                                                                         color=self.line_colors[self.line_color_index[0]], \
+                                                                         y_range_in=self.y_range_list[0], y_scale=1.0, \
+                                                                         ax_flag=ax_flag)  # \times 100$
+                            self.line_marker_index[0] += 1
+                            self.line_color_index[0] += 1
+                    except Exception as e:
+                        print("Failed to plot Te for " + nice_label)
+                        print(e)
+                    if(primary):
+                        primary = False
         else:
             rhop_max = max(np.max(rhop[mask]), rhop_max)
             self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
@@ -325,7 +326,7 @@ class PlottingCore:
         self.create_legends("Te_no_ne" + twinx)
         return self.fig
 
-    def plot_tau(self, time, rhop, tau, tau_comp, rhop_IDA, Te_IDA, dstf, model_2, use_tau):
+    def plot_tau(self, time, rhop, tau, tau_comp, rhop_Te, Te, dstf, model_2, use_tau):
         if(plot_mode == "Software"):
             self.setup_axes("twinx", r"$\tau_{\omega}$, $T_{e}$ ", r"Optical depth $\tau_\omega$")
         else:
@@ -368,12 +369,14 @@ class PlottingCore:
                           name=r"$T_" + mathrm + "{mod}" + dist + r"$", \
                           marker="v", color=(126.0 / 255, 126.0 / 255, 0.e0), \
                           y_range_in=self.y_range_list[0], ax_flag=ax_flag)
-        self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], data=[ rhop_IDA, Te_IDA], \
-            name=r"$T_" + mathrm + "{e}$", coloumn=1, marker="-", color=(0.0, 0.0, 0.0), \
-                 y_range_in=self.y_range_list[1], y_scale=1.0, ax_flag="Te")  # \times 100$
+        if(rhop_Te is not None):
+            self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], data=[ rhop_Te, Te], \
+                name=r"$T_" + mathrm + "{e}$", coloumn=1, marker="-", color=(0.0, 0.0, 0.0), \
+                     y_range_in=self.y_range_list[1], y_scale=1.0, ax_flag="Te")  # \times 100$
         self.create_legends("BDP")
-        if(len(rhop_IDA) > 0):
-            self.axlist[0].set_xlim(0.0, 1.05 * np.max([np.max(rhop_IDA), np.max(rhop)]))
+        if(rhop_Te is not None):
+            if(len(rhop_Te) > 0):
+                self.axlist[0].set_xlim(0.0, 1.05 * np.max([np.max(rhop_Te), np.max(rhop)]))
         if(not use_tau):
             self.axlist[0].set_ylim(0.0, 1.00)
         return self.fig
@@ -771,7 +774,7 @@ class PlottingCore:
         self.create_legends("errorbar")
         return self.fig
 
-    def plot_BPD(self, time, rhop_signed, D, D_comp, rhop_IDA, Te_IDA, dstf, rhop_res, scale_w_Trad=False):
+    def plot_BPD(self, time, rhop_signed, D, D_comp, rhop_Te, Te, dstf, rhop_res, scale_w_Trad=False):
         if(rhop_res < 0.0):
             ch_Hf_str = "HFS"
         else:
@@ -800,11 +803,12 @@ class PlottingCore:
                 self.y_range_list[0] , data=[rhop_signed, D_comp ], color=(0.0, 0.0, 0.6), marker="--", \
                 name=name, \
                 vline=rhop_res, ax_flag=ax_flag)
-        rhop_te_weighted = np.hstack([-rhop_IDA[::-1], rhop_IDA])
-        te_weighted = np.hstack([Te_IDA[::-1], Te_IDA])
-        self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], \
-            self.y_range_list[1] , data=[rhop_te_weighted, te_weighted], color="black", \
-            name=r"$T_\mathrm{e}$", ax_flag="Te")
+        if(rhop_Te is not None):
+            rhop_te_weighted = np.hstack([-rhop_Te[::-1], rhop_Te])
+            te_weighted = np.hstack([Te[::-1], Te])
+            self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], \
+                self.y_range_list[1] , data=[rhop_te_weighted, te_weighted], color="black", \
+                name=r"$T_\mathrm{e}$", ax_flag="Te")
         self.create_legends("BDP")
         return self.fig
 
@@ -1299,9 +1303,9 @@ class PlottingCore:
         CS = self.axlist[0].contour(R, z, rhop.T, \
             levels=np.linspace(0.1, 1.2, 12), linewidths=1, colors="k", linestyles="--")
         CS2 = self.axlist[0].contour(R, z, rhop.T, \
-            levels=[1.0], linewidths=3, colors="b", linestyles="-")
-        plt.clabel(CS, inline=1, fontsize=10)
-        plt.clabel(CS2, inline=1, fontsize=12)
+                                     levels=[1.0], linewidths=3, colors="b", linestyles="-")
+#         plt.clabel(CS, inline=1, fontsize=10)
+#         plt.clabel(CS2, inline=1, fontsize=12)
         if(globalsettings.AUG):
             self.plt_vessel(self.axlist[0])
         elif(vessel_bd is not None):
@@ -1313,6 +1317,9 @@ class PlottingCore:
         if(globalsettings.AUG):
             self.axlist[0].set_xlim((0.8, 2.4))
             self.axlist[0].set_ylim((-0.75, 1.0))
+        else:
+            self.axlist[0].set_xlim((0.8, 2.4))
+            self.axlist[0].set_ylim((-1.0, 1.0))
         self.create_legends("vessel")
         return self.fig
 
