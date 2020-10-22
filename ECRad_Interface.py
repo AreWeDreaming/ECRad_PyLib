@@ -164,9 +164,11 @@ def prepare_input_files(Config, Scenario, index, copy_dist=True, \
     else:
         input_file.write("F\n")
     if(Scenario.use3Dscen.used):
-        input_file.write("T\n")
+        input_file.write("3D\n")
+    elif(Scenario.plasma_dict["Te"][0].ndim == 2):
+        input_file.write("2D\n")
     else:
-        input_file.write("F\n")
+        input_file.write("1D\n")
     input_file.flush()
     input_file.close()
     if(Config.use_ext_rays):
@@ -660,6 +662,8 @@ def load_plasma_from_mat(path):
                 plasma_dict["rhop_prof"] = mdict["rhop"]
             if("rhot_prof" in mdict):
                 plasma_dict["rhot_prof"] = mdict["rhot_prof"]
+        else:
+            plasma_dict["prof_reference"] = "2D"
         # External data should be delivered without additional scaling
         # Otherwise it is not clear whether this means that the data should be scaled or is already scaled by this factor
         plasma_dict["ECE_rhop"] = []
@@ -688,6 +692,8 @@ def load_plasma_from_mat(path):
                 raise e
         else:
             plasma_dict["vessel_bd"] = mdict["vessel_bd"]
+            if(len(plasma_dict["vessel_bd"][0]) == 2):
+                plasma_dict["vessel_bd"] = plasma_dict["vessel_bd"].T
         plasma_dict["Rwall"] = 0.9  # default in IDA -> make this an input quantity
         plasma_dict["eq_exp"] = "EXT"
         plasma_dict["eq_diag"] = "EXT"
@@ -714,10 +720,14 @@ def make_ECRadInputFromPlasmaDict(working_dir, plasma_dict, index, Scenario):
                                       EQ.Bt, EQ.Bz, EQ.Psi_ax, EQ.Psi_sep) # Routine does the transposing!
         if(error != 0):
             return False
-        return make_Te_ne_data(working_dir, Scenario.shot, plasma_dict["time"][index], plasma_dict[plasma_dict["prof_reference"]][index], \
-                               plasma_dict["Te"][index], plasma_dict["ne"][index], \
-                               grid=len(plasma_dict["Te"][index].shape) == 2, EQ=EQ)
-    else:
+        if(plasma_dict["Te"][index].ndim == 1):
+            return make_Te_ne_data(working_dir, Scenario.shot, plasma_dict["time"][index], plasma_dict[plasma_dict["prof_reference"]][index], \
+                                   plasma_dict["Te"][index], plasma_dict["ne"][index], \
+                                   grid=False, EQ=EQ)
+        else:
+            return make_Te_ne_data(working_dir, Scenario.shot, plasma_dict["time"][index], None, \
+                                   plasma_dict["Te"][index], plasma_dict["ne"][index], \
+                                   grid=True, EQ=EQ)
         return make_Te_ne_data(working_dir, Scenario.shot, plasma_dict["time"][index], plasma_dict[plasma_dict["prof_reference"]][index], \
                                plasma_dict["Te"][index], plasma_dict["ne"][index], \
                                grid=False)
@@ -760,7 +770,7 @@ def make_Te_ne_data(working_dir, shot, time, rho, Te, ne, grid=False, EQ=None):
         print("Te shape", Te.shape)
         for i in range(len(Te)):
             for j in range(len(Te[i])):
-                Te_ne_matfile.write("  {0: 1.8E}".format(Te.T[i][j])) # also transpose here
+                Te_ne_matfile.write("  {0: 1.8E}".format(max(Te.T[i][j], 2.e-2))) # also transpose here
                 if(cnt == columns):
                     Te_ne_matfile.write("\n")
                     cnt = 0
@@ -772,7 +782,7 @@ def make_Te_ne_data(working_dir, shot, time, rho, Te, ne, grid=False, EQ=None):
         cnt = 0
         for i in range(len(ne)):
             for j in range(len(ne[i])):
-                Te_ne_matfile.write("  {0: 1.8E}".format(ne.T[i][j])) # also transpose here
+                Te_ne_matfile.write("  {0: 1.8E}".format(max(ne.T[i][j], 1.e12))) # also transpose here
                 if(cnt == columns):
                     Te_ne_matfile.write("\n")
                     cnt = 0
