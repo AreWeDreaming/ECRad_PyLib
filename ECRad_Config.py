@@ -9,11 +9,11 @@ class ECRadConfig:
             self.from_mat_file()
         else:
             try:
-                self.from_mat_file(path=self.default_config_file)
+                self.from_mat_file(path=self.default_config_file, default=True)
             except IOError:
                 self.from_mat_file()
 
-    def from_mat_file(self, mdict=None, path=None):
+    def from_mat_file(self, mdict=None, path=None, default=False):
         ext_mdict = False
         if(mdict is not None or path is not None):
             if(path is not None):
@@ -58,9 +58,12 @@ class ECRadConfig:
             self.parallel_cores = mdict["parallel_cores"]
         except KeyError:
             self.parallel_cores = 16
-        try:
-            self.use_ext_rays = mdict["use_ext_rays"]
-        except KeyError:
+        if(not default):
+            try:
+                self.use_ext_rays = mdict["use_ext_rays"]
+            except KeyError:
+                self.use_ext_rays = False
+        else:
             self.use_ext_rays = False
         try:
             self.wall_time = mdict["wall_time"]

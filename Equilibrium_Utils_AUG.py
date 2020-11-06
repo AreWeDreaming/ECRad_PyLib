@@ -7,12 +7,13 @@ import sys
 import os
 sys.path.append('/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib')
 import dd
+from map_equ import equ_map
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline
 from Basic_Methods.Equilibrium_Utils import EQDataExt, EQDataSlice, special_points
 from scipy import __version__ as scivers
 from scipy import constants as cnst
-from map_equ import equ_map
+
 vessel_bd_file = "ASDEX_Upgrade_vessel.txt"
 from datetime import datetime
 

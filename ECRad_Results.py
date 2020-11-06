@@ -835,9 +835,9 @@ class ECRadResults:
 if(__name__ == "__main__"):
     res = ECRadResults()
     res.from_mat_file("/mnt/c/Users/Severin/ECRad/Yu/ECRad_179328_EXT_ed2.mat")
-    res.Scenario.profile_dimension = 2
-    res.to_mat_file("/mnt/c/Users/Severin/ECRad/Yu/ECRad_179328_EXT_ed3.mat")
-    
+#     res.Scenario.profile_dimension = 2
+#     res.to_mat_file("/mnt/c/Users/Severin/ECRad/Yu/ECRad_179328_EXT_ed3.mat")
+#     
     
     
     
