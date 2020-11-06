@@ -315,12 +315,13 @@ class PlottingCore:
                                                                  marker="v", color=self.model_colors[self.model_color_index[0]], \
                                                                  y_range_in=self.y_range_list[0], ax_flag=ax_flag)
             self.model_color_index[0] += 1
-            self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[rhop_Te[0], Te[0]], \
-                                                             name=r"$T_" + mathrm + "{e}$", coloumn=1, \
-                                                             marker=self.line_markers[self.line_marker_index[0]], \
-                                                             color=self.line_colors[self.line_color_index[0]], \
-                                                             y_range_in=self.y_range_list[0], y_scale=1.0, \
-                                                             ax_flag=ax_flag)  # \times 100$
+            if(rhop_Te[0] is not None):
+                self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[rhop_Te[0], Te[0]], \
+                                                                 name=r"$T_" + mathrm + "{e}$", coloumn=1, \
+                                                                 marker=self.line_markers[self.line_marker_index[0]], \
+                                                                 color=self.line_colors[self.line_color_index[0]], \
+                                                                 y_range_in=self.y_range_list[0], y_scale=1.0, \
+                                                                 ax_flag=ax_flag)  # \times 100$
         if(rhop_max > 0.0):
             self.axlist[0].set_xlim(0.0, rhop_max * 1.05)
         self.create_legends("Te_no_ne" + twinx)
