@@ -14,6 +14,8 @@ from Diag_Types import ECRH_diag
 from Global_Settings import globalsettings
 if(globalsettings.AUG):
     import dd
+    from Equilibrium_Utils_AUG import EQData
+    from Shotfile_Handling_AUG import get_data_calib
 from Plotting_Configuration import plt
 import numpy as np
 import os
@@ -25,8 +27,6 @@ from Em_Albajar import EmAbsAlb, SVec, DistributionInterpolator, GeneDistributio
 from ECRad_Interface import read_svec_dict_from_file
 from TB_Communication import make_topfile_from_ext_data
 from Basic_Methods.Equilibrium_Utils import EQDataExt
-from Equilibrium_Utils_AUG import EQData
-from Shotfile_Handling_AUG import get_data_calib
 from scipy.io import loadmat
 from ECRad_Results import ECRadResults
 from Distribution_Functions import Juettner2D, Gauss_norm, Gauss_not_norm, \
@@ -1007,9 +1007,19 @@ def debug_calib(resultfile):
 def debug_ray(results_file, itime, ich, ir):
     result = ECRadResults()
     result.from_mat_file(results_file)
-    plt.plot(result.ray["YX"][itime][ich], result.ray["emX"][itime][ich])
-    plt.gca().twinx()
-    plt.plot(result.ray["YX"][itime][ich], result.ray["TeX"][itime][ich], "--r")
+    plt.plot(result.ray["rhopX"][itime][ich])
+#     plt.plot(result.ray["rhopX"][itime][ich], result.ray["TeX"][itime][ich])
+#     plt.gca().twinx()
+#     plt.plot(result.ray["rhopX"][itime][ich], result.ray["neX"][itime][ich], "--r")
+    plt.show()
+    
+def debug_fitpack(x_file, y_file):
+    x = np.loadtxt(x_file, skiprows=2, delimiter=",").T[1]
+    y = np.loadtxt(y_file, skiprows=2, delimiter=",").T[1]
+    spl = InterpolatedUnivariateSpline(x,y)
+    x_int = np.linspace(np.min(x), np.max(x), 10000)
+    plt.plot(x,y,"+")
+    plt.plot(x_int,spl(x_int), "--")
     plt.show()
 
 if(__name__ == "__main__"):

@@ -195,6 +195,8 @@ class ECRadScenario:
             except KeyError:
                 print("Could not find rho_tor profile")
                 self.plasma_dict["rhot_prof"] = None
+        else:
+            self.plasma_dict["prof_reference"] = "2D"
         self.plasma_dict["Te"] = mdict["Te"]
         self.plasma_dict["ne"] = mdict["ne"]
         self.plasma_dict["eq_data"] = []
