@@ -59,32 +59,133 @@ def compare_ECRad_results(result_file_list, time, ch, ir=1):
 #         ax.vlines(res.resonance[subquantx[:-1] + "_cold"][itime][ch-1], 0 , 2000, linestyle=marker )
 #     ax.hlines(0.5, 0, 4)
     plt.show()
+
+
+def compare_eq_midplane(shot, time, eq_diag_1, eq_diag_2, eq_exp_1="AUGD", eq_exp_2="AUGD", \
+                        eq_ed_1=0, eq_ed_2=0):
+    eq_obj_1 = EQData(shot, EQ_exp=eq_exp_1, EQ_diag=eq_diag_1, EQ_ed=eq_ed_1)
+    eq_obj_2 = EQData(shot, EQ_exp=eq_exp_2, EQ_diag=eq_diag_2, EQ_ed=eq_ed_2)
+    eq_slice_1 = eq_obj_1.GetSlice(time)
+    eq_slice_2 = eq_obj_2.GetSlice(time)
+    i_z = np.argmin(np.abs(eq_slice_1.z - eq_slice_1.z_ax))
+    plt.plot(eq_slice_1.rhop[...,i_z], np.abs(1 - eq_slice_1.Bt[...,i_z]/eq_slice_2.Bt[...,i_z]) * 1.e2, "--", \
+            label="$z = " + "{0:1.1f}".format(eq_slice_1.z[i_z] * 1.e2) + r"$ [cm]")
+    print(eq_slice_1.z[i_z], eq_slice_2.z[i_z])
     
-def compare_ECRad_results_diff(primary_result_file, result_file_list, time, ch, ir=1):
+def compare_eq_Rz(s1, R1, z1, val1, s2, R2, z2, val2, shot, time, eq_diag_1, eq_diag_2, eq_exp_1="AUGD", eq_exp_2="AUGD", \
+                        eq_ed_1=0, eq_ed_2=0):
+    eq_obj_1 = EQData(shot, EQ_exp=eq_exp_1, EQ_diag=eq_diag_1, EQ_ed=eq_ed_1, bt_vac_correction=1.00)
+    eq_obj_2 = EQData(shot, EQ_exp=eq_exp_2, EQ_diag=eq_diag_2, EQ_ed=eq_ed_2, bt_vac_correction=1.00)
+    eq_slice_1 = eq_obj_1.GetSlice(time,False)
+    eq_slice_2 = eq_obj_2.GetSlice(time,False)
+    B_tot_spl_1 = RectBivariateSpline(eq_slice_1.R, eq_slice_1.z, \
+                                      np.sqrt(eq_slice_1.Br**2 + eq_slice_1.Bt**2 + \
+                                              eq_slice_1.Bz**2))
+    B_tot_spl_2 = RectBivariateSpline(eq_slice_2.R, eq_slice_2.z, \
+                                      np.sqrt(eq_slice_2.Br**2 + eq_slice_2.Bt**2 + \
+                                              eq_slice_2.Bz**2))
+    mask1 = np.ones(len(R1), dtype=bool)
+    mask1[R1 < np.min(eq_slice_1.R)] = False
+    mask1[R1 > np.max(eq_slice_1.R)] = False
+    mask2 = np.ones(len(R2), dtype=bool)
+    mask2[R2 < np.min(eq_slice_2.R)] = False
+    mask2[R2 > np.max(eq_slice_2.R)] = False
+    s_max = min(np.max(s1[mask1]), np.max(s2[mask2]))
+    s = np.linspace(0.0, s_max, 2000)
+    R1_spl = InterpolatedUnivariateSpline(s1[mask1], R1[mask1])
+    z1_spl = InterpolatedUnivariateSpline(s1[mask1], z1[mask1])
+    val1_spl  = InterpolatedUnivariateSpline(s1[mask1], val1[mask1])
+    R2_spl = InterpolatedUnivariateSpline(s2[mask2], R2[mask2])
+    z2_spl = InterpolatedUnivariateSpline(s2[mask2], z2[mask2])
+    val2_spl  = InterpolatedUnivariateSpline(s2[mask2], val2[mask2])
+#     plt.plot(s, R1_spl(s))
+#     plt.plot(s, R2_spl(s),"--")
+    plt.plot(R1_spl(s), 1.e2*(1-B_tot_spl_1(R1_spl(s),z1_spl(s),grid=False) / \
+                        B_tot_spl_2(R2_spl(s),z2_spl(s),grid=False)), "-",label="Before BTFABB correction")
+#     eq_obj_1.ApplyBVacCorrectionToSlice(eq_slice_1)
+#     eq_obj_2.ApplyBVacCorrectionToSlice(eq_slice_2)
+#     B_tot_spl_1 = RectBivariateSpline(eq_slice_1.R, eq_slice_1.z, \
+#                                       np.sqrt(eq_slice_1.Br**2 + eq_slice_1.Bt**2 + \
+#                                               eq_slice_1.Bz**2))
+#     B_tot_spl_2 = RectBivariateSpline(eq_slice_2.R, eq_slice_2.z, \
+#                                       np.sqrt(eq_slice_2.Br**2 + eq_slice_2.Bt**2 + \
+#                                               eq_slice_2.Bz**2))
+#     plt.plot(s, 1.e2*(1-B_tot_spl_1(R1_spl(s),z1_spl(s),grid=False) / \
+#                         B_tot_spl_2(R2_spl(s),z2_spl(s),grid=False)), "-",label="After BTFABB correction")
+#     plt.plot(s, 1.e2*(1-val1_spl(s)/val2_spl(s)), "--", label="Ray")
+#     plt.gca().set_xlabel(r"$\rho_\mathrm{pol}$")
+#     plt.gca().set_ylabel(r"1 - $B_\mathrm{t,EQH} / B_\mathrm{t,IDE}$ [\%]")
+#     plt.suptitle(r"$z = " + "{0:1.1f}".format(eq_slice_1.z[i_z] * 1.e2) + r"$ [cm]")
+# #     plt.plot(eq_slice_2.R, eq_slice_2.Bt[...,i_z], "--")
+#     plt.tight_layout()
+#     plt.show()
+    
+def compare_ECRad_results_diff(primary_result_file, result_file_list, time, ch, ir=1, label=None):
     main_quant = "ray"
     subquantx = "sX"
-    subquanty = "abX"
-    factor = 1.0
+    subquanty = "YX"
     prim_res = ECRadResults()
     prim_res.from_mat_file(primary_result_file)
+    print(prim_res.Scenario.bt_vac_correction)
     itime_prim = np.argmin(np.abs(time - prim_res.time))
+    f_ECE = prim_res.Scenario.ray_launch[itime_prim]["f"][ch -1]
+    scale = cnst.m_e* f_ECE*2*np.pi  / cnst.e
     if(prim_res.Config.N_ray > 1):
-        prim_res_quant = getattr(prim_res, main_quant)[subquanty][itime_prim][ch - 1][ir-1] * factor
+        val = getattr(prim_res, main_quant)[subquanty][itime_prim][ch - 1][ir-1]
+        prim_spl = InterpolatedUnivariateSpline(getattr(prim_res, main_quant)["s" + subquanty[-1]][itime_prim][ch - 1][ir-1], \
+                                                val)
+        s = getattr(prim_res, main_quant)["s" + subquanty[-1]][itime_prim][ch - 1][ir-1]
+        R = np.sqrt(getattr(prim_res, main_quant)["x" + subquanty[-1]][itime_prim][ch - 1][ir-1]**2 + \
+                    getattr(prim_res, main_quant)["y" + subquanty[-1]][itime_prim][ch - 1][ir-1]**2)
+        z = getattr(prim_res, main_quant)["z" + subquanty[-1]][itime_prim][ch - 1][ir-1]
     else:
-        prim_res_quant = getattr(prim_res, main_quant)[subquanty][itime_prim][ch - 1] * factor
+        val = getattr(prim_res, main_quant)[subquanty][itime_prim][ch - 1]
+        prim_spl = InterpolatedUnivariateSpline(getattr(prim_res, main_quant)["s" + subquanty[-1]][itime_prim][ch - 1], \
+                                                val)
+        s = getattr(prim_res, main_quant)["s" + subquanty[-1]][itime_prim][ch - 1]
+        R = np.sqrt(getattr(prim_res, main_quant)["x" + subquanty[-1]][itime_prim][ch - 1]**2 + \
+                    getattr(prim_res, main_quant)["y" + subquanty[-1]][itime_prim][ch - 1]**2)
+        z = getattr(prim_res, main_quant)["z" + subquanty[-1]][itime_prim][ch - 1]
     res = ECRadResults()
+    fig_ray = plt.figure()
+    ax_ray = fig_ray.add_subplot(111)
+    ax_ray.plot(R,z*1.e2)
     fig = plt.figure()
     ax = fig.add_subplot(111)
     for result_file,marker in zip(result_file_list,["-", "--"]):
         res.from_mat_file(result_file)
+        print(res.Scenario.bt_vac_correction)
         itime = np.argmin(np.abs(time - res.time))
         if(res.Config.N_ray > 1):
-            ax.plot(getattr(res, main_quant)[subquantx][itime][ch - 1], prim_res_quant - getattr(res, main_quant)[subquanty][itime][ch - 1][ir-1] * factor, marker)
+            s_res = getattr(res, main_quant)["s" + subquanty[-1]][itime_prim][ch - 1][ir-1]
+            R_res = np.sqrt(getattr(res, main_quant)["x" + subquanty[-1]][itime_prim][ch - 1][ir-1]**2 + \
+                            getattr(res, main_quant)["y" + subquanty[-1]][itime_prim][ch - 1][ir-1]**2)
+            z_res = getattr(res, main_quant)["z" + subquanty[-1]][itime_prim][ch - 1][ir-1]
+            ax_ray.plot(R_res, z_res*1.e2, "--")
+            #getattr(res, main_quant)[subquantx][itime][ch - 1][ir-1]
+            val = (1.0 - prim_spl(getattr(res, main_quant)["s" + subquanty[-1]][itime][ch - 1][ir-1])/\
+                                        getattr(res, main_quant)[subquanty][itime][ch - 1][ir-1])
+#             ax.plot(R_res, 1.e2* (1.0 - prim_spl(getattr(res, main_quant)["s" + subquanty[-1]][itime][ch - 1][ir-1])/\
+#                                         getattr(res, main_quant)[subquanty][itime][ch - 1][ir-1]), marker, label=label)
         else:
-            ax.plot(getattr(res, main_quant)[subquantx][itime][ch - 1], prim_res_quant - getattr(res, main_quant)[subquanty][itime][ch - 1] * factor, marker)
+            s_res = getattr(res, main_quant)["s" + subquanty[-1]][itime_prim][ch - 1]
+            R_res = np.sqrt(getattr(res, main_quant)["x" + subquanty[-1]][itime_prim][ch - 1]**2 + \
+                            getattr(res, main_quant)["y" + subquanty[-1]][itime_prim][ch - 1]**2)
+            z_res = getattr(res, main_quant)["z" + subquanty[-1]][itime_prim][ch - 1]
+            ax_ray.plot(R_res, z_res*1.e2, "--")
+            #getattr(res, main_quant)[subquantx][itime][ch - 1]\
+            
+            val_res = getattr(res, main_quant)[subquanty][itime][ch - 1]
+#             ax.plot(R_res, 1.e2* (1.0 - prim_spl(getattr(res, main_quant)["s" + subquanty[-1]][itime][ch - 1])/\
+#                                               getattr(res, main_quant)[subquanty][itime][ch - 1]), marker, label=label)
 #         ax.vlines(res.resonance[subquantx[:-1] + "_cold"][itime][ch-1], 0 , 2000, linestyle=marker )
 #     ax.hlines(0.5, 0, 4)
-    plt.show()
+    plt.gca().set_xlabel(r"$s$ [m]")
+    plt.gca().set_ylabel(r"$ 1 - \vert\vec{B}_\mathrm{EQH} \vert /  \vert \vec{B}_\mathrm{IDE} \vert$ [\%]")
+#     plt.suptitle(r"Channel no. " + "{0:d}".format(ch))
+    plt.tight_layout()
+    return s, R, z, val*scale, s_res, R_res, z_res, val_res*scale
+#     plt.show()
 
 def compare_ECRad_results_ds(result_file_list, time, ch, ir=1):
     res = ECRadResults()
@@ -930,8 +1031,13 @@ if(__name__ == "__main__"):
 #     compare_topfiles("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/")
 #     debug_append_ECRadResults("/tokp/work/sdenk/ECRad_2/ECRad_35662_ECE_ed1.mat")
 #     compare_ECRad_results(["/tokp/work/sdenk/ECRad/ECRad_35662_ECECTCCTA_ed2.mat","/tokp/work/sdenk/ECRad/ECRad_35662_ECECTCCTA_ed7.mat"], 6.95,  100)
-    debug_ray("/tokp/work/sdenk/ECRad/ECRad_35662_EXT_ed12.mat", 0, 0, 6)
-#     compare_ECRad_results_diff("/tokp/work/sdenk/ECRad/ECRad_35662_ECECTCCTA_ed2.mat", ["/tokp/work/sdenk/ECRad/ECRad_35662_ECECTCCTA_ed7.mat"], 6.95,  100)
+#     debug_ray("/tokp/work/sdenk/ECRad/ECRad_35662_EXT_ed12.mat", 0, 0, 6)
+    s1, R1, z1, val1, s2, R2, z2, val2 = compare_ECRad_results_diff("/tokp/work/sdenk/ECRad/ECRad_37473_ECE_ed8.mat", \
+                               ["/tokp/work/sdenk/ECRad/ECRad_37473_ECE_ed9.mat"],\
+                               2.3,  10, label="Ray " + "channel no. " + "{0:d}".format(50))
+    compare_eq_Rz(s1, R1, z1, val1, s2, R2, z2, val2, 37473, 2.3, "EQH", "IDE")
+    plt.legend()
+    plt.show()
 #     inspect_svec("/tokp/work/sdenk/ECRad_2/ECRad_data/", 3)
     # validate_theta_along_los("/ptmp1/work/sdenk/nssf/30406/1.38/", 1, 2)
     # debug_f_inter("/afs/ipp-garching.mpg.de/home/s/sdenk/F90/Ecfm_Model_new")

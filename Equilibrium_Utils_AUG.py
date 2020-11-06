@@ -98,51 +98,60 @@ class EQData(EQDataExt):
         else:
             print("EQ diagnostic {0:s} not supported - only EQH and IDE are currently supported!".format(self.EQ_diag))
         self.MBI_shot = dd.shotfile('MBI', int(self.shot))
+        self.equ.read_scalars()
         self.shotfile_ready = True
+
+    def ApplyBVacCorrectionToSlice(self, EQSlice):
+        self.R0 = 1.65  # Point for which BTFABB is defined
+        # Adapted from mod_eqi.f90 by R. Fischer
+        rv = 2.40
+        vz = 0.e0
+        Bt_out = self.equ.rz2brzt(np.array([rv]), np.array([vz]), \
+                                  EQSlice.time)[2]
+        Bt_out = np.asscalar(Bt_out)
+        Btf0_eq = Bt_out
+        Btf0_eq = Btf0_eq * rv / self.R0
+        try:
+            signal = self.MBI_shot.getSignal("BTFABB", \
+                          tBegin=EQSlice.time - 5.e-5, tEnd=EQSlice.time + 5.e-5)
+            if(not np.isscalar(signal)):
+                signal = np.mean(signal)
+            Btf0 = signal
+            Btok = Btf0 *  self.R0 / EQSlice.R
+        except Exception as e:
+            print(e)
+            print("Could not find MBI data")
+            Btok = Btf0_eq *  self.R0 / EQSlice.R
+            Btf0 = Btf0_eq
+            for j in range(len(EQSlice.z)):
+                # plt.plot(pfm_dict["Ri"],B_t[j], label = "EQH B")
+                Btok_eq = Btf0_eq * self.R0 / EQSlice.R  # vacuum toroidal field from EQH
+                Bdia = EQSlice.B_t.T[j] - Btok_eq  # subtract vacuum toroidal field from equilibrium to obtain diamagnetic field
+                EQSlice.B_t.T[j] = (Btok * self.bt_vac_correction) + Bdia  # add corrected vacuum toroidal field to be used
+    # #         print(Btf0)
+    # #         print("Original magnetic field: {0:2.3f}".format(Btf0))
+    # #         print("New magnetic field: {0:2.3f}".format(Btf0 * self.bt_vac_correction))
+        return EQSlice
 
     def GetSlice(self, time, B_vac_correction=True):
         if(not self.shotfile_ready):
             self.init_read_from_shotfile()
         R = self.equ.Rmesh
         z = self.equ.Zmesh
-        self.equ.read_scalars()
         dummy, time_index = self.equ._get_nearest_index(time)
         time_index = time_index[0]
         special = special_points(self.equ.ssq['Rmag'][time_index], self.equ.ssq['Zmag'][time_index], self.equ.psi0[time_index], self.equ.ssq['Raus'][time_index], self.equ.ssq['Zsquad'][time_index], self.equ.psix[time_index])
         self.equ.read_pfm()
         Psi = self.equ.pfm[:, :, time_index]
-        self.R0 = 1.65  # Point for which BTFABB is defined
-        # Adapted from mod_eqi.f90 by R. Fischer
-        rv = 2.40
-        vz = 0.e0
-        Bt_out = self.equ.rz2brzt(np.array([rv]), np.array([vz]), time)[2]
-        Bt_out = np.asscalar(Bt_out)
-        Btf0_eq = Bt_out
-        Btf0_eq = Btf0_eq * rv / self.R0
         rhop = np.sqrt((Psi - special.psiaxis) / (special.psispx - special.psiaxis))
-        try:
-            signal = self.MBI_shot.getSignal("BTFABB", \
-                          tBegin=time - 5.e-5, tEnd=time + 5.e-5)
-            if(not np.isscalar(signal)):
-                signal = np.mean(signal)
-            Btf0 = signal
-            Btok = Btf0 *  self.R0 / R
-        except Exception as e:
-            print(e)
-            print("Could not find MBI data")
-            Btok = Btf0_eq *  self.R0 / R
-            Btf0 = Btf0_eq
         B_r, B_z, B_t = self.equ.Bmesh(time) 
         if(B_vac_correction):
-            for j in range(len(z)):
-                # plt.plot(pfm_dict["Ri"],B_t[j], label = "EQH B")
-                Btok_eq = Btf0_eq * self.R0 / R  # vacuum toroidal field from EQH
-                Bdia = B_t.T[j] - Btok_eq  # subtract vacuum toroidal field from equilibrium to obtain diamagnetic field
-                B_t.T[j] = (Btok * self.bt_vac_correction) + Bdia  # add corrected vacuum toroidal field to be used
-    # #         print(Btf0)
-    # #         print("Original magnetic field: {0:2.3f}".format(Btf0))
-    # #         print("New magnetic field: {0:2.3f}".format(Btf0 * self.bt_vac_correction))
-        return EQDataSlice(time, R, z, Psi, B_r, B_t, B_z, special=special, rhop=rhop )
+            return self.ApplyBVacCorrectionToSlice( EQDataSlice(time, R, z, \
+                                                                Psi, B_r, B_t, \
+                                                                B_z, special=special, \
+                                                                rhop=rhop ))
+        else:
+            return EQDataSlice(time, R, z, Psi, B_r, B_t, B_z, special=special, rhop=rhop )
 
     def map_Rz_to_rhot(self, time, R, z):
         if(self.external_folder != '' or self.Ext_data):

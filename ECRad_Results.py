@@ -16,8 +16,8 @@ from Ndarray_Helper import ndarray_math_operation, ndarray_check_for_None
 
 class ECRadResults:
     def __init__(self):
-        self.Config = ECRadConfig()
-        self.Scenario = ECRadScenario()
+        self.Config = ECRadConfig(noLoad=True)
+        self.Scenario = ECRadScenario(noLoad=True)
         self.reset()
 
     def reset(self):
@@ -389,6 +389,7 @@ class ECRadResults:
         except IOError as e:
             print(e)
             print("Error: " + filename + " does not exist")
+            return
         # Loading from .mat sometimes adds single entry arrays that we don't want
         at_least_1d_keys = ["calib_diags", "time"]
         at_least_2d_keys = ["Trad", "Trad_comp", "tau", "tau_comp", \
@@ -834,9 +835,9 @@ class ECRadResults:
     
 if(__name__ == "__main__"):
     res = ECRadResults()
-    res.from_mat_file("/mnt/c/Users/Severin/ECRad/Yu/ECRad_179328_EXT_ed2.mat")
+    res.from_mat_file("/afs/ipp-garching.mpg.de/home/s/sdenk/Downloads/ECRad_179328_EXT_ed2.mat")
     res.Scenario.profile_dimension = 2
-    res.to_mat_file("/mnt/c/Users/Severin/ECRad/Yu/ECRad_179328_EXT_ed3.mat")
+    res.to_mat_file("/tokp/work/sdenk/ECRad/ECRad_179328_EXT_ed2.mat")
     
     
     
