@@ -122,9 +122,10 @@ def export_gene_fortran_friendly(wpath, rhop, beta_par, mu_norm, ne, f, f0, B0):
 #                         np.array([rhop]), np.array([rhop]), np.array([Te]), np.array([1.0]))
 #     
 
-def load_f_from_mat(filename, use_dist_prefix=False):
+def load_f_from_mat(filename=None, mdict = None, use_dist_prefix=False):
     # Load distribution object from .mat file created by AECM GUI
-    mdict = loadmat(filename, squeeze_me=True)
+    if(mdict is None):
+        mdict = loadmat(filename, squeeze_me=True)
     dist_prefix = ""
     if(use_dist_prefix is None):
         for key in mdict:

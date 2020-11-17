@@ -835,18 +835,9 @@ class ECRadResults:
     
 if(__name__ == "__main__"):
     res = ECRadResults()
-<<<<<<< HEAD
     res.from_mat_file("/afs/ipp-garching.mpg.de/home/s/sdenk/Downloads/ECRad_179328_EXT_ed2.mat")
     res.Scenario.profile_dimension = 2
     res.to_mat_file("/tokp/work/sdenk/ECRad/ECRad_179328_EXT_ed2.mat")
-    
-=======
-    res.from_mat_file("/mnt/c/Users/Severin/ECRad/Yu/ECRad_179328_EXT_ed2.mat")
-#     res.Scenario.profile_dimension = 2
-#     res.to_mat_file("/mnt/c/Users/Severin/ECRad/Yu/ECRad_179328_EXT_ed3.mat")
-#     
->>>>>>> branch 'master' of git@gitlab.mpcdf.mpg.de:rrf/augd_ecrad_pylib.git
-    
     
     
     

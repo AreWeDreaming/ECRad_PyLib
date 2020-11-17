@@ -229,6 +229,10 @@ class ECRadScenario:
         else:
             self.data_source = "aug_database"
         self.plasma_set = True
+        try:
+            self.load_dist_obj(mdict=mdict)
+        except Exception:
+            print("No distribution data in current Scenario")
 
     def autosave(self):
         self.to_mat_file(filename=self.scenario_file)
@@ -367,8 +371,8 @@ class ECRadScenario:
         else:
             return True
 
-    def load_dist_obj(self, filename):
-        self.dist_obj = load_f_from_mat(filename, use_dist_prefix=None)
+    def load_dist_obj(self, filename=None, mdict=None):
+        self.dist_obj = load_f_from_mat(filename=filename, mdict=mdict, use_dist_prefix=None)
         
     def load_GENE_obj(self, filename, dstf):
         it = 0 # Only single time point supported
