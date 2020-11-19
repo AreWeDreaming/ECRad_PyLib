@@ -559,11 +559,9 @@ def getGaussianParamsForChannel(launch, xRef = 3.577):
         print(" for f = {0:3.1f} GHz is: \n".format(freq/1.e9))
         print("Distance between z,y focii {0:2.1f} cm \n".format(1.e2*np.abs(yDist-zDist)))
         launch["dist_focus"][i] = 0.5*(yDist + zDist)
-    launch["phi"] += (8.5e0) * 22.5
+    launch["phi"] += (8.5e0) * 22.5 
     return launch
-    
-    
-    
+
     
 def validateQparams(freq=118, dtoECE=15):
     # this routine calculates the q parameters of a Gaussian
