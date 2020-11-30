@@ -840,6 +840,3 @@ if(__name__ == "__main__"):
     res.to_mat_file("/tokp/work/sdenk/ECRad/ECRad_179328_EXT_ed2.mat")
     
     
-    
-    
-    

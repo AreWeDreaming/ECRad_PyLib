@@ -229,6 +229,11 @@ class ECRadScenario:
         else:
             self.data_source = "aug_database"
         self.plasma_set = True
+        try:        
+            self.load_dist_obj(mdict=mdict)
+        except Exception:
+            print("No distribution data in current Scenario")
+
 
     def autosave(self):
         self.to_mat_file(filename=self.scenario_file)
@@ -352,6 +357,8 @@ class ECRadScenario:
             mdict["eq_Bz"] = np.array(mdict["eq_Bz"])
             mdict["eq_special"] = np.array(mdict["eq_special"])
             mdict["vessel_bd"] = self.plasma_dict["vessel_bd"]
+        if(self.dist_obj is not None):
+            self.dist_obj.export_dist_to_matlab(mdict=mdict)
         mdict["data_source"] = self.data_source
         self.use3Dscen.to_mat(mdict)
         if(filename is not None):
@@ -367,7 +374,7 @@ class ECRadScenario:
         else:
             return True
 
-    def load_dist_obj(self, filename):
+    def load_dist_obj(self, filename=None, mdict=None):
         self.dist_obj = load_f_from_mat(filename, use_dist_prefix=None)
         
     def load_GENE_obj(self, filename, dstf):

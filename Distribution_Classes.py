@@ -12,7 +12,7 @@ import h5py
 import os
 from Distribution_Helper_Functions import get_dist_moments_non_rel, get_0th_and_2nd_moment
 from Distribution_Functions import Juettner1D
-
+from scipy.io import savemat, loadmat
 class Beam:
     # For ECRH beams. Rays structure contains information on the individual rays forming the beam.
     def __init__(self, rhot, rhop, PW, j, PW_tot, j_tot, PW_beam=None, j_beam=None, rays=None):
@@ -242,5 +242,38 @@ class Distribution:
         print("distribution shape:", self.f.shape)
         print("Finished remapping.")
         
-        
+    def from_mat(self, mdict=None, filename=None):
+        if(mdict is None):
+            mdict = loadmat(filename, squeeze_me=True)
+        dist_prefix = ""
+        for key in mdict:
+            if(key.startswith("dist")):
+                dist_prefix = "dist_"
+                break
+        try:
+            self.rhot_1D_profs = mdict[dist_prefix + "rhot_1D_profs"]
+        except KeyError:
+            self.rhot_1D_profs = None
+        self.rhop_1D_profs = mdict[dist_prefix + "rhop_1D_profs"]
+        self.Te_init = mdict[dist_prefix + "Te_init"]
+        self.ne_init = mdict[dist_prefix + "ne_init"]
+        self.u = mdict[dist_prefix + "u"]
+        self.pitch = mdict[dist_prefix + "pitch"]
+        self.f = mdict[dist_prefix + "f"]
+    
+    def export_dist_to_matlab(self, mdict = None, filename=None):
+        if(mdict is None):
+            mdict = {}
+        mdict["rhot_1D_profs"] = self.rhot_1D_profs
+        mdict["rhop_1D_profs"] = self.rhop_1D_profs
+        mdict["Te_init"] = self.Te_init
+        mdict["ne_init"] = self.ne_init
+        f = self.f
+        mdict["u"] = self.u
+        mdict["pitch"] = self.pitch
+        mdict["f"] = f
+        if(filename is not None): 
+            savemat(os.path.join(filename), mdict)
+        else:
+            return mdict
 
