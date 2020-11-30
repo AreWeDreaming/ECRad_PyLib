@@ -356,6 +356,8 @@ class ECRadScenario:
             mdict["eq_Bz"] = np.array(mdict["eq_Bz"])
             mdict["eq_special"] = np.array(mdict["eq_special"])
             mdict["vessel_bd"] = self.plasma_dict["vessel_bd"]
+        if(self.dist_obj is not None):
+            self.dist_obj.export_dist_to_matlab(mdict=mdict)
         mdict["data_source"] = self.data_source
         self.use3Dscen.to_mat(mdict)
         if(filename is not None):
