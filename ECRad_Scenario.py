@@ -404,11 +404,11 @@ class ECRadScenario:
             for key in self.plasma_dict:
                 if(first_time):
                     new_plasma_dict[key] = []
-                if(key != "time" and key != "vessel_bd"):
+                if(key != "time" and key != "vessel_bd" and key != "prof_reference"):
                     new_plasma_dict[key].append(plasma_dict_0[key][0])
                 elif(key == "time" ):
                     new_plasma_dict[key].append(plasma_dict_0[key][0] + self.GENE_obj.time[it_gene])
-                elif(first_time and key == "vessel_bd"):
+                elif(first_time and (key == "vessel_bd" or key == "prof_reference")):
                     new_plasma_dict[key] = plasma_dict_0[key]
             first_time = False
             new_ray_launch.append({})

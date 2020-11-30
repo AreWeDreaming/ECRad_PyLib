@@ -217,7 +217,7 @@ def prepare_input_files(Config, Scenario, index, copy_dist=True, \
         os.mkdir(fRe_dir)
         export_fortran_friendly([Scenario.dist_obj, fRe_dir])
     if(Config.dstf == "Ge" and copy_dist):
-        wpath = os.path.join(os.path.join(Config.working_dir, "ECRad_data", "fGe"))
+        wpath = os.path.join(os.path.join(ECRad_data_path, "fGe"))
         if os.path.exists(wpath):
             rmtree(wpath)  # Removing the old files first is faster than overwriting them
         os.mkdir(wpath)
@@ -226,7 +226,7 @@ def prepare_input_files(Config, Scenario, index, copy_dist=True, \
                                      Scenario.GENE_obj.f[index], Scenario.GENE_obj.f0, \
                                      Scenario.GENE_obj.B0)
     if(Config.dstf == "GB" and copy_dist):
-        wpath = os.path.join(os.path.join(Config.working_dir, "ECRad_data", "fGe"))
+        wpath = os.path.join(os.path.join(ECRad_data_path, "fGe"))
         if os.path.exists(wpath):
             rmtree(wpath)  # Removing the old files first is faster than overwriting them
         os.mkdir(wpath)
