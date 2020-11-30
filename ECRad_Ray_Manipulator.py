@@ -65,7 +65,7 @@ class ECRadRayManipulator(object):
             
 if(__name__=="__main__"):
     from Plotting_Configuration import plt
-    ECRad_manip = ECRadRayManipulator("/mnt/c/Users/Severin/ECRad/Yu/ECRad_179328_EXT_ed9.mat")
+    ECRad_manip = ECRadRayManipulator("/mnt/c/Users/Severin/ECRad/Yu/ECRad_179328_EXT_ed10.mat")
     R, z = ECRad_manip.get_Rz_single_ray(0, 0)
     Te_spl = RectBivariateSpline(ECRad_manip.ECRad_results.Scenario.plasma_dict["eq_data"][0].R, \
                                  ECRad_manip.ECRad_results.Scenario.plasma_dict["eq_data"][0].z, \
@@ -74,9 +74,9 @@ if(__name__=="__main__"):
     plt.plot(rhop[rhop >=0], \
              ECRad_manip.get_field_single_ray("Te", 0, 0)[rhop >= 0], "+",  label="before")
     ECRad_manip.set_field_single_ray("Te", Te_spl(R,z, grid=False) * 1.5, 0, 0)
-    ECRad_manip.save("/mnt/c/Users/Severin/ECRad/Yu/ECRad_179328_EXT_ed9_1.5Te.mat", \
+    ECRad_manip.save("/mnt/c/Users/Severin/ECRad/Yu/ECRad_179328_EXT_ed10_1.5Te.mat", \
                      "increased Te by a factpr pf1.5")
-    ECRad_manip = ECRadRayManipulator("/mnt/c/Users/Severin/ECRad/Yu/ECRad_179328_EXT_ed9_1.5Te.mat")
+    ECRad_manip = ECRadRayManipulator("/mnt/c/Users/Severin/ECRad/Yu/ECRad_179328_EXT_ed10_1.5Te.mat")
     plt.plot(rhop[rhop >=0], \
              ECRad_manip.get_field_single_ray("Te", 0, 0)[rhop >= 0], "^", label="after")
     plt.legend()
