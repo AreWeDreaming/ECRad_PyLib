@@ -13,6 +13,9 @@ def linear_fit_func(x, *p):
 def gauss_fit_func(x, *p):
     return p[0] * np.exp(-((x - p[1]) / p[2]) ** 2)
 
+def exp_fit_func(x, *p):
+    return p[0] * x**p[1]
+
 def Te_fit(x, *p):
     #Model 
     pass
@@ -25,8 +28,10 @@ def make_fit(mode, x, y, y_error=None, p_est=None, relative_error=False):
         fit_func = linear_fit_func
     elif(mode == 'gauss'):
         fit_func = gauss_fit_func
+    elif(mode == 'exponential'):
+        fit_func = exp_fit_func
     else:
-        print("Just linear and gauss fits implemented so far")
+        print("Just linear, exponential, and gauss fits implemented so far")
         raise ValueError("Mmake_fit only supports linear and gauss fits at this time")
     if(y_error is not None):
         popt, pcov = curve_fit(fit_func, x, y, p0=p_est, sigma=y_error, absolute_sigma=not relative_error, \

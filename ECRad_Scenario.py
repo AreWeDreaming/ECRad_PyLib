@@ -385,27 +385,24 @@ class ECRadScenario:
             print(e)
             return False
         
-    def integrate_GeneData(self, used_times):
-        # We need this to hack in extra time points for the GENE computation
-        if(self.GENE_obj == None):
-            print("Gene object not initialized")
-            return False
+    def duplicate_time_point(self, it, new_times):
+        # Copies the time index it len(new_times) times using the times in new_times.
         first_time = True
         plasma_dict_0 = self.plasma_dict.copy()
         new_plasma_dict = {}
         new_ray_launch = []
         ray_launch_0 = self.ray_launch[0]
-        for used_time in used_times:
-            it_gene = np.argmin(np.abs(self.GENE_obj.time - (used_time - plasma_dict_0["time"][0])))
+        new_plasma_dict["vessel_bd"] = plasma_dict_0["vessel_bd"]
+        for time in new_times:
             for key in self.plasma_dict:
+                if(key == "vessel_bd"):
+                    continue
                 if(first_time):
                     new_plasma_dict[key] = []
-                if(key != "time" and key != "vessel_bd"):
-                    new_plasma_dict[key].append(plasma_dict_0[key][0])
+                if(key != "time"):
+                    new_plasma_dict[key].append(plasma_dict_0[key][it])
                 elif(key == "time" ):
-                    new_plasma_dict[key].append(plasma_dict_0[key][0] + self.GENE_obj.time[it_gene])
-                elif(first_time and key == "vessel_bd"):
-                    new_plasma_dict[key] = plasma_dict_0[key]
+                    new_plasma_dict[key].append(time)
             first_time = False
             new_ray_launch.append({})
             for key in ray_launch_0:
@@ -413,6 +410,18 @@ class ECRadScenario:
         new_plasma_dict["time"] = np.array(new_plasma_dict["time"])
         self.plasma_dict = new_plasma_dict
         self.ray_launch = new_ray_launch
+        
+    def integrate_GeneData(self, used_times):
+        # We need this to hack in extra time points for the GENE computation
+        if(self.GENE_obj == None):
+            print("Gene object not initialized")
+            return False
+        new_times = []
+        for used_time in used_times:
+            it_gene = np.argmin(np.abs(self.GENE_obj.time - (used_time - self.plasma_dict["time"][0])))
+            new_times.append(self.plasma_dict["time"][0] + self.GENE_obj.time[it_gene])
+        new_times = np.array(new_times)
+        self.duplicate_time_point(0, new_times)
         return True
 
 class Use3DScenario:
