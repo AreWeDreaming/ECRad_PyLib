@@ -177,7 +177,7 @@ def get_dist_moments_non_rel(rhop, beta_par, mu_norm, f, Te, ne, B0, slices=1, n
     f_Gene /= ne
     f_Gene[f_Gene < 1.e-20] = 1.e-20
     for i in range(len(rhop_Gene)):
-        print("Now working on flux surface {0:d}/{1:d}".format(i + 1, len(rhop_Gene)))
+#         print("Now working on flux surface {0:d}/{1:d}".format(i + 1, len(rhop_Gene)))
         beta_perp = np.sqrt(mu_norm * 2.0 * B0)
         f_spl = RectBivariateSpline(beta_par, beta_perp, np.log(f_Gene[i]))
         if(ne_out):
@@ -186,8 +186,8 @@ def get_dist_moments_non_rel(rhop, beta_par, mu_norm, f, Te, ne, B0, slices=1, n
         else:
             Te_perp[i], Te_par[i] = get_bimaxwellian_moments_non_rel(np.min(beta_par), np.max(beta_perp), \
                                                          np.min(beta_perp), np.max(beta_perp), f_spl)
-        print("Te, Te_perp, Te_par, 1 - Te_perp/Te, 1 - Te_par/Te", Te, \
-              Te_perp[i], Te_par[i], (1.0 - Te_perp[i] / Te), (1.0 - Te_par[i] / Te))
+#         print("Te, Te_perp, Te_par, 1 - Te_perp/Te, 1 - Te_par/Te", Te, \
+#               Te_perp[i], Te_par[i], (1.0 - Te_perp[i] / Te), (1.0 - Te_par[i] / Te))
     if(ne_out):
         return Te_perp, Te_par, ne_prof
     else:

@@ -133,20 +133,7 @@ class PlottingCore:
         else:
             return value
 
-    def plot_Trad(self, time, rhop, Trad, Trad_comp, rhop_Te, Te, \
-                  diags, diag_names, dstf, model_2=True, \
-                  X_mode_fraction=None, X_mode_fraction_comp=None, \
-                  multiple_models=False, label_list=None, max_unc = 0.5):
-        if(X_mode_fraction is not None):
-            twinx = "_twinx"
-        else:
-            twinx = ""
-        if(plot_mode == "Software"):
-            self.setup_axes("Te_no_ne" + twinx, r"$T_{rad}$, $T_{e}$ ", r"Optical depth $\tau_\omega$")
-        else:
-            self.setup_axes("Te_no_ne" + twinx, r"$T_\mathrm{rad}$, $T_\mathrm{e}$", \
-                            r"Optical depth $\tau_\omega$")
-        mathrm = r"\mathrm"
+    def resolve_dstf_labels(self, dstf):
         if(dstf == "Th"):
             dist_simpl = r"Fa"
             dist = r"Alb"
@@ -165,6 +152,23 @@ class PlottingCore:
             dist = r"[" + dist + r"]"
         if(len(dist_simpl) > 0):
             dist_simpl = r"[" + dist_simpl + r"]"
+        return dist, dist_simpl
+
+    def plot_Trad(self, time, rhop, Trad, Trad_comp, rhop_Te, Te, \
+                  diags, diag_names, dstf, model_2=True, \
+                  X_mode_fraction=None, X_mode_fraction_comp=None, \
+                  multiple_models=False, label_list=None, max_unc = 0.5):
+        if(X_mode_fraction is not None):
+            twinx = "_twinx"
+        else:
+            twinx = ""
+        if(plot_mode == "Software"):
+            self.setup_axes("Te_no_ne" + twinx, r"$T_{rad}$, $T_{e}$ ", r"Optical depth $\tau_\omega$")
+        else:
+            self.setup_axes("Te_no_ne" + twinx, r"$T_\mathrm{rad}$, $T_\mathrm{e}$", \
+                            r"Optical depth $\tau_\omega$")
+        mathrm = r"\mathrm"
+        dist, dist_simpl = self.resolve_dstf_labels(dstf)
         ax_flag = "Te_Te_Trad"
         # No ne as of yet                                       #    y_range_in = self.y_range_list[0])  \,R = 0.90 $
 #        self.axlist[1],  self.y_range_list[1] = self.add_plot(self.axlist[1], data = [rhop_ne_vec, ne_vec], \
@@ -334,16 +338,7 @@ class PlottingCore:
             self.setup_axes("twinx", r"$\tau_{\omega}$, $T_\mathrm{e}$", \
                             r"Optical depth $\tau_\omega$")
         mathrm = r"\mathrm"
-        if(dstf == "Th"):
-            dist_simpl = r"Fa"
-            dist = r"Alb"
-            dist = r"[" + dist + r"]"
-        elif(dstf == "Re"):
-            dist_simpl = r"Th"
-            dist = r"RELAX"
-            dist = r"[" + dist + r"]"
-        if(len(dist_simpl) > 0):
-            dist_simpl = r"[" + dist_simpl + r"]"
+        dist, dist_simpl = self.resolve_dstf_labels(dstf)
         ax_flag = "T_rho"
         quant_name = "T"
         if(use_tau):
@@ -780,26 +775,18 @@ class PlottingCore:
             ch_Hf_str = "HFS"
         else:
             ch_Hf_str = "LFS"
+        dist, dist_simpl = self.resolve_dstf_labels(dstf)
         self.setup_axes("BPD", r"BDO: $\rho_\mathrm{pol,res} = " + \
             r"{0:1.2f}$".format(np.abs(rhop_res)) + " on " + ch_Hf_str)
         ax_flag = "j_weighted"
         if(scale_w_Trad):
             ax_flag += "_Trad"
-        if(self.title):
-            name = r"$D_\omega$, $\rho_\mathrm{pol,res} = " + \
-                r"{0:1.2f}".format(rhop_res) + "$ on " + ch_Hf_str
-        else:
-            name = r"$D_\omega$"
+        name = r"$D_\omega$" + dist
         self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                 self.y_range_list[0] , data=[rhop_signed, D ], color=(0.6, 0.0, 0.0), marker="-", \
                 name=name, \
                 vline=rhop_res, ax_flag=ax_flag)
-
-        if(self.title):
-            name = r"$D_\omega$, $\rho_\mathrm{pol,res} = " + \
-                r"{0:1.2f}".format(rhop_res) + "$ on " + ch_Hf_str
-        else:
-            name = r"$D_\omega [" + r"\mathrm{2nd\,model}"  + "$"
+        name = r"$D_\omega$" + dist_simpl
         self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
                 self.y_range_list[0] , data=[rhop_signed, D_comp ], color=(0.0, 0.0, 0.6), marker="--", \
                 name=name, \

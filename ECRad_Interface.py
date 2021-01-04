@@ -86,10 +86,10 @@ def prepare_input_files(Config, Scenario, index, copy_dist=True, \
             print("Please check that this folder exists and you have write permissions")
             return False
         print("Created folder " + ECRad_data_path)#
-        if(Config.dstf != "GB"):
-            Ich_path = os.path.join(ECRad_data_path, "Ich" + Config.dstf)
-        else:
-            Ich_path = os.path.join(ECRad_data_path, "IchGe")
+#         if(Config.dstf != "GB"):
+        Ich_path = os.path.join(ECRad_data_path, "Ich" + Config.dstf)
+#         else:
+#             Ich_path = os.path.join(ECRad_data_path, "IchGe")
         if(not os.path.isdir(Ich_path)):
             os.mkdir(Ich_path)
             print("Created folder " + Ich_path)
@@ -126,10 +126,10 @@ def prepare_input_files(Config, Scenario, index, copy_dist=True, \
         print("An error occured when creating input profiles and the topfile")
         return False
     input_file = open(os.path.join(ECRad_data_path, "ECRad.inp"), "w")
-    if(Config.dstf == "GB"):
-        input_file.write("Ge" + "\n")  # Model does not distinguish between Ge and GB
-    else:
-        input_file.write(Config.dstf + "\n")
+#     if(Config.dstf == "GB"):
+#         input_file.write("Ge" + "\n")  # Model does not distinguish between Ge and GB
+#     else:
+    input_file.write(Config.dstf + "\n")
     if(Config.extra_output):
         input_file.write("T\n")
     else:
@@ -226,14 +226,24 @@ def prepare_input_files(Config, Scenario, index, copy_dist=True, \
                                      Scenario.GENE_obj.f[index], Scenario.GENE_obj.f0, \
                                      Scenario.GENE_obj.B0)
     if(Config.dstf == "GB" and copy_dist):
-        wpath = os.path.join(os.path.join(ECRad_data_path, "fGe"))
+        wpath = os.path.join(os.path.join(ECRad_data_path, "fGB"))
         if os.path.exists(wpath):
             rmtree(wpath)  # Removing the old files first is faster than overwriting them
         os.mkdir(wpath)
+        Te_perp, Te_par = Scenario.GENE_obj.make_bi_max_single_timepoint(index)
         export_gene_bimax_fortran_friendly(wpath, Scenario.GENE_obj.rhop, Scenario.GENE_obj.beta_par, \
                                            Scenario.GENE_obj.mu_norm, Scenario.GENE_obj.Te, Scenario.GENE_obj.ne, \
-                                           Scenario.GENE_obj.Te_perp[index], Scenario.GENE_obj.Te_par[index], Scenario.GENE_obj.B0)
-
+                                           Te_perp, Te_par, Scenario.GENE_obj.B0)
+        Te_perp_file = open(os.path.join(ECRad_data_path, "Te_perp.dat"), "w")
+        Te_perp_file.write("{0: 5d}\n".format(len(Te_perp)))
+        for i in range(len(Te_perp)):
+            Te_perp_file.write("{0: 1.12E} {1: 1.12E}\n".format(Scenario.GENE_obj.rhop[i], Te_perp[i]))
+        Te_perp_file.close()
+        Te_par_file = open(os.path.join(ECRad_data_path, "Te_par.dat"), "w")
+        Te_par_file.write("{0: 5d}\n".format(len(Te_par)))
+        for i in range(len(Te_perp)):
+            Te_par_file.write("{0: 1.12E} {1: 1.12E}\n".format(Scenario.GENE_obj.rhop[i], Te_par[i]))
+        Te_par_file.close()
     return True
 
 def write_ext_ray_input(ECRad_data_path, Config, Scenario, index, ext_results):
@@ -628,7 +638,10 @@ def load_plasma_from_mat(path):
         except IOError:
             print("Error: " + path + " does not exist")
             raise IOError
-        plasma_dict["shot"] = mdict["shot"]
+        try:
+            plasma_dict["shot"] = mdict["shot"]
+        except:
+            plasma_dict["shot"] = -1
         increase_diag_dim = False
         increase_time_dim = False
         if(np.isscalar(mdict["time"])):
@@ -716,6 +729,8 @@ def make_ECRadInputFromPlasmaDict(working_dir, plasma_dict, index, Scenario):
     # In the topfile the dimensions of the matrices are z,R unlike in the GUI where it is R,z -> transpose the matrices here
     if(not Scenario.use3Dscen.used):
         EQ = plasma_dict["eq_data"][index]
+        if(plasma_dict["prof_reference"] != "rhop_prof"):
+            raise ValueError("Profiles must be given in rho poloidal in case of axissymmetric equlibria")
         error = make_topfile_no_data_load(working_dir, Scenario.shot, plasma_dict["time"][index], EQ.R, EQ.z, EQ.Psi, EQ.Br, \
                                       EQ.Bt, EQ.Bz, EQ.Psi_ax, EQ.Psi_sep) # Routine does the transposing!
         if(error != 0):

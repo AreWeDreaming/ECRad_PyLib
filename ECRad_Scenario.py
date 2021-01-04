@@ -22,8 +22,8 @@ else:
 
 class ECRadScenario:
     def __init__(self, noLoad=False):
+        self.scenario_file = os.path.join(os.path.expanduser("~"), ".ECRad_GUI_last_scenario.mat")
         if(not noLoad):
-            self.scenario_file = os.path.join(os.path.expanduser("~"), ".ECRad_GUI_last_scenario.mat")
             try:
                 self.from_mat(path_in=self.scenario_file)
             except Exception as e:
@@ -66,6 +66,7 @@ class ECRadScenario:
         self.default_diag = "ECE"
         self.data_source = "aug_database"
         self.dist_obj = None
+        self.GENE_obj = None
         self.use3Dscen = Use3DScenario()
 
     def from_mat(self, mdict=None, path_in=None, load_plasma_dict=True):
@@ -195,6 +196,11 @@ class ECRadScenario:
             except KeyError:
                 print("Could not find rho_tor profile")
                 self.plasma_dict["rhot_prof"] = None
+            try:
+                self.plasma_dict["prof_reference"] = mdict["prof_reference"]
+            except KeyError:
+                print("Could not find profile axis type. Falling  back to rho_pol")
+                self.plasma_dict["prof_reference"] = "rhop_prof"
         else:
             self.plasma_dict["prof_reference"] = "2D"
         self.plasma_dict["Te"] = mdict["Te"]
@@ -320,6 +326,9 @@ class ECRadScenario:
             if("rhot_prof" in self.plasma_dict):
                 if(self.plasma_dict["rhot_prof"] is not None):
                     mdict["rhot_prof"] = self.plasma_dict["rhot_prof"]
+            mdict["prof_reference"] = self.plasma_dict["prof_reference"]
+        else:
+            mdict["prof_reference"] = "2D"
         mdict["eq_R"] = []
         mdict["eq_z"] = []
         mdict["eq_Psi"] = []
@@ -383,8 +392,8 @@ class ECRadScenario:
             if(dstf == "Ge"):
                 self.GENE_obj = Gene(filename, self.plasma_dict["time"][it], self.plasma_dict["eq_data"][it])
             else:
-                self.GENE_obj = GeneBiMax(filename, self.plasma_dict["time"][it], self.plasma_dict["eq_data"][it])
-                self.GENE_obj.make_bi_max()
+                self.GENE_obj = GeneBiMax(filename, self.plasma_dict["time"][it], self.plasma_dict["eq_data"][it], it)
+#                 self.GENE_obj.make_bi_max()
             return True
         except Exception as e:
             self.GENE_obj = None
@@ -400,9 +409,12 @@ class ECRadScenario:
         new_ray_launch = []
         ray_launch_0 = self.ray_launch[0]
         new_plasma_dict["vessel_bd"] = plasma_dict_0["vessel_bd"]
+        new_plasma_dict["prof_reference"] = plasma_dict_0["prof_reference"]
         for time in new_times:
             for key in self.plasma_dict:
-                if(key == "vessel_bd"):
+                if(plasma_dict_0[key] is None):
+                    continue
+                elif(key == "vessel_bd" or key == "prof_reference" or len(plasma_dict_0[key]) == 0):
                     continue
                 if(first_time):
                     new_plasma_dict[key] = []

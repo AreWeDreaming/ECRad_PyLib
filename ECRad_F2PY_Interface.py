@@ -26,6 +26,7 @@ class ECRadF2PYInterface:
     def set_config_and_diag(self, Config, Scenario, itime):
         # This sets up the environment variables for OpenMP
         ecrad_exec_dummy = GetECRadExec(Config, Scenario, Scenario.plasma_dict["time"][itime])
+        print(os.environ["LDFLAGS"])
         try:
             import ECRad_python
         except Exception as e:
@@ -96,17 +97,17 @@ class ECRadF2PYInterface:
 
 if(__name__ == "__main__"):
     ECRad_folder = "/mnt/c/Users/Severin/ECRad/"
+    os.chdir(globalsettings.ECRadLibDir)
+    print(os.getcwd())
     ECRad_file = os.path.join(ECRad_folder, "ECRad_35662_EXT_ed1.mat")
 #     ECRad_file = "/gss_efgw_work/work/g2sdenk/ECRad_runs/ECRad_20180823016002_EXT_ed20.mat"
     Scenario = ECRadScenario(True)
     Config = ECRadConfig(True)
-    Config.from_mat_file(path =ECRad_file)
-    Scenario.from_mat(path_in =ECRad_file)
+    Config.from_mat_file(path=ECRad_file)
+    Scenario.from_mat(path_in=ECRad_file)
     Config.working_dir = ECRad_folder
     Config.scratch_dir = Config.working_dir
     Config.extra_output =False
-#     Scenario.use3Dscen.equilibrium_file = "/gss_efgw_work/work/g2sdenk/ECRad_runs/VMEC.txt"
-#     Scenario.use3Dscen.vessel_filename = "/gss_efgw_work/work/g2sdenk/ECRad_runs/W7X_wall_SI.dat"
     Config.batch = False
     ecrad_f2py_interface = ECRadF2PYInterface()
     ecrad_f2py_interface.set_config_and_diag(Config, Scenario, 0)

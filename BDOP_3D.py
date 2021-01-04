@@ -846,9 +846,8 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
         ax_depo.set_ylabel(r"$D_\omega\, \mathrm{and} \, \mathrm{d}P/\mathrm{d}V\,[\si{{a.u.}}]$")
     else:
         ax_depo.set_ylabel(r"$D_\omega\,[\si{{a.u.}}]$")
-    steps = np.array([0.5, 1.0, 2.5, 5.0, 10.0])
-    ax_depo.get_xaxis().set_major_locator(MaxNLocator(nbins=3, steps=steps, prune="lower"))
-    ax_depo.get_xaxis().set_minor_locator(MaxNLocator(nbins=6, steps=steps / 2.0))
+    ax_depo.get_xaxis().set_major_locator(MaxNLocator(nbins=3, prune="lower"))
+#     ax_depo.get_xaxis().set_minor_locator(MaxNLocator(nbins=6))
     plt.autoscale(False)
     for key in R_BPD_dict:
         if("2" in  key):

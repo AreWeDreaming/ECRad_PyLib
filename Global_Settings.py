@@ -5,7 +5,7 @@ Created on Jan 29, 2017
 '''
 import os
 import wx
-
+import multiprocessing
 def qos_function_tok(cores, wall_time):
     if(cores == 1):
         if(wall_time <= 4):
@@ -95,10 +95,10 @@ class GlobalSettingsAUGEXT:
         if(os.getenv("SYS") == 'amd64_sles12'  or os.getenv("SYS") == 'amd64_sles15'):
             self.SLES12 = True
         self.Phoenix = "phoenix" in wx.PlatformInfo
-        self.ECRadRoot ="../augd_ecrad"
-        self.ECRadPylibRoot = "../ECRad_Pylib/"
-        self.ECRadGUIRoot = "../ECRad_GUI/"
-        self.ECRadLibDir = os.path.join(self.ECRadRoot, "$SYS")
+        self.ECRadRoot = os.path.abspath("../augd_ecrad")
+        self.ECRadPylibRoot = os.path.abspath("../ECRad_Pylib/")
+        self.ECRadGUIRoot = os.path.abspath("../ECRad_GUI/")
+        self.ECRadLibDir = os.path.join(self.ECRadRoot, os.environ["SYS"])
         try:
             self.ECRadPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRad")
         except KeyError:
@@ -107,7 +107,7 @@ class GlobalSettingsAUGEXT:
         self.TB_path = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/torbeam_repo/TORBEAM/branches/lib-OUT/"
         self.qos_function = qos_function_tok
         self.partition_function = partition_function_tok
-        self.max_cores = 32
+        self.max_cores = multiprocessing.cpu_count()
         self.pylib_folder = "../ECRad_Pylib"
         self.GUI_folder = "../ECRad_GUI"
 try:        

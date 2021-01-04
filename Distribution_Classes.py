@@ -83,18 +83,27 @@ class Gene:
         
 class GeneBiMax(Gene):
     # Creates artifical GENE distribution based on the BiMaxwellian
-    def __init__(self, path, shot, time=None, EqSlice=None, it=0, EQObj = None):
-        Gene.__init__(self, path, shot, time, EqSlice, it, EQObj)
+    def __init__(self, path, time=None, EqSlice=None, it=0, EQObj = None):
+        Gene.__init__(self, path, time, EqSlice, it, EQObj)
 
     def make_bi_max(self):
         self.Te_perp = []
         self.Te_par = []
-        for it in self.time:
+        print("Retrieving BiMaxwellian Te_par and Te_perp")
+        for it in range(len(self.time)):
+            print("Time point " + str(it) + "/" + str(len(self.time)))
             Te_perp, Te_par = get_dist_moments_non_rel(self.rhop, self.beta_par, self.mu_norm, \
                                                                  self.f[it], self.Te, self.ne, self.B0, \
                                                                  slices=1, ne_out=False)
             self.Te_perp.append(Te_perp)
             self.Te_par.append(Te_par)
+    
+    def make_bi_max_single_timepoint(self, it):
+        print("Retrieving BiMaxwellian Te_par and Te_perp")
+        Te_perp, Te_par = get_dist_moments_non_rel(self.rhop, self.beta_par, self.mu_norm, \
+                                                             self.f[it], self.Te, self.ne, self.B0, \
+                                                             slices=1, ne_out=False)
+        return Te_perp, Te_par
         
 # Provides radial interpolation distribution functions
 

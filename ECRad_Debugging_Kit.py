@@ -518,6 +518,11 @@ def check_ray_bundle(working_dir, shotno, time, N_ray, channel=1, mode="X", tor_
     #    (1.23, -0.55), 0.7, 1.33, fill=False, edgecolor="blue"))
     plt.show()
 
+def plot_quant_on_LOS(ECRad_result_file, it, ich, ir, x, quant):
+    Results = ECRadResults()
+    Results.from_mat_file(ECRad_result_file)
+    plt.plot(Results.ray[x][it][ich], Results.ray[quant][it][ich])
+
 def validate_theta_along_los(ida_working_dir, ed, ch):
     ida_ecfm_data = os.path.join(ida_working_dir, "ecfm_data")
     if(ed == 0):
@@ -1013,13 +1018,22 @@ def debug_ray(results_file, itime, ich, ir):
 #     plt.plot(result.ray["rhopX"][itime][ich], result.ray["neX"][itime][ich], "--r")
     plt.show()
     
-def debug_fitpack(x_file, y_file):
-    x = np.loadtxt(x_file, skiprows=2, delimiter=",").T[1]
-    y = np.loadtxt(y_file, skiprows=2, delimiter=",").T[1]
-    spl = InterpolatedUnivariateSpline(x,y)
+def debug_fitpack(x_file=None, y_file=None, xy_file=None, log=False):
+    if(x_file is not None):
+        x = np.loadtxt(x_file, skiprows=2, delimiter=",").T[1]
+        y = np.loadtxt(y_file, skiprows=2, delimiter=",").T[1]
+    else:
+        x,y = np.loadtxt(xy_file, skiprows=1, unpack=True)
+    if(log):
+        spl = InterpolatedUnivariateSpline(x,np.log(y))
+    else:
+        spl = InterpolatedUnivariateSpline(x,y)
     x_int = np.linspace(np.min(x), np.max(x), 10000)
     plt.plot(x,y,"+")
-    plt.plot(x_int,spl(x_int), "--")
+    if(log):
+        plt.plot(x_int,np.exp(spl(x_int)), "--")
+    else:
+        plt.plot(x_int,spl(x_int), "--")
     plt.show()
 
 if(__name__ == "__main__"):
@@ -1034,7 +1048,13 @@ if(__name__ == "__main__"):
 #     get_max_length_svec("/tokp/work/sdenk/ECRad_2/ECRad_data/")
 #     compare_rhop("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/", 15)
 #     compare_res_pos("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/")
-#     compare_topfiles("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/")
+#     compare_topfiles("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/")\
+    plot_quant_on_LOS("/mnt/c/Users/Severin/ECRad/ECRad_33585_EXT_ed10.mat", \
+                      0, 1, 1, "rhopX", "BPDX")
+    plot_quant_on_LOS("/mnt/c/Users/Severin/ECRad/ECRad_33585_EXT_ed10.mat", \
+                      0, 1, 1, "rhopX", "BPD_secondX")
+    plt.show()
+#     debug_fitpack(xy_file='/mnt/c/Users/Severin/ECRad/ECRad_data/ne_file.dat',log=True)
 #     compare_quant_on_LOS_rel("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/", 20)
 #     compare_topfiles("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/", 35662, 1.5, "AUGD", "IDE", 1)
 #     compare_topfiles("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/", 35662, 1.5, "AUGD", "IDE", 1)
@@ -1042,12 +1062,12 @@ if(__name__ == "__main__"):
 #     debug_append_ECRadResults("/tokp/work/sdenk/ECRad_2/ECRad_35662_ECE_ed1.mat")
 #     compare_ECRad_results(["/tokp/work/sdenk/ECRad/ECRad_35662_ECECTCCTA_ed2.mat","/tokp/work/sdenk/ECRad/ECRad_35662_ECECTCCTA_ed7.mat"], 6.95,  100)
 #     debug_ray("/tokp/work/sdenk/ECRad/ECRad_35662_EXT_ed12.mat", 0, 0, 6)
-    s1, R1, z1, val1, s2, R2, z2, val2 = compare_ECRad_results_diff("/tokp/work/sdenk/ECRad/ECRad_37473_ECE_ed8.mat", \
-                               ["/tokp/work/sdenk/ECRad/ECRad_37473_ECE_ed9.mat"],\
-                               2.3,  10, label="Ray " + "channel no. " + "{0:d}".format(50))
-    compare_eq_Rz(s1, R1, z1, val1, s2, R2, z2, val2, 37473, 2.3, "EQH", "IDE")
-    plt.legend()
-    plt.show()
+#     s1, R1, z1, val1, s2, R2, z2, val2 = compare_ECRad_results_diff("/tokp/work/sdenk/ECRad/ECRad_37473_ECE_ed8.mat", \
+#                                ["/tokp/work/sdenk/ECRad/ECRad_37473_ECE_ed9.mat"],\
+#                                2.3,  10, label="Ray " + "channel no. " + "{0:d}".format(50))
+#     compare_eq_Rz(s1, R1, z1, val1, s2, R2, z2, val2, 37473, 2.3, "EQH", "IDE")
+#     plt.legend()
+#     plt.show()
 #     inspect_svec("/tokp/work/sdenk/ECRad_2/ECRad_data/", 3)
     # validate_theta_along_los("/ptmp1/work/sdenk/nssf/30406/1.38/", 1, 2)
     # debug_f_inter("/afs/ipp-garching.mpg.de/home/s/sdenk/F90/Ecfm_Model_new")

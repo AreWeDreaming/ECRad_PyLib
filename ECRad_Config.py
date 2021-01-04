@@ -15,6 +15,7 @@ class ECRadConfig:
 
     def from_mat_file(self, mdict=None, path=None, default=False):
         ext_mdict = False
+        temp_config = None
         if(mdict is not None or path is not None):
             if(path is not None):
                 mdict = loadmat(path, chars_as_strings=True, squeeze_me=True)
@@ -26,17 +27,22 @@ class ECRadConfig:
             self.working_dir = mdict["working_dir"]
         elif(not ext_mdict):
             self.working_dir = mdict["working_dir"]
-            print("Warning currently chosen working directory does not exit!")
         else:
             print("Warning working dir not imported, since it is not a valid directory")
+            print("Falling back to last used working directory")
+            temp_config = ECRadConfig()
+            self.working_dir = temp_config.working_dir
         try:
             if(os.path.isdir(mdict["scratch_dir"])):
                 self.scratch_dir = mdict["scratch_dir"]
             elif(not ext_mdict):
                 self.scratch_dir = mdict["scratch_dir"]
-                print("Warning currently chosen working directory does not exit!")
             else:
                 print("Warning working dir not imported, since it is not a valid directory")
+                print("Falling back to last used working directory")
+                if(temp_config is None):
+                    temp_config = ECRadConfig()
+                self.scratch_dir = temp_config.scratch_dir
         except KeyError:
             print("Scratch dir not set in ECRad config -> failling back to working directory")
             self.scratch_dir = self.working_dir

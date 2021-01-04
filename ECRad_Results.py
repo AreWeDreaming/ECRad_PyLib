@@ -15,9 +15,9 @@ from Ndarray_Helper import ndarray_math_operation, ndarray_check_for_None
 
 
 class ECRadResults:
-    def __init__(self):
-        self.Config = ECRadConfig(noLoad=True)
-        self.Scenario = ECRadScenario(noLoad=True)
+    def __init__(self, lastused=False):
+        self.Config = ECRadConfig(noLoad=not lastused)
+        self.Scenario = ECRadScenario(noLoad=not lastused)
         self.reset()
 
     def reset(self):
@@ -179,8 +179,8 @@ class ECRadResults:
             Ich_folder = "Ich" + self.Config.dstf
             Trad_old_name = "TRadM_therm.dat"
         elif(self.Config.dstf == "GB"):
-            Ich_folder = "Ich" + "Ge"
-            Trad_old_name = "TRadM_therm.dat"
+            Ich_folder = "Ich" + "GB"
+            Trad_old_name = "TRadM_GComp.dat"
         else:
             print("Currently only Alabajar and Gray comparison are supported for saving and loading")
             print("Supported dstf are: \"Th\" and \"TB\":")
