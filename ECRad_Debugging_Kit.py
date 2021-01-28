@@ -52,7 +52,7 @@ def compare_ECRad_results(result_file_list, time, ch, ir=1):
     for result_file,marker in zip(result_file_list,["-", "--"]):
         res.from_mat_file(result_file)
         itime = np.argmin(np.abs(time - res.time))
-        if(res.Config.N_ray > 1):
+        if(res.Config["Physics"]["N_ray"] > 1):
             ax.plot(getattr(res, main_quant)[subquantx][itime][ch - 1], np.rad2deg(1) * getattr(res, main_quant)[subquanty][itime][ch - 1][ir-1] * factor, marker)
         else:
             ax.plot(getattr(res, main_quant)[subquantx][itime][ch - 1], np.rad2deg(1) * getattr(res, main_quant)[subquanty][itime][ch - 1] * factor, marker)
@@ -74,8 +74,8 @@ def compare_eq_midplane(shot, time, eq_diag_1, eq_diag_2, eq_exp_1="AUGD", eq_ex
     
 def compare_eq_Rz(s1, R1, z1, val1, s2, R2, z2, val2, shot, time, eq_diag_1, eq_diag_2, eq_exp_1="AUGD", eq_exp_2="AUGD", \
                         eq_ed_1=0, eq_ed_2=0):
-    eq_obj_1 = EQData(shot, EQ_exp=eq_exp_1, EQ_diag=eq_diag_1, EQ_ed=eq_ed_1, bt_vac_correction=1.00)
-    eq_obj_2 = EQData(shot, EQ_exp=eq_exp_2, EQ_diag=eq_diag_2, EQ_ed=eq_ed_2, bt_vac_correction=1.00)
+    eq_obj_1 = EQData(shot, EQ_exp=eq_exp_1, EQ_diag=eq_diag_1, EQ_ed=eq_ed_1)
+    eq_obj_2 = EQData(shot, EQ_exp=eq_exp_2, EQ_diag=eq_diag_2, EQ_ed=eq_ed_2)
     eq_slice_1 = eq_obj_1.GetSlice(time,False)
     eq_slice_2 = eq_obj_2.GetSlice(time,False)
     B_tot_spl_1 = RectBivariateSpline(eq_slice_1.R, eq_slice_1.z, \
@@ -130,7 +130,7 @@ def compare_ECRad_results_diff(primary_result_file, result_file_list, time, ch, 
     itime_prim = np.argmin(np.abs(time - prim_res.time))
     f_ECE = prim_res.Scenario.ray_launch[itime_prim]["f"][ch -1]
     scale = cnst.m_e* f_ECE*2*np.pi  / cnst.e
-    if(prim_res.Config.N_ray > 1):
+    if(prim_res.Config["Physics"]["N_ray"] > 1):
         val = getattr(prim_res, main_quant)[subquanty][itime_prim][ch - 1][ir-1]
         prim_spl = InterpolatedUnivariateSpline(getattr(prim_res, main_quant)["s" + subquanty[-1]][itime_prim][ch - 1][ir-1], \
                                                 val)
@@ -156,7 +156,7 @@ def compare_ECRad_results_diff(primary_result_file, result_file_list, time, ch, 
         res.from_mat_file(result_file)
         print(res.Scenario.bt_vac_correction)
         itime = np.argmin(np.abs(time - res.time))
-        if(res.Config.N_ray > 1):
+        if(res.Config["Physics"]["N_ray"] > 1):
             s_res = getattr(res, main_quant)["s" + subquanty[-1]][itime_prim][ch - 1][ir-1]
             R_res = np.sqrt(getattr(res, main_quant)["x" + subquanty[-1]][itime_prim][ch - 1][ir-1]**2 + \
                             getattr(res, main_quant)["y" + subquanty[-1]][itime_prim][ch - 1][ir-1]**2)
@@ -265,7 +265,7 @@ def debug_f_remap(working_dir):
     plt.show()
 
 def debug_f_inter(path, shot, time, channelno, dstf, mode, rhop_in, HFS, beta, \
-                                    eq_exp="AUGD", eq_diag="EQH", eq_ed=0, bt_vac_correction=1.005):
+                                    eq_exp="AUGD", eq_diag="EQH", eq_ed=0):
         ecfm_data = os.path.join(path, "ecfm_data")
         svec_dict = read_svec_dict_from_file(ecfm_data, channelno, mode=mode)[0]
         flag_use_ASCII = True
@@ -289,7 +289,7 @@ def debug_f_inter(path, shot, time, channelno, dstf, mode, rhop_in, HFS, beta, \
         ne_spl = InterpolatedUnivariateSpline(rhop_vec_ne, ne_vec)
         Alb = EmAbsAlb()
         rhop = rhop_in
-        EQ_obj = EQData(int(shot), EQ_exp=eq_exp, EQ_diag=eq_diag, EQ_ed=int(eq_ed), bt_vac_correction=bt_vac_correction)
+        EQ_obj = EQData(int(shot), EQ_exp=eq_exp, EQ_diag=eq_diag, EQ_ed=int(eq_ed))
         B0 = EQ_obj.get_B_min(time, rhop_in, append_B_ax=True)
         if(dstf == "Re" or dstf == "Lu"):
             if(flag_use_ASCII):
@@ -730,7 +730,7 @@ def compare_topfiles(working_dir, ida_working_dir, shot=None, time=None, EQ_exp=
     ref_path = "/tokp/work/sdenk/"
     if(shot is not None):
         raise ValueError("This routine needs to be fixed before usage")
-        make_topfile_from_ext_data(ref_path, shot, time, EQ_exp, EQ_diag, EQ_ed, bt_vac_correction=1.005, copy_Te_ne=False)
+        make_topfile_from_ext_data(ref_path, shot, time, EQ_exp, EQ_diag, EQ_ed, copy_Te_ne=False)
         IDA_topdata = read_topfile(ref_path)
     quant = "Bt"
     level_dict = {}
@@ -755,7 +755,7 @@ def compare_topfiles_cut(working_dir, ida_working_dir, shot=None, time=None, EQ_
     ref_path = "/tokp/work/sdenk/"
     if(shot is not None):
         raise ValueError("This routine needs to be fixed before usage")
-        make_topfile_from_ext_data(ref_path, shot, time, EQ_exp, EQ_diag, EQ_ed, bt_vac_correction=1.005, copy_Te_ne=False)
+        make_topfile_from_ext_data(ref_path, shot, time, EQ_exp, EQ_diag, EQ_ed, copy_Te_ne=False)
         ECRad_topdata = read_topfile(ref_path)
     quant = "Psi"
     level_dict = {}
@@ -980,7 +980,7 @@ def debug_EQ():
         mdict[key] = np.swapaxes(mdict[key], 1, 2)
     for key in at_least_2d_keys:
         mdict[key] = np.swapaxes(mdict[key], 0, 1)
-    EQ_obj = EQDataExt(0, external_folder=os.path.dirname(path), bt_vac_correction=1.0, Ext_data=True)
+    EQ_obj = EQDataExt(0, external_folder=os.path.dirname(path), Ext_data=True)
     shot = int(mdict["shotnum"])
     EQ_obj.load_slices_from_mat(times, mdict)
     itime = np.argmin(np.abs(times - time))

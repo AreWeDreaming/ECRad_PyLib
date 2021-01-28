@@ -1141,7 +1141,7 @@ def test_resonance():
     eq_diag = "EQH"  # "IDE"
     eq_ed = 0
     bt_vac_correction = 1.005
-    EQ_obj = EQData(shot, EQ_exp=eq_exp, EQ_diag=eq_diag, EQ_ed=eq_ed, bt_vac_correction=bt_vac_correction)
+    EQ_obj = EQData(shot, EQ_exp=eq_exp, EQ_diag=eq_diag, EQ_ed=eq_ed)
     EQ_t = EQ_obj.GetSlice(time)
     B_spl = RectBivariateSpline(EQ_t.R, EQ_t.z, np.sqrt(EQ_t.Br ** 2 + EQ_t.Bt ** 2 + EQ_t.Bz ** 2))
     R, z = get_cold_resonances_S_ECE(shot, time, "IEC", np.min(EQ_t.R), np.max(EQ_t.R), np.min(EQ_t.z), np.max(EQ_t.z), B_spl, 4)
@@ -1391,13 +1391,13 @@ def load_IDA_data(shot, timepoints=None, exp="AUGD", ed=0, double_entries_allowe
         else:
             IDA_dict["Btf_corr"] = 1.005
     try:
-        IDA_dict["eq_diag"] = IDA.getParameter('depends', 'map_diag').data.replace(" ", "")
-        IDA_dict["eq_exp"] = IDA.getParameter('depends', 'map_exp').data.replace(" ", "")
-        IDA_dict["eq_ed"] = IDA.getParameter('depends', 'map_edit').data
+        IDA_dict["EQ_diag"] = IDA.getParameter('depends', 'map_diag').data.replace(" ", "")
+        IDA_dict["EQ_exp"] = IDA.getParameter('depends', 'map_exp').data.replace(" ", "")
+        IDA_dict["EQ_ed"] = IDA.getParameter('depends', 'map_edit').data
     except:
-        IDA_dict["eq_diag"] = "EQH"
-        IDA_dict["eq_exp"] = "AUGD"
-        IDA_dict["eq_ed"] = 0
+        IDA_dict["EQ_diag"] = "EQH"
+        IDA_dict["EQ_exp"] = "AUGD"
+        IDA_dict["EQ_ed"] = 0
     IDA_dict["ne_rhop_scale_mean"] = np.mean(IDA_dict["ne_rhop_scale"])
     IDA_dict["eq_data"] = None
     return IDA_dict
@@ -1527,7 +1527,7 @@ def make_ext_data_for_testing_from_data(ext_data_folder, shot, times, R, z, Br, 
     return True
 
 def make_ext_data_equil_for_testing(ext_data_folder, shot, times, eq_exp="AUGD", eq_diag="EQH", eq_ed=0, \
-                                    bt_vac_correction=1.005, IDA_exp="AUGD", IDA_ed=0):
+                                    IDA_exp="AUGD", IDA_ed=0):
     index = 0
     EQ_obj = EQData(shot, EQ_exp=eq_exp, EQ_diag=eq_diag, EQ_ed=eq_ed, bt_vac_correction=bt_vac_correction)
     if(not os.path.isdir(ext_data_folder)):
@@ -1558,9 +1558,9 @@ def make_ext_data_equil_for_testing(ext_data_folder, shot, times, eq_exp="AUGD",
     print('External data ready!')
 
 def make_ext_data_for_testing_grids(ext_data_folder, shot, times, eq_exp, eq_diag, eq_ed, \
-                                    bt_vac_correction=1.005, IDA_exp="AUGD", IDA_ed=0):
+                                    IDA_exp="AUGD", IDA_ed=0):
     index = 0
-    EQ_obj = EQData(shot, EQ_exp=eq_exp, EQ_diag=eq_diag, EQ_ed=eq_ed, bt_vac_correction=bt_vac_correction)
+    EQ_obj = EQData(shot, EQ_exp=eq_exp, EQ_diag=eq_diag, EQ_ed=eq_ed)
     plasma_data = load_IDA_data(shot, timepoints=times, exp="AUGD", ed=0)
     np.savetxt(os.path.join(ext_data_folder, "t"), plasma_data["time"])
     for time in plasma_data["time"]:
@@ -1592,10 +1592,9 @@ def make_ext_data_for_testing_grids(ext_data_folder, shot, times, eq_exp, eq_dia
         index += 1
 
 def export_ASDEX_Upgrade_grid(ext_data_folder, shot, times, eq_exp, eq_diag, eq_ed, \
-                                    bt_vac_correction=1.005, IDA_exp="AUGD", IDA_ed=0, \
-                                    offset=False):
+                              IDA_exp="AUGD", IDA_ed=0, offset=False):
     index = 0
-    EQ_obj = EQData(shot, EQ_exp=eq_exp, EQ_diag=eq_diag, EQ_ed=eq_ed, bt_vac_correction=bt_vac_correction)
+    EQ_obj = EQData(shot, EQ_exp=eq_exp, EQ_diag=eq_diag, EQ_ed=eq_ed)
     plasma_data = load_IDA_data(shot, timepoints=times, exp="AUGD", ed=0)
     np.savetxt(os.path.join(ext_data_folder, "t"), plasma_data["time"])
     for time in plasma_data["time"]:

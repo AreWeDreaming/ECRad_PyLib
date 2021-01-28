@@ -736,20 +736,27 @@ def make_ECRadInputFromPlasmaDict(working_dir, plasma_dict, index, Scenario):
         if(error != 0):
             return False
         if(plasma_dict["Te"][index].ndim == 1):
-            return make_Te_ne_data(working_dir, Scenario.shot, plasma_dict["time"][index], plasma_dict[plasma_dict["prof_reference"]][index], \
-                                   plasma_dict["Te"][index], plasma_dict["ne"][index], \
+            return make_Te_ne_data(working_dir, Scenario.shot, plasma_dict["time"][index], \
+                                   plasma_dict[plasma_dict["prof_reference"]][index] * Scenario.Te_rhop_scale, \
+                                   plasma_dict["Te"][index] * Scenario.Te_scale, \
+                                   plasma_dict[plasma_dict["prof_reference"]][index] * Scenario.ne_rhop_scale, \
+                                   plasma_dict["ne"][index] * Scenario.ne_scale, \
                                    grid=False, EQ=EQ)
         else:
             return make_Te_ne_data(working_dir, Scenario.shot, plasma_dict["time"][index], None, \
-                                   plasma_dict["Te"][index], plasma_dict["ne"][index], \
+                                   plasma_dict["Te"][index] * Scenario.Te_scale, \
+                                   plasma_dict["ne"][index]* Scenario.ne_scale, \
                                    grid=True, EQ=EQ)
-        return make_Te_ne_data(working_dir, Scenario.shot, plasma_dict["time"][index], plasma_dict[plasma_dict["prof_reference"]][index], \
-                               plasma_dict["Te"][index], plasma_dict["ne"][index], \
+        return make_Te_ne_data(working_dir, Scenario.shot, plasma_dict["time"][index], \
+                               plasma_dict[plasma_dict["prof_reference"]][index], \
+                               plasma_dict["Te"][index] * Scenario.Te_scale, \
+                               plasma_dict[plasma_dict["prof_reference"]][index] * Scenario.ne_rhop_scale, \
+                               plasma_dict["ne"][index] * Scenario.ne_scale, \
                                grid=False)
 
-def make_Te_ne_data(working_dir, shot, time, rho, Te, ne, grid=False, EQ=None):
+def make_Te_ne_data(working_dir, shot, time, rho_Te, Te, rho_ne, ne, grid=False, EQ=None):
     if(grid==False):
-        make_Te_ne_files(working_dir, rho, Te, ne)
+        make_Te_ne_files(working_dir, rho_Te, Te, rho_ne, ne)
     else:
         print("Creating Te and ne matrix")
         Te_ne_matfile = open(os.path.join(working_dir, "Te_ne_matfile"), "w")

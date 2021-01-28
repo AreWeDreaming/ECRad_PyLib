@@ -539,8 +539,8 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
     rhop_ne = Results.Scenario.plasma_dict[Results.Scenario.plasma_dict["prof_reference"]][itime] * Results.Scenario.ne_rhop_scale
     ne = np.log(Results.Scenario.plasma_dict["ne"][itime] * Results.Scenario.ne_scale)  # from IDA always positive definite
     EqSlice = Results.Scenario.plasma_dict["eq_data"][itime]
-    EQObj = EQDataExt(Results.Scenario.shot, bt_vac_correction=1.0, Ext_data=True)
-    EQObj.insert_slices_from_ext(Results.Scenario.plasma_dict["time"], Results.Scenario.plasma_dict["eq_data"])
+    EQObj = EQDataExt(Results.Scenario.shot, Ext_data=True)
+    EQObj.set_slices_from_ext(Results.Scenario.plasma_dict["time"], Results.Scenario.plasma_dict["eq_data"])
     B_ax = EQObj.get_B_on_axis(time)
     R_ax, z_ax = EQObj.get_axis(time)
     Te_spline = InterpolatedUnivariateSpline(rhop_Te, Te)

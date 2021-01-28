@@ -1,229 +1,194 @@
 # -*- coding: utf-8 -*-
 import os
 from scipy.io import loadmat, savemat
+from netCDF4 import Dataset
 
-class ECRadConfig:
-    def __init__(self, noLoad =False):
-        self.default_config_file = os.path.join(os.path.expanduser("~"), ".ECRad_GUI_Default.mat")
+class ECRadConfig(dict):
+    def __init__(self, noLoad = False):
+        self.default_config_file = os.path.join(os.path.expanduser("~"), ".ECRad_GUI_Default.nc")
         if(noLoad):
-            self.from_mat_file()
+            self.reset()
         else:
             try:
-                self.from_mat_file(path=self.default_config_file, default=True)
+                self.from_mat(path_in=self.default_config_file, default=True)
             except IOError:
-                self.from_mat_file()
+                self.reset()
 
-    def from_mat_file(self, mdict=None, path=None, default=False):
+    def reset(self):
+        self.main_keys = ["Physics", "Execution", "Numerics"]
+        self.sub_keys = {}
+        for key in self.main_keys:
+            self[key] = {}
+        self.sub_keys["Physics"] = ["dstf", "raytracing", "ripple", \
+                                    "weak_rel", "considered_modes", \
+                                    "N_freq", "N_ray", \
+                                    "ratio_for_3rd_harm", "mode_conv" ,\
+                                    "reflec_X", "reflec_O", \
+                                    "R_shift", "z_shift", \
+                                    "use_ext_rays"]
+        self.sub_keys["Execution"] = ["working_dir", "scratch_dir", "extra_output", \
+                                      "debug", "batch", "parallel" , \
+                                      "parallel_cores", "wall_time", \
+                                      "vmem"]
+        self.sub_keys["Numerics"] = ["large_ds", "small_ds", "max_points_svec" , \
+                                     "N_BPD"]
+        self["Physics"]["dstf"] = "Th"
+        self["Physics"]["raytracing"] = True
+        self["Physics"]["ripple"] = True
+        self["Physics"]["weak_rel"] = True
+        self["Physics"]["N_freq"] = 1
+        self["Physics"]["N_ray"] = 1
+        self["Physics"]["ratio_for_3rd_harm"] = 0.4
+        self["Physics"]["considered_modes"] = 1
+        # 1 -> Only X
+        # 2 -> Only O
+        # 3 -> Both
+        self["Physics"]["mode_conv"] = 0.0
+        self["Physics"]["reflec_X"] = 0.9
+        self["Physics"]["reflec_O"] = 0.9
+        self["Physics"]["R_shift"] = 0.0
+        self["Physics"]["z_shift"] = 0.0
+        self["Physics"]["use_ext_rays"] = False
+        self["Execution"]["working_dir"] = ""
+        self["Execution"]["scratch_dir"] = ""
+        self["Execution"]["extra_output"] = True
+        self["Execution"]["debug"] = False
+        self["Execution"]["batch"] = True
+        self["Execution"]["parallel"] = True
+        self["Execution"]["parallel_cores"] = 32
+        self["Execution"]["wall_time"] = 2
+        self["Execution"]["vmem"] = 32000
+        self["Numerics"]["large_ds"] = 2.5e-3
+        self["Numerics"]["small_ds"] = 2.5e-4
+        self["Numerics"]["max_points_svec"] = 20000
+        self["Numerics"]["N_BPD"] = 2000
+        self.types = {"working_dir":str, "scratch_dir":str, "dstf":str, "extra_output": "b", \
+                      "debug": "b", "batch": "b", "parallel": "b",  \
+                      "parallel_cores": "i8", "wall_time": "f8", \
+                      "vmem": "i8", "raytracing": "b", "ripple": "b", \
+                      "weak_rel": "b", "N_freq" : "i8",  "N_ray": "i8", \
+                      "ratio_for_3rd_harm": "f8", "considered_modes" : "i8", \
+                      "mode_conv" : "f8", "reflec_X" : "f8","reflec_O" : "f8", \
+                      "R_shift" : "f8","z_shift" : "f8","large_ds" : "f8",\
+                      "small_ds" : "f8","max_points_svec" : "i8","use_ext_rays" : "b", \
+                      "N_BPD" : "i8"}
+        self.nice_labels = {"working_dir":"Working dir.", "scratch_dir":"Scratch dir.","dstf":"Distribution type", "extra_output": "Extra output", \
+                            "debug": "Debug", "batch": "Batch", "parallel": "Parallel",  \
+                            "parallel_cores": "# cores", "wall_time": "wall time [h]", \
+                            "vmem": "virtual memory [MB]", "raytracing": "Raytracing", "ripple": "Magn. field Ripple", \
+                            "weak_rel": "Relativistic cor. for rt.", "N_freq" : "# frequencies",  "N_ray": "# rays", \
+                            "ratio_for_3rd_harm": "omega_c/omega w. 3rd", "considered_modes" : "Modes to consider", \
+                            "mode_conv" : "mode conv. ratio", "reflec_X" : "Wall refl. coeff. X-mode", \
+                            "reflec_O" : "Wall refl. coeff. O-mode", "use_ext_rays" : "Use ext rays", \
+                            "R_shift" : "R shift [m]","z_shift" : "z shift [m]", "large_ds" :  "Large step size [m]",\
+                            "small_ds" : "Small step size [m]","max_points_svec" : "Max points on LOS", \
+                            "N_BPD" : "Points for LOS"}
+        
+    def load(self, filename=None, mdict=None, rootgrp=None):
+        if(filename is not None):
+            ext = os.path.splitext(filename)[1]
+            if(ext == ".mat"):
+                self.from_mat(path_in=filename)
+            elif(ext == ".nc"):
+                self.from_netcdf(filename=filename)
+            else:
+                print("Extension " + ext + " is unknown")
+                raise(ValueError)
+        elif(mdict is not None):
+            self.from_mat(mdict)
+        elif(rootgrp is not None):
+            self.from_netcdf(rootgrp=rootgrp)
+    
+    def from_mat(self, mdict=None, path_in=None, default=False):
         ext_mdict = False
         temp_config = None
-        if(mdict is not None or path is not None):
-            if(path is not None):
-                mdict = loadmat(path, chars_as_strings=True, squeeze_me=True)
+        if(mdict is not None or path_in is not None):
+            if(path_in is not None):
+                mdict = loadmat(path_in, chars_as_strings=True, squeeze_me=True)
             else:
                 ext_mdict = True
         else:
-            mdict = provide_default_mdict()
-        if(os.path.isdir(mdict["working_dir"])):
-            self.working_dir = mdict["working_dir"]
-        elif(not ext_mdict):
-            self.working_dir = mdict["working_dir"]
-        else:
-            print("Warning working dir not imported, since it is not a valid directory")
-            print("Falling back to last used working directory")
-            temp_config = ECRadConfig()
-            self.working_dir = temp_config.working_dir
-        try:
-            if(os.path.isdir(mdict["scratch_dir"])):
-                self.scratch_dir = mdict["scratch_dir"]
+            raise ValueError("Either filename or mdict must be present")
+        self.reset()
+        key = "Execution"
+        for sub_key in ["working_dir", "scratch_dir"]:
+            if(os.path.isdir(mdict[sub_key])):
+                self[key][sub_key] = mdict[sub_key]
             elif(not ext_mdict):
-                self.scratch_dir = mdict["scratch_dir"]
+                self[key][sub_key] = mdict[sub_key]
             else:
                 print("Warning working dir not imported, since it is not a valid directory")
                 print("Falling back to last used working directory")
-                if(temp_config is None):
-                    temp_config = ECRadConfig()
-                self.scratch_dir = temp_config.scratch_dir
-        except KeyError:
-            print("Scratch dir not set in ECRad config -> failling back to working directory")
-            self.scratch_dir = self.working_dir
-        self.dstf = mdict["dstf"]
-        self.extra_output = mdict["extra_output"]
-        try:
-            self.debug = mdict["debug"]
-        except KeyError:
-            self.debug = False
-        try:
-            self.batch = mdict["batch"]
-        except KeyError:
-            self.batch = False
-        try:
-            self.parallel = mdict["parallel"]
-        except KeyError:
-            self.parallel = False
-        try:
-            self.parallel_cores = mdict["parallel_cores"]
-        except KeyError:
-            self.parallel_cores = 16
-        if(not default):
-            try:
-                self.use_ext_rays = mdict["use_ext_rays"]
-            except KeyError:
-                self.use_ext_rays = False
-        else:
-            self.use_ext_rays = False
-        try:
-            self.wall_time = mdict["wall_time"]
-        except KeyError:
-            self.wall_time = 2
-        try:
-            self.vmem = mdict["vmem"]
-        except KeyError:
-            self.vmem = 32000
-        self.raytracing = mdict["raytracing"]
-        self.ripple = mdict["ripple"]
-        self.weak_rel = mdict["weak_rel"]
-        self.N_freq = mdict["N_freq"]
-        self.N_ray = mdict["N_ray"]
-        try:
-            self.ratio_for_3rd_harm = mdict["ratio_for_3rd_harm"]
-        except KeyError:
-            self.ratio_for_3rd_harm = 0.4
-        self.considered_modes = mdict["considered_modes"]  # :
-            # 1 -> Only X
-            # 2 -> Only O
-            # 3 -> Both
-        self.mode_conv = mdict["mode_conv"]
-        try:
-            self.reflec_model = mdict["reflec_model"]
-        except KeyError:
-            self.reflec_model = 0
-        try:
-            self.reflec_X = mdict["reflec_X"]
-        except KeyError:
-            try:
-                self.reflec_X = mdict["reflec"]
-            except KeyError:
-                self.reflec_X = 0.92
-        try:
-            self.reflec_O = mdict["reflec_O"]
-        except KeyError:
-            self.reflec_O = 0.95
-        self.gene_obj = None
-        self.Te_filename = "Te_file.dat"
-        self.ne_filename = "ne_file.dat"
-        try:
-            self.R_shift = mdict["R_shift"]
-        except KeyError:
-            self.R_shift = 0.0
-        try:
-            self.z_shift = mdict["z_shift"]
-        except KeyError:
-            self.z_shift = 0.0
-        try:
-            self.large_ds = mdict["large_ds"]
-        except KeyError:
-            self.large_ds = 25.e-4
-        try:
-            self.small_ds = mdict["small_ds"]
-        except KeyError:
-            self.small_ds = 25.e-5
-        try:
-            self.max_points_svec = mdict["max_points_svec"]
-        except KeyError:
-            self.max_points_svec = 20000
-        if(path is None and not ext_mdict):
+                temp_config = ECRadConfig()
+                self[key][sub_key] = temp_config[key][sub_key]
+        for key in self.main_keys:
+            for sub_key in self.sub_keys[key]:
+                if(sub_key in ["working_dir", "scratch_dir"]):
+                    continue
+                else:
+                    if(sub_key in mdict.keys()):
+                        self[key][sub_key] = mdict[sub_key]
+                    else:
+                        print("Could not find " + sub_key + " in config file.")
+        if(path_in is None and not ext_mdict):
             print("Successfully loaded last used configuration")
         return
+    
+    def to_netcdf(self, filename=None, rootgrp=None):
+        if(filename is not None):
+            rootgrp = Dataset(filename, "w", format="NETCDF4")
+        rootgrp.createGroup("Config")
+        rootgrp["Config"].createDimension('str_dim', 1)
+        for key in self.main_keys:
+            for sub_key in self.sub_keys[key]:
+                if(self.types[sub_key] == str):
+                    var = rootgrp["Config"].createVariable(key + "_" + sub_key, self.types[sub_key], 'str_dim')
+                    var[0] = self[key][sub_key]
+                else:
+                    var = rootgrp["Config"].createVariable(key + "_" + sub_key, self.types[sub_key])
+                    var[...] = self[key][sub_key]
+        if(filename is not None):
+            rootgrp.close()
+        
+    def from_netcdf(self, filename=None, rootgrp=None):
+        if(filename is not None):
+            rootgrp = Dataset(filename, "r", format="NETCDF4")
+        key = "Execution"
+        for sub_key in ["working_dir", "scratch_dir"]:
+            if(os.path.isdir(rootgrp["Config"][key + "_" + sub_key][0])):
+                self[key][sub_key] = rootgrp["Config"][key + "_" + sub_key][0]
+            else:
+                print("Warning " + sub_key + " not imported, since it is not a valid directory")
+                print("Falling back to last used  " + sub_key)
+                temp_config = ECRadConfig()
+                self[key][sub_key] = temp_config["Execution"][sub_key]
+        for key in self.main_keys:
+            for sub_key in self.sub_keys[key]:
+                if(sub_key in ["working_dir", "scratch_dir"]):
+                    continue
+        for key in self.main_keys:
+            for sub_key in self.sub_keys[key]:
+                if(self.types[sub_key] == "b"):
+                    self[key][sub_key] = bool(rootgrp["Config"][key + "_" + sub_key][...])
+                elif(self.types[sub_key] == str):
+                    self[key][sub_key] = rootgrp["Config"][key + "_" + sub_key][0]
+                else:
+                    self[key][sub_key] = rootgrp["Config"][key + "_" + sub_key][...] 
+        if(filename is not None):
+            rootgrp.close()
 
     def autosave(self):
-        config_file = os.path.join(os.path.expanduser("~"), ".ECRad_GUI_Default.mat")
-        self.saveconfig(path=config_file)
-
-    def saveconfig(self, mdict=None, path=None):
-        write_mat = False
-        if(mdict is None):
-            if(path is None):
-                print("Either mdict or path need to be provided")
-                raise ValueError
-            mdict = {}
-            write_mat = True
-        mdict["working_dir"] = self.working_dir
-        mdict["scratch_dir"] = self.scratch_dir
-        mdict["dstf"] = self.dstf
-        mdict["extra_output"] = self.extra_output
-        mdict["debug"] = self.debug
-        mdict["batch"] = self.batch
-        mdict["parallel"] = self.parallel
-        mdict["parallel_cores"] = self.parallel_cores
-        mdict["wall_time"] = self.wall_time
-        mdict["vmem"] = self.vmem
-        mdict["raytracing"] = self.raytracing
-        mdict["ripple"] = self.ripple
-        mdict["weak_rel"] = self.weak_rel
-        mdict["N_freq"] = self.N_freq
-        mdict["N_ray"] = self.N_ray
-        mdict["ratio_for_3rd_harm"] = self.ratio_for_3rd_harm
-        mdict["considered_modes"] = self.considered_modes
-        mdict["mode_conv"] = self.mode_conv
-        mdict["reflec_model"] = self.reflec_model
-        mdict["reflec_X"] = self.reflec_X
-        mdict["reflec_O"] = self.reflec_O
-        mdict["R_shift"] = self.R_shift
-        mdict["z_shift"] = self.z_shift
-        mdict["large_ds"] = self.large_ds
-        mdict["small_ds"] = self.small_ds
-        mdict["max_points_svec"] = self.max_points_svec
-        mdict["use_ext_rays"] = self.use_ext_rays
-        if(write_mat):
-            try:
-                savemat(path, mdict, appendmat=False)
-                print("Successfully created: ", path)
-            except TypeError as e:
-                print("Failed to save to .mat")
-                print(e)
-                print(mdict)
-        else:
-            return mdict
+        config_file = os.path.join(os.path.expanduser("~"), ".ECRad_GUI_Default.nc")
+        self.to_netcdf(path=config_file)
 
 
-
-def provide_default_mdict():
-    mdict = {}
-    mdict["shot"] = 0
-    mdict["working_dir"] = ""
-    mdict["scratch_dir"] = ""
-    mdict["dstf"] = "Th"
-    mdict["extra_output"] = True
-    mdict["debug"] = False
-    mdict["batch"] = True
-    mdict["parallel"] = True
-    mdict["parallel_cores"] = 32
-    mdict["wall_time"] = 2
-    mdict["vmem"] = 32000
-    mdict["raytracing"] = True
-    mdict["ripple"] = True
-    mdict["weak_rel"] = True
-    mdict["N_freq"] = 1
-    mdict["N_ray"] = 1
-    mdict["ratio_for_3rd_harm"] = 0.4
-    mdict["considered_modes"] = 1
-    mdict["mode_conv"] = 0.0
-    mdict["reflec_model"] = 0
-    mdict["reflec_X"] = 0.9
-    mdict["reflec_O"] = 0.9
-    mdict["IDA_exp"] = "AUGD"
-    mdict["IDA_ed"] = 0
-    mdict["EQ_exp"] = "AUGD"
-    mdict["EQ_diag"] = "EQH"
-    mdict["EQ_ed"] = 0
-    mdict["default_diag"] = "ECE"
-    mdict["R_shift"] = 0.0
-    mdict["z_shift"] = 0.0
-    mdict["large_ds"] = 2.5e-3
-    mdict["small_ds"] = 2.5e-4
-    mdict["max_points_svec"] = 20000
-    mdict["use_ext_rays"] = False
-    return mdict
-
-# InvokeECRad = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/Ecfm_Model_new/ecfm_model"
-# test_config = ECRadConfig()
+if(__name__ == "__main__"):
+    newConf = ECRadConfig(noLoad=True)
+#     newConf.from_mat(path_in="/mnt/c/Users/Severin/ECRad_regression/AUGX3/ECRad_32934_EXT_ed1.mat")
+#     newConf.to_netcdf("/mnt/c/Users/Severin/ECRad_regression/AUGX3/ECRad_32934_EXT_Config.nc")
+#     newConf.reset()
+#     newConf.from_netcdf("/mnt/c/Users/Severin/ECRad_regression/AUGX3/ECRad_32934_EXT_Config.nc")
+    newConf.from_mat( path_in="/mnt/c/Users/Severin/ECRad_regression/W7X/ECRad_20180823016002_EXT_ed19.mat")
+    newConf.to_netcdf("/mnt/c/Users/Severin/ECRad_regression/W7X/ECRad_20180823016002_EXT_Scenario.nc")
+    newConf = ECRadConfig(noLoad=True)
+    newConf.from_netcdf("/mnt/c/Users/Severin/ECRad_regression/W7X/ECRad_20180823016002_EXT_Scenario.nc")

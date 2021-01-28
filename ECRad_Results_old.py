@@ -1,10 +1,8 @@
 '''
-Created on Dec 7, 2020
+Created on Dec 17, 2015
 
-@author: Severin Denk
-Restructuring of the old ECRadresults class. Uses the OMFit style approach where the parent class is a dictionary
+@author: sdenk
 '''
-
 import numpy as np
 np.set_printoptions(threshold=10)
 import os
@@ -16,87 +14,10 @@ from ECRad_Scenario import ECRadScenario
 from Ndarray_Helper import ndarray_math_operation, ndarray_check_for_None
 
 
-class ECRadResults(dict):
-    def __init__(self):
-        self.result_keys = ["Trad", "resonance", "ray", "BPD", "calib", "weights"]
-        self.shapes = {}
-        self.units = {}
-        self.scale = {}
-        self.xaxis_label = {}
-        self.label = {}
-        self.sub_keys = {}
-        self.sub_keys["Trad"] = ["Trad", "tau", "T", \
-                                 "Trad_second", "tau_second", "T_second"]
-        self.shapes["Trad"] = ["N_time", "N_ch", "N_mode_mix"]
-        self.units["Trad"] = {"Trad":"keV", "tau":None, "T":None, \
-                              "Trad_second":"keV", "tau_second":None, "T_second":None}
-        self.scale["Trad"] = {"Trad":1.e-3, "tau":1.0, "T":1.0, \
-                              "Trad_second":1.e-3, "tau_second":1.0, "T_second":1.0}
-        self.label["Trad"] = {"Trad":"$T_|mathrm{rad}$", "tau":"$\tau$", "T":"$T$", \
-                              "Trad_second":"$T_|mathrm{rad}$", "tau_second":"$\tau$", "T_second":"$T$"}
-        self.xaxis_link["Trad"] = "resonance"
-        self.sub_keys["resonance"] = ["s_cold", "R_cold", "z_cold", \
-                                      "rhop_cold", "s_warm", "R_warm", \
-                                      "z_warm", "rhop_warm", \
-                                      "s_warm_secondary", "R_warm_secondary", \
-                                      "z_warm_secondary", "rhop_warm_secondary"]
-        self.shapes["resonance"] = ["N_time", "N_ch", "N_mode_mix"]
-        self.units["resonance"] = {}
-        self.scale["resonance"] = {}
-        for sub_key in self.sub_keys["resonance"]:
-            self.units["resonance"][sub_key] = "m"
-            self.scale["resonance"][sub_key] = 1.0
-        self.sub_keys["ray"] = ["s", "x", "y", "z", \
-                                "Nx", "Ny", "Nz", \
-                                "Bx", "By", "Bz", \
-                                "H", "N", "Nc", \
-                                "X", "Y", \
-                                "theta", "BPD", \
-                                "BPD_second", "em", \
-                                "em_second", "ab", \
-                                "ab_second", \
-                                "T", "T_second", \
-                                "v_g_perp"]
-        self.shapes["ray"] = ["N_time", "N_ch", "N_mode", "N_ray", "N_LOS"]
-        self.sub_keys["ray"] = ["s", "x", "y", "z", \
-                                "Nx", "Ny", "Nz", \
-                                "Bx", "By", "Bz", \
-                                "H", "N", "Nc", \
-                                "X", "Y", \
-                                "theta", "BPD", \
-                                "BPD_second", "em", \
-                                "em_second", "ab", \
-                                "ab_second", \
-                                "T", "T_second", \
-                                "v_g_perp"]
-        self.units["ray"] = {"s":"m", "x":"m", "y":"m", "z":"m", \
-                             "Nx":None, "Ny":None, "Nz":None, \
-                             "Bx":"T", "By":"T", "Bz":"T", \
-                             "H":None, "N":None, "Nc":None, \
-                             "X":None, "Y":None, \
-                             "theta":"$^\circ$", "BPD":"m$^{-1}$", \
-                             "BPD_second":"m$^{-1}$", "em":"nW m$^{-3}$", \
-                             "em_second":"nW m$^{-3}$", "ab":"m$^{-1}$", \
-                             "ab_second":"m$^{-1}$", \
-                             "T":None, "T_second":None, \
-                             "v_g_perp":None}
-        self.scale["ray"] = {"s":1, "x":1, "y":1, "z":1, \
-                             "Nx":1, "Ny":1, "Nz":1, \
-                             "Bx":1, "By":1, "Bz":1, \
-                             "H":1, "N":1, "Nc":1, \
-                             "X":1, "Y":1, \
-                             "theta":np.rad2deg(1), "BPD":1, \
-                             "BPD_second":1, "em":1.e9, \
-                             "em_second":1.e9, "ab":1, \
-                             "ab_second":1, \
-                             "T":1, "T_second":1, \
-                             "v_g_perp":1.0/cnst.speed_of_light}
-        self.sub_keys["BPD"] = ["rhop", "BPD", "BPD_second"]
-        self.sub_keys["calib"] = ["calib", "calib_mat", "rel_dev", \
-                                  "sys_dev"]
-        self.sub_keys["weights"] = ["mode_frac", "mode_frac_second", "ray", "freq"]
-        self.Config = ECRadConfig(noLoad=True)
-        self.Scenario = ECRadScenario(noLoad=True)
+class ECRadResults:
+    def __init__(self, lastused=False):
+        self.Config = ECRadConfig(noLoad=not lastused)
+        self.Scenario = ECRadScenario(noLoad=not lastused)
         self.reset()
 
     def reset(self):
@@ -110,13 +31,97 @@ class ECRadResults(dict):
         self.time = []
         # This holds the same information as the scenario
         self.modes = None
+        self.Trad = []
+        self.XTrad = []
+        self.OTrad = []
+        self.tau = []
+        self.Xtau = []
+        self.Otau = []
+        self.X_mode_frac = []
+        self.Trad_X_reflec = []
+        self.tau_X_reflec = []
+        self.Trad_O_reflec = []
+        self.tau_O_reflec = []
+        self.Trad_comp = []
+        self.XTrad_comp = []
+        self.OTrad_comp = []
+        self.tau_comp = []
+        self.Xtau_comp = []
+        self.Otau_comp = []
+        self.X_mode_frac_comp = []
+        self.BPD = {}
+        self.BPD["rhopX"] = []
+        self.BPD["BPDX"] = []
+        self.BPD["BPD_secondX"] = []
+        self.BPD["rhopO"] = []
+        self.BPD["BPDO"] = []
+        self.BPD["BPD_secondO"] = []
+        self.calib = {}  # First index diagnostic, second index channel
+        self.calib_mat = {}  # First index diagnostic, second index time, third index channel
+        self.std_dev_mat = {}  # First index diagnostic, second index time, third index channel
+        self.rel_dev = {}  # First index diagnostic, second index channel
+        self.sys_dev = {}  # First index diagnostic, second index channel
         self.masked_time_points = {}
+        # self.los = {}  # First index quantity, second index time , third index channel, 4th index LOS
+        self.ray = {}  # First index quantity, second index time , third index channel, 4th index ray, 5th index LOS
+        self.resonance = {}  # First index quantity, second index time , third index channel
+        self.resonance["s_cold"] = []
+        self.resonance["R_cold"] = []
+        self.resonance["z_cold"] = []
+        self.resonance["rhop_cold"] = []
+        self.resonance["s_warm"] = []
+        self.resonance["R_warm"] = []
+        self.resonance["z_warm"] = []
+        self.resonance["rhop_warm"] = []
+        self.resonance["s_warm_secondary"] = []
+        self.resonance["R_warm_secondary"] = []
+        self.resonance["z_warm_secondary"] = []
+        self.resonance["rhop_warm_secondary"] = []
+        for mode in ["X", "O"]:
+            self.ray["s" + mode] = []
+            self.ray["x" + mode] = []
+            self.ray["y" + mode] = []
+            self.ray["z" + mode] = []
+            self.ray["Nx" + mode] = []
+            self.ray["Ny" + mode] = []
+            self.ray["Nz" + mode] = []
+            self.ray["Bx" + mode] = []
+            self.ray["By" + mode] = []
+            self.ray["Bz" + mode] = []
+            self.ray["rhop" + mode] = []
+            self.ray["H" + mode] = []
+            self.ray["N" + mode] = []
+            self.ray["Nc" + mode] = []
+            self.ray["X" + mode] = []
+            self.ray["Y" + mode] = []
+            self.ray["theta" + mode] = []
+            self.ray["BPD" + mode] = []
+            self.ray["BPD_second" + mode] = []
+            self.ray["em" + mode] = []
+            self.ray["em_second" + mode] = []
+            self.ray["ab" + mode] = []
+            self.ray["ab_second" + mode] = []
+            self.ray["T" + mode] = []
+            self.ray["T_second" + mode] = []
+            self.ray["Te" + mode] = []
+            self.ray["ne" + mode] = []
+            self.ray["v_g_perp" + mode] = []
+        self.weights = {}
+        self.weights["ray"] = []
+        self.weights["freq"] = []
+        self.ray_launch = {}
+        self.ray_launch["x"] = []
+        self.ray_launch["y"] = []
+        self.ray_launch["z"] = []
+        self.ray_launch["f"] = []
+        self.ray_launch["df"] = []
+        self.ray_launch["pol_ang"] = []  # Degrees!
+        self.ray_launch["tor_ang"] = []  # Degrees!
+        self.ray_launch["dist_focus"] = []
+        self.ray_launch["width"] = []
+        self.ray_launch["pol_coeff_X"] = []
+        self.dist_obj = None
         self.comment = ""
-        self.dimensions = {}
-        for key in self.result_keys:
-            self[key] = {}
-            for sub_key in self.sub_keys[key] :
-                self[key][sub_key] = []
 
     def append_new_results(self, time):
         # Open files first to check for any missing files
@@ -174,8 +179,8 @@ class ECRadResults(dict):
             Ich_folder = "Ich" + self.Config.dstf
             Trad_old_name = "TRadM_therm.dat"
         elif(self.Config.dstf == "GB"):
-            Ich_folder = "Ich" + "Ge"
-            Trad_old_name = "TRadM_therm.dat"
+            Ich_folder = "Ich" + "GB"
+            Trad_old_name = "TRadM_GComp.dat"
         else:
             print("Currently only Alabajar and Gray comparison are supported for saving and loading")
             print("Supported dstf are: \"Th\" and \"TB\":")

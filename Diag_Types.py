@@ -6,6 +6,7 @@ Created on Feb 2, 2017
 import numpy as np
 from collections import OrderedDict as od
 from scipy.io import loadmat
+from netCDF4 import Dataset
 
 class BasicDiag:
     def __init__(self, name):
@@ -202,6 +203,30 @@ class EXT_diag(BasicDiag):  #  Makes no sense to inherit properties we do not wa
         self.width = ray_launch[itime]["width"][mask]
         self.pol_coeff_X = ray_launch[itime]["pol_coeff_X"][mask]
         
+    def set_from_scenario_diagnostic(self, ray_launch, itime, set_only_EXT=True):
+        if(set_only_EXT):
+            mask = ray_launch["diag_name"][itime] == "EXT"
+        else:
+            mask = np.ones(len(ray_launch["diag_name"][itime]), dtype=np.bool)
+        self.f = ray_launch["f"][itime][mask]
+        self.N_ch = len(self.f)
+        self.df = ray_launch["df"][itime][mask]
+        self.R = ray_launch["R"][itime][mask]
+        self.phi = ray_launch["phi"][itime][mask]
+        self.z = ray_launch["z"][itime][mask]
+        self.theta_pol = ray_launch["theta_pol"][itime][mask]
+        self.phi_tor = ray_launch["phi_tor"][itime][mask]
+        self.dist_focus = ray_launch["dist_focus"][itime][mask]
+        self.width = ray_launch["width"][itime][mask]
+        self.pol_coeff_X = ray_launch["pol_coeff_X"][itime][mask]
+        
+    def set_from_NETCDF(self, filename, itime=0):
+        rootgrp = Dataset(filename, "r", format="NETCDF4")
+        for sub_key in ["f", "df", "R", "phi", "z", "theta_pol", \
+                        "phi_tor", "dist_focus", "width", "pol_coeff_X"]:
+            setattr(self, sub_key, np.array(rootgrp["Scenario"]["diagnostic_" + sub_key])[itime])
+        
+        
     def set_from_mat(self, ray_launch_file):
         mdict = loadmat(ray_launch_file, squeeze_me=True)
         if(np.ndim(mdict["launch_f"]) == 1):
@@ -291,43 +316,7 @@ launch_geo[7, 0] = 1.1850
 launch_geo[8, 0] = 0.0865
 DefaultDiagDict.update({"EXT":  EXT_diag("EXT", launch_geo)})                
                 
-# Deprecated
-# class TCV_CCE_diag(Diag):
-#    def __init__(self, name, exp, diag_str, ed, time, launch_geo, t_smooth=1.e-3):
-#        Diag.__init__(self, name, exp, diag_str, ed, t_smooth)
-#        # exp diag_str and ed not used
-#        # launch_geo first dimension channel, second dimension time
-#        self.time = time
-#        self.N_ch = len(launch_geo.T[1])
-#        self.f = launch_geo[0]
-#        self.df = launch_geo[1]
-#        self.R = launch_geo[2]
-#        self.phi = launch_geo[3]
-#        self.z = launch_geo[4]
-#        self.theta_pol = launch_geo[5]
-#        self.phi_tor = launch_geo[6]
-#        self.dist_focus = launch_geo[7]
-#        self.width = launch_geo[8]
-#
-#    def get_launch_geo(self, time):
-#        launch_geo = np.zeros((9, len(self.f)))
-#        i_closest = np.argmin(np.abs(time - self.time))
-#        if(np.abs(self.time[i_closest] - time) > 1.e-6):
-#            print("Large discrepancy between Diagnostic time and plasma time!!!")
-#            raise ValueError
-#        launch_geo[0] = self.f[i_closest]
-#        launch_geo[1] = self.df[i_closest]
-#        launch_geo[2] = self.R[i_closest]
-#        launch_geo[3] = self.phi[i_closest]
-#        launch_geo[4] = self.z[i_closest]
-#        launch_geo[5] = self.theta_pol[i_closest]
-#        launch_geo[6] = self.phi_tor[i_closest]
-#        launch_geo[7] = self.dist_focus[i_closest]
-#        launch_geo[8] = self.width[i_closest]
-#        return launch_geo
-#
-# class TCV_diag(Diag):
-#    def __init__(self, name, exp, diag_str, ed, R_scale, z_scale, t_smooth=1.e-3):
-#        Diag.__init__(self, name, exp, diag_str, ed, t_smooth)
-#        self.R_scale = R_scale
-#        self.z_scale = z_scale
+if(__name__ == "__main__"):
+    ext_diag = EXT_diag("EXT")
+    ext_diag.set_from_NETCDF("/mnt/c/Users/Severin/ECRad_regression/W7X/ECRad_20180823016002_EXT_Scenario.nc")
+    print(ext_diag.get_launch())

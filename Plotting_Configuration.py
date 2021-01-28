@@ -50,7 +50,7 @@ plt.rcParams['pdf.fonttype'] = 42
 plt.rcParams['ps.fonttype'] = 42
 # plt.rc('font',  size='16', family = 'sans-serif')
 plt.rcParams['lines.linewidth'] = 3
-plt.rcParams['lines.markersize'] = 8
+plt.rcParams['lines.markersize'] = 4
 plt.rcParams['xtick.major.size'] = 8  # major tick size in points
 plt.rcParams['xtick.major.width'] = 2
 plt.rcParams['xtick.minor.size'] = 6

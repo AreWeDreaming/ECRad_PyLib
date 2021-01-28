@@ -1661,8 +1661,8 @@ class PlottingCore:
             self.line_color_index[0] = 1
             self.line_color_index_2[0] = 1
             for ich in channel_list:
-                if(result.Config.N_ray > 1):
-                    for iray in range(result.Config.N_ray):
+                if(result.Config["Physics"]["N_ray"] > 1):
+                    for iray in range(result.Config["Physics"]["N_ray"]):
                         x = result.ray["x" + mode][itime][ich - 1][iray]
                         y = result.ray["y" + mode][itime][ich - 1][iray]
                         z = result.ray["z" + mode][itime][ich - 1][iray]                        

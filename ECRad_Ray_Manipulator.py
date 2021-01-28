@@ -22,12 +22,12 @@ class ECRadRayManipulator(object):
         self.ECRad_results = ECRadResults()
         self.ECRad_results.from_mat_file(ECRad_result_file)
         self.N_ch = self.ECRad_results.Scenario.ray_launch[0]["f"]
-        self.N_ray = self.ECRad_results.Config.N_ray
-        if(self.ECRad_results.Config.considered_modes == 1):
+        self.N_ray = self.ECRad_results.Config["Physics"]["N_ray"]
+        if(self.ECRad_results.Config["Physics"]["considered_modes"] == 1):
             self.modes = ["X"]
-        elif(self.ECRad_results.Config.considered_modes == 2):
+        elif(self.ECRad_results.Config["Physics"]["considered_modes"] == 2):
             self.modes = ["O"]
-        elif(self.ECRad_results.Config.considered_modes == 3):
+        elif(self.ECRad_results.Config["Physics"]["considered_modes"] == 3):
             self.modes = ["X", "O"]
         else:
             raise ValueError("Invalid value in considered modes")
