@@ -3,11 +3,13 @@ Created on Jan 27, 2021
 
 @author: denk
 '''
+from Global_Settings import globalsettings
 from ECRad_F2PY_Interface import ECRadF2PYInterface
 from ECRad_Results import ECRadResults
 from ECRad_Config import ECRadConfig
 from ECRad_Scenario import ECRadScenario
 import numpy as np
+import os
 
 class ECRadDriver():
     '''
@@ -34,6 +36,7 @@ class ECRadDriver():
     
     def run(self):
         itime = 0
+        self.Result.set_dimensions()
         while itime < self.Result.Scenario["dimensions"]["N_time"]:
             try:
                 self.process_time_point(itime)
@@ -43,8 +46,8 @@ class ECRadDriver():
                 print("Removing this time point and continuing")
                 raise(e)
                 self.Result.Scenario.drop_time_point(itime)
+                self.Result.set_dimensions()
         self.Result.tidy_up(True)
-        self.Result["git"] = np.genfromtxt()
         
     def process_time_point(self, itime):
         self.ECRad_F2PY_interface.reset()
@@ -57,6 +60,9 @@ if(__name__=="__main__"):
 #     Scenario_file = "Scenario.nc"
 #     Config_file = "Config.nc"
 #     driver = ECRadDriver(Scenario_file=Scenario_file, Config_file=Config_file)
+
+#     driver = ECRadDriver(Scenario_file="/mnt/c/Users/Severin/ECRad/ECRad_33585_EXT_ed1.nc", \
+#                          Config_file="/mnt/c/Users/Severin/ECRad/ECRad_33585_EXT_ed1.nc")
     driver = ECRadDriver(Scenario_file="/mnt/c/Users/Severin/ECRad_regression/AUGX3/ECRad_32934_EXT_ed1.nc", \
                          Config_file="/mnt/c/Users/Severin/ECRad_regression/AUGX3/ECRad_32934_EXT_ed1.nc")
     driver.run()

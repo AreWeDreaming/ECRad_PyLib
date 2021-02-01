@@ -45,12 +45,15 @@ class ECRadF2PYInterface:
         # This sets up the environment variables for OpenMP
         # Si units and radians
         self.N_ch = Scenario["dimensions"]["N_ch"]
-        self.ECRad.pre_initialize_ecrad(Config["Execution"]["extra_output"], Config["Physics"]["raytracing"], \
+        self.ECRad.pre_initialize_ecrad(Config["Execution"]["extra_output"], \
+                                        Config["Physics"]["dstf"], \
+                                        Config["Physics"]["raytracing"], \
                                         Config["Physics"]["ripple"], 1.20, Config["Physics"]["weak_rel"], \
                                         Config["Physics"]["ratio_for_3rd_harm"], \
                                         Config["Physics"]["considered_modes"], \
                                         Config["Physics"]["reflec_X"], Config["Physics"]["reflec_O"], False, \
                                         Config["Numerics"]["max_points_svec"], \
+                                        Config["Numerics"]["N_BPD"], \
                                         Config["Physics"]["mode_conv"], \
                                         Scenario["scaling"]["Te_rhop_scale"], Scenario["scaling"]["ne_rhop_scale"], \
                                         Config["Numerics"]["large_ds"], Config["Numerics"]["small_ds"], \
@@ -96,119 +99,135 @@ class ECRadF2PYInterface:
     
     def make_rays(self, Scenario, itime):
         if(Scenario["plasma"]["2D_prof"]):
-            rho_res = self.ECRad.make_rays_ecrad_2D_f2py()
+            rho_res = self.ECRad.make_rays_ecrad_2D()
         else:
             rho = Scenario["plasma"][Scenario["plasma"]["prof_reference"]][itime]
             ne = Scenario["plasma"]["ne"][itime]
             Te = Scenario["plasma"]["Te"][itime]
-            self.ECRad.make_rays_ecrad_f2py(self.N_ch,rho, ne, rho, Te, rho_res)
+            rho_res = self.ECRad.make_rays_ecrad(self.N_ch,rho, ne, rho, Te)
         return rho_res
     
     def run_and_get_output(self, Result, itime):
+        self.set_fm_flag
         self.ECRad.make_trad_direct()
         key = "Trad"
         if(Result.Scenario["plasma"]["eq_data_type"] == "3D"):
             rho = "rhot"
         else:
             rho = "rhop"
-        for sub_key in ["Trad", "tau"]:
-            Result[key][sub_key].append(np.zeros(Result.get_shape(key)))
+        for sub_key in ["Trad", "tau", "T"]:
+            Result[key][sub_key].append(np.zeros(Result.get_shape(key, start=1)))
         key = "resonance"
         for sub_key in ["s_cold", "R_cold", "z_cold", rho + "_cold"]:
-            Result[key][sub_key].append(np.zeros(Result.get_shape(key)))
-        for imode in Result["dimensions"]["N_mode_mix"]:
-            self.ECRad.get_Trad_resonances_basic(imode, Result["Trad"]["Trad"][-1][...,imode], \
-                                                 Result["Trad"]["tau"][-1][...,imode], \
-                                                 Result["resonance"]["s_cold"][-1][...,imode], \
-                                                 Result["resonance"]["R_cold"][-1][...,imode], \
-                                                 Result["resonance"]["z_cold"][-1][...,imode], \
-                                                 Result["resonance"][rho + "_cold"][-1][...,imode])
+            Result[key][sub_key].append(np.zeros(Result.get_shape(key, start=1)))
+        for imode in range(Result["dimensions"]["N_mode_mix"]):
+            Result["Trad"]["Trad"][-1][:,imode], \
+                 Result["Trad"]["tau"][-1][:,imode], \
+                 Result["resonance"]["s_cold"][-1][:,imode], \
+                 Result["resonance"]["R_cold"][-1][:,imode], \
+                 Result["resonance"]["z_cold"][-1][:,imode], \
+                 Result["resonance"][rho + "_cold"][-1][:,imode] = \
+                    self.ECRad.get_trad_resonances_basic(imode, Result["dimensions"]["N_ch"])
+            Result["Trad"]["T"][-1][:,imode] = np.exp(-Result["Trad"]["tau"][-1][:,imode])
         if(Result.Config["Execution"]["extra_output"]):
-            for sub_key in ["Trad_secondary", "tau_secondary"]:
-                Result[key][sub_key].append(np.zeros(Result.get_shape(key)))
+            key = "Trad"
+            for sub_key in ["Trad_second", "tau_second", "T_second"]:
+                Result[key][sub_key].append(np.zeros(Result.get_shape(key, start=1)))
             key = "resonance"
             for sub_key in ["s_warm", "R_warm", "z_warm", rho + "_warm", \
-                            "s_warm_secondary", "R_warm_secondary", \
-                            "z_warm_secondary", rho + "_warm_secondary"]:
-                Result[key][sub_key].append(np.zeros(Result.get_shape(key)))
-            for imode in Result["dimensions"]["N_mode_mix"]:
-                self.ECRad.get_Trad_resonances_extra_output(imode, Result["Trad"]["Trad_secondary"][-1][...,imode], \
-                                                            Result["Trad"]["tau_secondary"][-1][...,imode], \
-                                                            Result["resonance"]["s_warm"][-1][...,imode], \
-                                                            Result["resonance"][rho + "_warm"][-1][...,imode], \
-                                                            Result["resonance"]["R_warm"][-1][...,imode], \
-                                                            Result["resonance"]["z_warm"][-1][...,imode], \
-                                                            Result["resonance"]["s_warm_secondary"][-1][...,imode], \
-                                                            Result["resonance"][rho + "_warm_secondary"][-1][...,imode], \
-                                                            Result["resonance"]["R_warm_secondary"][-1][...,imode], \
-                                                            Result["resonance"]["z_warm_secondary"][-1][...,imode])
+                            "s_warm_second", "R_warm_second", \
+                            "z_warm_second", rho + "_warm_second"]:
+                Result[key][sub_key].append(np.zeros(Result.get_shape(key, start=1)))
+            for imode in range(Result["dimensions"]["N_mode_mix"]):
+                Result["Trad"]["Trad_second"][-1][:,imode], \
+                    Result["Trad"]["tau_second"][-1][:,imode], \
+                    Result["resonance"]["s_warm"][-1][:,imode], \
+                    Result["resonance"][rho + "_warm"][-1][:,imode], \
+                    Result["resonance"]["R_warm"][-1][:,imode], \
+                    Result["resonance"]["z_warm"][-1][:,imode], \
+                    Result["resonance"]["s_warm_second"][-1][:,imode], \
+                    Result["resonance"][rho + "_warm_second"][-1][:,imode], \
+                    Result["resonance"]["R_warm_second"][-1][:,imode], \
+                    Result["resonance"]["z_warm_second"][-1][:,imode] = \
+                    self.ECRad.get_trad_resonances_extra_output(imode, Result["dimensions"]["N_ch"])
+                Result["Trad"]["T_second"][-1][:,imode] = np.exp(-Result["Trad"]["tau_second"][-1][:,imode])
             key = "BPD"
-            for sub_key in [rho, "BPD", "BPD_second", "rhop_warm"]:
-                Result[key][sub_key].append(np.zeros(key))
-                for ich in Result["dimensions"]["N_ch"]:
-                    for imode in Result["dimensions"]["N_mode"]:
-                        self.ECRad.get_BPD(ich + 1, imode + 1, Result[key][rho][ich,imode], \
-                                           Result[key]["BPD"][ich,imode], Result[key]["BPD_second"][ich,imode])
+            for sub_key in [rho, "BPD", "BPD_second"]:
+                Result[key][sub_key].append(np.zeros(Result.get_shape(key, start=1)))
+            for ich in range(Result["dimensions"]["N_ch"]):
+                for imode in range(Result["dimensions"]["N_mode"]):
+                    Result[key][rho][-1][ich,imode,:], \
+                        Result[key]["BPD"][-1][ich,imode,:], Result[key]["BPD_second"][-1][ich,imode,:] = \
+                        self.ECRad.get_bpd(ich + 1, imode + 1, Result["dimensions"]["N_BPD"])
             key = "ray"
-            Result["dimensions"]["N_LOS"].append(np.zeros(Result.get_shape("ray", stop=-1), dtype=np.int))
-            for ich in Result["dimensions"]["N_ch"]:
-                for imode in Result["dimensions"]["N_mode"]:
-                    for ir in Result["dimensions"]["N_ray"]:
-                        self.ECRad.get_ray_length(ich + 1, imode + 1, ir + 1, Result["dimensions"]["N_LOS"][-1][ich,imode, ir])
-            for sub_key in ["s", "x", "y", "z", "Nx", "Ny", "Nz", "Bx", "By", \
-                            "Bz", rho, "Te", "ne", "theta" "Nc", "H", "v_g_perp", \
-                            "Trad", "Trad_secondary", "em", "em_secondary", \
-                            "ab", "ab_secondary", "T", "T_secondary", "BPD", "BPD_secondary"]:
-                Result[key][sub_key].append([])
-                for ich in Result["dimensions"]["N_ch"]:
-                    Result[key][sub_key][-1].append([])
-                    for imode in Result["dimensions"]["N_mode"]:
-                        Result[key][sub_key][-1][ich].append([])
-                        for ir in Result["dimensions"]["N_ray"]:
-                            Result[key][sub_key][-1][ich][imode].append(np.zeros(Result.get_shape(key)))
-            for ich in Result["dimensions"]["N_ch"]:
-                Result[key][sub_key][-1].append([])
-                for imode in Result["dimensions"]["N_mode"]:
-                    Result[key][sub_key][-1][ich].append([])
-                    for ir in Result["dimensions"]["N_ray"]:
-                        self.ECRad.get_ray_data(ich + 1, imode + 1, ir + 1, Result[key]["s"][ich,imode,ir]. \
-                                                Result[key]["x"][ich,imode,ir], \
-                                                Result[key]["y"][ich,imode,ir], \
-                                                Result[key]["z"][ich,imode,ir], \
-                                                Result[key]["Nx"][ich,imode,ir], \
-                                                Result[key]["Ny"][ich,imode,ir], \
-                                                Result[key]["Nz"][ich,imode,ir], \
-                                                Result[key]["Bx"][ich,imode,ir], \
-                                                Result[key]["By"][ich,imode,ir], \
-                                                Result[key]["Bz"][ich,imode,ir], \
-                                                Result[key][rho][ich,imode,ir], \
-                                                Result[key]["Te"][ich,imode,ir], \
-                                                Result[key]["ne"][ich,imode,ir], \
-                                                Result[key]["theta"][ich,imode,ir], \
-                                                Result[key]["Nc"][ich,imode,ir], \
-                                                Result[key]["H"][ich,imode,ir], \
-                                                Result[key]["v_g_perp"][ich,imode,ir], \
-                                                Result[key]["Trad"][ich,imode,ir], \
-                                                Result[key]["Trad_secondary"][ich,imode,ir], \
-                                                Result[key]["em"][ich,imode,ir], \
-                                                Result[key]["em_secondary"][ich,imode,ir], \
-                                                Result[key]["ab"][ich,imode,ir], \
-                                                Result[key]["ab_secondary"][ich,imode,ir], \
-                                                Result[key]["T"][ich,imode,ir], \
-                                                Result[key]["T_secondary"][ich,imode,ir], \
-                                                Result[key]["BPD"][ich,imode,ir], \
-                                                Result[key]["BPD_secondary"][ich,imode,ir])
-                        Result[key]["N"][ich,imode,ir] = np.sqrt(Result[key]["Nx"][ich,imode,ir]**2 + \
-                                                                 Result[key]["Ny"][ich,imode,ir]**2 + \
-                                                                 Result[key]["Nz"][ich,imode,ir]**2)
-                        Result[key]["Y"][ich,imode,ir] = np.sqrt(Result[key]["Bx"][ich,imode,ir]**2 + \
-                                                                 Result[key]["By"][ich,imode,ir]**2 + \
-                                                                 Result[key]["Bz"][ich,imode,ir]**2)
+            Result["dimensions"]["N_LOS"].append(np.zeros(Result.get_shape("ray", start=1, stop=-1), dtype=np.int))
+            for ich in range(Result["dimensions"]["N_ch"]):
+                for imode in range(Result["dimensions"]["N_mode"]):
+                    for ir in range(Result["dimensions"]["N_ray"]):
+                        Result["dimensions"]["N_LOS"][-1][ich,imode, ir] = self.ECRad.get_ray_length(ich + 1, imode + 1, ir + 1)
+            for sub_key in Result.sub_keys["ray"]:
+                Result[key][sub_key].append(np.zeros(Result.get_shape("ray", start=1, stop=-1),dtype=np.object))
+                for ich in range(Result["dimensions"]["N_ch"]):
+                    for imode in range(Result["dimensions"]["N_mode"]):
+                        for ir in range(Result["dimensions"]["N_ray"]):
+                            Result[key][sub_key][-1][ich,imode,ir] = np.zeros(Result.get_shape(key, start=-1, i_time=itime, \
+                                                                                             i_ch=ich, i_mode=imode, i_ray=ir))
+            for ich in range(Result["dimensions"]["N_ch"]):
+                for imode in range(Result["dimensions"]["N_mode"]):
+                    for ir in range(Result["dimensions"]["N_ray"]):
+                        Result[key]["s"][-1][ich,imode,ir][:], \
+                            Result[key]["x"][-1][ich,imode,ir][:], \
+                            Result[key]["y"][-1][ich,imode,ir][:], \
+                            Result[key]["z"][-1][ich,imode,ir][:], \
+                            Result[key]["Nx"][-1][ich,imode,ir][:], \
+                            Result[key]["Ny"][-1][ich,imode,ir][:], \
+                            Result[key]["Nz"][-1][ich,imode,ir][:], \
+                            Result[key]["Bx"][-1][ich,imode,ir][:], \
+                            Result[key]["By"][-1][ich,imode,ir][:], \
+                            Result[key]["Bz"][-1][ich,imode,ir][:], \
+                            Result[key][rho][-1][ich,imode,ir][:], \
+                            Result[key]["Te"][-1][ich,imode,ir][:], \
+                            Result[key]["ne"][-1][ich,imode,ir][:], \
+                            Result[key]["theta"][-1][ich,imode,ir][:], \
+                            Result[key]["Nc"][-1][ich,imode,ir][:], \
+                            Result[key]["H"][-1][ich,imode,ir][:], \
+                            Result[key]["v_g_perp"][-1][ich,imode,ir][:], \
+                            Result[key]["Trad"][-1][ich,imode,ir][:], \
+                            Result[key]["Trad_second"][-1][ich,imode,ir][:], \
+                            Result[key]["em"][-1][ich,imode,ir][:], \
+                            Result[key]["em_second"][-1][ich,imode,ir][:], \
+                            Result[key]["ab"][-1][ich,imode,ir][:], \
+                            Result[key]["ab_second"][-1][ich,imode,ir][:], \
+                            Result[key]["T"][-1][ich,imode,ir][:], \
+                            Result[key]["T_second"][-1][ich,imode,ir][:], \
+                            Result[key]["BPD"][-1][ich,imode,ir][:], \
+                            Result[key]["BPD_second"][-1][ich,imode,ir][:] = \
+                            self.ECRad.get_ray_data(ich + 1, imode + 1, ir + 1, \
+                                                    Result["dimensions"]["N_LOS"][-1][ich,imode,ir])
+                        Result[key]["N"][-1][ich,imode,ir][:] = np.sqrt(Result[key]["Nx"][-1][ich,imode,ir]**2 + \
+                                                                        Result[key]["Ny"][-1][ich,imode,ir]**2 + \
+                                                                        Result[key]["Nz"][-1][ich,imode,ir]**2)
+                        Result[key]["Y"][-1][ich,imode,ir][:] = np.sqrt(Result[key]["Bx"][-1][ich,imode,ir]**2 + \
+                                                                        Result[key]["By"][-1][ich,imode,ir]**2 + \
+                                                                        Result[key]["Bz"][-1][ich,imode,ir]**2)
                         f = Result.Scenario["diagnostic"]["f"][itime][ich]
-                        Result[key]["Y"][ich,imode,ir] *= cnst.e/(cnst.m_e* 2.0 * np.pi * f)
-                        Result[key]["X"][ich,imode,ir] = cnst.e**2*Result[key]["ne"][ich,imode,ir] / \
+                        Result[key]["Y"][-1][ich,imode,ir] *= cnst.e/(cnst.m_e* 2.0 * np.pi * f)
+                        Result[key]["X"][-1][ich,imode,ir] = cnst.e**2*Result[key]["ne"][-1][ich,imode,ir] / \
                                                           (cnst.epsilon_0*cnst.m_e* (2.0 * np.pi * f)**2)
-        Result["time"].append(Result.Scenario["time"][itime])
+            key = "weights"
+            for sub_key in Result.sub_keys[key]:
+                Result[key][sub_key].append(np.zeros(Result.get_shape(sub_key, start=1)))
+            for ich in range(Result["dimensions"]["N_ch"]):
+                Result[key]["ray_weights"][-1][ich,:], Result[key]["freq_weights"][-1][ich,:] = \
+                    self.ECRad.get_weights(Result["dimensions"]["N_ray"], Result["dimensions"]["N_freq"], ich + 1)
+            if(Result["dimensions"]["N_mode"] > 1):
+                for imode in range(Result["dimensions"]["N_mode"]):
+                    Result["weights"]["mode_frac"][-1][:,imode], \
+                    Result["weights"]["mode_frac_second"][-1][:,imode] = \
+                        self.ECRad.get_mode_weights(Result["dimensions"]["N_ch"], imode+1)
+            else:
+                Result["weights"]["mode_frac"][-1][:,imode] = 1.0
+                Result["weights"]["mode_frac_second"][-1][:,imode] = 1.0
     
     def eval_Trad(self, Scenario, Config, itime):
         rho = Scenario.plasma_dict[Scenario.plasma_dict["prof_reference"]][itime]

@@ -166,14 +166,12 @@ class ECRadConfig(dict):
             for sub_key in self.sub_keys[key]:
                 if(sub_key in ["working_dir", "scratch_dir"]):
                     continue
-        for key in self.main_keys:
-            for sub_key in self.sub_keys[key]:
                 if(self.types[sub_key] == "b"):
                     self[key][sub_key] = bool(rootgrp["Config"][key + "_" + sub_key][...])
                 elif(self.types[sub_key] == str):
                     self[key][sub_key] = rootgrp["Config"][key + "_" + sub_key][0]
                 else:
-                    self[key][sub_key] = rootgrp["Config"][key + "_" + sub_key][...] 
+                    self[key][sub_key] = rootgrp["Config"][key + "_" + sub_key][...].item()
         if(filename is not None):
             rootgrp.close()
 

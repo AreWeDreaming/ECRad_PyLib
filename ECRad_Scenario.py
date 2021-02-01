@@ -497,9 +497,9 @@ class ECRadScenario(dict):
             if(sub_key == "str_dim"):
                 continue
             self["dimensions"][sub_key] = rootgrp["Scenario"].dimensions[sub_key].size
-        self['shot'] = rootgrp["Scenario"]["shot"][...]
+        self['shot'] = rootgrp["Scenario"]["shot"][...].item()
         self['time'] = np.array(rootgrp["Scenario"]["time"])
-        self["plasma"]["2D_prof"] = bool(rootgrp["Scenario"]["plasma_" + "2D_prof"][...])
+        self["plasma"]["2D_prof"] = bool(rootgrp["Scenario"]["plasma_" + "2D_prof"][...].item())
         self["plasma"]["eq_data_type"] = rootgrp["Scenario"]["plasma_" + "eq_data_type"][0]
         for sub_key in ["Te", "ne"]:
             self['plasma'][sub_key] = np.array(rootgrp["Scenario"]["plasma_" + sub_key])
@@ -507,16 +507,16 @@ class ECRadScenario(dict):
             self["plasma"]["prof_reference"] = rootgrp["Scenario"]["plasma_prof_reference"][0]
         self["plasma"][self["plasma"]["prof_reference"]] = np.array(rootgrp["Scenario"]["plasma_" + self["plasma"]["prof_reference"]])
         for sub_key in self["scaling"].keys():
-            self['scaling'][sub_key] = float(rootgrp["Scenario"]["scaling_" + sub_key][...])
+            self['scaling'][sub_key] = float(rootgrp["Scenario"]["scaling_" + sub_key][...].item())
         if(self["plasma"]["eq_data_type"] == "3D"):
             for sub_key in ["B_ref", "s_plus", "s_max", \
                            "interpolation_acc", "fourier_coeff_trunc", \
                            "h_mesh", "delta_phi_mesh"]:
                 self['plasma']["eq_data_3D"][sub_key] = float(rootgrp["Scenario"]["plasma" + "_" + \
-                                                                                  "eq_data_3D" + "_"  + sub_key][...])
+                                                                                  "eq_data_3D" + "_"  + sub_key][...].item())
             for sub_key in ["use_mesh", "use_symmetry"]:
                 self['plasma']["eq_data_3D"][sub_key] = bool(rootgrp["Scenario"]["plasma" + "_" + \
-                                                                                  "eq_data_3D" + "_"  + sub_key][...])
+                                                                                  "eq_data_3D" + "_"  + sub_key][...].item())
             for sub_key in ["equilibrium_type", "vessel_filename"]:
                 self['plasma']["eq_data_3D"][sub_key] = rootgrp["Scenario"]["plasma" + "_" + \
                                                                             "eq_data_3D" + "_"  + sub_key][0]

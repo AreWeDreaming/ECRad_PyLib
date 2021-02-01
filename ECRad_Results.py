@@ -46,7 +46,7 @@ class ECRadResults(dict):
                                       "s_warm_second", "R_warm_second", \
                                       "z_warm_second", "rhop_warm_second", \
                                       "rhot_warm_second"]
-        self.shapes["resonance"] = ["N_time", "N_ch"]
+        self.shapes["resonance"] = ["N_time", "N_ch", "N_mode_mix"]
         self.units["resonance"] = {}
         self.scale["resonance"] = {}
         for sub_key in self.sub_keys["resonance"]:
@@ -79,7 +79,8 @@ class ECRadResults(dict):
                                 "X", "Y", "rhop", "rhot" ,\
                                 "Te", "ne", \
                                 "theta", "BPD", \
-                                "BPD_second", "em", \
+                                "BPD_second", 
+                                "Trad", "Trad_second", "em", \
                                 "em_second", "ab", \
                                 "ab_second", \
                                 "T", "T_second", \
@@ -94,10 +95,12 @@ class ECRadResults(dict):
                              "Y":r"Stix Parameter $Y$", "rhop":r"$\rho_\mathrm{pol}$", \
                              "rhot":r"$\rho_\mathrm{tor}$", "Te":r"$T_\mathrm{e}$", \
                              "ne":r"$n_\mathrm{e}$", "theta":r"$\theta$", \
-                             "BPD":"BPD", "BPD_second":"BPD", "em":r"$j_\omega$", \
+                             "BPD":"BPD", "BPD_second":"BPD", \
+                             "Trad":r"$T_\mathrm{rad}$", "Trad_second":r"$T_\mathrm{rad}$", \
+                             "em":r"$j_\omega$", \
                              "em_second":r"$j_\omega$", "ab":r"$\alpha_\omega$", \
                              "ab_second":r"$\alpha_\omega$", "T":r"\mathcal{T}_\omega", \
-                             "T":r"\mathcal{T}_\omega", "v_g_perp":r"$v_{\mathrm{g},\perp}$"}
+                             "T_second":r"\mathcal{T}_\omega", "v_g_perp":r"$v_{\mathrm{g},\perp}$"}
         self.units["ray"] = {"s":"m", "x":"m", "y":"m", "z":"m", \
                              "Nx":None, "Ny":None, "Nz":None, \
                              "Bx":"T", "By":"T", "Bz":"T", \
@@ -106,7 +109,9 @@ class ECRadResults(dict):
                              "rhop":"", "rhot":"",\
                              "Te":r"keV", "ne":r"$\times 10^{19}$m$^{-3}$", \
                              "theta":r"$^\circ$", "BPD":r"m$^{-1}$", \
-                             "BPD_second":r"m$^{-1}$", "em":r"nW m$^{-3}$", \
+                             "BPD_second":r"m$^{-1}$", \
+                             "Trad":r"[keV]", "Trad_second":r"[keV]", \
+                             "em":r"nW m$^{-3}$", \
                              "em_second":r"nW m$^{-3}$", "ab":r"m$^{-1}$", \
                              "ab_second":r"m$^{-1}$", \
                              "T":None, "T_second":None, \
@@ -119,7 +124,9 @@ class ECRadResults(dict):
                              "rhop":1, "rhot":1, \
                              "Te":1.e-3, "ne":1.e-19, \
                              "theta":np.rad2deg(1), "BPD":1, \
-                             "BPD_second":1, "em":1.e9, \
+                             "BPD_second":1, \
+                             "Trad":1.e-3, "Trad_second":1.e-3, \
+                             "em":1.e9, \
                              "em_second":1.e9, "ab":1, \
                              "ab_second":1, \
                              "T":1, "T_second":1, \
@@ -143,10 +150,10 @@ class ECRadResults(dict):
         self.label["weights"] = {"mode_frac":r"X-mode fraction", "mode_frac_second":"X-mode fraction", \
                                  "ray_weights":"ray weight","freq_weights":"frequency weight"}
         # The weights have a lot of different shapes need to store those by sub_key
-        self.shapes["mode_frac"] = ["N_time", "N_ch"]
-        self.shapes["mode_frac_second"] = ["N_time", "N_ch"]
+        self.shapes["mode_frac"] = ["N_time", "N_ch", "N_mode"]
+        self.shapes["mode_frac_second"] = ["N_time", "N_ch", "N_mode"]
         self.shapes["ray_weights"] = ["N_time", "N_ch", "N_ray"]
-        self.shapes["freq_weights"] = ["N_time", "N_ch", "N_freqs"]
+        self.shapes["freq_weights"] = ["N_time", "N_ch", "N_freq"]
         self.xaxis_link["weights"] = "weights"
         self["git"] = {"ECRad":"Unknoiwn", "GUI":"Unknoiwn", "Pylib":"Unknoiwn"}
         self["types"] = {}
@@ -169,7 +176,12 @@ class ECRadResults(dict):
         # This holds the same information as the scenario
         self.modes = None
         self.comment = ""
+        self["dimensions"] = {}
+        self["dimensions"]["N_LOS"] = []
+        self["git"] = {}
         for key in self.result_keys:
+            if(key in ["dimensions"]):
+                continue
             self[key] = {}
             if(key in self.sub_keys):
                 for sub_key in self.sub_keys[key]:
@@ -202,6 +214,9 @@ class ECRadResults(dict):
             for sub_key in self.sub_keys[key]:
                 self[key][sub_key] = np.array(self[key][sub_key])
         # Autosave results
+        self["git"]["ECRad"] = np.genfromtxt(os.path.join(globalsettings.ECRadRoot, "id"), dtype=str).item()
+        self["git"]["GUI"] = np.genfromtxt(os.path.join(globalsettings.ECRadGUIRoot, "id"), dtype=str).item()
+        self["git"]["Pylib"] = np.genfromtxt(os.path.join(globalsettings.ECRadPylibRoot, "id"), dtype=str).item()
         if(autosave):
             self.to_netcdf()
 
@@ -212,14 +227,16 @@ class ECRadResults(dict):
             if(np.isscalar(self["dimensions"][dim_ref])):
                 shape += (self["dimensions"][dim_ref],)
             else:
-                shape += (self["dimensions"][dim_ref][i_time, i_ch, i_mode, i_ray],)
+                # Cannot use numpy indexing here because the time dimension 
+                # will be appended as we go
+                shape += (self["dimensions"][dim_ref][i_time][i_ch, i_mode, i_ray],)
         return shape
             
     def set_dimensions(self):
         # Sets the dimensions from Scenario and Configself["dimensions"]["N_time"] = len(self.Scenario.plasma_dict["time"])
         self["dimensions"]["N_time"] = self.Scenario["dimensions"]["N_time"]
         self["dimensions"]["N_ray"] = self.Config["Physics"]["N_ray"]
-        self["dimensions"]["N_freqs"] = self.Config["Physics"]["N_freq"]
+        self["dimensions"]["N_freq"] = self.Config["Physics"]["N_freq"]
         self["dimensions"]["N_BPD"] = self.Config["Numerics"]["N_BPD"]
         self["dimensions"]["N_ch"] = self.Scenario["dimensions"]["N_ch"]
         if(self.Config["Physics"]["considered_modes"] > 2):
@@ -281,27 +298,46 @@ class ECRadResults(dict):
                     self[key][sub_key] = np.zeros(self.get_shape(key))
                     mdict_key = sub_key.replace("second","comp")
                     self[key][sub_key][...,i_mode] = mdict[mode+mdict_key].reshape(self.get_shape(key,stop=-1))
-        for key in ["resonance"]:
-            for sub_key in self.sub_keys[key]:
-                if(sub_key.endswith("second")):
-                    formatted_key = sub_key + "ary"
-                else:
-                    formatted_key = sub_key
-                #3D rhot
-                if(rho == "rhot" and sub_key.startswith("rhot")):
-                    formatted_key = formatted_key.replace("rhot","rhop")
-                elif(rho == "rhot" and formatted_key.startswith("rhop")):
-                    continue
-                try:
-                    self[key][sub_key] = mdict[formatted_key].reshape(self.get_shape(key))
-                except KeyError:
-                    print("INFO: Couldn't load " + sub_key + " from result file")
+        if(self["dimensions"]["N_mode"] > 1):
+            # mode resolved resonances are not available in .mat files
+            for key in ["resonance"]:
+                for sub_key in self.sub_keys[key]:
+                    self[key][sub_key] = np.zeros(self.get_shape(key))
+                    if(sub_key.endswith("second")):
+                        formatted_key = sub_key + "ary"
+                    else:
+                        formatted_key = sub_key
+                    #3D rhot
+                    if(rho == "rhot" and sub_key.startswith("rhot")):
+                        formatted_key = formatted_key.replace("rhot","rhop")
+                    elif(rho == "rhot" and formatted_key.startswith("rhop")):
+                        continue
+                    try:
+                        self[key][sub_key][...,0] = mdict[formatted_key].reshape(self.get_shape(key, stop=-1))
+                    except KeyError:
+                        print("INFO: Couldn't load " + sub_key + " from result file")
+        else:
+            for key in ["resonance"]:
+                for sub_key in self.sub_keys[key]:
+                    if(sub_key.endswith("second")):
+                        formatted_key = sub_key + "ary"
+                    else:
+                        formatted_key = sub_key
+                    #3D rhot
+                    if(rho == "rhot" and sub_key.startswith("rhot")):
+                        formatted_key = formatted_key.replace("rhot","rhop")
+                    elif(rho == "rhot" and formatted_key.startswith("rhop")):
+                        continue
+                    try:
+                        self[key][sub_key] = mdict[formatted_key].reshape(self.get_shape(key))
+                    except KeyError:
+                        print("INFO: Couldn't load " + sub_key + " from result file")
         self["dimensions"]["N_LOS"] = np.zeros(self.get_shape("ray", 0, -1),dtype=np.int)      
         # We need to fix the shape of the mdict ray info
         key = "ray"
         for sub_key in self.sub_keys[key]:
             for mode in modes:
-                if(sub_key in ["em", "ab", "T", "BPD", \
+                if(sub_key in ["em", "ab", "T", "BPD", "Trad", "Trad_second",\
                                "em_second", "ab_second", "T_second", "BPD_second"]):
                     mdict_key = "ray_" + sub_key
                 #3D rhot
@@ -377,11 +413,15 @@ class ECRadResults(dict):
         self["weights"]["ray_weights"] = mdict["ray_weights"]
         self["weights"]["freq_weights"] = mdict["ray_weights"]
         if(self.Config["Physics"]["considered_modes"] > 2):
-            self["weights"]["mode_frac"] = mdict["X_mode_frac"].reshape(self.get_shape("mode_frac"))
-            self["weights"]["mode_frac_second"] = mdict["X_mode_frac_comp"].reshape(self.get_shape("mode_frac_second"))
+            self["weights"]["mode_frac"] = np.zeros(self.get_shape("mode_frac"))
+            self["weights"]["mode_frac_second"] = np.zeros(self.get_shape("mode_frac_second"))
+            self["weights"]["mode_frac"][...,0] = mdict["X_mode_frac"].reshape(self.get_shape("mode_frac", stop=-1))
+            self["weights"]["mode_frac_second"][...,0] = mdict["X_mode_frac_comp"].reshape(self.get_shape("mode_frac_second", stop=-1))
+            self["weights"]["mode_frac"][...,1] = 1 - mdict["X_mode_frac"].reshape(self.get_shape("mode_frac", stop=-1))
+            self["weights"]["mode_frac_second"][...,1] = 1 - mdict["X_mode_frac_comp"].reshape(self.get_shape("mode_frac_second", stop=-1))
         else:
-            self["weights"]["mode_frac"] = np.ones(self.get_shape("mode_frac"))
-            self["weights"]["mode_frac_second"] = np.ones(self.get_shape("mode_frac"))
+            self["weights"]["mode_frac"][0] = np.ones(self.get_shape("mode_frac"))
+            self["weights"]["mode_frac_second"][0] = np.ones(self.get_shape("mode_frac_second"))
         self["git"]["ECRad"] = mdict["ECRad_git_tag"]
         self["git"]["GUI"] = mdict["ECRadGUI_git_tag"]
         self["git"]["Pylib"] = mdict["ECRadPylib_git_tag"]
@@ -399,7 +439,7 @@ class ECRadResults(dict):
             filename = os.path.join(self.Config["Execution"]["working_dir"], "ECRad_{0:5d}_{1:s}_ed{2:d}.nc".format(self.Scenario["shot"], diag_str, ed))
             while(os.path.exists(filename)):
                 ed += 1
-                filename = os.path.join(self.Config["Execution"]["working_dir"], "ECRad_{0:5d}_{1:s}_ed{2:d}.nc".format(self.Scenario.shot, diag_str, ed))
+                filename = os.path.join(self.Config["Execution"]["working_dir"], "ECRad_{0:5d}_{1:s}_ed{2:d}.nc".format(self.Scenario["shot"], diag_str, ed))
             self.edition = ed
             rootgrp = Dataset(filename, "w", format="NETCDF4")
         rootgrp.createGroup("Results")
@@ -507,10 +547,12 @@ class ECRadResults(dict):
     
 if(__name__ == "__main__"):
     res = ECRadResults()
+#     res.from_mat("/mnt/c/Users/Severin/ECRad/ECRad_33585_EXT_ed1.mat")
+#     res.to_netcdf("/mnt/c/Users/Severin/ECRad/ECRad_33585_EXT_ed1.nc")
     res.from_mat("/mnt/c/Users/Severin/ECRad_regression/AUGX3/ECRad_32934_EXT_ed1.mat")
     res.to_netcdf("/mnt/c/Users/Severin/ECRad_regression/AUGX3/ECRad_32934_EXT_ed1.nc")
-    res.reset()
-    res.from_netcdf("/mnt/c/Users/Severin/ECRad_regression/AUGX3/ECRad_32934_EXT_ed1.nc")
+#     res.reset()
+#     res.from_netcdf("/mnt/c/Users/Severin/ECRad_regression/AUGX3/ECRad_32934_EXT_ed1.nc")
 #     res.reset()
 #     res.from_mat("/mnt/c/Users/Severin/ECRad_regression/W7X/ECRad_20180823016002_EXT_ed19.mat")
 #     res.to_netcdf("/mnt/c/Users/Severin/ECRad_regression/W7X/ECRad_20180823016002_EXT_Scenario.nc")
