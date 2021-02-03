@@ -51,11 +51,11 @@ def diag_weight(fig, Results, time_point, ch, DistWaveFile=None, ax=None):
     itime = np.argmin(np.abs(time_point - Results.Scenario.plasma_dict["time"]))
     time_cor = Results.Scenario.plasma_dict["time"][itime]
     EQObj= EQDataExt(Results.Scenario.shot)
-    EQObj.insert_slices_from_ext(Results.Scenario.plasma_dict["time"], Results.Scenario.plasma_dict["eq_data"])
+    EQObj.set_slices_from_ext(Results.Scenario.plasma_dict["time"], Results.Scenario.plasma_dict["eq_data"])
     B_ax = EQObj.get_B_on_axis(time_cor)
     if(DistWaveFile is not None):
         dist_obj = load_f_from_mat(DistWaveFile, True)
-        f_inter = make_f_inter(Results.Config.dstf, dist_obj=dist_obj, EQObj=EQObj, time=time_cor)[0]
+        f_inter = make_f_inter(Results.Config["Physics"]["dstf"], dist_obj=dist_obj, EQObj=EQObj, time=time_cor)[0]
     else:
         dist_obj = None
         f_inter = make_f_inter("Th", EQObj=EQObj, time=time_cor)[0]
@@ -79,7 +79,7 @@ def diag_weight(fig, Results, time_point, ch, DistWaveFile=None, ax=None):
         u_par_grid = np.linspace(-np.max(dist_obj.u), np.max(f_inter.x), n)
     diag_weight_f = np.zeros((m,n))
     diag_weight_rel = np.zeros((m,n))
-    for ir in range(Results.Config.N_ray):
+    for ir in range(Results.Config["Physics"]["N_ray"]):
         cur_BDOP = make_3DBDOP_for_ray(Results, time_cor, ch, ir, harmonic_n, B_ax, f_inter=f_inter)
         for irhop, in range(len(cur_BDOP.rho)):
             print(irhop + 1, " / ", len(cur_BDOP.rho))
@@ -134,12 +134,12 @@ def ECRH_weight(fig, Result_file, time_point, ibeam, DistWaveFile, beam_freq=105
     itime = np.argmin(np.abs(time_point - Results.Scenario.plasma_dict["time"]))
     time_cor = Results.Scenario.plasma_dict["time"][itime]
     EQObj= EQDataExt(Results.Scenario.shot)
-    EQObj.insert_slices_from_ext(Results.Scenario.plasma_dict["time"], Results.Scenario.plasma_dict["eq_data"])
+    EQObj.set_slices_from_ext(Results.Scenario.plasma_dict["time"], Results.Scenario.plasma_dict["eq_data"])
     B_ax = EQObj.get_B_on_axis(time_cor)
     EqSlice = EQObj.GetSlice(time_point)
     dist_wave_mat = loadmat(DistWaveFile)
     dist_obj = load_f_from_mat(DistWaveFile, True)
-    f_inter = make_f_inter(Results.Config.dstf, dist_obj=dist_obj, EQObj=EQObj, time=time_cor)[0]
+    f_inter = make_f_inter(Results.Config["Physics"]["dstf"], dist_obj=dist_obj, EQObj=EQObj, time=time_cor)[0]
     linear_beam = read_waves_mat_to_beam(dist_wave_mat, EqSlice, use_wave_prefix=None)
     itme = np.argmin(np.abs(Results.Scenario.plasma_dict["time"] - time_point))
     Te_spl = InterpolatedUnivariateSpline(Results.Scenario.plasma_dict[Results.Scenario.plasma_dict["prof_reference"]][itime], \

@@ -78,8 +78,8 @@ def make_rhop_signed_axis(shot, time, R, rhop, f, f2=None, eq_exp='AUGD', eq_dia
 
 
 class EQData(EQDataExt):
-    def __init__(self, shot, external_folder='', EQ_exp="AUGD", EQ_diag="EQH", EQ_ed=0, bt_vac_correction=1.005, Ext_data=False):
-        EQDataExt.__init__(self, shot, external_folder, EQ_exp, EQ_diag, EQ_ed, bt_vac_correction, Ext_data)        
+    def __init__(self, shot, external_folder='', EQ_exp="AUGD", EQ_diag="EQH", EQ_ed=0, Ext_data=False):
+        EQDataExt.__init__(self, shot, external_folder, EQ_exp, EQ_diag, EQ_ed, Ext_data)        
 
     def init_read_from_shotfile(self):
         self.equ = equ_map()
@@ -128,13 +128,13 @@ class EQData(EQDataExt):
                 # plt.plot(pfm_dict["Ri"],B_t[j], label = "EQH B")
                 Btok_eq = Btf0_eq * self.R0 / EQSlice.R  # vacuum toroidal field from EQH
                 Bdia = EQSlice.B_t.T[j] - Btok_eq  # subtract vacuum toroidal field from equilibrium to obtain diamagnetic field
-                EQSlice.B_t.T[j] = (Btok * self.bt_vac_correction) + Bdia  # add corrected vacuum toroidal field to be used
+                EQSlice.B_t.T[j] = Btok + Bdia  # add corrected vacuum toroidal field to be used
     # #         print(Btf0)
     # #         print("Original magnetic field: {0:2.3f}".format(Btf0))
     # #         print("New magnetic field: {0:2.3f}".format(Btf0 * self.bt_vac_correction))
         return EQSlice
 
-    def GetSlice(self, time, B_vac_correction=True):
+    def GetSlice(self, time, bt_vac_correction = 1.0, B_vac_correction=True):
         if(not self.shotfile_ready):
             self.init_read_from_shotfile()
         R = self.equ.Rmesh
@@ -147,12 +147,20 @@ class EQData(EQDataExt):
         rhop = np.sqrt((Psi - special.psiaxis) / (special.psispx - special.psiaxis))
         B_r, B_z, B_t = self.equ.Bmesh(time) 
         if(B_vac_correction):
-            return self.ApplyBVacCorrectionToSlice( EQDataSlice(time, R, z, \
+            EQ_slice = self.ApplyBVacCorrectionToSlice( EQDataSlice(time, R, z, \
                                                                 Psi, B_r, B_t, \
                                                                 B_z, special=special, \
                                                                 rhop=rhop ))
         else:
-            return EQDataSlice(time, R, z, Psi, B_r, B_t, B_z, special=special, rhop=rhop )
+            EQ_slice = EQDataSlice(time, R, z, Psi, B_r, B_t, B_z, special=special, rhop=rhop )
+        if(bt_vac_correction != 1.0):
+            if(EQ_slice.R_ax is None):
+                R_ax, z_ax = self.get_axis(time)
+            else:
+                R_ax = EQ_slice.R_ax
+            EQ_slice.Bt = self.adjust_external_Bt_vac(EQ_slice.B_t, EQ_slice.R, R_ax, bt_vac_correction)
+        self.eq_shape = (len(self.slices[0].R),len(self.slices[0].z))
+        return EQ_slice
 
     def map_Rz_to_rhot(self, time, R, z):
         if(self.external_folder != '' or self.Ext_data):

@@ -6,6 +6,9 @@ Created on Jan 29, 2017
 import os
 import wx
 import multiprocessing
+import sys
+from glob import glob
+
 def qos_function_tok(cores, wall_time):
     if(cores == 1):
         if(wall_time <= 4):
@@ -96,8 +99,8 @@ class GlobalSettingsAUGEXT:
             self.SLES12 = True
         self.Phoenix = "phoenix" in wx.PlatformInfo
         self.ECRadRoot = os.path.abspath("../augd_ecrad")
-        self.ECRadPylibRoot = os.path.abspath("../ECRad_Pylib/")
-        self.ECRadGUIRoot = os.path.abspath("../ECRad_GUI/")
+        self.ECRadPylibRoot = os.path.abspath("../augd_ecrad_Pylib/")
+        self.ECRadGUIRoot = os.path.abspath("../augd_ecrad_GUI/")
         self.ECRadLibDir = os.path.join(self.ECRadRoot, os.environ["SYS"])
         try:
             self.ECRadPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRad")
@@ -119,5 +122,17 @@ try:
         globalsettings = GlobalSettingsAUGEXT()
 except KeyError:
     globalsettings = GlobalSettingsAUGEXT()
+library_list = glob("../*pylib") + glob("../*Pylib")
+for folder in library_list:
+    if("ECRad" in folder or "ecrad"in folder ):
+        sys.path.append(os.path.abspath(folder))
+        found_lib = True
+        ECRadPylibFolder = folder
+        break
+if(not found_lib):
+    print("Could not find pylib")
+    print("Important: ECRad_GUI must be launched with its home directory as the current working directory")
+    print("Additionally, the ECRad_Pylib must be in the parent directory of the GUI and must contain one of ECRad, ecrad and Pylib or pylib")
+    exit(-1)
 #
 #globalsettings = GlobalSettingsITM()

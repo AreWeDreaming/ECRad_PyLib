@@ -190,19 +190,19 @@ def make_topfile_no_data_load(working_dir, shot, time, R, z, Psi, Br, Bt, Bz, Ps
     print("topfile successfully written to", os.path.join(working_dir, "topfile"))
     return 0
 
-def make_Te_ne_files(working_dir, rho, Te, ne):
+def make_Te_ne_files(working_dir, rho_Te, Te, rho_ne, ne):
     # makes Te and ne files for TORBEAM and ECRad
     Te_file = open(os.path.join(working_dir, "Te_file.dat"), "w")
     Te_tb_file = open(os.path.join(working_dir, "Te.dat"), "w")
     lines = 150
-    Te_file.write("{0: 7d}".format(len(rho)) + "\n")
-    for i in range(len(rho)):
-        Te_file.write("{0: 1.12E} {1: 1.12E}".format(rho[i], Te[i]) + "\n")
+    Te_file.write("{0: 7d}".format(len(rho_Te)) + "\n")
+    for i in range(len(rho_Te)):
+        Te_file.write("{0: 1.12E} {1: 1.12E}".format(rho_Te[i], Te[i]) + "\n")
     Te_file.flush()
     Te_file.close()
     Te_tb_file.write("{0: 7d}".format(lines) + "\n")
-    Te_spline = InterpolatedUnivariateSpline(rho, Te, k=1)
-    rho_short = np.linspace(np.min(rho), np.max(rho), lines)
+    Te_spline = InterpolatedUnivariateSpline(rho_Te, Te, k=1)
+    rho_short = np.linspace(np.min(rho_Te), np.max(rho_Te), lines)
     for i in range(len(rho_short)):
         try:
             Te_tb_file.write("{0: 1.12E} {1: 1.12E}".format(rho_short[i], Te_spline(rho_short[i]).item() / 1.e03) + "\n")
@@ -212,15 +212,15 @@ def make_Te_ne_files(working_dir, rho, Te, ne):
     Te_tb_file.flush()
     Te_tb_file.close()
     ne_file = open(os.path.join(working_dir, "ne_file.dat"), "w")
-    ne_file.write("{0: 7d}".format(len(rho)) + "\n")
-    for i in range(len(rho)):
-        ne_file.write("{0: 1.12E} {1: 1.12E}".format(rho[i], ne[i]) + "\n")
+    ne_file.write("{0: 7d}".format(len(rho_ne)) + "\n")
+    for i in range(len(rho_ne)):
+        ne_file.write("{0: 1.12E} {1: 1.12E}".format(rho_ne[i], ne[i]) + "\n")
     ne_file.flush()
     ne_file.close()
     ne_tb_file = open(os.path.join(working_dir, "ne.dat"), "w")
     ne_tb_file.write("{0: 7d}".format(lines) + "\n")
-    ne_spline = InterpolatedUnivariateSpline(rho, ne, k=1)
-    rho_short = np.linspace(np.min(rho), np.max(rho), lines)
+    ne_spline = InterpolatedUnivariateSpline(rho_ne, ne, k=1)
+    rho_short = np.linspace(np.min(rho_ne), np.max(rho_ne), lines)
     for i in range(len(rho_short)):
         ne_tb_file.write("{0: 1.12E} {1: 1.12E}".format(rho_short[i], ne_spline(rho_short[i]).item() / 1.e19) + "\n")
     ne_tb_file.flush()

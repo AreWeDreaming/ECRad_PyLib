@@ -36,13 +36,13 @@ def eval_Btot(x, args):
         return spl(x[0], x[1], grid=False)
 
 class special_points:
-    def __init__(self, R_ax, z_ax, psi_ax, R_sep, z_sep, psi_sep):
+    def __init__(self, R_ax, z_ax, Psi_ax, R_sep, z_sep, Psi_sep):
         self.Raxis = R_ax
         self.zaxis = z_ax
         self.Rspx = R_sep
         self.zspx = z_sep
-        self.psiaxis = psi_ax
-        self.psispx = psi_sep
+        self.psiaxis = Psi_ax
+        self.psispx = Psi_sep
 
 class EQDataSlice:
     def __init__(self, time, R, z, Psi, Br, Bt, Bz, special=None, Psi_ax = None, Psi_sep=None, rhop=None, ripple=None):
@@ -66,6 +66,10 @@ class EQDataSlice:
         elif(Psi_sep is not None and Psi_ax is not None):
             self.Psi_ax = Psi_ax
             self.Psi_sep = Psi_sep
+            self.R_ax = None
+            self.z_ax = None
+            self.R_sep = None
+            self.z_sep = None
         else:
             raise ValueError("Either special points or Psi_ax and Psi_sep must not be None")
         self.special = np.array([self.Psi_ax, self.Psi_sep])
@@ -87,18 +91,18 @@ class EQDataSlice:
         self.ripple = ripple
 
 class EQDataExt:
-    def __init__(self, shot, external_folder='', EQ_exp="AUGD", EQ_diag="EQH", EQ_ed=0, bt_vac_correction=1.005, Ext_data=False):
+    def __init__(self, shot, external_folder='', EQ_exp="AUGD", EQ_diag="EQH", EQ_ed=0, Ext_data=False):
         self.shot = shot
         self.EQ_exp = EQ_exp
         self.EQ_diag = EQ_diag
         self.EQ_ed = EQ_ed
-        self.bt_vac_correction = bt_vac_correction
         self.shotfile_ready = False
         self.loaded = False
         self.external_folder = external_folder
         self.Ext_data = Ext_data
         self.slices = []
         self.times = []
+        self.eq_shape = [0,0] #R, z dimensions, has to be the same for each time point
 
     def adjust_external_Bt_vac(self, B_t, R, R_axis, bt_vac_correction):
         jvz = int(len(B_t[0]) / 2.0)
@@ -112,14 +116,66 @@ class EQDataExt:
             B_t.T[i] = (Btok * bt_vac_correction) + Bdia  # add corrected vacuum toroidal field to be used
         return B_t
 
-    def insert_slices_from_ext(self, times, slices, transpose=False):
+    def set_slices_from_ext(self, times, slices, transpose=False):
         self.slices = copy.deepcopy(slices)
         self.times = copy.deepcopy(times)
         self.Ext_data = True
-        self.loaded = True
         if(transpose):
             for eq_slice in self.slices:
                 eq_slice.transpose_matrices()
+        self.define_and_verify_eq_shape()
+        self.loaded = True
+                
+    def insert_slices_from_ext(self, times, slices, transpose=False):
+        new_slices = copy.deepcopy(slices)
+        for time, eq_slice in zip(times, slices):
+            if(time not in self.times):
+                self.times.append(time)
+                if(transpose):
+                    eq_slice.transpose_matrices()
+                new_slices.append(eq_slice)
+        self.times = np.array(self.times)
+        slices_sort = np.argsort(self.times)
+        self.slices = []
+        for i in slices_sort:
+            self.slices.append(new_slices[i])
+        self.define_and_verify_eq_shape()
+        self.loaded = True
+                
+    def get_single_attribute_from_all_slices(self, attr):
+        value = []
+        for eq_slice in self.slices:
+            value.append(getattr(eq_slice, attr))
+        return np.array(value)
+    
+    def fill_with_slices_from_dict(self, times, eq_slice_dict):
+        for it, time in enumerate(times):
+            special = special_points(eq_slice_dict["R_ax"][it], \
+                                     eq_slice_dict["z_ax"][it], \
+                                     eq_slice_dict["Psi_ax"][it], \
+                                     eq_slice_dict["R_sep"][it], \
+                                     eq_slice_dict["z_sep"][it], \
+                                     eq_slice_dict["Psi_sep"][it])
+            self.times.append(time)
+            self.slices.append(EQDataSlice(time, \
+                                           eq_slice_dict["R"][it], \
+                                           eq_slice_dict["z"][it], \
+                                           eq_slice_dict["Psi"][it], \
+                                           eq_slice_dict["Br"][it], \
+                                           eq_slice_dict["Bt"][it], \
+                                           eq_slice_dict["Bz"][it], \
+                                           special=special, \
+                                           rhop = eq_slice_dict["rhop"][it]))
+        self.times = np.array(self.times)
+        self.define_and_verify_eq_shape()
+        self.loaded = True
+        
+    def define_and_verify_eq_shape(self):
+        self.eq_shape = (len(self.slices[0].R),len(self.slices[0].z))
+        for eq_slice in self.slices:
+            if((len(eq_slice.R),len(eq_slice.z)) != self.eq_shape ):
+                raise ValueError("The shape of the flux matrices must not change over time")
+            
 
     def load_slices_from_mat(self, time, mdict, eq_prefix = False):
         self.times = copy.deepcopy(time)
@@ -134,6 +190,7 @@ class EQDataExt:
                 self.slices.append(EQDataSlice(self.times[it], mdict["R"], mdict["z"], mdict["Psi"][it], mdict["Br"][it], \
                                            mdict["Bt"][it], mdict["Bz"][it], Psi_ax=mdict["Psi_ax"][it], \
                                            Psi_sep=mdict["Psi_sep"][it]))
+            self.define_and_verify_eq_shape()
             self.loaded = True
             R_ax, z_ax = self.get_axis(self.times[it])
             self.slices[-1].R_ax = R_ax
@@ -152,6 +209,7 @@ class EQDataExt:
         for it in range(len(t)):
             self.slices.append(self.read_EQ_from_Ext_single_slice(t[it], it))
             self.times.append(t[it])
+        self.define_and_verify_eq_shape()
         self.loaded = True
 
     def read_EQ_from_Ext_single_slice(self, time, index):
@@ -181,13 +239,25 @@ class EQDataExt:
         special_pnts = special(opt.x[0], opt.x[1], psi_ax, 2.17, 0.0, special[1])
         return EQDataSlice(time, R, z, Psi, B_r, B_t, B_z, special_pnts, rhop=rhop)
 
-    def GetSlice(self, time):
+    def GetSlice(self, time, bt_vac_correction=1.0):
         if(not self.loaded):
             print("EQObj is empty")
             raise ValueError
         else:
             itime = np.argmin(np.abs(self.times - time))
-            return self.slices[itime]
+            EQ_slice = self.slices[itime]
+            if(bt_vac_correction != 1.0):
+                if(EQ_slice.R_ax is None):
+                    R_ax, z_ax = self.get_axis(time)
+                else:
+                    R_ax = EQ_slice.R_ax
+                EQ_slice.Bt = self.adjust_external_Bt_vac(EQ_slice.Bt, EQ_slice.R, R_ax, bt_vac_correction)
+            return EQ_slice
+        
+    def RemoveSlice(self, time):
+        itime = np.argmin(np.abs(self.times - time))
+        del(self.slices[itime])
+        del(self.times[itime])
 
     def get_axis(self, time, get_Psi=False):
         cur_slice = self.GetSlice(time)

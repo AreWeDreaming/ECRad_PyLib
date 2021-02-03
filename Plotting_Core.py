@@ -526,7 +526,8 @@ class PlottingCore:
                     self.y_range_list[2] , data=[divertor_cur[0], divertor_cur[1]], \
                     name="Divertor current", marker="-", \
                     coloumn=1, ax_flag="diag_trace")
-        self.axlist[0].set_xlim((np.min(time), np.max(time)))
+        if(np.min(time) != np.max(time)):
+            self.axlist[0].set_xlim((np.min(time), np.max(time)))
         self.create_legends("single")
         # self.finishing_touches()
         return fig
@@ -1661,8 +1662,8 @@ class PlottingCore:
             self.line_color_index[0] = 1
             self.line_color_index_2[0] = 1
             for ich in channel_list:
-                if(result.Config.N_ray > 1):
-                    for iray in range(result.Config.N_ray):
+                if(result.Config["Physics"]["N_ray"] > 1):
+                    for iray in range(result.Config["Physics"]["N_ray"]):
                         x = result.ray["x" + mode][itime][ich - 1][iray]
                         y = result.ray["y" + mode][itime][ich - 1][iray]
                         z = result.ray["z" + mode][itime][ich - 1][iray]                        
