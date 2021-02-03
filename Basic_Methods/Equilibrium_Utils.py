@@ -102,6 +102,7 @@ class EQDataExt:
         self.Ext_data = Ext_data
         self.slices = []
         self.times = []
+        self.eq_shape = [0,0] #R, z dimensions, has to be the same for each time point
 
     def adjust_external_Bt_vac(self, B_t, R, R_axis, bt_vac_correction):
         jvz = int(len(B_t[0]) / 2.0)
@@ -119,16 +120,17 @@ class EQDataExt:
         self.slices = copy.deepcopy(slices)
         self.times = copy.deepcopy(times)
         self.Ext_data = True
-        self.loaded = True
         if(transpose):
             for eq_slice in self.slices:
                 eq_slice.transpose_matrices()
+        self.define_and_verify_eq_shape()
+        self.loaded = True
                 
     def insert_slices_from_ext(self, times, slices, transpose=False):
         new_slices = copy.deepcopy(slices)
         for time, eq_slice in zip(times, slices):
             if(time not in self.times):
-                self.times.append(times)
+                self.times.append(time)
                 if(transpose):
                     eq_slice.transpose_matrices()
                 new_slices.append(eq_slice)
@@ -137,6 +139,7 @@ class EQDataExt:
         self.slices = []
         for i in slices_sort:
             self.slices.append(new_slices[i])
+        self.define_and_verify_eq_shape()
         self.loaded = True
                 
     def get_single_attribute_from_all_slices(self, attr):
@@ -164,7 +167,14 @@ class EQDataExt:
                                            special=special, \
                                            rhop = eq_slice_dict["rhop"][it]))
         self.times = np.array(self.times)
+        self.define_and_verify_eq_shape()
         self.loaded = True
+        
+    def define_and_verify_eq_shape(self):
+        self.eq_shape = (len(self.slices[0].R),len(self.slices[0].z))
+        for eq_slice in self.slices:
+            if((len(eq_slice.R),len(eq_slice.z)) != self.eq_shape ):
+                raise ValueError("The shape of the flux matrices must not change over time")
             
 
     def load_slices_from_mat(self, time, mdict, eq_prefix = False):
@@ -180,6 +190,7 @@ class EQDataExt:
                 self.slices.append(EQDataSlice(self.times[it], mdict["R"], mdict["z"], mdict["Psi"][it], mdict["Br"][it], \
                                            mdict["Bt"][it], mdict["Bz"][it], Psi_ax=mdict["Psi_ax"][it], \
                                            Psi_sep=mdict["Psi_sep"][it]))
+            self.define_and_verify_eq_shape()
             self.loaded = True
             R_ax, z_ax = self.get_axis(self.times[it])
             self.slices[-1].R_ax = R_ax
@@ -198,6 +209,7 @@ class EQDataExt:
         for it in range(len(t)):
             self.slices.append(self.read_EQ_from_Ext_single_slice(t[it], it))
             self.times.append(t[it])
+        self.define_and_verify_eq_shape()
         self.loaded = True
 
     def read_EQ_from_Ext_single_slice(self, time, index):

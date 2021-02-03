@@ -14,7 +14,7 @@ def GetECRadExec(Config, Scenario):
     ECRadVers = globalsettings.ECRadPath
     if(parallel):
         ECRadVers += "OMP"
-    if(Scenario["plasma"]["eq_data_type"] == "3D"):
+    if(Scenario["plasma"]["eq_dim"] == 3):
         ECRadVers += "USE3D"
     if(Config["Execution"]["debug"]):
         if(parallel):

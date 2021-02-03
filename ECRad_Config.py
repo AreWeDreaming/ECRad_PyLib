@@ -10,7 +10,8 @@ class ECRadConfig(dict):
             self.reset()
         else:
             try:
-                self.from_mat(path_in=self.default_config_file, default=True)
+                self.reset()
+                self.load(filename=self.default_config_file, default=True)
             except IOError:
                 self.reset()
 
@@ -84,13 +85,13 @@ class ECRadConfig(dict):
                             "small_ds" : "Small step size [m]","max_points_svec" : "Max points on LOS", \
                             "N_BPD" : "Points for LOS"}
         
-    def load(self, filename=None, mdict=None, rootgrp=None):
+    def load(self, filename=None, mdict=None, rootgrp=None, default=False):
         if(filename is not None):
             ext = os.path.splitext(filename)[1]
             if(ext == ".mat"):
                 self.from_mat(path_in=filename)
             elif(ext == ".nc"):
-                self.from_netcdf(filename=filename)
+                self.from_netcdf(filename=filename,default=default)
             else:
                 print("Extension " + ext + " is unknown")
                 raise(ValueError)
@@ -99,7 +100,7 @@ class ECRadConfig(dict):
         elif(rootgrp is not None):
             self.from_netcdf(rootgrp=rootgrp)
     
-    def from_mat(self, mdict=None, path_in=None, default=False):
+    def from_mat(self, mdict=None, path_in=None):
         ext_mdict = False
         temp_config = None
         if(mdict is not None or path_in is not None):
@@ -150,18 +151,21 @@ class ECRadConfig(dict):
         if(filename is not None):
             rootgrp.close()
         
-    def from_netcdf(self, filename=None, rootgrp=None):
+    def from_netcdf(self, filename=None, rootgrp=None, default=False):
+        self.reset()
         if(filename is not None):
             rootgrp = Dataset(filename, "r", format="NETCDF4")
         key = "Execution"
         for sub_key in ["working_dir", "scratch_dir"]:
             if(os.path.isdir(rootgrp["Config"][key + "_" + sub_key][0])):
                 self[key][sub_key] = rootgrp["Config"][key + "_" + sub_key][0]
-            else:
+            elif(not default):
                 print("Warning " + sub_key + " not imported, since it is not a valid directory")
                 print("Falling back to last used  " + sub_key)
                 temp_config = ECRadConfig()
                 self[key][sub_key] = temp_config["Execution"][sub_key]
+            else:
+                continue
         for key in self.main_keys:
             for sub_key in self.sub_keys[key]:
                 if(sub_key in ["working_dir", "scratch_dir"]):
@@ -177,7 +181,7 @@ class ECRadConfig(dict):
 
     def autosave(self):
         config_file = os.path.join(os.path.expanduser("~"), ".ECRad_GUI_Default.nc")
-        self.to_netcdf(path=config_file)
+        self.to_netcdf(filename=config_file)
 
 
 if(__name__ == "__main__"):

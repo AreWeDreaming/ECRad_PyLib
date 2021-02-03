@@ -50,11 +50,7 @@ class ECRadDriver():
         self.Result.tidy_up(True)
         
     def process_time_point(self, itime):
-        self.ECRad_F2PY_interface.reset()
-        self.ECRad_F2PY_interface.set_config_and_diag(self.Result.Config, self.Result.Scenario, itime)
-        self.ECRad_F2PY_interface.set_equilibrium(self.Result.Scenario, itime)
-        self.ECRad_F2PY_interface.make_rays(self.Result.Scenario, itime)
-        self.ECRad_F2PY_interface.run_and_get_output(self.Result, itime)
+        self.Result = self.ECRad_F2PY_interface.process_single_timepoint(self.Result, itime)
         
 if(__name__=="__main__"):
 #     Scenario_file = "Scenario.nc"

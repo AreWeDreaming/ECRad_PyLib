@@ -517,6 +517,8 @@ def get_diag_launch(shot, time, used_diag_dict, gy_dict=None, ECI_dict=None):
         flat_launch = launch_array[0]
     return flat_launch
 
+
+
 def write_diag_launch(path, diag_launch):
     launch_file = open(os.path.join(path, 'ray_launch.dat'), 'w')
     launch_file.write("{0: 5d}\n".format(len(diag_launch["f"])))

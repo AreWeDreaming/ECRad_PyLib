@@ -69,7 +69,7 @@ class ECRadF2PYInterface:
                                         Scenario["diagnostic"]["width"][itime])
         
     def set_equilibrium(self, Scenario, itime):
-        if(Scenario["plasma"]["eq_data_type"] == "3D"):
+        if(Scenario["plasma"]["eq_dim"] == 3):
             rho_out = self.ECRad.initialize_ecrad_3d("init", self.N_ch, 1, 1, \
                                Scenario["plasma"]["eq_data_3D"]["equilibrium_file"], \
                                Scenario["plasma"]["eq_data_3D"]["equilibrium_type"], \
@@ -111,7 +111,7 @@ class ECRadF2PYInterface:
         self.set_fm_flag
         self.ECRad.make_trad_direct()
         key = "Trad"
-        if(Result.Scenario["plasma"]["eq_data_type"] == "3D"):
+        if(Result.Scenario["plasma"]["eq_dim"] == 3):
             rho = "rhot"
         else:
             rho = "rhop"
@@ -228,6 +228,7 @@ class ECRadF2PYInterface:
             else:
                 Result["weights"]["mode_frac"][-1][:,imode] = 1.0
                 Result["weights"]["mode_frac_second"][-1][:,imode] = 1.0
+        return Result
     
     def eval_Trad(self, Scenario, Config, itime):
         rho = Scenario.plasma_dict[Scenario.plasma_dict["prof_reference"]][itime]
@@ -247,6 +248,15 @@ class ECRadF2PYInterface:
         
     def reset(self):
         self.ECRad.reset_ecrad()
+        
+    def process_single_timepoint(self, Result, itime):
+        self.reset()
+        self.set_config_and_diag(Result.Config, Result.Scenario, itime)
+        self.set_equilibrium(Result.Scenario, itime)
+        self.make_rays(Result.Scenario, itime)
+        Result = self.run_and_get_output(Result, itime)
+        return Result
+        
 
 if(__name__ == "__main__"):
     ECRad_folder = "/mnt/c/Users/Severin/ECRad/"

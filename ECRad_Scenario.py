@@ -19,14 +19,15 @@ else:
     from Diag_Types import DefaultDiagDict
 # THis class holds all the input data provided to ECRad with the exception of the ECRad configuration
 
+
 class ECRadScenario(dict):
     def __init__(self, noLoad=False):
-        self.scenario_file = os.path.join(os.path.expanduser("~"), ".ECRad_GUI_last_scenario.mat")
+        self.scenario_file = os.path.join(os.path.expanduser("~"), ".ECRad_GUI_last_scenario.nc")
         self.reset()
         if(not noLoad):
             try:
-                self.from_mat(path_in=self.scenario_file)
-            except Exception as e:
+                self.load(filename=self.scenario_file)
+            except FileNotFoundError as e:
                 print("Failed to import last used Scenario")
                 print("Cause: " + str(e))
                 self.reset()
@@ -41,6 +42,7 @@ class ECRadScenario(dict):
         self["dimensions"]["N_vessel_bd"] = 0
         self["dimensions"]["N_vessel_dim"] = 2
         self["dimensions"]["N_ch"] = 0
+        self["dimensions"]["N_used_diags"] = 0
         self["time"] = []
         self["shot"] = 0
         self["plasma"] = {}
@@ -57,7 +59,7 @@ class ECRadScenario(dict):
         self["scaling"]["ne_rhop_scale"] = 1.0
         self["scaling"]["Te_scale"] = 1.0
         self["scaling"]["ne_scale"] = 1.0
-        self["plasma"]["eq_data_type"] = "2D"
+        self["plasma"]["eq_dim"] = 2
         self["plasma"]["dist_obj"] = None
         self["plasma"]["GENE_obj"] = None
         self["diagnostic"] = {}
@@ -74,8 +76,8 @@ class ECRadScenario(dict):
         self['diagnostic']["diag_name"] = []
         self["used_diags_dict"] = od()
         self["avail_diags_dict"] = DefaultDiagDict
+        self["AUG"] = {}
         if(globalsettings.AUG):
-            self["AUG"] = {}
             self["AUG"]["IDA_exp"] = "AUGD"
             self["AUG"]["IDA_ed"] = 0
             self["AUG"]["EQ_exp"] = "AUGD"
@@ -120,6 +122,19 @@ class ECRadScenario(dict):
             self.from_mat(mdict)
         elif(rootgrp is not None):
             self.from_netcdf(rootgrp=rootgrp)
+            
+    def set_up_dimensions(self):
+        self["dimensions"]["N_time"] = len(self["time"])
+        if(not self["plasma"]["2D_prof"]):
+            self["dimensions"]["N_profiles"] = len(self["plasma"][self["plasma"]["prof_reference"]][0])
+        if(self["plasma"]["eq_dim"] == 2):
+            self["dimensions"]["N_eq_2D_R"] = self["plasma"]["eq_data_2D"].eq_shape[0]
+            self["dimensions"]["N_eq_2D_z"] = self["plasma"]["eq_data_2D"].eq_shape[1]
+        self["dimensions"]["N_vessel_bd"] = len(self["plasma"]["vessel_bd"])
+        self["dimensions"]["N_vessel_dim"] = 2
+        self["dimensions"]["N_ch"] = len(self["diagnostic"]["f"][0])
+        self["N_used_diags"] = len(list(self["used_diags_dict"].keys()))
+        
 
     def drop_time_point(self, itime):
         time = self["time"][itime]
@@ -128,16 +143,13 @@ class ECRadScenario(dict):
             if(len(self["plasma"][sub_key]) == 0):
                 continue
             self["plasma"][sub_key] = np.delete(self["plasma"][sub_key], itime, 0)
-        if(self["plasma"]["eq_data_type"] == "2D"):
+        if(self["plasma"]["eq_dim"] == 2):
             self["plasma"]["eq_data_2D"].RemoveSlice(time)
         for sub_key in self["diagnostic"].keys():
             self["diagnostic"][sub_key] = np.delete(self["diagnostic"][sub_key], itime, 0) 
         self["dimensions"]["N_time"] -= 1    
-        
-                
 
     def from_mat(self, mdict=None, path_in=None, load_plasma_dict=True):
-        self.reset()
         self.reset()
         if(mdict is None):
             if(path_in is None):
@@ -267,11 +279,11 @@ class ECRadScenario(dict):
             return
         try:
             if(bool(mdict["Use_3D_used"])):
-                self["plasma"]["eq_data_type"] = "3D"
+                self["plasma"]["eq_dim"] = 3
             else:
-                self["plasma"]["eq_data_type"] = "2D"
+                self["plasma"]["eq_dim"] = 2
         except KeyError:
-            self["plasma"]["eq_data_type"] = "2D"
+            self["plasma"]["eq_dim"] = 2
         if(self["plasma"]["2D_prof"]):
             self["plasma"]["prof_reference"] = "2D"
         else:            
@@ -279,23 +291,23 @@ class ECRadScenario(dict):
                 self["plasma"]["rhot_prof"] = mdict["rhot_prof"]
             except KeyError:
                 print("Could not find rho_tor profile")
-                if(self["plasma"]["eq_data_type"] == "3D"):
+                if(self["plasma"]["eqq_dim"] == 3):
                     print("INFO: 3D Scenario identified")
                     print("INFO: Overriding rhot_prof with rhop_prof")
                     self["plasma"]["rhot_prof"] = mdict["rhop_prof"]
-            if(self["plasma"]["eq_data_type"] != "3D"):
+            if(self["plasma"]["eq_dim"] != 3):
                 self["plasma"]["rhop_prof"] = mdict["rhop_prof"]
             try:
                 self["plasma"]["prof_reference"] = mdict["prof_reference"]
             except KeyError:
-                if(self["plasma"]["eq_data_type"] == "3D"):
+                if(self["plasma"]["eq_dim"] == 3):
                     self["plasma"]["prof_reference"] = "rhot_prof"
                 else:
                     print("INFO: Could not find profile axis type. Falling  back to rho_pol")
                     self["plasma"]["prof_reference"] = "rhop_prof"
         self["plasma"]["Te"] = mdict["Te"]
         self["plasma"]["ne"] = mdict["ne"]
-        if(self["plasma"]["eq_data_type"] == "2D"):
+        if(self["plasma"]["eq_dim"] == 2):
             self["plasma"]["eq_data_2D"] = EQDataExt(self["shot"], \
                                                   Ext_data=True)
             slices = []
@@ -388,9 +400,9 @@ class ECRadScenario(dict):
         for sub_key in self["scaling"].keys():
             var = rootgrp["Scenario"].createVariable("scaling"+ "_" + sub_key, "f8")
             var[...] = self["scaling"][sub_key]
-        var = rootgrp["Scenario"].createVariable("plasma" + "_" + "eq_data_type", "str", ('str_dim',))
-        var[0] = self["plasma"]["eq_data_type"]
-        if(self["plasma"]["eq_data_type"] == "3D"):
+        var = rootgrp["Scenario"].createVariable("plasma" + "_" + "eq_dim", "i8")
+        var[...] = self["plasma"]["eq_dim"]
+        if(self["plasma"]["eq_dim"] == 3):
             for sub_key in ["B_ref", "s_plus", "s_max", \
                            "interpolation_acc", "fourier_coeff_trunc", \
                            "h_mesh", "delta_phi_mesh"]:
@@ -476,7 +488,6 @@ class ECRadScenario(dict):
                 used_diag_dict_formatted["diags_exp"].append(cur_diag.exp)
                 used_diag_dict_formatted["diags_diag"].append(cur_diag.diag)
                 used_diag_dict_formatted["diags_ed"].append(str(cur_diag.ed))
-            
         rootgrp["Scenario"].createVariable("used_diags_dict_" +  "diags", str, \
                                            ("N_used_diags",))
         for sub_key in used_diag_dict_sub_keys:
@@ -500,7 +511,7 @@ class ECRadScenario(dict):
         self['shot'] = rootgrp["Scenario"]["shot"][...].item()
         self['time'] = np.array(rootgrp["Scenario"]["time"])
         self["plasma"]["2D_prof"] = bool(rootgrp["Scenario"]["plasma_" + "2D_prof"][...].item())
-        self["plasma"]["eq_data_type"] = rootgrp["Scenario"]["plasma_" + "eq_data_type"][0]
+        self["plasma"]["eq_dim"] = rootgrp["Scenario"]["plasma_" + "eq_dim"][...].item()
         for sub_key in ["Te", "ne"]:
             self['plasma'][sub_key] = np.array(rootgrp["Scenario"]["plasma_" + sub_key])
         if(not self["plasma"]["2D_prof"]):
@@ -508,7 +519,7 @@ class ECRadScenario(dict):
         self["plasma"][self["plasma"]["prof_reference"]] = np.array(rootgrp["Scenario"]["plasma_" + self["plasma"]["prof_reference"]])
         for sub_key in self["scaling"].keys():
             self['scaling'][sub_key] = float(rootgrp["Scenario"]["scaling_" + sub_key][...].item())
-        if(self["plasma"]["eq_data_type"] == "3D"):
+        if(self["plasma"]["eq_dim"] == 3):
             for sub_key in ["B_ref", "s_plus", "s_max", \
                            "interpolation_acc", "fourier_coeff_trunc", \
                            "h_mesh", "delta_phi_mesh"]:
@@ -575,6 +586,10 @@ class ECRadScenario(dict):
         
 
     def autosave(self):
+        try:
+            os.remove(self.scenario_file)
+        except FileNotFoundError:
+            pass
         self.to_netcdf(filename=self.scenario_file)
 
 

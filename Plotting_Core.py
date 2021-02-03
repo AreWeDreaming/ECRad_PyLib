@@ -526,7 +526,8 @@ class PlottingCore:
                     self.y_range_list[2] , data=[divertor_cur[0], divertor_cur[1]], \
                     name="Divertor current", marker="-", \
                     coloumn=1, ax_flag="diag_trace")
-        self.axlist[0].set_xlim((np.min(time), np.max(time)))
+        if(np.min(time) != np.max(time)):
+            self.axlist[0].set_xlim((np.min(time), np.max(time)))
         self.create_legends("single")
         # self.finishing_touches()
         return fig

@@ -31,6 +31,12 @@ EVT_FIT_FINISHED = wx.PyEventBinder(Unbound_EVT_FIT_FINISHED, 1)  # Bind that
 Unbound_EVT_UPDATE_DATA = wx.NewEventType()  # Call This
 EVT_UPDATE_DATA = wx.PyEventBinder(Unbound_EVT_UPDATE_DATA , 1)
 
+Unbound_EVT_LOAD_ECRAD_RESULT = wx.NewEventType()  # Call This
+EVT_LOAD_ECRAD_RESULT = wx.PyEventBinder(Unbound_EVT_LOAD_ECRAD_RESULT, 1)
+
+Unbound_EVT_ECRAD_RESULT_LOADED = wx.NewEventType()  # Call This
+EVT_ECRAD_RESULT_LOADED = wx.PyEventBinder(Unbound_EVT_ECRAD_RESULT_LOADED, 1)
+
 Unbound_EVT_IDA_DATA_READY = wx.NewEventType()  # Call This
 EVT_IDA_DATA_READY = wx.PyEventBinder(Unbound_EVT_IDA_DATA_READY , 1)
 
@@ -52,8 +58,8 @@ EVT_REPLOT = wx.PyEventBinder(Unbound_EVT_REPLOT , 1)
 Unbound_EVT_LOCK = wx.NewEventType()  # Call This
 EVT_LOCK = wx.PyEventBinder(Unbound_EVT_LOCK , 1)
 
-Unbound_EVT_LOAD_MAT = wx.NewEventType()  # Call This
-EVT_LOAD_MAT = wx.PyEventBinder(Unbound_EVT_LOAD_MAT, 1)  # Bind that
+Unbound_EVT_LOAD_OLD_RESULT = wx.NewEventType()  # Call This
+EVT_LOAD_OLD_RESULT = wx.PyEventBinder(Unbound_EVT_LOAD_OLD_RESULT, 1)  # Bind that
 
 Unbound_EVT_MAKE_DPLOT = wx.NewEventType()  # Call This
 EVT_MAKE_DPLOT = wx.PyEventBinder(Unbound_EVT_MAKE_DPLOT, 1)  # Bind that
@@ -79,9 +85,11 @@ EVT_UNLOCK = wx.PyEventBinder(Unbound_EVT_UNLOCK, 1)
 Unbound_EVT_GENE_DATA_LOADED = wx.NewEventType()  # Call This
 EVT_GENE_DATA_LOADED = wx.PyEventBinder(Unbound_EVT_GENE_DATA_LOADED, 1)
 
-
 Unbound_EVT_MAKE_ECRAD = wx.NewEventType()  # Call This
 EVT_MAKE_ECRAD = wx.PyEventBinder(Unbound_EVT_MAKE_ECRAD, 1)
+
+Unbound_EVT_ECRAD_FINISHED = wx.NewEventType()  # Call This
+EVT_ECRAD_FINISHED = wx.PyEventBinder(Unbound_EVT_ECRAD_FINISHED, 1)
 
 class UpdatePlotEvent(wx.PyCommandEvent):
     def __init__(self, evtType, id):
@@ -152,8 +160,17 @@ class DonePlottingEvt(wx.PyCommandEvent):
 class ThreadFinishedEvt(wx.PyCommandEvent):
     def __init__(self, evtType, id):
         wx.PyCommandEvent.__init__(self, evtType, id)
+        
     def SetSuccess(self, success):
         self.success = success
+
+class ProccessFinishedEvt(wx.PyCommandEvent):
+    def __init__(self, evtType, id):
+        wx.PyCommandEvent.__init__(self, evtType, id)
+        
+    def SetSuccess(self, success):
+        self.success = success
+
 
 class LockExportEvt(wx.PyCommandEvent):
     def __init__(self, evtType, id):
@@ -167,6 +184,7 @@ class LoadMatEvt(wx.PyCommandEvent):
     def __init(self, evtType, id):
         self.filename = None
         wx.PyCommandEvent.__init__(self, evtType, id)
+        
     def SetFilename(self, filename):
         self.filename = filename
 
@@ -178,6 +196,7 @@ class LoadConfigEvt(wx.PyCommandEvent):
     def __init(self, evtType, id):
         self.Filename = None
         wx.PyCommandEvent.__init__(self, evtType, id)
+        
     def SetFilename(self, filename):
         self.Filename = filename
 

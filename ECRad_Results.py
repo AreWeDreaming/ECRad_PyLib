@@ -164,7 +164,7 @@ class ECRadResults(dict):
                 self["types"][key] = "float"
         self.reset(not lastused)
 
-    def reset(self, noLoad=True):
+    def reset(self, noLoad=True, light=False):
         # Does not reset Config or Scenario
         self.status = 0
         self.edition = 0
@@ -186,23 +186,20 @@ class ECRadResults(dict):
             if(key in self.sub_keys):
                 for sub_key in self.sub_keys[key]:
                     self[key][sub_key] = []
-        self.Config = ECRadConfig(noLoad=noLoad)
-        self.Scenario = ECRadScenario(noLoad=noLoad)
+        if(not light):
+            self.Config = ECRadConfig(noLoad=noLoad)
+            self.Scenario = ECRadScenario(noLoad=noLoad)
         
-    def load(self, filename=None, mdict=None, rootgrp=None):
+    def load(self, filename):
         if(filename is not None):
             ext = os.path.splitext(filename)[1]
             if(ext == ".mat"):
-                self.from_mat(path_in=filename)
+                self.from_mat(filename=filename)
             elif(ext == ".nc"):
                 self.from_netcdf(filename=filename)
             else:
                 print("Extension " + ext + " is unknown")
                 raise(ValueError)
-        elif(mdict is not None):
-            self.from_mat(mdict)
-        elif(rootgrp is not None):
-            self.from_netcdf(rootgrp=rootgrp)
 
     def tidy_up(self, autosave=True):
         if(self.status != 0):
@@ -269,7 +266,7 @@ class ECRadResults(dict):
         # This was not clearly indicated in the old
         # .mat files, but the new result files distinguish this.
         # Further cases are marked with #3D rhot
-        if(self.Scenario["plasma"]["eq_data_type"] == "3D"):
+        if(self.Scenario["plasma"]["eq_dim"] == 3):
             rho = "rhot"
         else:
             rho = "rhop"
@@ -362,11 +359,11 @@ class ECRadResults(dict):
                 if(key == "BPD"):
                     mdict_key = None
                     #3D rhot
-                    if(sub_key == "rhot" and self.Scenario["plasma"]["eq_data_type"] == "2D"):
+                    if(sub_key == "rhot" and self.Scenario["plasma"]["eq_dim"] == 2):
                         continue
-                    elif(sub_key == "rhop" and self.Scenario["plasma"]["eq_data_type"] == "3D"):
+                    elif(sub_key == "rhop" and self.Scenario["plasma"]["eq_dim"] == 3):
                         continue
-                    elif(sub_key == "rhot" and self.Scenario["plasma"]["eq_data_type"] == "3D"):
+                    elif(sub_key == "rhot" and self.Scenario["plasma"]["eq_dim"] == 3):
                         # The BPD axis is mislabeled for 3D equilibria. It should be rhot
                         mdict_key = "BPD" + "rhop"
                     if(mdict_key is None):
@@ -464,9 +461,9 @@ class ECRadResults(dict):
                         continue
                     if(sub_key in self.failed_keys[key]):
                         continue
-                    if(sub_key == "rhot" and self.Scenario["plasma"]["eq_data_type"] == "2D"):
+                    if(sub_key == "rhot" and self.Scenario["plasma"]["eq_dim"] == 2):
                         continue
-                    elif(sub_key == "rhop" and self.Scenario["plasma"]["eq_data_type"] == "3D"):
+                    elif(sub_key == "rhop" and self.Scenario["plasma"]["eq_dim"] == 3):
                         continue
                     if(key != "weights"):
                         var = rootgrp["Results"].createVariable(key + "_" + sub_key,dtype, tuple(self.shapes[key]))
@@ -497,6 +494,7 @@ class ECRadResults(dict):
         rootgrp["Results"].ECRadGUI_git_tag = self["git"]["GUI"]
         rootgrp["Results"].ECRadPylib_git_tag = self["git"]["Pylib"]
         rootgrp.close()
+        print("Created " + filename)
         
     def from_netcdf(self, filename):
         rootgrp = Dataset(filename, "r", format="NETCDF4")
@@ -513,9 +511,9 @@ class ECRadResults(dict):
                     print("INFO: Could not find " + key + " " + sub_key + " in the result file.")
                     continue
                 if(key == "BPD"):
-                    if(sub_key == "rhot" and self.Scenario["plasma"]["eq_data_type"] == "2D"):
+                    if(sub_key == "rhot" and self.Scenario["plasma"]["eq_dim"] == 2):
                         continue
-                    elif(sub_key == "rhop" and self.Scenario["plasma"]["eq_data_type"] == "3D"):
+                    elif(sub_key == "rhop" and self.Scenario["plasma"]["eq_dim"] == 3):
                         continue
                 self[key][sub_key] = np.array(rootgrp["Results"][key + "_" + sub_key])
                     
