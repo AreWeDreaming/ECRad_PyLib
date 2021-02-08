@@ -27,7 +27,7 @@ class ECRadScenario(dict):
         if(not noLoad):
             try:
                 self.load(filename=self.scenario_file)
-            except FileNotFoundError as e:
+            except Exception as e:
                 print("Failed to import last used Scenario")
                 print("Cause: " + str(e))
                 self.reset()
@@ -387,7 +387,7 @@ class ECRadScenario(dict):
                 var = rootgrp["Scenario"].createVariable("plasma" + "_" + sub_key, \
                                                          "f8", ("N_time", "N_profiles"))
             else:
-                var = rootgrp["Scenario"].createVariable("plasma" + "_" + sub_key, \
+                var = rootgrp["Scenario"].createVariable("plasma" + "_" + sub_key, "f8", \
                                                          ("N_time", "N_eq_2D_R", "N_eq_2D_z"))
             var[:] = self['plasma'][sub_key]
         if(not self["plasma"]["2D_prof"]):
@@ -516,7 +516,7 @@ class ECRadScenario(dict):
             self['plasma'][sub_key] = np.array(rootgrp["Scenario"]["plasma_" + sub_key])
         if(not self["plasma"]["2D_prof"]):
             self["plasma"]["prof_reference"] = rootgrp["Scenario"]["plasma_prof_reference"][0]
-        self["plasma"][self["plasma"]["prof_reference"]] = np.array(rootgrp["Scenario"]["plasma_" + self["plasma"]["prof_reference"]])
+            self["plasma"][self["plasma"]["prof_reference"]] = np.array(rootgrp["Scenario"]["plasma_" + self["plasma"]["prof_reference"]])
         for sub_key in self["scaling"].keys():
             self['scaling'][sub_key] = float(rootgrp["Scenario"]["scaling_" + sub_key][...].item())
         if(self["plasma"]["eq_dim"] == 3):

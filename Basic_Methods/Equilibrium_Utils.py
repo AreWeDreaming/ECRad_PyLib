@@ -245,7 +245,8 @@ class EQDataExt:
             raise ValueError
         else:
             itime = np.argmin(np.abs(self.times - time))
-            EQ_slice = self.slices[itime]
+            # Deep copy for scaling
+            EQ_slice = copy.deepcopy(self.slices[itime])
             if(bt_vac_correction != 1.0):
                 if(EQ_slice.R_ax is None):
                     R_ax, z_ax = self.get_axis(time)
@@ -257,7 +258,7 @@ class EQDataExt:
     def RemoveSlice(self, time):
         itime = np.argmin(np.abs(self.times - time))
         del(self.slices[itime])
-        del(self.times[itime])
+        np.delete(self.times, itime)
 
     def get_axis(self, time, get_Psi=False):
         cur_slice = self.GetSlice(time)

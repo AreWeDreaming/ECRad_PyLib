@@ -83,7 +83,7 @@ class ECRadConfig(dict):
                             "reflec_O" : "Wall refl. coeff. O-mode", "use_ext_rays" : "Use ext rays", \
                             "R_shift" : "R shift [m]","z_shift" : "z shift [m]", "large_ds" :  "Large step size [m]",\
                             "small_ds" : "Small step size [m]","max_points_svec" : "Max points on LOS", \
-                            "N_BPD" : "Points for LOS"}
+                            "N_BPD" : "Points for BPD"}
         
     def load(self, filename=None, mdict=None, rootgrp=None, default=False):
         if(filename is not None):

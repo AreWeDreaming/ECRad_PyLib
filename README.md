@@ -39,3 +39,5 @@ At the moment all contributions should be discussed. Pull requests will be welco
 
 ## License
 [MIT](https://choosealicense.com/licenses/mit/)
+
+This library makes use of the wxPython library. The license for wxPython can be found in the licenses folder.

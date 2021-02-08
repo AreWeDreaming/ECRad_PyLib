@@ -9,37 +9,38 @@ from ECRad_Config import ECRadConfig
 import os
 import sys
 import numpy as np
-sys.path.append(globalsettings.ECRadRoot)
+sys.path.append(globalsettings.ECRadLibDir)
 from Plotting_Configuration import plt
 from ECRad_Execution import GetECRadExec
 from scipy import constants as cnst
+from time import sleep
 
 class ECRadF2PYInterface:
-    def __init__(self, Config, Scenario):
+    def __init__(self):
         self.diag_init = False
         self.eq_init = False
         self.N_ch = None # should stay the same once initialized
         self.update_grid = False
         self.fm_flag = None
         # Sets up the enivorment
-        ecrad_exec_dummy = GetECRadExec(Config, Scenario)
-        print(os.environ["LDFLAGS"])
+#         ecrad_exec_dummy = GetECRadExec(Config, Scenario)
+#         print(os.environ["LDFLAGS"])
         try:
-            import ECRad_python
+            import ECRad_pythonMP
         except Exception as e:
             print("Failed to load ECRad_Python")
             print("Currently set ECRad dir: " + globalsettings.ECRadLibDir)
             print(e)
             raise(e)
-        try:
-            import ECRad_python_3D_extension
-        except Exception as e:
-            print("Failed to load the 3D extension of ECRad_Python")
-            print("Currently set ECRad dir: " + globalsettings.ECRadLibDir)
-            print(e)
-            raise(e)
-        self.ECRad = ECRad_python.ecrad_python
-        self.ECRad_3D_extension = ECRad_python_3D_extension.ecrad_python_3d_extension
+#         try:
+#             import ECRad_python_3D_extension
+#         except Exception as e:
+#             print("Failed to load the 3D extension of ECRad_Python")
+#             print("Currently set ECRad dir: " + globalsettings.ECRadLibDir)
+#             print(e)
+#             raise(e)
+        self.ECRad = ECRad_pythonMP.ecrad_python
+#         self.ECRad_3D_extension = ECRad_python_3D_extension.ecrad_python_3d_extension
 
     def set_config_and_diag(self, Config, Scenario, itime):
         # This sets up the environment variables for OpenMP
@@ -67,6 +68,8 @@ class ECRadF2PYInterface:
                                         Scenario["diagnostic"]["z"][itime], np.deg2rad(Scenario["diagnostic"]["phi_tor"][itime]),\
                                         np.deg2rad(Scenario["diagnostic"]["theta_pol"][itime]), Scenario["diagnostic"]["dist_focus"][itime], \
                                         Scenario["diagnostic"]["width"][itime])
+        if(Config["Execution"]["parallel"]):
+            self.ECRad.set_ecrad_thread_count(Config["Execution"]["parallel_cores"])
         
     def set_equilibrium(self, Scenario, itime):
         if(Scenario["plasma"]["eq_dim"] == 3):
@@ -87,10 +90,11 @@ class ECRadF2PYInterface:
             time = Scenario["time"][itime]
             eq_slice = Scenario["plasma"]["eq_data_2D"].GetSlice(time, Scenario["scaling"]["Bt_vac_scale"])
             if(Scenario["plasma"]["2D_prof"]):
-                self.ECRad.initialize_ecrad_2D(self.N_ch, 1, 1, eq_slice.R, \
+                self.ECRad.initialize_ecrad_2d_profs(self.N_ch, 1, 1, eq_slice.R, \
                                                        eq_slice.z, eq_slice.rhop, eq_slice.Br, \
                                                        eq_slice.Bt, eq_slice.Br, eq_slice.R_ax, eq_slice.z_ax, \
-                                                       Scenario["Te"]. Scenario["ne"])
+                                                       Scenario["plasma"]["Te"] * Scenario["scaling"]["Te_scale"], \
+                                                       Scenario["plasma"]["ne"] * Scenario["scaling"]["ne_scale"])
             else:
                 self.ECRad.initialize_ecrad(self.N_ch, 1, 1, eq_slice.R, \
                                                        eq_slice.z, eq_slice.rhop, eq_slice.Br, \
@@ -104,7 +108,8 @@ class ECRadF2PYInterface:
             rho = Scenario["plasma"][Scenario["plasma"]["prof_reference"]][itime]
             ne = Scenario["plasma"]["ne"][itime]
             Te = Scenario["plasma"]["Te"][itime]
-            rho_res = self.ECRad.make_rays_ecrad(self.N_ch,rho, ne, rho, Te)
+            rho_res = self.ECRad.make_rays_ecrad(self.N_ch,rho, ne * Scenario["scaling"]["ne_scale"], \
+                                                 rho, Te * Scenario["scaling"]["Te_scale"])
         return rho_res
     
     def run_and_get_output(self, Result, itime):
@@ -121,14 +126,14 @@ class ECRadF2PYInterface:
         for sub_key in ["s_cold", "R_cold", "z_cold", rho + "_cold"]:
             Result[key][sub_key].append(np.zeros(Result.get_shape(key, start=1)))
         for imode in range(Result["dimensions"]["N_mode_mix"]):
-            Result["Trad"]["Trad"][-1][:,imode], \
-                 Result["Trad"]["tau"][-1][:,imode], \
-                 Result["resonance"]["s_cold"][-1][:,imode], \
-                 Result["resonance"]["R_cold"][-1][:,imode], \
-                 Result["resonance"]["z_cold"][-1][:,imode], \
-                 Result["resonance"][rho + "_cold"][-1][:,imode] = \
+            Result["Trad"]["Trad"][-1][imode,:], \
+                 Result["Trad"]["tau"][-1][imode,:], \
+                 Result["resonance"]["s_cold"][-1][imode,:], \
+                 Result["resonance"]["R_cold"][-1][imode,:], \
+                 Result["resonance"]["z_cold"][-1][imode,:], \
+                 Result["resonance"][rho + "_cold"][-1][imode,:] = \
                     self.ECRad.get_trad_resonances_basic(imode, Result["dimensions"]["N_ch"])
-            Result["Trad"]["T"][-1][:,imode] = np.exp(-Result["Trad"]["tau"][-1][:,imode])
+            Result["Trad"]["T"][-1][imode,:] = np.exp(-Result["Trad"]["tau"][-1][imode,:])
         if(Result.Config["Execution"]["extra_output"]):
             key = "Trad"
             for sub_key in ["Trad_second", "tau_second", "T_second"]:
@@ -139,18 +144,18 @@ class ECRadF2PYInterface:
                             "z_warm_second", rho + "_warm_second"]:
                 Result[key][sub_key].append(np.zeros(Result.get_shape(key, start=1)))
             for imode in range(Result["dimensions"]["N_mode_mix"]):
-                Result["Trad"]["Trad_second"][-1][:,imode], \
-                    Result["Trad"]["tau_second"][-1][:,imode], \
-                    Result["resonance"]["s_warm"][-1][:,imode], \
-                    Result["resonance"][rho + "_warm"][-1][:,imode], \
-                    Result["resonance"]["R_warm"][-1][:,imode], \
-                    Result["resonance"]["z_warm"][-1][:,imode], \
-                    Result["resonance"]["s_warm_second"][-1][:,imode], \
-                    Result["resonance"][rho + "_warm_second"][-1][:,imode], \
-                    Result["resonance"]["R_warm_second"][-1][:,imode], \
-                    Result["resonance"]["z_warm_second"][-1][:,imode] = \
+                Result["Trad"]["Trad_second"][-1][imode,:], \
+                    Result["Trad"]["tau_second"][-1][imode,:], \
+                    Result["resonance"]["s_warm"][-1][imode,:], \
+                    Result["resonance"][rho + "_warm"][-1][imode,:], \
+                    Result["resonance"]["R_warm"][-1][imode,:], \
+                    Result["resonance"]["z_warm"][-1][imode,:], \
+                    Result["resonance"]["s_warm_second"][-1][imode,:], \
+                    Result["resonance"][rho + "_warm_second"][-1][imode,:], \
+                    Result["resonance"]["R_warm_second"][-1][imode,:], \
+                    Result["resonance"]["z_warm_second"][-1][imode,:] = \
                     self.ECRad.get_trad_resonances_extra_output(imode, Result["dimensions"]["N_ch"])
-                Result["Trad"]["T_second"][-1][:,imode] = np.exp(-Result["Trad"]["tau_second"][-1][:,imode])
+                Result["Trad"]["T_second"][-1][imode,:] = np.exp(-Result["Trad"]["tau_second"][-1][imode,:])
             key = "BPD"
             for sub_key in [rho, "BPD", "BPD_second"]:
                 Result[key][sub_key].append(np.zeros(Result.get_shape(key, start=1)))
@@ -204,6 +209,8 @@ class ECRadF2PYInterface:
                             Result[key]["BPD_second"][-1][ich,imode,ir][:] = \
                             self.ECRad.get_ray_data(ich + 1, imode + 1, ir + 1, \
                                                     Result["dimensions"]["N_LOS"][-1][ich,imode,ir])
+                        Result[key]["R"][-1][ich,imode,ir][:] = np.sqrt(Result[key]["x"][-1][ich,imode,ir]**2 + \
+                                                                        Result[key]["y"][-1][ich,imode,ir]**2)
                         Result[key]["N"][-1][ich,imode,ir][:] = np.sqrt(Result[key]["Nx"][-1][ich,imode,ir]**2 + \
                                                                         Result[key]["Ny"][-1][ich,imode,ir]**2 + \
                                                                         Result[key]["Nz"][-1][ich,imode,ir]**2)
@@ -222,12 +229,12 @@ class ECRadF2PYInterface:
                     self.ECRad.get_weights(Result["dimensions"]["N_ray"], Result["dimensions"]["N_freq"], ich + 1)
             if(Result["dimensions"]["N_mode"] > 1):
                 for imode in range(Result["dimensions"]["N_mode"]):
-                    Result["weights"]["mode_frac"][-1][:,imode], \
-                    Result["weights"]["mode_frac_second"][-1][:,imode] = \
+                    Result["weights"]["mode_frac"][-1][imode,:], \
+                    Result["weights"]["mode_frac_second"][-1][imode,:] = \
                         self.ECRad.get_mode_weights(Result["dimensions"]["N_ch"], imode+1)
             else:
-                Result["weights"]["mode_frac"][-1][:,imode] = 1.0
-                Result["weights"]["mode_frac_second"][-1][:,imode] = 1.0
+                Result["weights"]["mode_frac"][-1][imode,:] = 1.0
+                Result["weights"]["mode_frac_second"][-1][imode,:] = 1.0
         return Result
     
     def eval_Trad(self, Scenario, Config, itime):
@@ -248,6 +255,12 @@ class ECRadF2PYInterface:
         
     def reset(self):
         self.ECRad.reset_ecrad()
+        
+#     def handle_std_out(self, stringio_output, output_queue):
+#         lines = stringio_output.readlines()
+#         for line in lines:
+#             output_queue.put(line)
+        
         
     def process_single_timepoint(self, Result, itime):
         self.reset()

@@ -32,7 +32,7 @@ class ECRadDriver():
                 self.Result.Config.load(Config_file)
         else:
             self.Result = Result
-        self.ECRad_F2PY_interface = ECRadF2PYInterface(self.Result.Config, self.Result.Scenario)
+        self.ECRad_F2PY_interface = ECRadF2PYInterface()
     
     def run(self):
         itime = 0
@@ -59,8 +59,10 @@ if(__name__=="__main__"):
 
 #     driver = ECRadDriver(Scenario_file="/mnt/c/Users/Severin/ECRad/ECRad_33585_EXT_ed1.nc", \
 #                          Config_file="/mnt/c/Users/Severin/ECRad/ECRad_33585_EXT_ed1.nc")
-    driver = ECRadDriver(Scenario_file="/mnt/c/Users/Severin/ECRad_regression/AUGX3/ECRad_32934_EXT_ed1.nc", \
-                         Config_file="/mnt/c/Users/Severin/ECRad_regression/AUGX3/ECRad_32934_EXT_ed1.nc")
+#     driver = ECRadDriver(Scenario_file="/mnt/c/Users/Severin/ECRad_regression/AUGX3/ECRad_32934_EXT_ed1.nc", \
+#                          Config_file="/mnt/c/Users/Severin/ECRad_regression/AUGX3/ECRad_32934_EXT_ed1.nc")
+    driver = ECRadDriver(Scenario_file="/mnt/c/Users/Severin/ECRad/Yu/ECRad_179328_EXT_ed11.nc", \
+                         Config_file="/mnt/c/Users/Severin/ECRad/Yu/ECRad_179328_EXT_ed11.nc")
     driver.run()
     
     
