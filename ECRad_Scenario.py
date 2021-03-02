@@ -105,6 +105,21 @@ class ECRadScenario(dict):
         self["plasma"]["eq_data_3D"]["h_mesh"] = 1.5e-2 # meters
         self["plasma"]["eq_data_3D"]["delta_phi_mesh"] = 2.0 # Degrees
         self["plasma"]["eq_data_3D"]["vessel_filename"] = ""
+        # Define a couple of lables used in plotting
+        self.labels = {}
+        self.labels["Te"] = r"$T_\mathrm{e}$"
+        self.labels["ne"] = r"$n_\mathrm{e}$"
+        self.labels["rhop"] = r"$\rho_\mathrm{pol}$"
+        self.labels["Br"] = r"$B_\mathrm{r}$"
+        self.labels["Bt"] = r"$B_\mathrm{t}$" 
+        self.labels["Bz"] = r"$B_\mathrm{z}$"
+        self.units = {}
+        self.units["Te"] = r"[keV]"
+        self.units["ne"] = r"$[\times 10^{19}$m$^{-3}$]"
+        self.units["rhop"] = r""
+        self.units["Br"] = r"[T]"
+        self.units["Bt"] = r"[T]"
+        self.units["Bz"] = r"[T]"
         self.diags_set = False
         self.plasma_set = False
 
@@ -377,7 +392,7 @@ class ECRadScenario(dict):
         for sub_key in self["dimensions"].keys():
             rootgrp["Scenario"].createDimension(sub_key, self["dimensions"][sub_key])
         var = rootgrp["Scenario"].createVariable("plasma" + "_" + "2D_prof", "b")
-        var[...] = self["plasma"]["2D_prof"]
+        var[...] = int(self["plasma"]["2D_prof"])
         var = rootgrp["Scenario"].createVariable("time", "f8", ("N_time",))
         var[...] = self["time"]
         var = rootgrp["Scenario"].createVariable("shot", "i8")

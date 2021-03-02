@@ -11,7 +11,6 @@ import sys
 import numpy as np
 sys.path.append(globalsettings.ECRadLibDir)
 from Plotting_Configuration import plt
-from ECRad_Execution import GetECRadExec
 from scipy import constants as cnst
 from time import sleep
 
@@ -26,20 +25,13 @@ class ECRadF2PYInterface:
 #         ecrad_exec_dummy = GetECRadExec(Config, Scenario)
 #         print(os.environ["LDFLAGS"])
         try:
-            import ECRad_pythonMP
+            import ECRad_pythonOMP
         except Exception as e:
             print("Failed to load ECRad_Python")
             print("Currently set ECRad dir: " + globalsettings.ECRadLibDir)
             print(e)
             raise(e)
-#         try:
-#             import ECRad_python_3D_extension
-#         except Exception as e:
-#             print("Failed to load the 3D extension of ECRad_Python")
-#             print("Currently set ECRad dir: " + globalsettings.ECRadLibDir)
-#             print(e)
-#             raise(e)
-        self.ECRad = ECRad_pythonMP.ecrad_python
+        self.ECRad = ECRad_pythonOMP.ecrad_python
 #         self.ECRad_3D_extension = ECRad_python_3D_extension.ecrad_python_3d_extension
 
     def set_config_and_diag(self, Config, Scenario, itime):
@@ -73,42 +65,42 @@ class ECRadF2PYInterface:
         
     def set_equilibrium(self, Scenario, itime):
         if(Scenario["plasma"]["eq_dim"] == 3):
-            rho_out = self.ECRad.initialize_ecrad_3d("init", self.N_ch, 1, 1, \
-                               Scenario["plasma"]["eq_data_3D"]["equilibrium_file"], \
-                               Scenario["plasma"]["eq_data_3D"]["equilibrium_type"], \
-                               Scenario["plasma"]["eq_data_3D"]["use_mesh"], \
-                               Scenario["plasma"]["eq_data_3D"]["use_symmetry"], \
-                               Scenario["plasma"]["eq_data_3D"]["B_ref"], \
-                               Scenario["plasma"]["eq_data_3D"]["s_plus"], \
-                               Scenario["plasma"]["eq_data_3D"]["s_max"], \
-                               Scenario["plasma"]["eq_data_3D"]["interpolation_acc"], \
-                               Scenario["plasma"]["eq_data_3D"]["fourier_coeff_trunc"], \
-                               Scenario["plasma"]["eq_data_3D"]["h_mesh"], \
-                               Scenario["plasma"]["eq_data_3D"]["delta_phi_mesh"], \
-                               Scenario["plasma"]["eq_data_3D"]["vessel_filename"])
+            self.ECRad.initialize_ecrad_3d("init", self.N_ch, 1, 1, \
+                                           Scenario["plasma"]["eq_data_3D"]["equilibrium_file"], \
+                                           Scenario["plasma"]["eq_data_3D"]["equilibrium_type"], \
+                                           Scenario["plasma"]["eq_data_3D"]["use_mesh"], \
+                                           Scenario["plasma"]["eq_data_3D"]["use_symmetry"], \
+                                           Scenario["plasma"]["eq_data_3D"]["B_ref"], \
+                                           Scenario["plasma"]["eq_data_3D"]["s_plus"], \
+                                           Scenario["plasma"]["eq_data_3D"]["s_max"], \
+                                           Scenario["plasma"]["eq_data_3D"]["interpolation_acc"], \
+                                           Scenario["plasma"]["eq_data_3D"]["fourier_coeff_trunc"], \
+                                           Scenario["plasma"]["eq_data_3D"]["h_mesh"], \
+                                           Scenario["plasma"]["eq_data_3D"]["delta_phi_mesh"], \
+                                           Scenario["plasma"]["eq_data_3D"]["vessel_filename"])
         else:
             time = Scenario["time"][itime]
             eq_slice = Scenario["plasma"]["eq_data_2D"].GetSlice(time, Scenario["scaling"]["Bt_vac_scale"])
             if(Scenario["plasma"]["2D_prof"]):
-                self.ECRad.initialize_ecrad_2d_profs(self.N_ch, 1, 1, eq_slice.R, \
-                                                       eq_slice.z, eq_slice.rhop, eq_slice.Br, \
-                                                       eq_slice.Bt, eq_slice.Br, eq_slice.R_ax, eq_slice.z_ax, \
-                                                       Scenario["plasma"]["Te"] * Scenario["scaling"]["Te_scale"], \
-                                                       Scenario["plasma"]["ne"] * Scenario["scaling"]["ne_scale"])
+                self.ECRad.initialize_ecrad_2d_profs(self.N_ch, 1, 1, eq_slice.R, eq_slice.z, \
+                                                     Scenario["plasma"]["Te"][itime] * Scenario["scaling"]["Te_scale"], \
+                                                     Scenario["plasma"]["ne"][itime] * Scenario["scaling"]["ne_scale"], \
+                                                     eq_slice.rhop, eq_slice.Br, eq_slice.Bt, \
+                                                     eq_slice.Br, eq_slice.R_ax, eq_slice.z_ax)
             else:
                 self.ECRad.initialize_ecrad(self.N_ch, 1, 1, eq_slice.R, \
-                                                       eq_slice.z, eq_slice.rhop, eq_slice.Br, \
-                                                       eq_slice.Bt, eq_slice.Br, eq_slice.R_ax, \
-                                                       eq_slice.z_ax)
+                                            eq_slice.z, eq_slice.rhop, eq_slice.Br, \
+                                            eq_slice.Bt, eq_slice.Br, eq_slice.R_ax, \
+                                            eq_slice.z_ax)
     
     def make_rays(self, Scenario, itime):
         if(Scenario["plasma"]["2D_prof"]):
-            rho_res = self.ECRad.make_rays_ecrad_2D()
+            rho_res = self.ECRad.make_rays_ecrad_2d(self.N_ch)
         else:
             rho = Scenario["plasma"][Scenario["plasma"]["prof_reference"]][itime]
             ne = Scenario["plasma"]["ne"][itime]
             Te = Scenario["plasma"]["Te"][itime]
-            rho_res = self.ECRad.make_rays_ecrad(self.N_ch,rho, ne * Scenario["scaling"]["ne_scale"], \
+            rho_res = self.ECRad.make_rays_ecrad(self.N_ch, rho, ne * Scenario["scaling"]["ne_scale"], \
                                                  rho, Te * Scenario["scaling"]["Te_scale"])
         return rho_res
     

@@ -48,9 +48,6 @@ class GlobalSettingsITM:
         self.AUG = True  # True  -> Start with True, set it to false if we run into problems
         self.TCV = False # Not fully supported -> needs some work
         self.root = os.path.expanduser("~/")
-        self.SLES12 = False
-        if(os.getenv("SYS") == 'amd64_sles12'  or os.getenv("SYS") == 'amd64_sles15'):
-            self.SLES12 = True
         self.Phoenix = "phoenix" in wx.PlatformInfo
         self.ECRadRoot = "/afs/eufus.eu/g2itmdev/user/g2sdenk/git/augd_ecrad"
         self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot,os.environ['SYS'])
@@ -70,14 +67,11 @@ class GlobalSettingsAUG:
         self.AUG = True  # True  -> Start with True, set it to false if we run into problems
         self.TCV = False # Not fully supported -> needs some work
         self.root = os.path.expanduser("~/")
-        self.SLES12 = False
-        if(os.getenv("SYS") == 'amd64_sles12'  or os.getenv("SYS") == 'amd64_sles15'):
-            self.SLES12 = True
         self.Phoenix = "phoenix" in wx.PlatformInfo
         if(os.path.isdir("/afs/ipp-garching.mpg.de/home/s/sdenk/ECRad_testing/augd_ecrad")):
             self.ECRadRoot = "/afs/ipp-garching.mpg.de/home/s/sdenk/ECRad_testing/augd_ecrad"
         else:
-            self.ECRadRoot = "../augd_ecrad/"
+            self.ECRadRoot = "../ECRad_core/"
         self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot,os.environ['SYS'])
 #         self.ECRadRoot =      # "/afs/ipp/home/s/sdenk/ECRad_testing/augd_ecrad/"# "/afs/ipp/home/r/rrf/F90/IDA/augd_ecrad/"
         self.ECRadPylibRoot = "../ECRad_Pylib/"
@@ -89,16 +83,13 @@ class GlobalSettingsAUG:
         self.partition_function = partition_function_tok
         self.max_cores = 32
         
-class GlobalSettingsAUGEXT:
+class GlobalSettingsEXT:
     def __init__(self):
         self.AUG = False  # True  -> Start with True, set it to false if we run into problems
         self.TCV = False # Not fully supported -> needs some work
         self.root = os.path.expanduser("~/")
-        self.SLES12 = False
-        if(os.getenv("SYS") == 'amd64_sles12'  or os.getenv("SYS") == 'amd64_sles15'):
-            self.SLES12 = True
         self.Phoenix = "phoenix" in wx.PlatformInfo
-        self.ECRadRoot = os.path.abspath("../augd_ecrad")
+        self.ECRadRoot = os.path.abspath("../ECRad_core")
         self.ECRadPylibRoot = os.path.abspath("../augd_ecrad_Pylib/")
         self.ECRadGUIRoot = os.path.abspath("../augd_ecrad_GUI/")
         self.ECRadLibDir = os.path.join(self.ECRadRoot, os.environ["SYS"])
@@ -119,10 +110,12 @@ try:
     elif("rhel" in os.environ["SYS"]):
         globalsettings = GlobalSettingsITM()
     else:
-        globalsettings = GlobalSettingsAUGEXT()
+        globalsettings = GlobalSettingsEXT()
 except KeyError:
-    globalsettings = GlobalSettingsAUGEXT()
+    globalsettings = GlobalSettingsEXT()
 library_list = glob("../*pylib") + glob("../*Pylib")
+found_lib = False
+
 for folder in library_list:
     if("ECRad" in folder or "ecrad"in folder ):
         sys.path.append(os.path.abspath(folder))

@@ -668,6 +668,18 @@ def load_plasma_from_mat(path):
                     print(key)
                     print(e)
         plasma_dict["Te"] = mdict["Te"]
+        if(np.min(mdict["Te"]) < 2.e-2):
+            print("WARNING: The electron temperatures you provided contain values below room temperature (20 meV)")
+            print("INFO: Smallest value: {0:1.3e}".format(np.min(mdict["ne"])))
+            print("INFO: ECRad uses logarithmic interpolation for Te")
+            print("INFO: All values below 20 meV have been set to 20 meV")
+            plasma_dict["Te"][plasma_dict["Te"] < 2.e-2] = 2.e-2
+        if(np.min(mdict["ne"]) < 1.e14):
+            print("WARNING: The electron densities you provided contain values below 1.e14 m^(-3)")
+            print("INFO: Smallest value: {0:1.3e}".format(np.min(mdict["ne"])))
+            print("INFO: ECRad uses logarithmic interpolation for ne")
+            print("INFO: All values below 1.e14 m^(-3) have been set to 1.e14 m^(-3)")
+            plasma_dict["ne"][plasma_dict["ne"] < 1.e14] = 1.e14
         plasma_dict["ne"] = mdict["ne"]
         if(len(plasma_dict["Te"][0].shape) == 1):
             if("rhop_prof" in mdict):
@@ -686,12 +698,12 @@ def load_plasma_from_mat(path):
         plasma_dict["eq_data"] = []
         # TODO remove this place holder by a routine that does this for external equilibriae
         plasma_dict["ECE_mod"] = []  
-        EQ_obj = EQDataExt(mdict["shot"], external_folder=os.path.dirname(path), bt_vac_correction=1.0, Ext_data=True)
+        EQ_obj = EQDataExt(mdict["shot"], external_folder=os.path.dirname(path), Ext_data=True)
         if("Bt" in mdict):
             EQ_obj.load_slices_from_mat(plasma_dict["time"], mdict)
         else:
             EQ_obj.load_slices_from_mat(plasma_dict["time"], mdict,eq_prefix=True)
-        plasma_dict["eq_data"] = EQ_obj.slices
+        plasma_dict["eq_data_2D"] = EQ_obj
         if("vessel_bd" not in mdict):
             try:
                 vessel_bd = np.loadtxt(os.path.join(os.path.dirname(path), "vessel_bd"), skiprows=1)
@@ -707,16 +719,12 @@ def load_plasma_from_mat(path):
                 raise e
         else:
             plasma_dict["vessel_bd"] = mdict["vessel_bd"]
-            if(len(plasma_dict["vessel_bd"][0]) == 2):
+            if(len(plasma_dict["vessel_bd"]) == 2):
                 plasma_dict["vessel_bd"] = plasma_dict["vessel_bd"].T
         plasma_dict["Rwall"] = 0.9  # default in IDA -> make this an input quantity
-        plasma_dict["eq_exp"] = "EXT"
-        plasma_dict["eq_diag"] = "EXT"
-        plasma_dict["eq_ed"] = 0
-        if("bt_vac_correction" in mdict):
-            plasma_dict["bt_vac_correction"] = mdict["bt_vac_correction"]
-        else:
-            plasma_dict["bt_vac_correction"] = 1.0
+        plasma_dict["EQ_exp"] = "EXT"
+        plasma_dict["EQ_diag"] = "EXT"
+        plasma_dict["EQ_ed"] = 0
         return plasma_dict
     except IOError as e:
         print(e)

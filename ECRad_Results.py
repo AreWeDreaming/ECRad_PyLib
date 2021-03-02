@@ -174,7 +174,7 @@ class ECRadResults(dict):
         self.labels["BPD"] = {"rhop":r"$\rho_\mathrm{pol}$", "rhot":r"$\rho_\mathrm{tor}$", \
                              "BPD":"BPD","BPD_second":"BPD"}
         self.legend_entries["BPD"] = {"rhop":r"$\rho_\mathrm{pol}$", "rhot":r"$\rho_\mathrm{tor}$", \
-                                      "BPD":"BPD","BPD_second":"BPD_\mathrm{2nd\,model}"}
+                                      "BPD":"BPD","BPD_second":"BPD$_\mathrm{2nd\,model}$"}
         self.units["BPD"] = {"rhop":"", "rhot":"", "BPD":"m$^{-1}$", \
                               "BPD_second":"m$^{-1}$"}
         self.xaxis_link["BPD"] = ["BPD"]
@@ -289,9 +289,9 @@ class ECRadResults(dict):
         else:
             dim_ref = self.shapes[sub_key][ndim]
         if(dim_ref == "N_time"):
-            return r"$t = $" + "{0:1.3f}".format(self.Scenario["time"][index[ndim]]) + " s"
+            return r"$t = $ " + "{0:1.3f}".format(self.Scenario["time"][index[ndim]]) + " s"
         elif(dim_ref == "N_ch"):
-            return r"$f = $" + "{0:3.1f}".format(self.Scenario["diagnostic"]["f"][index[0]][index[ndim]]/1.e9)  + " GHz" 
+            return r"$f = $ " + "{0:3.1f}".format(self.Scenario["diagnostic"]["f"][index[0]][index[ndim]]/1.e9)  + " GHz" 
         elif(dim_ref in ["N_mode"]):
             if(self.Config["Physics"]["considered_modes"] == 1):
                 return "X-mode"
@@ -441,7 +441,8 @@ class ECRadResults(dict):
                     mdict_key = sub_key
                 if(mdict_key+mode not in mdict.keys()):
                     print("INFO: Failed to reshape " + key + "/" + sub_key)
-                    self.failed_keys[key].append(sub_key) 
+                    if(sub_key not in self.failed_keys[key]):
+                        self.failed_keys[key].append(sub_key)
                     continue
                 if(self["dimensions"]["N_time"] == 1):
                     mdict[mdict_key+mode] = np.expand_dims(mdict[mdict_key+mode], 0)
@@ -468,7 +469,8 @@ class ECRadResults(dict):
                             mdict_key = sub_key
                     if(mdict_key+mode not in mdict.keys()):
                         print("INFO: Cannot load " + key + "/" + sub_key)
-                        self.failed_keys[key].append(sub_key) 
+                        if(sub_key not in self.failed_keys[key]):
+                            self.failed_keys[key].append(sub_key)
                         continue
                     self[key][sub_key] = np.zeros(self.get_shape(key))
                     for i_mode, mode in enumerate(modes):
@@ -487,7 +489,8 @@ class ECRadResults(dict):
                         mdict_key = sub_key
                     if(mdict_key+mode not in mdict.keys()):
                         print("INFO: Cannot load " + key + "/" + sub_key)
-                        self.failed_keys[key].append(sub_key) 
+                        if(sub_key not in self.failed_keys[key]):
+                            self.failed_keys[key].append(sub_key)
                         continue
                     self["ray"][sub_key] = []
                     for i_time in range(self["dimensions"]["N_time"]):
@@ -519,12 +522,15 @@ class ECRadResults(dict):
             self["weights"]["mode_frac"] = np.ones(self.get_shape("mode_frac"))
             self["weights"]["mode_frac_second"] = np.ones(self.get_shape("mode_frac_second"))
         self["ray"]["R"] = np.zeros(self.get_shape("ray", stop=-1), dtype=np.object)
+        print("INFO: Fixing missing ray/R.")
         for itime in range(self["dimensions"]["N_time"]):
             for ich in range(self["dimensions"]["N_ch"]):
                 for imode in range(self["dimensions"]["N_mode"]):
                     for iray in range(self["dimensions"]["N_ray"]):
                         self["ray"]["R"][itime,ich,imode,iray] = np.sqrt(self["ray"]["x"][itime,ich,imode,iray]**2 + \
                                                                          self["ray"]["y"][itime,ich,imode,iray]**2)
+        # We fix R later so we do not need to delete it
+        self.failed_keys["ray"].remove("R")
         self["git"]["ECRad"] = mdict["ECRad_git_tag"]
         self["git"]["GUI"] = mdict["ECRadGUI_git_tag"]
         self["git"]["Pylib"] = mdict["ECRadPylib_git_tag"]
