@@ -113,7 +113,7 @@ try:
         globalsettings = GlobalSettingsEXT()
 except KeyError:
     globalsettings = GlobalSettingsEXT()
-library_list = glob("../*pylib") + glob("../*Pylib")
+library_list = glob("../*pylib") + glob("../*PyLib")
 found_lib = False
 
 for folder in library_list:
