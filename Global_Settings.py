@@ -51,7 +51,7 @@ class GlobalSettingsITM:
         self.Phoenix = "phoenix" in wx.PlatformInfo
         self.ECRadRoot = "/afs/eufus.eu/g2itmdev/user/g2sdenk/git/augd_ecrad"
         self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot,os.environ['SYS'])
-        self.ECRadPylibRoot = "../ECRad_Pylib/"
+        self.ECRadPylibRoot = "../ECRad_PyLib/"
         self.ECRadGUIRoot = "../ECRad_GUI/"
         self.ECRadPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRad")
         self.ECRadPathBSUB = os.path.join(self.ECRadRoot,"ECRad_submit.bsub")
@@ -68,13 +68,10 @@ class GlobalSettingsAUG:
         self.TCV = False # Not fully supported -> needs some work
         self.root = os.path.expanduser("~/")
         self.Phoenix = "phoenix" in wx.PlatformInfo
-        if(os.path.isdir("/afs/ipp-garching.mpg.de/home/s/sdenk/ECRad_testing/augd_ecrad")):
-            self.ECRadRoot = "/afs/ipp-garching.mpg.de/home/s/sdenk/ECRad_testing/augd_ecrad"
-        else:
-            self.ECRadRoot = "../ECRad_core/"
+        self.ECRadRoot = "../ECRad_core/"
         self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot,os.environ['SYS'])
 #         self.ECRadRoot =      # "/afs/ipp/home/s/sdenk/ECRad_testing/augd_ecrad/"# "/afs/ipp/home/r/rrf/F90/IDA/augd_ecrad/"
-        self.ECRadPylibRoot = "../ECRad_Pylib/"
+        self.ECRadPylibRoot = "../ECRad_PyLib/"
         self.ECRadGUIRoot = "../ECRad_GUI/"
         self.ECRadPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRad")
         self.ECRadPathBSUB = os.path.join(self.ECRadRoot,"ECRad_submit.bsub")
@@ -90,8 +87,8 @@ class GlobalSettingsEXT:
         self.root = os.path.expanduser("~/")
         self.Phoenix = "phoenix" in wx.PlatformInfo
         self.ECRadRoot = os.path.abspath("../ECRad_core")
-        self.ECRadPylibRoot = os.path.abspath("../augd_ecrad_Pylib/")
-        self.ECRadGUIRoot = os.path.abspath("../augd_ecrad_GUI/")
+        self.ECRadPylibRoot = os.path.abspath("../ECRad_PyLib/")
+        self.ECRadGUIRoot = os.path.abspath("../ECRad_GUI/")
         self.ECRadLibDir = os.path.join(self.ECRadRoot, os.environ["SYS"])
         try:
             self.ECRadPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRad")
