@@ -1216,7 +1216,7 @@ def load_IDA_data(shot, timepoints=None, exp="AUGD", ed=0, double_entries_allowe
     rhot_available=True
     try:
         IDA_rhot_mat = IDA.getSignalGroup(\
-                        "rhot", dtype=np.double)
+                                          "rhot", dtype=np.double)
     except Exception as e:
         rhot_available=False
         print("No rho toroIDAl profile in IDA shotfile")
@@ -1384,12 +1384,12 @@ def load_IDA_data(shot, timepoints=None, exp="AUGD", ed=0, double_entries_allowe
         except:
             IDA_dict["RwallO"] = 0.92
     try:
-        IDA_dict["Btf_corr"] = IDA.getParameter('ece_par', 'Btf_corr').data
+        IDA_dict["Bt_vac_scale"] = IDA.getParameter('ece_par', 'Btf_corr').data
     except:
         if(shot < 30160):
-            IDA_dict["Btf_corr"] = 1.0
+            IDA_dict["Bt_vac_scale"] = 1.0
         else:
-            IDA_dict["Btf_corr"] = 1.005
+            IDA_dict["Bt_vac_scale"] = 1.005
     try:
         IDA_dict["EQ_diag"] = IDA.getParameter('depends', 'map_diag').data.replace(" ", "")
         IDA_dict["EQ_exp"] = IDA.getParameter('depends', 'map_exp').data.replace(" ", "")
