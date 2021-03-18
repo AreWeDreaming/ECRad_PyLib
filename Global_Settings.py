@@ -99,7 +99,7 @@ class GlobalSettingsEXT:
         self.qos_function = qos_function_tok
         self.partition_function = partition_function_tok
         self.max_cores = multiprocessing.cpu_count()
-        self.pylib_folder = "../ECRad_Pylib"
+        self.pylib_folder = "../ECRad_PyLib"
         self.GUI_folder = "../ECRad_GUI"
 try:        
     if("sles" in os.environ["SYS"]):

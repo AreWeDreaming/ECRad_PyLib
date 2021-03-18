@@ -319,9 +319,7 @@ class ECRadResults(dict):
                 return "ray #" + str(index[ndim] + 1)
         else:
             raise ValueError("ECRadResults.get_index_reference could unexpected dim ref " + key + " " + sub_key + " " + str(ndim))
-                    
-        
-            
+                           
     def set_dimensions(self):
         # Sets the dimensions from Scenario and Configself["dimensions"]["N_time"] = len(self.Scenario.plasma_dict["time"])
         self["dimensions"]["N_time"] = self.Scenario["dimensions"]["N_time"]
@@ -537,19 +535,26 @@ class ECRadResults(dict):
         self.init = True
         return True
     
-    def to_netcdf(self, filename=None):
+    def get_default_filename_and_edition(self, scratch=False):
+        if(scratch):
+            dir = self.Config["Execution"]["scratch_dir"]
+        else:
+            dir = self.Config["Execution"]["working_dir"]
+        diag_str = ""
+        for key in self.Scenario["used_diags_dict"]:
+            diag_str += key
+        ed = 1
+        filename = os.path.join(dir, "ECRad_{0:5d}_{1:s}_ed{2:d}.nc".format(self.Scenario["shot"], diag_str, ed))
+        while(os.path.exists(filename)):
+            ed += 1
+            filename = os.path.join(dir, "ECRad_{0:5d}_{1:s}_ed{2:d}.nc".format(self.Scenario["shot"], diag_str, ed))
+        return filename, ed
+
+    def to_netcdf(self, filename=None, scratch=False):
         if(filename is not None):
             rootgrp = Dataset(filename, "w", format="NETCDF4")
         else:
-            diag_str = ""
-            for key in self.Scenario["used_diags_dict"]:
-                diag_str += key
-            ed = 1
-            filename = os.path.join(self.Config["Execution"]["working_dir"], "ECRad_{0:5d}_{1:s}_ed{2:d}.nc".format(self.Scenario["shot"], diag_str, ed))
-            while(os.path.exists(filename)):
-                ed += 1
-                filename = os.path.join(self.Config["Execution"]["working_dir"], "ECRad_{0:5d}_{1:s}_ed{2:d}.nc".format(self.Scenario["shot"], diag_str, ed))
-            self.edition = ed
+            filename, self.edition = self.get_default_filename_and_edition(scratch)
             rootgrp = Dataset(filename, "w", format="NETCDF4")
         rootgrp.createGroup("Results")
         self.Config.to_netcdf(rootgrp=rootgrp)

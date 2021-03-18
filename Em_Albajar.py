@@ -2260,10 +2260,23 @@ def func_calc_phi(x, y):
 
 # test()
 if __name__ == "__main__":
-    pass
-#    thetas = np.linspace(100, 160, 40)
-#    theta = np.pi / 2.0
-#    alb_obj = em_abs_Alb()
+    theta = np.deg2rad(80)
+    alb_obj = EmAbsAlb()
+    omega = 205.e9 * 2 * np.pi
+    omega_c = 70.e9 * np.pi * 2
+    ne1 = 11.e19
+    Te1 = 3.9e3
+    ne2 = 8.3e19
+    Te2 = 2.8e3
+    svec1 = SVec(0.1, Te1, ne1, omega_c/ np.pi, theta)
+    abs1, j1 = alb_obj.abs_Albajar(svec1, omega, 1)
+    svec2 = SVec(0.1, Te2, ne2, omega_c/ np.pi, theta)
+    abs2, j2 = alb_obj.abs_Albajar(svec2, omega, 1)
+    print(abs1, abs2)
+    print(3.8 * abs2/abs1)
+    print(1 - np.exp(-3.8 * abs2/abs1))
+
+
 #    N_abs = []
 #    omega = 15.0e9 * np.pi
 #    n_e = np.linspace(1.e17, 6.e18, 100)
