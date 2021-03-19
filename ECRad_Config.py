@@ -57,7 +57,7 @@ class ECRadConfig(dict):
         self["Execution"]["batch"] = True
         self["Execution"]["parallel"] = True
         self["Execution"]["parallel_cores"] = 32
-        self["Execution"]["wall_time"] = 2
+        self["Execution"]["wall_time"] = 2.0
         self["Execution"]["vmem"] = 32000
         self["Numerics"]["large_ds"] = 2.5e-3
         self["Numerics"]["small_ds"] = 2.5e-4

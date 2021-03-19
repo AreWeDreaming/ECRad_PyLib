@@ -5,14 +5,10 @@ from matplotlib import pyplot as plt
 # plt.style.use('bmh')
 plot_mode = "Presentation"  #  "Presentation"  "Article"
 if(plot_mode != "Software"):
-    plt.rcParams['text.latex.preamble'] = [\
-       r'\usepackage{siunitx}', \
-       r'\sisetup{detect-all}', \
-       r'\usepackage{sansmath}', \
-       r'\usepackage{amsmath}' , \
-       r'\usepackage{amsfonts}', \
-       r'\usepackage{amssymb}', \
-       r'\usepackage{braket}']
+    plt.rcParams['text.latex.preamble'] = r"\usepackage{siunitx} \sisetup{detect-all} " + \
+                                          r"\usepackage{sansmath} \usepackage{amsmath} " + \
+                                          r"\usepackage{amsfonts} \usepackage{amssymb} " + \
+                                          r"\usepackage{braket}"
 # plt.rcParams['text.latex.preamble'] = [\
 #       r'\usepackage{siunitx}',  \
 #       r'\sisetup{detect-all}',   \

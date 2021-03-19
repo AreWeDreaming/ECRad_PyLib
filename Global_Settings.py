@@ -8,6 +8,7 @@ import wx
 import multiprocessing
 import sys
 from glob import glob
+import socket
 
 def qos_function_tok(cores, wall_time):
     if(cores == 1):
@@ -33,6 +34,9 @@ def qos_function_itm(cores, wall_time):
     else:
         return "--qos skl_qos_fuagwlong"
     
+def qos_function_iris(cores, wall_time):
+    return ""
+
 def partition_function_tok(cores, wall_time):
     if(cores == 1):
         #serial
@@ -43,10 +47,17 @@ def partition_function_tok(cores, wall_time):
 def partition_function_itm(cores, wall_time):
     return "--partition=skl_fua_gw"
 
+def partition_function_iris(cores, wall_time):
+    if(wall_time <= 0.5):
+        return "--partition=short"
+    elif(wall_time > 0.5 and wall_time <= 24):
+        return "--partition=medium"
+    else:
+        return "--partition=long"
+
 class GlobalSettingsITM:
     def __init__(self):
         self.AUG = True  # True  -> Start with True, set it to false if we run into problems
-        self.TCV = False # Not fully supported -> needs some work
         self.root = os.path.expanduser("~/")
         self.Phoenix = "phoenix" in wx.PlatformInfo
         self.ECRadRoot = "/afs/eufus.eu/g2itmdev/user/g2sdenk/git/augd_ecrad"
@@ -65,7 +76,6 @@ class GlobalSettingsITM:
 class GlobalSettingsAUG:
     def __init__(self):
         self.AUG = True  # True  -> Start with True, set it to false if we run into problems
-        self.TCV = False # Not fully supported -> needs some work
         self.root = os.path.expanduser("~/")
         self.Phoenix = "phoenix" in wx.PlatformInfo
         self.ECRadRoot = "../ECRad_core/"
@@ -80,10 +90,25 @@ class GlobalSettingsAUG:
         self.partition_function = partition_function_tok
         self.max_cores = 32
         
+class GlobalSettingsIRIS:
+    def __init__(self):
+        self.AUG = False
+        self.root = os.path.expanduser("~/")
+        self.Phoenix = "phoenix" in wx.PlatformInfo
+        self.ECRadRoot = "../ECRad_core/"
+        self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot,os.environ['SYS'])
+#         self.ECRadRoot =      # "/afs/ipp/home/s/sdenk/ECRad_testing/augd_ecrad/"# "/afs/ipp/home/r/rrf/F90/IDA/augd_ecrad/"
+        self.ECRadPylibRoot = "../ECRad_PyLib/"
+        self.ECRadGUIRoot = "../ECRad_GUI/"
+        self.ECRadPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRad")
+        self.ECRadPathBSUB = os.path.join(self.ECRadRoot,"ECRad_submit.bsub")
+        self.TB_path = "/afs/ipp-garching.mpg.de/home/s/sdenk/torbeam/lib-OUT"
+        self.qos_function = qos_function_iris
+        self.partition_function = partition_function_iris
+        self.max_cores = 16
 class GlobalSettingsEXT:
     def __init__(self):
         self.AUG = False  # True  -> Start with True, set it to false if we run into problems
-        self.TCV = False # Not fully supported -> needs some work
         self.root = os.path.expanduser("~/")
         self.Phoenix = "phoenix" in wx.PlatformInfo
         self.ECRadRoot = os.path.abspath("../ECRad_core")
@@ -106,6 +131,8 @@ try:
         globalsettings = GlobalSettingsAUG()
     elif("rhel" in os.environ["SYS"]):
         globalsettings = GlobalSettingsITM()
+    elif(socket.gethostname == "irisc.cluster"):
+        globalsettings = GlobalSettingsIRIS()
     else:
         globalsettings = GlobalSettingsEXT()
 except KeyError:
