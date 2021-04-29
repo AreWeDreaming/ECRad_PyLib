@@ -8,7 +8,7 @@ import os
 from scipy.io import loadmat, savemat
 from Global_Settings import globalsettings, GlobalSettingsAUG
 import numpy as np
-from Basic_Methods.Equilibrium_Utils import EQDataExt, EQDataSlice, special_points
+from Basic_Methods.Equilibrium_Utils import EQDataExt, EQDataSlice
 from Diag_Types import Diag, ECRH_diag, ECI_diag, EXT_diag
 from Distribution_IO import load_f_from_mat
 from Distribution_Classes import Gene, GeneBiMax
@@ -50,7 +50,7 @@ class ECRadScenario(dict):
         self["plasma"]["rhot_prof"] = []
         self["plasma"]["prof_reference"] = "rhop_prof"
         self["plasma"]["2D_prof"] = False
-        self["plasma"]["vessl_bd"] = None
+        self["plasma"]["vessel_bd"] = None
         self["plasma"]["Te"] = []
         self["plasma"]["ne"] = []
         self["scaling"] = {}
@@ -137,6 +137,72 @@ class ECRadScenario(dict):
             self.from_mat(mdict)
         elif(rootgrp is not None):
             self.from_netcdf(rootgrp=rootgrp)
+
+    def set_up_launch_from_ods(self, ods, times=None):
+        if(times is None):
+            times = ods['ece']['channel']['time']
+        for time in times:
+            self['diagnostic']["f"].append([])
+            for ch in ods['ece']['channel']:
+                itime = np.argmin(np.abs(time - ch['time']))
+                self['diagnostic']["f"][-1].append(ch['frequency']['data'][itime])
+        self['diagnostic']["f"] = np.array(self['diagnostic']["f"])
+        self["dimensions"]["N_ch"] = len(self["diagnostic"]["f"][0])
+        for key in self['diagnostic']:
+            if(key == "f"):
+                continue
+            self['diagnostic'][key] = np.zeros(self['diagnostic']["f"].shape)
+        self['diagnostic']["R"][:] = ods['ece']['line_of_sight']['first_point']["r"]
+        self['diagnostic']["phi"][:] = np.rad2deg(ods['ece']['line_of_sight']['first_point']["phi"])
+        self['diagnostic']["z"][:] = ods['ece']['line_of_sight']['first_point']["z"]
+        self['diagnostic']["phi_tor"][:] = \
+             np.rad2deg(ods['ece']['line_of_sight']['second_point']["phi"]) - self['diagnostic']["phi"][:] 
+        dR = ods['ece']['line_of_sight']['second_point']["r"] - self['diagnostic']["R"][:]
+        dz = ods['ece']['line_of_sight']['second_point']["z"] - self['diagnostic']["z"][:]
+        self['diagnostic']["theta_pol"][:] = -np.rad2deg(np.arctan(dz/dR))
+
+    def set_up_profiles_from_ods(self, ods, times):
+        self["plasma"][""]
+        for time in times:
+            itime_profiles = np.argmin(np.abs(ods['core_profiles']['time'] - time))
+            itime_equilibrium = np.argmin(np.abs(ods['equilibrium']['time'] - time))
+            self["plasma"]["rhop_prof"].append(
+                np.sqrt((ods['equilibrium']['time_slice'][itime_equilibrium]['global_quantities']['psi_axis'] - \
+                         ods['core_profiles']['profiles_1d'][itime_profiles]['grid']['psi']) /\
+                        (ods['equilibrium']['time_slice'][itime_equilibrium]['global_quantities']['psi_axis'] - \
+                         ods['equilibrium']['time_slice'][itime_equilibrium]['global_quantities']['psi_boundary'])))
+            self["plasma"]["Te"].append(
+                ods['core_profiles']['profiles_1d'][itime_profiles]['electrons']['temperature'])
+            self["plasma"]["ne"].append(
+                ods['core_profiles']['profiles_1d'][itime_profiles]['electrons']['density'])
+        self["plasma"]["rhop_prof"] = np.array(self["plasma"]["rhop_prof"])
+        self["plasma"]["Te"] = np.array(self["plasma"]["Te"])
+        self["plasma"]["ne"] = np.array(self["plasma"]["ne"])
+
+    def set_up_equilibrium_from_ods(self, ods, times):
+        self["plasma"]["eq_dim"] = True
+        self["plasma"]["eq_data_2D"] = EQDataExt(self["shot"], Ext_data=True)
+        EQ_slices = []
+        for time in times:
+            itime = np.argmin(np.abs(ods['equilibrium']['time'] - time))
+            prof_2D = ods['equilibrium']['time_slice'][itime]['profiles_2d.0']
+            EQ_slices.append(EQDataSlice(\
+                time, prof_2D["grid"]["dim1"],prof_2D["grid"]["dim2"],\
+                prof_2D["psi"], prof_2D["b_field_r"], prof_2D["b_field_tor"], prof_2D["b_field_z"],
+                ods['equilibrium']['time_slice'][itime]['global_quantities']['psi_axis'],\
+                ods['equilibrium']['time_slice'][itime]['global_quantities']['psi_boundary'],\
+                ods['equilibrium']['time_slice'][itime]['global_quantities']['magnetic_axis']['r'],\
+                ods['equilibrium']['time_slice'][itime]['global_quantities']['magnetic_axis']['z']))
+        self["plasma"]["eq_data_2D"].set_slices_from_ext(times, EQ_slices)
+        self["dimensions"]["N_vessel_bd"] = np.array([ \
+            ods['wall.description_2d.0.limiter.unit.0.outline.r'],
+            ods['wall.description_2d.0.limiter.unit.0.outline.z']]).T
+
+    def set_up_from_ods(self, ods, times):
+        self.set_up_launch_from_ods(ods, times)
+        self.set_up_equiibrium_from_ods(ods, times)
+        self.set_up_profiles_from_ods(ods, times)
+        self.set_up_dimensions()
             
     def set_up_dimensions(self):
         self["dimensions"]["N_time"] = len(self["time"])
@@ -329,15 +395,21 @@ class ECRadScenario(dict):
             for i in range(len(self["time"])):
                 if("eq_special_complete" in mdict):
                     entry = mdict["eq_special_complete"][i]
-                    spcl = special_points(entry[0], entry[1], entry[4], entry[2], entry[3], entry[5])
+                    slices.append(EQDataSlice(self["time"][i], \
+                                              mdict["eq_R"][i], mdict["eq_z"][i], \
+                                              mdict["eq_Psi"][i], mdict["eq_Br"][i], \
+                                              mdict["eq_Bt"][i], mdict["eq_Bz"][i], \
+                                              Psi_ax=entry[4], Psi_sep=entry[5], \
+                                              R_ax=entry[0], z_ax=entry[1], \
+                                              rhop=mdict["eq_rhop"][i]))
                 else:
                     entry = mdict["eq_special"][i]
-                    spcl = special_points(0.0, 0.0, entry[0], 0.0, 0.0, entry[1])
-                slices.append(EQDataSlice(self["time"][i], \
-                                          mdict["eq_R"][i], mdict["eq_z"][i], \
-                                          mdict["eq_Psi"][i], mdict["eq_Br"][i], \
-                                          mdict["eq_Bt"][i], mdict["eq_Bz"][i], \
-                                          spcl, rhop=mdict["eq_rhop"][i]))
+                    slices.append(EQDataSlice(self["time"][i], \
+                                              mdict["eq_R"][i], mdict["eq_z"][i], \
+                                              mdict["eq_Psi"][i], mdict["eq_Br"][i], \
+                                              mdict["eq_Bt"][i], mdict["eq_Bz"][i], \
+                                              Psi_ax=entry[0], Psi_sep=entry[1], \
+                                              rhop=mdict["eq_rhop"][i]))
                 # The old .mat file store the scaled Bt not the original Bt
                 # In the new netcdf files the original Bt is stored
                 # The scaled Bt is only used directly in ECRad

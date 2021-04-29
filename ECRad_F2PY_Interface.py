@@ -81,17 +81,21 @@ class ECRadF2PYInterface:
         else:
             time = Scenario["time"][itime]
             eq_slice = Scenario["plasma"]["eq_data_2D"].GetSlice(time, Scenario["scaling"]["Bt_vac_scale"])
+            if(eq_slice.R_ax is None or eq_slice.R_ax != eq_slice.R_ax):
+                R_ax, z_ax = Scenario["plasma"]["eq_data_2D"].get_axis(time)
+            else:
+                R_ax = eq_slice.R_ax
+                z_ax = eq_slice.z_ax
             if(Scenario["plasma"]["2D_prof"]):
                 self.ECRad.initialize_ecrad_2d_profs(self.N_ch, 1, 1, eq_slice.R, eq_slice.z, \
                                                      Scenario["plasma"]["Te"][itime] * Scenario["scaling"]["Te_scale"], \
                                                      Scenario["plasma"]["ne"][itime] * Scenario["scaling"]["ne_scale"], \
                                                      eq_slice.rhop, eq_slice.Br, eq_slice.Bt, \
-                                                     eq_slice.Br, eq_slice.R_ax, eq_slice.z_ax)
+                                                     eq_slice.Br, R_ax, z_ax)
             else:
                 self.ECRad.initialize_ecrad(self.N_ch, 1, 1, eq_slice.R, \
                                             eq_slice.z, eq_slice.rhop, eq_slice.Br, \
-                                            eq_slice.Bt, eq_slice.Br, eq_slice.R_ax, \
-                                            eq_slice.z_ax)
+                                            eq_slice.Bt, eq_slice.Br, R_ax, z_ax)
     
     def make_rays(self, Scenario, itime):
         if(Scenario["plasma"]["2D_prof"]):

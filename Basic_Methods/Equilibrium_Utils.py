@@ -35,44 +35,26 @@ def eval_Btot(x, args):
     else:
         return spl(x[0], x[1], grid=False)
 
-class special_points:
-    def __init__(self, R_ax, z_ax, Psi_ax, R_sep, z_sep, Psi_sep):
-        self.Raxis = R_ax
-        self.zaxis = z_ax
-        self.Rspx = R_sep
-        self.zspx = z_sep
-        self.psiaxis = Psi_ax
-        self.psispx = Psi_sep
-
 class EQDataSlice:
-    def __init__(self, time, R, z, Psi, Br, Bt, Bz, special=None, Psi_ax = None, Psi_sep=None, rhop=None, ripple=None):
+    def __init__(self, time, R, z, Psi, Br, Bt, Bz, Psi_ax = None, Psi_sep=None, R_ax=None, z_ax = None, rhop=None, ripple=None):
         self.time = time
         self.R = R
         self.z = z
         self.Psi = Psi
         if(len(Psi.T[0]) != len(R) or len(Psi[0]) != len(z)):
             print("Shapes ", Psi.shape, R.shape, z.shape)
-        self.rhop = rhop
         self.Br = Br
         self.Bt = Bt
         self.Bz = Bz
-        if(special is not None):
-            self.R_ax = special.Raxis
-            self.z_ax = special.zaxis
-            self.R_sep = special.Rspx
-            self.z_sep = special.zspx
-            self.Psi_ax = special.psiaxis
-            self.Psi_sep = special.psispx
-        elif(Psi_sep is not None and Psi_ax is not None):
-            self.Psi_ax = Psi_ax
-            self.Psi_sep = Psi_sep
-            self.R_ax = None
-            self.z_ax = None
-            self.R_sep = None
-            self.z_sep = None
+        self.Psi_ax = Psi_ax
+        self.Psi_sep = Psi_sep
+        self.R_ax = R_ax
+        self.z_ax = z_ax
+        if(rhop is not None):
+            self.rhop = rhop
         else:
-            raise ValueError("Either special points or Psi_ax and Psi_sep must not be None")
-        self.special = np.array([self.Psi_ax, self.Psi_sep])
+            self.rhop = np.sqrt((self.Psi_ax - self.Psi)/ \
+                                 (self.Psi_ax - self.Psi_sep))
         self.ripple = ripple
 
 #        if(self.Psi_sep < self.Psi[self.Psi.shape[0] / 2][self.Psi.shape[1] / 2]):
@@ -123,7 +105,7 @@ class EQDataExt:
         if(transpose):
             for eq_slice in self.slices:
                 eq_slice.transpose_matrices()
-        self.define_and_verify_eq_shape()
+        self.post_process_slices()
         self.loaded = True
                 
     def insert_slices_from_ext(self, times, slices, transpose=False):
@@ -139,7 +121,7 @@ class EQDataExt:
         self.slices = []
         for i in slices_sort:
             self.slices.append(new_slices[i])
-        self.define_and_verify_eq_shape()
+        self.post_process_slices()
         self.loaded = True
                 
     def get_single_attribute_from_all_slices(self, attr):
@@ -150,12 +132,6 @@ class EQDataExt:
     
     def fill_with_slices_from_dict(self, times, eq_slice_dict):
         for it, time in enumerate(times):
-            special = special_points(eq_slice_dict["R_ax"][it], \
-                                     eq_slice_dict["z_ax"][it], \
-                                     eq_slice_dict["Psi_ax"][it], \
-                                     eq_slice_dict["R_sep"][it], \
-                                     eq_slice_dict["z_sep"][it], \
-                                     eq_slice_dict["Psi_sep"][it])
             self.times.append(time)
             self.slices.append(EQDataSlice(time, \
                                            eq_slice_dict["R"][it], \
@@ -164,17 +140,26 @@ class EQDataExt:
                                            eq_slice_dict["Br"][it], \
                                            eq_slice_dict["Bt"][it], \
                                            eq_slice_dict["Bz"][it], \
-                                           special=special, \
+                                           eq_slice_dict["Psi_ax"][it], \
+                                           eq_slice_dict["Psi_sep"][it], \
+                                           eq_slice_dict["R_ax"][it], \
+                                           eq_slice_dict["z_ax"][it], \
                                            rhop = eq_slice_dict["rhop"][it]))
         self.times = np.array(self.times)
-        self.define_and_verify_eq_shape()
+        self.post_process_slices()
         self.loaded = True
         
-    def define_and_verify_eq_shape(self):
+    def post_process_slices(self):
+        # Check shape
         self.eq_shape = (len(self.slices[0].R),len(self.slices[0].z))
         for eq_slice in self.slices:
             if((len(eq_slice.R),len(eq_slice.z)) != self.eq_shape ):
                 raise ValueError("The shape of the flux matrices must not change over time")
+        for itime, time in enumerate(self.times):
+            if(self.slices[itime].R_ax is None):
+                self.slices[itime].R_ax, self.slices[itime].z_ax = \
+                    self.get_axis(time)
+            
             
 
     def load_slices_from_mat(self, time, mdict, eq_prefix = False):
@@ -184,13 +169,13 @@ class EQDataExt:
         for it in range(len(time)):
             if(eq_prefix):
                 self.slices.append(EQDataSlice(self.times[it], mdict["eq_R"][it], mdict["eq_z"][it], mdict["eq_Psi"][it], mdict["eq_Br"][it], \
-                                           mdict["eq_Bt"][it], mdict["eq_Bz"][it], Psi_ax=mdict["eq_special"][it][0], \
-                                           Psi_sep=mdict["eq_special"][it][1]))
+                                               mdict["eq_Bt"][it], mdict["eq_Bz"][it], Psi_ax=mdict["eq_special"][it][0], \
+                                               Psi_sep=mdict["eq_special"][it][1]))
             else:
                 self.slices.append(EQDataSlice(self.times[it], mdict["R"], mdict["z"], mdict["Psi"][it], mdict["Br"][it], \
-                                           mdict["Bt"][it], mdict["Bz"][it], Psi_ax=mdict["Psi_ax"][it], \
-                                           Psi_sep=mdict["Psi_sep"][it]))
-            self.define_and_verify_eq_shape()
+                                               mdict["Bt"][it], mdict["Bz"][it], Psi_ax=mdict["Psi_ax"][it], \
+                                               Psi_sep=mdict["Psi_sep"][it]))
+            self.post_process_slices()
             self.loaded = True
             R_ax, z_ax = self.get_axis(self.times[it])
             self.slices[-1].R_ax = R_ax
@@ -209,7 +194,7 @@ class EQDataExt:
         for it in range(len(t)):
             self.slices.append(self.read_EQ_from_Ext_single_slice(t[it], it))
             self.times.append(t[it])
-        self.define_and_verify_eq_shape()
+        self.post_process_slices()
         self.loaded = True
 
     def read_EQ_from_Ext_single_slice(self, time, index):
@@ -248,7 +233,7 @@ class EQDataExt:
             # Deep copy for scaling
             EQ_slice = copy.deepcopy(self.slices[itime])
             if(bt_vac_correction != 1.0):
-                if(EQ_slice.R_ax is None):
+                if(EQ_slice.R_ax is None or EQ_slice.R_ax != EQ_slice.R_ax):
                     R_ax, z_ax = self.get_axis(time)
                 else:
                     R_ax = EQ_slice.R_ax
@@ -262,16 +247,19 @@ class EQDataExt:
 
     def get_axis(self, time, get_Psi=False):
         cur_slice = self.GetSlice(time)
+        if(cur_slice.R_ax is not None and \
+           cur_slice.z_ax is not None):
+           return cur_slice.R_ax, cur_slice.z_ax
         R = cur_slice.R
         z = cur_slice.z
         Psi = np.copy(cur_slice.Psi)
         if(Psi.shape[0] != len(R)):
             Psi = Psi.T
-        special = cur_slice.special
-        if(Psi[len(R) // 2][len(z) // 2] > special[1]):
+        sign_flip = 1.0
+        if(Psi[len(R) // 2][len(z) // 2] > cur_slice.Psi_sep):
         # We want a minimum in the flux at the magn. axis
             Psi *= -1.0
-            special[1] *= -1.0
+            sign_flip *= -1.0
         psi_spl = RectBivariateSpline(R, z, Psi)
         indicies = np.unravel_index(np.argmin(Psi), Psi.shape)
         R_init = np.array([R[indicies[0]], z[indicies[1]]])
@@ -280,7 +268,7 @@ class EQDataExt:
                        bounds=[[np.min(R), np.max(R)], [np.min(z), np.max(z)]])
 #         print("Magnetic axis position: ", opt.x[0], opt.x[1])
         if(get_Psi):
-            return opt.x[0], opt.x[1], psi_spl(opt.x[0], opt.x[1])
+            return opt.x[0], opt.x[1], sign_flip*psi_spl(opt.x[0], opt.x[1])
         else:
             return opt.x[0], opt.x[1]
 
@@ -436,29 +424,5 @@ class EQDataExt:
             return R_LFS[0], z_LFS[0]
         return R_LFS, z_LFS
 
-    def map_Rz_to_rhop(self, time, R, z):
-        cur_slice = self.GetSlice(time)
-        if(hasattr(cur_slice, "rhop")):
-            rhop_spl = RectBivariateSpline(cur_slice.R, cur_slice.z, cur_slice.rhop)
-            return rhop_spl(R,z, grid=False)
-        if(hasattr(cur_slice, "Psi_ax")):
-            rhop = np.sqrt((cur_slice.Psi - cur_slice.Psi_ax) / (cur_slice.Psi_sep - cur_slice.Psi_ax))
-            rhop_spl = RectBivariateSpline(cur_slice.R, cur_slice.z, rhop)
-            return rhop_spl(R,z, grid=False)
-        Psi = cur_slice.Psi
-        special = cur_slice.special
-        if(Psi[len(cur_slice.R) / 2][len(cur_slice.z) / 2] > special[1]):
-        # We want a minimum in the flux at the magn. axis
-            Psi *= -1.0
-            special[1] *= -1.0
-        psi_spl = RectBivariateSpline(cur_slice.R, cur_slice.z, Psi)
-        indicies = np.unravel_index(np.argmin(Psi), Psi.shape)
-        R_init = np.array([cur_slice.R[indicies[0]], cur_slice.z[indicies[1]]])
-        opt = minimize(eval_spline, R_init, args=[psi_spl], \
-                 bounds=[[np.min(cur_slice.R), np.max(cur_slice.R)], [np.min(cur_slice.z), np.max(cur_slice.z)]])
-        psi_ax = psi_spl(opt.x[0], opt.x[1])
-        rhop = np.sqrt((Psi - psi_ax) / (special[1] - psi_ax))
-        rhop_spl = RectBivariateSpline(cur_slice.R, cur_slice.z, rhop)
-        return rhop_spl(R, z, grid=False)
 
 

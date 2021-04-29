@@ -8,7 +8,7 @@ import os
 from scipy.io import loadmat, savemat
 from Global_Settings import globalsettings
 import numpy as np
-from Basic_Methods.Equilibrium_Utils import EQDataSlice, special_points
+from Basic_Methods.Equilibrium_Utils import EQDataSlice
 from Diag_Types import Diag, ECRH_diag, ECI_diag, EXT_diag
 from Distribution_IO import load_f_from_mat
 from Distribution_Classes import Gene, GeneBiMax

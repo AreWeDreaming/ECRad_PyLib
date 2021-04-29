@@ -10,7 +10,7 @@ import dd
 from map_equ import equ_map
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline
-from Basic_Methods.Equilibrium_Utils import EQDataExt, EQDataSlice, special_points
+from Basic_Methods.Equilibrium_Utils import EQDataExt, EQDataSlice
 from scipy import __version__ as scivers
 from scipy import constants as cnst
 
@@ -141,18 +141,20 @@ class EQData(EQDataExt):
         z = self.equ.Zmesh
         dummy, time_index = self.equ._get_nearest_index(time)
         time_index = time_index[0]
-        special = special_points(self.equ.ssq['Rmag'][time_index], self.equ.ssq['Zmag'][time_index], self.equ.psi0[time_index], self.equ.ssq['Raus'][time_index], self.equ.ssq['Zsquad'][time_index], self.equ.psix[time_index])
         self.equ.read_pfm()
         Psi = self.equ.pfm[:, :, time_index]
-        rhop = np.sqrt((Psi - special.psiaxis) / (special.psispx - special.psiaxis))
         B_r, B_z, B_t = self.equ.Bmesh(time) 
         if(B_vac_correction):
-            EQ_slice = self.ApplyBVacCorrectionToSlice( EQDataSlice(time, R, z, \
-                                                                Psi, B_r, B_t, \
-                                                                B_z, special=special, \
-                                                                rhop=rhop ))
+            EQ_slice = self.ApplyBVacCorrectionToSlice(EQDataSlice(time, R, z, \
+                                                                   Psi, B_r, B_t, \
+                                                                   B_z, Psi_ax=self.equ.psi0[time_index], \
+                                                                   Psi_sep=self.equ.psix[time_index], \
+                                                                   R_ax=self.equ.ssq['Rmag'][time_index], \
+                                                                   z_ax=self.equ.ssq['Zmag'][time_index]))
         else:
-            EQ_slice = EQDataSlice(time, R, z, Psi, B_r, B_t, B_z, special=special, rhop=rhop )
+            EQ_slice = EQDataSlice(time, R, z, Psi, B_r, B_t, B_z, Psi_ax=self.equ.psi0[time_index], \
+                                   Psi_sep=self.equ.psix[time_index], R_ax=self.equ.ssq['Rmag'][time_index], \
+                                   z_ax=self.equ.ssq['Zmag'][time_index])
         if(bt_vac_correction != 1.0):
             if(EQ_slice.R_ax is None):
                 R_ax, z_ax = self.get_axis(time)

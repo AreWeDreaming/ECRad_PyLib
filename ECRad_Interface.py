@@ -18,6 +18,7 @@ from Distribution_IO import export_gene_fortran_friendly, \
                             export_gene_bimax_fortran_friendly, export_fortran_friendly
 from scipy.interpolate import InterpolatedUnivariateSpline
 from TB_Communication import make_topfile_no_data_load, make_Te_ne_files
+from netCDF4 import Dataset
 
 def GetECRadExec(Config, Scenario, time):
     # Determine OMP stacksize
@@ -734,6 +735,40 @@ def load_plasma_from_mat(path):
         print(e)
         print("Could not read external data")
         return None
+
+def load_from_plasma(filename):
+    rootgrp = Dataset(filename, "r", format="NETCDF4")
+    plasma_dict = {}
+    plasma_dict['shot'] = rootgrp["Plasma"]["shot"][...].item()
+    plasma_dict['time'] = np.array(rootgrp["Plasma"]["time"])
+    plasma_dict["2D_prof"] = bool(rootgrp["Plasma"]["2D_prof"][...].item())
+    plasma_dict["eq_dim"] = rootgrp["Plasma"]["eq_dim"][...].item()
+    for sub_key in ["Te", "ne"]:
+        plasma_dict[sub_key] = np.array(rootgrp["Plasma"][sub_key])
+    if(not plasma_dict["2D_prof"]):
+        plasma_dict["prof_reference"] = rootgrp["Plasma"]["prof_reference"][0]
+        plasma_dict[plasma_dict["prof_reference"]] = np.array(rootgrp["Plasma"][plasma_dict["prof_reference"]])
+    if(plasma_dict["eq_dim"] == 3):
+        for sub_key in ["B_ref", "s_plus", "s_max", \
+                        "interpolation_acc", "fourier_coeff_trunc", \
+                        "h_mesh", "delta_phi_mesh"]:
+            plasma_dict["eq_data_3D"][sub_key] = float(rootgrp["Plasma"]["eq_data_3D" + "_"  + sub_key][...].item())
+        for sub_key in ["use_mesh", "use_symmetry"]:
+            plasma_dict["eq_data_3D"][sub_key] = bool(rootgrp["Plasma"]["eq_data_3D" + "_"  + sub_key][...].item())
+        for sub_key in ["equilibrium_type", "vessel_filename"]:
+            plasma_dict["eq_data_3D"][sub_key] = rootgrp["Plasma"]["eq_data_3D" + "_"  + sub_key][0]
+        plasma_dict["eq_data_3D"]["equilibrium_files"] = np.array(rootgrp["Plasma"]["eq_data_3D" + "_" + \
+                                                                                    "equilibrium_files"])
+    else:
+        plasma_dict['eq_data_2D'] = EQDataExt(plasma_dict["shot"], Ext_data=True)
+        eq_slice_data = {}
+        for sub_key in ["R", "z", "Psi", "rhop", "Br", "Bt", "Bz",\
+                        "R_ax", "z_ax", "R_sep", "z_sep", "Psi_ax", "Psi_sep"]:
+            eq_slice_data[sub_key] = np.array(rootgrp["Plasma"]["eq_data_2D" + "_" +  sub_key])
+        plasma_dict['eq_data_2D'].fill_with_slices_from_dict(plasma_dict["time"], eq_slice_data)
+        plasma_dict['vessel_bd'] = np.array(rootgrp["Plasma"]["vessel_bd"])
+    rootgrp.close()
+    return plasma_dict
 
 def make_ECRadInputFromPlasmaDict(working_dir, plasma_dict, index, Scenario):
     # In the topfile the dimensions of the matrices are z,R unlike in the GUI where it is R,z -> transpose the matrices here
