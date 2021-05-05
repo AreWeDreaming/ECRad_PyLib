@@ -8,8 +8,7 @@ from ECRad_F2PY_Interface import ECRadF2PYInterface
 from ECRad_Results import ECRadResults
 from ECRad_Config import ECRadConfig
 from ECRad_Scenario import ECRadScenario
-import numpy as np
-import os
+import sys
 
 class ECRadDriver():
     '''
@@ -53,16 +52,16 @@ class ECRadDriver():
         self.Result = self.ECRad_F2PY_interface.process_single_timepoint(self.Result, itime)
         
 if(__name__=="__main__"):
-#     Scenario_file = "Scenario.nc"
-#     Config_file = "Config.nc"
-#     driver = ECRadDriver(Scenario_file=Scenario_file, Config_file=Config_file)
+    Config_file = sys.argv[1]
+    Scenario_file = sys.argv[2]
+    driver = ECRadDriver(Scenario_file=Scenario_file, Config_file=Config_file)
 
 #     driver = ECRadDriver(Scenario_file="/mnt/c/Users/Severin/ECRad/ECRad_33585_EXT_ed1.nc", \
 #                          Config_file="/mnt/c/Users/Severin/ECRad/ECRad_33585_EXT_ed1.nc")
 #     driver = ECRadDriver(Scenario_file="/mnt/c/Users/Severin/ECRad_regression/AUGX3/ECRad_32934_EXT_ed1.nc", \
 #                          Config_file="/mnt/c/Users/Severin/ECRad_regression/AUGX3/ECRad_32934_EXT_ed1.nc")
-    driver = ECRadDriver(Scenario_file="/mnt/c/Users/Severin/ECRad/Yu/ECRad_179328_EXT_ed11.nc", \
-                         Config_file="/mnt/c/Users/Severin/ECRad/Yu/ECRad_179328_EXT_ed11.nc")
+    # driver = ECRadDriver(Scenario_file="/mnt/c/Users/Severin/ECRad/Yu/ECRad_179328_EXT_ed11.nc", \
+    #                      Config_file="/mnt/c/Users/Severin/ECRad/Yu/ECRad_179328_EXT_ed11.nc")
     driver.run()
     
     
