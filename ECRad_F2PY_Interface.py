@@ -10,7 +10,6 @@ import os
 import sys
 import numpy as np
 sys.path.append(globalsettings.ECRadLibDir)
-from Plotting_Configuration import plt
 from scipy import constants as cnst
 from time import sleep
 
@@ -268,6 +267,7 @@ class ECRadF2PYInterface:
         
 
 if(__name__ == "__main__"):
+    from Plotting_Configuration import plt
     ECRad_folder = "/mnt/c/Users/Severin/ECRad/"
     os.chdir(globalsettings.ECRadLibDir)
     print(os.getcwd())
