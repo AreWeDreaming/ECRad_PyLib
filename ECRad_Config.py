@@ -186,11 +186,5 @@ class ECRadConfig(dict):
 
 if(__name__ == "__main__"):
     newConf = ECRadConfig(noLoad=True)
-#     newConf.from_mat(path_in="/mnt/c/Users/Severin/ECRad_regression/AUGX3/ECRad_32934_EXT_ed1.mat")
-#     newConf.to_netcdf("/mnt/c/Users/Severin/ECRad_regression/AUGX3/ECRad_32934_EXT_Config.nc")
-#     newConf.reset()
-#     newConf.from_netcdf("/mnt/c/Users/Severin/ECRad_regression/AUGX3/ECRad_32934_EXT_Config.nc")
-    newConf.from_mat( path_in="/mnt/c/Users/Severin/ECRad_regression/W7X/ECRad_20180823016002_EXT_ed19.mat")
-    newConf.to_netcdf("/mnt/c/Users/Severin/ECRad_regression/W7X/ECRad_20180823016002_EXT_Scenario.nc")
-    newConf = ECRadConfig(noLoad=True)
-    newConf.from_netcdf("/mnt/c/Users/Severin/ECRad_regression/W7X/ECRad_20180823016002_EXT_Scenario.nc")
+    newConf.load( filename="/mnt/c/Users/Severin/ECRad_regression/AUGX3/ECRad_32934_EXT_ed1.nc")
+    newConf.to_netcdf("/mnt/c/Users/Severin/ECRad_regression/AUGX3/ECRad_32934_EXT_Config.nc")

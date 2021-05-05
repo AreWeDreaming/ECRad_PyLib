@@ -519,7 +519,7 @@ class ECRadScenario(dict):
                                                          "eq_data_2D" + "_" +  sub_key, "f8", \
                                                          ("N_time", "N_eq_2D_R", "N_eq_2D_z"))
                 var[:] = self["plasma"]['eq_data_2D'].get_single_attribute_from_all_slices(sub_key)
-            for sub_key in ["R_ax", "z_ax", "R_sep", "z_sep", "Psi_ax", "Psi_sep"]:
+            for sub_key in ["R_ax", "z_ax", "Psi_ax", "Psi_sep"]:
                 var = rootgrp["Scenario"].createVariable("plasma" + "_" + \
                                                          "eq_data_2D" + "_" +  sub_key, "f8", \
                                                          ("N_time",))
@@ -625,7 +625,7 @@ class ECRadScenario(dict):
             self["plasma"]['eq_data_2D'] = EQDataExt(self["shot"], Ext_data=True)
             eq_slice_data = {}
             for sub_key in ["R", "z", "Psi", "rhop", "Br", "Bt", "Bz",\
-                            "R_ax", "z_ax", "R_sep", "z_sep", "Psi_ax", "Psi_sep"]:
+                            "R_ax", "z_ax", "Psi_ax", "Psi_sep"]:
                 eq_slice_data[sub_key] = np.array(rootgrp["Scenario"]["plasma" + "_" + \
                                                          "eq_data_2D" + "_" +  sub_key])
             self["plasma"]['eq_data_2D'].fill_with_slices_from_dict(self["time"], eq_slice_data)
@@ -741,14 +741,8 @@ class ECRadScenario(dict):
 
 if(__name__ == "__main__"):
     newScen = ECRadScenario(noLoad=True)
-    newScen.from_mat( path_in="/mnt/c/Users/Severin/ECRad/ECRad_35662_ECECTCCTA_ed10.mat")
-    newScen.to_netcdf("/mnt/c/Users/Severin/ECRad/ECRad_35662_ECECTCCTA_Scenario.nc")
-    newScen = ECRadScenario(noLoad=True)
-    newScen.from_netcdf("/mnt/c/Users/Severin/ECRad/ECRad_35662_ECECTCCTA_Scenario.nc")
-    newScen.from_mat( path_in="/mnt/c/Users/Severin/ECRad_regression/W7X/ECRad_20180823016002_EXT_ed19.mat")
-    newScen.to_netcdf("/mnt/c/Users/Severin/ECRad_regression/W7X/ECRad_20180823016002_EXT_Scenario.nc")
-    newScen = ECRadScenario(noLoad=True)
-    newScen.from_netcdf("/mnt/c/Users/Severin/ECRad_regression/W7X/ECRad_20180823016002_EXT_Scenario.nc")
+    newScen.load( filename="/mnt/c/Users/Severin/ECRad_regression/AUGX3/ECRad_32934_EXT_ed1.nc")
+    newScen.to_netcdf("/mnt/c/Users/Severin/ECRad_regression/AUGX3/ECRad_32934_EXT_Scenario.nc")
      
     
     

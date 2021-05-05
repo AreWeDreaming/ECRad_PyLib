@@ -110,7 +110,7 @@ class GlobalSettingsEXT:
         self.ECRadPylibRoot = os.path.abspath("../ECRad_PyLib/")
         self.ECRadGUIRoot = os.path.abspath("../ECRad_GUI/")
         if "SYS" in os.environ:
-            self.ECRadLibDir = os.path.join(self.ECRadRoot, ["SYS"])
+            self.ECRadLibDir = os.path.join(self.ECRadRoot, os.environ["SYS"])
         else:
             self.ECRadLibDir = os.path.join(self.ECRadRoot, "bin")
         self.ECRadPathBSUB = os.path.join(self.ECRadRoot,"ECRad_submit.bsub")
