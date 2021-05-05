@@ -109,11 +109,10 @@ class GlobalSettingsEXT:
         self.ECRadRoot = os.path.abspath("../ECRad_core")
         self.ECRadPylibRoot = os.path.abspath("../ECRad_PyLib/")
         self.ECRadGUIRoot = os.path.abspath("../ECRad_GUI/")
-        self.ECRadLibDir = os.path.join(self.ECRadRoot, os.environ["SYS"])
-        try:
-            self.ECRadPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRad")
-        except KeyError:
-            print("WARNING COULD NOT FIND ECRAD")
+        if "SYS" in os.environ:
+            self.ECRadLibDir = os.path.join(self.ECRadRoot, ["SYS"])
+        else:
+            self.ECRadLibDir = os.path.join(self.ECRadRoot, "bin")
         self.ECRadPathBSUB = os.path.join(self.ECRadRoot,"ECRad_submit.bsub")
         self.TB_path = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/torbeam_repo/TORBEAM/branches/lib-OUT/"
         self.qos_function = qos_function_tok
