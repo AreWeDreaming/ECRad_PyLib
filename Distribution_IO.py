@@ -14,7 +14,6 @@ from scipy.io import loadmat
 from Distribution_Classes import Distribution, Beam, Gene
 from Distribution_Helper_Functions import fill_zeros_with_thermal,check_distribution, \
                                           get_dist_moments_non_rel, get_dist_moments
-from Plotting_Configuration import plt, MaxNLocator
 from scipy import constants as cnst
 import h5py
 from Distribution_Functions import BiMaxwell2DV,Maxwell2D_beta,BiMaxwellJuettner2DV,Juettner2D,SynchrotonDistribution
@@ -349,6 +348,7 @@ def make_dist_from_Gene_input(path, shot, time, EQObj, debug=False):
     f_int = np.zeros(len(beta_par))
     f_test_int = np.zeros(len(beta_par))
     if(debug):
+        from Plotting_Configuration import plt, MaxNLocator
         for i in range(1, len(rhop)):
     #        plt.contourf(vpar, mu, np.log10(f[i].T))
     #        plt.colorbar()
@@ -389,6 +389,7 @@ def make_dist_from_Gene_input(path, shot, time, EQObj, debug=False):
     return gene_data
 
 def browse_gene_dists(path, shot, time, it):
+    from Plotting_Configuration import plt, MaxNLocator
     # Broken atm -> GENE requires EQSlice now
     gene_obj = Gene(path, shot, time=time, it=it)
     f = np.copy(gene_obj.f)
@@ -500,6 +501,7 @@ def export_art_gene_f_fortran_friendly(args):
     print("Gene distribution ready")
 
 def make_bimax_from_GENE(path, shot, time, wpath_parent, subdir_list, wrong=False, write=False):
+    from Plotting_Configuration import plt, MaxNLocator
     # For comparison of GENE Trad vs Bimax Trad
     rhop, R, z, beta_par, mu_norm, f, f0, g, Te, ne, B0 = make_dist_from_Gene_input(path, shot, time, debug=False)
     Te_perp, Te_par = get_dist_moments_non_rel(rhop, beta_par, mu_norm, f, Te, ne, B0, slices=1)
@@ -632,6 +634,7 @@ def make_bimax_from_GENE(path, shot, time, wpath_parent, subdir_list, wrong=Fals
     return
 
 def make_bimaxjuett_from_GENE(path, shot, time, wpath_parent, subdir_list):
+    from Plotting_Configuration import plt, MaxNLocator
     # For comparison of GENE Trad vs relativistic Bimax Trad
     rhop, R, z, beta_par, mu_norm, f, f0, g, Te, ne, B0 = make_dist_from_Gene_input(path, shot, time, debug=False)
     Te_perp, Te_par = get_dist_moments_non_rel(rhop, beta_par, mu_norm, f, Te, ne, B0, slices=1)
@@ -790,6 +793,7 @@ def make_synchroton_f(rpath, B):
     return Distribution(None, rhop, u, pitch, Fe, None, rhop_prof, Te_vec, ne_vec)     
 
 def plot_dist_moments(path, shot, time, eq_exp='AUGD', eq_diag='EQH', eq_ed=0):
+    from Plotting_Configuration import plt, MaxNLocator
     rhop_Gene, R, z, beta_par, mu_norm, f, f0, g, Te, ne, B0 = make_dist_from_Gene_input(path, shot, time, debug=False)
     Te_perp, Te_par = get_dist_moments_non_rel(rhop_Gene, beta_par, mu_norm, f, Te, ne, B0, slices=1)
     ax = plt.gca()
