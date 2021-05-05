@@ -4,7 +4,6 @@ Created on Jan 29, 2017
 @author: sdenk
 '''
 import os
-import wx
 import multiprocessing
 import sys
 from glob import glob
@@ -59,7 +58,6 @@ class GlobalSettingsITM:
     def __init__(self):
         self.AUG = True  # True  -> Start with True, set it to false if we run into problems
         self.root = os.path.expanduser("~/")
-        self.Phoenix = "phoenix" in wx.PlatformInfo
         self.ECRadRoot = "/afs/eufus.eu/g2itmdev/user/g2sdenk/git/augd_ecrad"
         self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot,os.environ['SYS'])
         self.ECRadPylibRoot = "../ECRad_PyLib/"
@@ -77,7 +75,6 @@ class GlobalSettingsAUG:
     def __init__(self):
         self.AUG = True  # True  -> Start with True, set it to false if we run into problems
         self.root = os.path.expanduser("~/")
-        self.Phoenix = "phoenix" in wx.PlatformInfo
         self.ECRadRoot = "../ECRad_core/"
         self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot,os.environ['SYS'])
 #         self.ECRadRoot =      # "/afs/ipp/home/s/sdenk/ECRad_testing/augd_ecrad/"# "/afs/ipp/home/r/rrf/F90/IDA/augd_ecrad/"
@@ -94,7 +91,6 @@ class GlobalSettingsIRIS:
     def __init__(self):
         self.AUG = False
         self.root = os.path.expanduser("~/")
-        self.Phoenix = "phoenix" in wx.PlatformInfo
         self.ECRadRoot = "../ECRad_core/"
         self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot,os.environ['SYS'])
 #         self.ECRadRoot =      # "/afs/ipp/home/s/sdenk/ECRad_testing/augd_ecrad/"# "/afs/ipp/home/r/rrf/F90/IDA/augd_ecrad/"
@@ -110,7 +106,6 @@ class GlobalSettingsEXT:
     def __init__(self):
         self.AUG = False  # True  -> Start with True, set it to false if we run into problems
         self.root = os.path.expanduser("~/")
-        self.Phoenix = "phoenix" in wx.PlatformInfo
         self.ECRadRoot = os.path.abspath("../ECRad_core")
         self.ECRadPylibRoot = os.path.abspath("../ECRad_PyLib/")
         self.ECRadGUIRoot = os.path.abspath("../ECRad_GUI/")
