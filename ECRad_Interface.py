@@ -763,7 +763,7 @@ def load_from_plasma(filename):
         plasma_dict['eq_data_2D'] = EQDataExt(plasma_dict["shot"], Ext_data=True)
         eq_slice_data = {}
         for sub_key in ["R", "z", "Psi", "rhop", "Br", "Bt", "Bz",\
-                        "R_ax", "z_ax", "R_sep", "z_sep", "Psi_ax", "Psi_sep"]:
+                        "R_ax", "z_ax", "Psi_ax", "Psi_sep"]:
             eq_slice_data[sub_key] = np.array(rootgrp["Plasma"]["eq_data_2D" + "_" +  sub_key])
         plasma_dict['eq_data_2D'].fill_with_slices_from_dict(plasma_dict["time"], eq_slice_data)
         plasma_dict['vessel_bd'] = np.array(rootgrp["Plasma"]["vessel_bd"])

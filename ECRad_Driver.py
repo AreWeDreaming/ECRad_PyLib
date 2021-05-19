@@ -9,7 +9,7 @@ from ECRad_Results import ECRadResults
 from ECRad_Config import ECRadConfig
 from ECRad_Scenario import ECRadScenario
 import sys
-
+import os
 class ECRadDriver():
     '''
     Driver for ECRad. Passes information to ECRad, runs ECRad and extracts results
@@ -52,8 +52,12 @@ class ECRadDriver():
         self.Result = self.ECRad_F2PY_interface.process_single_timepoint(self.Result, itime)
         
 if(__name__=="__main__"):
-    Config_file = sys.argv[1]
-    Scenario_file = sys.argv[2]
+    try:
+        Config_file = sys.argv[1]
+        Scenario_file = sys.argv[2]
+    except:
+        Config_file=os.path.join(os.path.expanduser("~"), ".ECRad_GUI_Default.nc") 
+        Scenario_file=os.path.join(os.path.expanduser("~"), ".ECRad_GUI_last_scenario.nc")
     driver = ECRadDriver(Scenario_file=Scenario_file, Config_file=Config_file)
 
 #     driver = ECRadDriver(Scenario_file="/mnt/c/Users/Severin/ECRad/ECRad_33585_EXT_ed1.nc", \

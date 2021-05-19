@@ -116,7 +116,7 @@ class ECRadResults(dict):
                                       "Y":r"Stix Parameter $Y$", "rhop":r"$\rho_\mathrm{pol}$", \
                                       "rhot":r"$\rho_\mathrm{tor}$", "Te":r"$T_\mathrm{e}$", \
                                       "ne":r"$n_\mathrm{e}$", "theta":r"$\theta$", \
-                                      "BPD":"BPD", "BPD_second":"BPD_\mathrm{2nd\,model}", \
+                                      "BPD":"BPD", "BPD_second":"BPD$_\mathrm{2nd\,model}$", \
                                       "Trad":r"$T_\mathrm{rad}$", "Trad_second":r"$T_\mathrm{rad,\,2nd\,model}}$", \
                                       "em":r"$j$", \
                                       "em_second":r"$j_{\mathrm{2nd\,model}}$", "ab":r"$\alpha$", \

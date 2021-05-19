@@ -121,8 +121,9 @@ class EQDataExt:
         self.slices = []
         for i in slices_sort:
             self.slices.append(new_slices[i])
-        self.post_process_slices()
         self.loaded = True
+        self.post_process_slices()
+        
                 
     def get_single_attribute_from_all_slices(self, attr):
         value = []
