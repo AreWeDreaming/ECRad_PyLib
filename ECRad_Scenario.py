@@ -198,10 +198,10 @@ class ECRadScenario(dict):
             ids['wall.description_2d.0.limiter.unit.0.outline.r'],
             ids['wall.description_2d.0.limiter.unit.0.outline.z']]).T
 
-    def set_up_from_imas(self, ids, times):
-        self.set_up_launch_from_imas(ids, times)
-        self.set_up_equilibrium_from_imas(ids, times)
-        self.set_up_profiles_from_imas(ids, times)
+    def set_up_from_imas(self, equilibrium_ids, profile_ids, ece_ids, times):
+        self.set_up_launch_from_imas(ece_ids, times)
+        self.set_up_equilibrium_from_imas(equilibrium_ids, times)
+        self.set_up_profiles_from_imas(profile_ids, times)
         self.set_up_dimensions()
             
     def set_up_dimensions(self):
