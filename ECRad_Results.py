@@ -236,6 +236,7 @@ class ECRadResults(dict):
         if(not light):
             self.Config = ECRadConfig(noLoad=noLoad)
             self.Scenario = ECRadScenario(noLoad=noLoad)
+        self.data_origin = None
         
     def load(self, filename):
         if(filename is not None):
@@ -261,6 +262,7 @@ class ECRadResults(dict):
         self["git"]["ECRad"] = np.genfromtxt(os.path.join(globalsettings.ECRadRoot, "id"), dtype=str).item()
         self["git"]["GUI"] = np.genfromtxt(os.path.join(globalsettings.ECRadGUIRoot, "id"), dtype=str).item()
         self["git"]["Pylib"] = np.genfromtxt(os.path.join(globalsettings.ECRadPylibRoot, "id"), dtype=str).item()
+        self.data_origin = "ECRad"
         if(autosave):
             self.autosave()
             
@@ -502,7 +504,8 @@ class ECRadResults(dict):
                                       mdict[mdict_key+mode][i_time][i_ch][i_ray])
                                     self["dimensions"]["N_LOS"][i_time][i_ch][i_mode][i_ray] = \
                                       len(self["ray"][sub_key][i_time][i_ch][i_mode][i_ray])
-                    self["ray"][sub_key] = np.array(self["ray"][sub_key])
+                    # Convert to ragged np array
+                    self["ray"][sub_key] = np.array(self["ray"][sub_key], dtype=np.object)
         self["weights"]["ray_weights"] = mdict["ray_weights"]
         self["weights"]["freq_weights"] = mdict["ray_weights"]
         if(self.Config["Physics"]["considered_modes"] > 2):
@@ -532,6 +535,7 @@ class ECRadResults(dict):
         self["git"]["ECRad"] = mdict["ECRad_git_tag"]
         self["git"]["GUI"] = mdict["ECRadGUI_git_tag"]
         self["git"]["Pylib"] = mdict["ECRadPylib_git_tag"]
+        self.data_origin = filename
         self.init = True
         return True
     
@@ -652,13 +656,14 @@ class ECRadResults(dict):
                             self["ray"][sub_key][i_time][i_ch][i_mode].append( \
                                       rootgrp["Results"][key+ "_" +sub_key][i_time,i_ch,i_mode,i_ray,\
                                                                       :self["dimensions"]["N_LOS"][i_time,i_ch,i_mode,i_ray]])
-            self["ray"][sub_key] = np.array(self["ray"][sub_key])
+            self["ray"][sub_key] = np.array(self["ray"][sub_key], dtype=np.object)
         # Get the shape information of the individual LOS length into the NETCDF file
         self.comment = rootgrp["Results"].comment 
         self.edition = rootgrp["Results"].edition
         self["git"]["ECRad"] = rootgrp["Results"].ECRad_git_tag
         self["git"]["GUI"] = rootgrp["Results"].ECRadGUI_git_tag
         self["git"]["Pylib"] = rootgrp["Results"].ECRadPylib_git_tag
+        self.data_origin = filename
         rootgrp.close()
     
 if(__name__ == "__main__"):

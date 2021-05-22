@@ -138,12 +138,84 @@ class ECRadScenario(dict):
         elif(rootgrp is not None):
             self.from_netcdf(rootgrp=rootgrp)
 
-    def set_up_launch_from_imas(self, ids, times=None):
+    def set_up_launch_from_imas(self, ece, times=None):
+        for key in self['diagnostic']:
+            self['diagnostic'][key] = []
         if(times is None):
-            times = ids['ece']['channel']['time']
+            times = ece.channel.time
         for time in times:
             self['diagnostic']["f"].append([])
-            for ch in ids['ece']['channel']:
+            for ch in ece.channel:
+                itime = np.argmin(np.abs(time - ch['time']))
+                self['diagnostic']["f"][-1].append(ch.frequency.data[itime])
+        self['diagnostic']["f"] = np.array(self['diagnostic']["f"])
+        self["dimensions"]["N_ch"] = len(self["diagnostic"]["f"][0])
+        for key in self['diagnostic']:
+            if(key == "f"):
+                continue
+            self['diagnostic'][key] = np.zeros(self['diagnostic']["f"].shape)
+        self['diagnostic']["R"][:] = ece.line_of_sight.first_point.r
+        self['diagnostic']["phi"][:] = np.rad2deg(ece.line_of_sight.first_point.phi)
+        self['diagnostic']["z"][:] = ece.line_of_sight.first_point.z
+        self['diagnostic']["phi_tor"][:] = \
+             np.rad2deg(ece.line_of_sight.second_point.phi) - self.diagnostic.phi[:] 
+        dR = ece.line_of_sight.second_point.r - self['diagnostic']["R"][:]
+        dz = ece.line_of_sight.second_point.z - self['diagnostic']["z"][:]
+        self['diagnostic']["theta_pol"][:] = -np.rad2deg(np.arctan(dz/dR))
+
+    def set_up_profiles_from_imas(self, core_profiles, equilibrium, times):
+        for key in self["plasma"]:
+            self["plasma"][key] = []
+        for time in times:
+            itime_profiles = np.argmin(np.abs(core_profiles.time - time))
+            itime_equilibrium = np.argmin(np.abs(equilibrium.time - time))
+            self["plasma"]["rhop_prof"].append(
+                np.sqrt((equilibrium.time_slice[itime_equilibrium].global_quantities.psi_axis - \
+                         core_profiles.profiles_1d[itime_profiles].grid.psi) /\
+                        (equilibrium.time_slice[itime_equilibrium].global_quantities.psi_axis - \
+                         equilibrium.time_slice[itime_equilibrium].global_quantities.psi_boundary)))
+            self["plasma"]["Te"].append(
+                core_profiles.profiles_1d[itime_profiles].electrons.temperature)
+            self["plasma"]["ne"].append(
+                core_profiles.profiles_1d[itime_profiles].electrons.density)
+        self["plasma"]["rhop_prof"] = np.array(self["plasma"]["rhop_prof"])
+        self["plasma"]["Te"] = np.array(self["plasma"]["Te"])
+        self["plasma"]["ne"] = np.array(self["plasma"]["ne"])
+
+    def set_up_equilibrium_from_imas(self, equilibrium, wall, times):
+        self["plasma"]["eq_dim"] = True
+        self["plasma"]["eq_data_2D"] = EQDataExt(self["shot"], Ext_data=True)
+        EQ_slices = []
+        for time in times:
+            itime = np.argmin(np.abs(equilibrium.time - time))
+            prof_2D = equilibrium.time_slice[itime].profiles_2d[0]
+            EQ_slices.append(EQDataSlice(\
+                time, prof_2D.grid.dim1,prof_2D.grid.dim2,\
+                prof_2D.psi, prof_2D.b_field_r, prof_2D.b_field_tor, prof_2D.b_field_z,
+                equilibrium.time_slice[itime].global_quantities.psi_axis,\
+                equilibrium.time_slice[itime].global_quantities.psi_boundary,\
+                equilibrium.time_slice[itime].global_quantities.magnetic_axis.r,\
+                equilibrium.time_slice[itime].global_quantities.magnetic_axis.z))
+        self["plasma"]["eq_data_2D"].set_slices_from_ext(times, EQ_slices)
+        self["dimensions"]["N_vessel_bd"] = np.array([ \
+            wall.description_2d[0].limiter.unit[0].outline.r,
+            wall.description_2d[0].limiter.unit[0].outline.z]).T
+
+    def set_up_from_imas(self, equilibrium_ids, profile_ids, ece_ids, wall_ids, times):
+        self.set_up_launch_from_imas(ece_ids, times)
+        self.set_up_equilibrium_from_imas(equilibrium_ids, wall_ids, times)
+        self.set_up_profiles_from_imas(profile_ids, equilibrium_ids, times)
+        self.set_up_dimensions()
+
+
+    def set_up_launch_from_omas(self, ods, times=None):
+        for key in self['diagnostic']:
+            self['diagnostic'][key] = []
+        if(times is None):
+            times = ods['ece']['channel']['time']
+        for time in times:
+            self['diagnostic']["f"].append([])
+            for ch in ods['ece']['channel']:
                 itime = np.argmin(np.abs(time - ch['time']))
                 self['diagnostic']["f"][-1].append(ch['frequency']['data'][itime])
         self['diagnostic']["f"] = np.array(self['diagnostic']["f"])
@@ -152,58 +224,59 @@ class ECRadScenario(dict):
             if(key == "f"):
                 continue
             self['diagnostic'][key] = np.zeros(self['diagnostic']["f"].shape)
-        self['diagnostic']["R"][:] = ids['ece']['line_of_sight']['first_point']["r"]
-        self['diagnostic']["phi"][:] = np.rad2deg(ids['ece']['line_of_sight']['first_point']["phi"])
-        self['diagnostic']["z"][:] = ids['ece']['line_of_sight']['first_point']["z"]
+        self['diagnostic']["R"][:] = ods['ece']['line_of_sight']['first_point']["r"]
+        self['diagnostic']["phi"][:] = np.rad2deg(ods['ece']['line_of_sight']['first_point']["phi"])
+        self['diagnostic']["z"][:] = ods['ece']['line_of_sight']['first_point']["z"]
         self['diagnostic']["phi_tor"][:] = \
-             np.rad2deg(ids['ece']['line_of_sight']['second_point']["phi"]) - self['diagnostic']["phi"][:] 
-        dR = ids['ece']['line_of_sight']['second_point']["r"] - self['diagnostic']["R"][:]
-        dz = ids['ece']['line_of_sight']['second_point']["z"] - self['diagnostic']["z"][:]
+             np.rad2deg(ods['ece']['line_of_sight']['second_point']["phi"]) - self['diagnostic']["phi"][:] 
+        dR = ods['ece']['line_of_sight']['second_point']["r"] - self['diagnostic']["R"][:]
+        dz = ods['ece']['line_of_sight']['second_point']["z"] - self['diagnostic']["z"][:]
         self['diagnostic']["theta_pol"][:] = -np.rad2deg(np.arctan(dz/dR))
 
-    def set_up_profiles_from_imas(self, ids, times):
-        self["plasma"][""]
+    def set_up_profiles_from_imas(self, ods, times):
+        for key in self["plasma"]:
+            self["plasma"][key] = []
         for time in times:
-            itime_profiles = np.argmin(np.abs(ids['core_profiles']['time'] - time))
-            itime_equilibrium = np.argmin(np.abs(ids['equilibrium']['time'] - time))
+            itime_profiles = np.argmin(np.abs(ods['core_profiles']['time'] - time))
+            itime_equilibrium = np.argmin(np.abs(ods['equilibrium']['time'] - time))
             self["plasma"]["rhop_prof"].append(
-                np.sqrt((ids['equilibrium']['time_slice'][itime_equilibrium]['global_quantities']['psi_axis'] - \
-                         ids['core_profiles']['profiles_1d'][itime_profiles]['grid']['psi']) /\
-                        (ids['equilibrium']['time_slice'][itime_equilibrium]['global_quantities']['psi_axis'] - \
-                         ids['equilibrium']['time_slice'][itime_equilibrium]['global_quantities']['psi_boundary'])))
+                np.sqrt((ods['equilibrium']['time_slice'][itime_equilibrium]['global_quantities']['psi_axis'] - \
+                         ods['core_profiles']['profiles_1d'][itime_profiles]['grid']['psi']) /\
+                        (ods['equilibrium']['time_slice'][itime_equilibrium]['global_quantities']['psi_axis'] - \
+                         ods['equilibrium']['time_slice'][itime_equilibrium]['global_quantities']['psi_boundary'])))
             self["plasma"]["Te"].append(
-                ids['core_profiles']['profiles_1d'][itime_profiles]['electrons']['temperature'])
+                ods['core_profiles']['profiles_1d'][itime_profiles]['electrons']['temperature'])
             self["plasma"]["ne"].append(
-                ids['core_profiles']['profiles_1d'][itime_profiles]['electrons']['density'])
+                ods['core_profiles']['profiles_1d'][itime_profiles]['electrons']['density'])
         self["plasma"]["rhop_prof"] = np.array(self["plasma"]["rhop_prof"])
         self["plasma"]["Te"] = np.array(self["plasma"]["Te"])
         self["plasma"]["ne"] = np.array(self["plasma"]["ne"])
 
-    def set_up_equilibrium_from_imas(self, ids, times):
+    def set_up_equilibrium_from_omas(self, ods, times):
         self["plasma"]["eq_dim"] = True
         self["plasma"]["eq_data_2D"] = EQDataExt(self["shot"], Ext_data=True)
         EQ_slices = []
         for time in times:
-            itime = np.argmin(np.abs(ids['equilibrium']['time'] - time))
-            prof_2D = ids['equilibrium']['time_slice'][itime]['profiles_2d.0']
+            itime = np.argmin(np.abs(ods['equilibrium']['time'] - time))
+            prof_2D = ods['equilibrium']['time_slice'][itime]['profiles_2d.0']
             EQ_slices.append(EQDataSlice(\
                 time, prof_2D["grid"]["dim1"],prof_2D["grid"]["dim2"],\
                 prof_2D["psi"], prof_2D["b_field_r"], prof_2D["b_field_tor"], prof_2D["b_field_z"],
-                ids['equilibrium']['time_slice'][itime]['global_quantities']['psi_axis'],\
-                ids['equilibrium']['time_slice'][itime]['global_quantities']['psi_boundary'],\
-                ids['equilibrium']['time_slice'][itime]['global_quantities']['magnetic_axis']['r'],\
-                ids['equilibrium']['time_slice'][itime]['global_quantities']['magnetic_axis']['z']))
+                ods['equilibrium']['time_slice'][itime]['global_quantities']['psi_axis'],\
+                ods['equilibrium']['time_slice'][itime]['global_quantities']['psi_boundary'],\
+                ods['equilibrium']['time_slice'][itime]['global_quantities']['magnetic_axis']['r'],\
+                ods['equilibrium']['time_slice'][itime]['global_quantities']['magnetic_axis']['z']))
         self["plasma"]["eq_data_2D"].set_slices_from_ext(times, EQ_slices)
         self["dimensions"]["N_vessel_bd"] = np.array([ \
-            ids['wall.description_2d.0.limiter.unit.0.outline.r'],
-            ids['wall.description_2d.0.limiter.unit.0.outline.z']]).T
+            ods['wall.description_2d.0.limiter.unit.0.outline.r'],
+            ods['wall.description_2d.0.limiter.unit.0.outline.z']]).T
 
-    def set_up_from_imas(self, equilibrium_ids, profile_ids, ece_ids, times):
-        self.set_up_launch_from_imas(ece_ids, times)
-        self.set_up_equilibrium_from_imas(equilibrium_ids, times)
-        self.set_up_profiles_from_imas(profile_ids, times)
-        self.set_up_dimensions()
-            
+    def set_up_from_omas(self, ods, times):
+        self.set_up_launch_from_imas(ods, times)
+        self.set_up_equilibrium_from_imas(ods, times)
+        self.set_up_profiles_from_imas(ods, times)
+        self.set_up_dimensions()    
+
     def set_up_dimensions(self):
         self["dimensions"]["N_time"] = len(self["time"])
         if(not self["plasma"]["2D_prof"]):

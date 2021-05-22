@@ -102,6 +102,12 @@ class UpdatePlotEvent(wx.PyCommandEvent):
 class UpdateConfigEvt(wx.PyCommandEvent):
     def __init__(self, evtType, id):
         wx.PyCommandEvent.__init__(self, evtType, id)
+
+    def set_config(self, config):
+        self.config = config
+
+    def set_data_origin(self, path):
+        self.path = path
         
 class GENEDataEvt(wx.PyCommandEvent):
     def __init__(self, evtType, id):
@@ -132,6 +138,7 @@ class UpdateDataEvt(wx.PyCommandEvent):
         self.data = None
         self.Config = None
         self.Results = None
+        self.path = None
 
     def SetData(self, data):
         self.data = data
@@ -141,6 +148,9 @@ class UpdateDataEvt(wx.PyCommandEvent):
 
     def SetConfig(self, Config):
         self.Config = Config
+
+    def SetPath(self, path):
+        self.path = path
 
 class NewStatusEvt(wx.PyCommandEvent):  # For the statusbar
     def __init__(self, evtType, id):
