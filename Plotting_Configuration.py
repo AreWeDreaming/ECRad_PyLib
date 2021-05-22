@@ -2,8 +2,9 @@ from matplotlib import use
 import wx
 use('wxAGG')
 from matplotlib import pyplot as plt
+from Global_Settings import globalsettings
 # plt.style.use('bmh')
-plot_mode = "Presentation"  #  "Presentation"  "Article"
+plot_mode = globalsettings.plot_mode  #  "Presentation"  "Article"
 if(plot_mode != "Software"):
     plt.rcParams['text.latex.preamble'] = r"\usepackage{siunitx} \sisetup{detect-all} " + \
                                           r"\usepackage{sansmath} \usepackage{amsmath} " + \

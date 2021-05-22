@@ -70,6 +70,7 @@ class GlobalSettingsITM:
         self.max_cores = 48
         self.pylib_folder = "../ECRad_Pylib"
         self.GUI_folder = "../ECRad_GUI"
+        self.plot_mode = "Presentation"
                 
 class GlobalSettingsAUG:
     def __init__(self):
@@ -86,6 +87,7 @@ class GlobalSettingsAUG:
         self.qos_function = qos_function_tok
         self.partition_function = partition_function_tok
         self.max_cores = 32
+        self.plot_mode = "Presentation"
         
 class GlobalSettingsIRIS:
     def __init__(self):
@@ -102,6 +104,7 @@ class GlobalSettingsIRIS:
         self.qos_function = qos_function_iris
         self.partition_function = partition_function_iris
         self.max_cores = 16
+        self.plot_mode = "Presentation"
 class GlobalSettingsEXT:
     def __init__(self):
         self.AUG = False  # True  -> Start with True, set it to false if we run into problems
@@ -120,6 +123,7 @@ class GlobalSettingsEXT:
         self.max_cores = multiprocessing.cpu_count()
         self.pylib_folder = "../ECRad_PyLib"
         self.GUI_folder = "../ECRad_GUI"
+        self.plot_mode = "Software"
 try:        
     if("sles" in os.environ["SYS"]):
         globalsettings = GlobalSettingsAUG()
@@ -135,7 +139,7 @@ library_list = glob("../*pylib") + glob("../*PyLib")
 found_lib = False
 
 for folder in library_list:
-    if("ECRad" in folder or "ecrad"in folder ):
+    if("ECRad" in folder or "ecrad" in folder ):
         sys.path.append(os.path.abspath(folder))
         found_lib = True
         ECRadPylibFolder = folder
