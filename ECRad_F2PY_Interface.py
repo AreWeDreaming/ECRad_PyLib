@@ -27,12 +27,14 @@ class ECRadF2PYInterface:
             import ECRad_pythonOMP as ECRad_python
         except Exception as e:
             ECRad_python = None
+            print(e)
             print("Failed to load OPEN_MP version of ECRad_Python")
             print("Currently set ECRad dir: " + globalsettings.ECRadLibDir)
         try:
             import ECRad_pythondb
         except Exception as e:
             ECRad_pythondb = None
+            print(e)
             print("Failed to load debug version of ECRad_Python")
             print("Currently set ECRad dir: " + globalsettings.ECRadLibDir)
         if(ECRad_python is None and ECRad_pythondb is None):
@@ -193,7 +195,7 @@ class ECRadF2PYInterface:
                     for imode in range(Result["dimensions"]["N_mode"]):
                         for ir in range(Result["dimensions"]["N_ray"]):
                             Result[key][sub_key][-1][ich,imode,ir] = np.zeros(Result.get_shape(key, start=-1, i_time=itime, \
-                                                                                             i_ch=ich, i_mode=imode, i_ray=ir))
+                                                                                               i_ch=ich, i_mode=imode, i_ray=ir))
             for ich in range(Result["dimensions"]["N_ch"]):
                 for imode in range(Result["dimensions"]["N_mode"]):
                     for ir in range(Result["dimensions"]["N_ray"]):
@@ -225,7 +227,7 @@ class ECRadF2PYInterface:
                             Result[key]["BPD"][-1][ich,imode,ir][:], \
                             Result[key]["BPD_second"][-1][ich,imode,ir][:] = \
                             self.cur_ECRad.get_ray_data(ich + 1, imode + 1, ir + 1, \
-                                                    Result["dimensions"]["N_LOS"][-1][ich,imode,ir])
+                                                        Result["dimensions"]["N_LOS"][-1][ich,imode,ir])
                         Result[key]["R"][-1][ich,imode,ir][:] = np.sqrt(Result[key]["x"][-1][ich,imode,ir]**2 + \
                                                                         Result[key]["y"][-1][ich,imode,ir]**2)
                         Result[key]["N"][-1][ich,imode,ir][:] = np.sqrt(Result[key]["Nx"][-1][ich,imode,ir]**2 + \
