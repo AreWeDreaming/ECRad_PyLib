@@ -24,7 +24,14 @@ class ECRadF2PYInterface:
 #         ecrad_exec_dummy = GetECRadExec(Config, Scenario)
 #         print(os.environ["LDFLAGS"])
         try:
-            import ECRad_pythonOMP as ECRad_python
+            import ECRad_python
+        except Exception as e:
+            ECRad_python = None
+            print(e)
+            print("Failed to load serial version of ECRad_Python")
+            print("Currently set ECRad dir: " + globalsettings.ECRadLibDir)
+        try:
+            import ECRad_pythonOMP
         except Exception as e:
             ECRad_python = None
             print(e)
@@ -37,12 +44,17 @@ class ECRadF2PYInterface:
             print(e)
             print("Failed to load debug version of ECRad_Python")
             print("Currently set ECRad dir: " + globalsettings.ECRadLibDir)
-        if(ECRad_python is None and ECRad_pythondb is None):
+        if(ECRad_python is None and ECRad_pythondb is None 
+                and ECRad_pythonOMP is None):
             print("Failed to load any version of ECRad_Python")
             print("Currently set ECRad dir: " + globalsettings.ECRadLibDir)
             raise(ImportError("Could not find ECRad"))
         if(ECRad_python is not None):
             self.ECRad = ECRad_python.ecrad_python
+        else:
+            self.ECRad = None
+        if(ECRad_pythonOMP is not None):
+            self.ECRadOMP = ECRad_pythonOMP.ecrad_python
         else:
             self.ECRad = None
         if(ECRad_pythondb is not None):
@@ -58,6 +70,9 @@ class ECRadF2PYInterface:
         if(Config["Execution"]["debug"]):
             print("Running ECRad with debug symbols.")
             self.cur_ECRad = self.ECRad_debug
+        elif(Config["Execution"]["parallel"]):
+            print("Running OPENMP ECRad.")
+            self.cur_ECRad = self.ECRadOMP
         else:
             self.cur_ECRad = self.ECRad
         self.N_ch = Scenario["dimensions"]["N_ch"]
@@ -118,7 +133,7 @@ class ECRadF2PYInterface:
             else:
                 self.cur_ECRad.initialize_ecrad(self.N_ch, 1, 1, eq_slice.R, \
                                             eq_slice.z, eq_slice.rhop, eq_slice.Br, \
-                                            eq_slice.Bt, eq_slice.Br, R_ax, z_ax)
+                                            eq_slice.Bt, eq_slice.Bz, R_ax, z_ax)
     
     def make_rays(self, Scenario, itime):
         if(Scenario["plasma"]["2D_prof"]):
