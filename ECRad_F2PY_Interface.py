@@ -33,7 +33,7 @@ class ECRadF2PYInterface:
         try:
             import ECRad_pythonOMP
         except Exception as e:
-            ECRad_python = None
+            ECRad_pythonOMP = None
             print(e)
             print("Failed to load OPEN_MP version of ECRad_Python")
             print("Currently set ECRad dir: " + globalsettings.ECRadLibDir)
