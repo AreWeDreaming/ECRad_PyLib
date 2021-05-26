@@ -56,7 +56,7 @@ class ECRadF2PYInterface:
         if(ECRad_pythonOMP is not None):
             self.ECRadOMP = ECRad_pythonOMP.ecrad_python
         else:
-            self.ECRad = None
+            self.ECRadOMP = None
         if(ECRad_pythondb is not None):
             self.ECRad_debug = ECRad_pythondb.ecrad_python
         else:
