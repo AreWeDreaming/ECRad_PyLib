@@ -161,7 +161,6 @@ class EQData(EQDataExt):
             else:
                 R_ax = EQ_slice.R_ax
             EQ_slice.Bt = self.adjust_external_Bt_vac(EQ_slice.B_t, EQ_slice.R, R_ax, bt_vac_correction)
-        self.eq_shape = (len(self.slices[0].R),len(self.slices[0].z))
         return EQ_slice
 
     def map_Rz_to_rhot(self, time, R, z):
