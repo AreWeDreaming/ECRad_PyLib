@@ -233,7 +233,7 @@ class ECRadScenario(dict):
         dz = ods['ece']['line_of_sight']['second_point']["z"] - self['diagnostic']["z"][:]
         self['diagnostic']["theta_pol"][:] = -np.rad2deg(np.arctan(dz/dR))
 
-    def set_up_profiles_from_imas(self, ods, times):
+    def set_up_profiles_from_omas(self, ods, times):
         for key in self["plasma"]:
             self["plasma"][key] = []
         for time in times:
@@ -613,8 +613,12 @@ class ECRadScenario(dict):
                 var[:] = self["diagnostic"][sub_key]
         if(globalsettings.AUG):
             for sub_key in self["AUG"].keys():
-                var = rootgrp["Scenario"].createVariable("AUG_" +  sub_key, str, \
-                                                         ("str_dim",))
+                if(sub_key.endswith("_ed")):
+                    var = rootgrp["Scenario"].createVariable("AUG_" +  sub_key, "i8", \
+                                                             ("str_dim",))
+                else:
+                    var = rootgrp["Scenario"].createVariable("AUG_" +  sub_key, str, \
+                                                             ("str_dim",))
                 var[0] = self["AUG"][sub_key]
         used_diag_dict_sub_keys = ["diags_exp", "diags_diag", \
                                    "diags_ed", "diags_Extra_arg_1",\

@@ -31,7 +31,7 @@ class ECRadF2PYInterface:
             print("Failed to load serial version of ECRad_Python")
             print("Currently set ECRad dir: " + globalsettings.ECRadLibDir)
         try:
-            import ECRad_pythonOMP
+            import ECRad_pythonOMPdb as ECRad_pythonOMP
         except Exception as e:
             ECRad_pythonOMP = None
             print(e)
@@ -132,8 +132,8 @@ class ECRadF2PYInterface:
                                                      eq_slice.Br, R_ax, z_ax)
             else:
                 self.cur_ECRad.initialize_ecrad(self.N_ch, 1, 1, eq_slice.R, \
-                                            eq_slice.z, eq_slice.rhop, eq_slice.Br, \
-                                            eq_slice.Bt, eq_slice.Bz, R_ax, z_ax)
+                                                eq_slice.z, eq_slice.rhop, eq_slice.Br, \
+                                                eq_slice.Bt, eq_slice.Bz, R_ax, z_ax)
     
     def make_rays(self, Scenario, itime):
         if(Scenario["plasma"]["2D_prof"]):
