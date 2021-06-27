@@ -8,30 +8,31 @@ import multiprocessing
 import sys
 from glob import glob
 import socket
+import getpass
 
 def qos_function_tok(cores, wall_time):
     if(cores == 1):
         if(wall_time <= 4):
-            return "--qos s.tok.short"
+            return "--qos=s.tok.short"
         elif(wall_time <= 36):
-            return "--qos s.tok.standard"
+            return "--qos=s.tok.standard"
         else:
-            return "--qos s.tok.long"
+            return "--qos=s.tok.long"
     else:
         if(wall_time <= 2):
-            return "--qos p.tok.openmp.2h"
+            return "--qos=p.tok.openmp.2h"
         elif(wall_time <= 4):
-            return "--qos p.tok.openmp.4h"
+            return "--qos=p.tok.openmp.4h"
         elif(wall_time <= 24):
-            return "--qos p.tok.openmp.24h"
+            return "--qos=p.tok.openmp.24h"
         else:
-            return "--qos p.tok.openmp.48h"
+            return "--qos=p.tok.openmp.48h"
     
 def qos_function_itm(cores, wall_time):
     if(wall_time <= 48):
         return ""
     else:
-        return "--qos skl_qos_fuagwlong"
+        return "--qos=skl_qos_fuagwlong"
     
 def qos_function_iris(cores, wall_time):
     return ""
@@ -54,6 +55,9 @@ def partition_function_iris(cores, wall_time):
     else:
         return "--partition=long"
 
+def account_function_current_user():
+    return "--account=" + getpass.getuser()
+
 class GlobalSettingsITM:
     def __init__(self):
         self.AUG = True  # True  -> Start with True, set it to false if we run into problems
@@ -67,6 +71,7 @@ class GlobalSettingsITM:
         self.TB_path = "/gss_efgw_work/work/g2sdenk/torbeam/lib-OUT/"
         self.qos_function = qos_function_itm
         self.partition_function = partition_function_itm
+        self.account_fuction = account_function_current_user
         self.max_cores = 48
         self.pylib_folder = "../ECRad_Pylib"
         self.GUI_folder = "../ECRad_GUI"
@@ -86,6 +91,7 @@ class GlobalSettingsAUG:
         self.TB_path = "/afs/ipp-garching.mpg.de/home/s/sdenk/torbeam/lib-OUT"
         self.qos_function = qos_function_tok
         self.partition_function = partition_function_tok
+        self.account_fuction = account_function_current_user
         self.max_cores = 32
         self.plot_mode = "Presentation"
         
@@ -103,8 +109,11 @@ class GlobalSettingsIRIS:
         self.TB_path = "/afs/ipp-garching.mpg.de/home/s/sdenk/torbeam/lib-OUT"
         self.qos_function = qos_function_iris
         self.partition_function = partition_function_iris
+        self.account_fuction = account_function_current_user
         self.max_cores = 16
         self.plot_mode = "Presentation"
+        
+        
 class GlobalSettingsEXT:
     def __init__(self):
         self.AUG = False  # True  -> Start with True, set it to false if we run into problems
@@ -116,7 +125,7 @@ class GlobalSettingsEXT:
             self.ECRadLibDir = os.path.join(self.ECRadRoot, os.environ["SYS"])
         else:
             self.ECRadLibDir = os.path.join(self.ECRadRoot, "bin")
-        self.ECRadPathBSUB = os.path.join(self.ECRadRoot,"ECRad_submit.bsub")
+        self.ECRadPathBSUB = os.path.join(self.ECRadPylibRoot,"ECRad_Driver_submit.bsub")
         self.TB_path = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/torbeam_repo/TORBEAM/branches/lib-OUT/"
         self.qos_function = qos_function_tok
         self.partition_function = partition_function_tok
@@ -125,11 +134,13 @@ class GlobalSettingsEXT:
         self.GUI_folder = "../ECRad_GUI"
         self.plot_mode = "Software"
 try:        
-    if("sles" in os.environ["SYS"]):
+    if("mpg.de" in socket.getfqdn()):
         globalsettings = GlobalSettingsAUG()
-    elif("rhel" in os.environ["SYS"]):
+    elif("eufus" in socket.getfqdn()):
         globalsettings = GlobalSettingsITM()
-    elif(socket.gethostname == "irisc.cluster"):
+    elif("gat" in socket.getfqdn()):
+        globalsettings = GlobalSettingsIRIS()
+    elif("mit" in socket.getfqdn()):
         globalsettings = GlobalSettingsIRIS()
     else:
         globalsettings = GlobalSettingsEXT()

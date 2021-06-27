@@ -13,17 +13,6 @@ def SetupECRadBatch(Config, Scenario):
     # Determine OMP stacksize
     parallel = Config["Execution"]["parallel"]
     parallel_cores = Config["Execution"]["parallel_cores"]
-    ECRadVers = globalsettings.ECRadPath
-    if(parallel):
-        ECRadVers += "OMP"
-    if(Scenario["plasma"]["eq_dim"] == 3):
-        ECRadVers += "USE3D"
-    if(Config["Execution"]["debug"]):
-        if(parallel):
-            print("No parallel version with debug symbols available at the moment")
-            print("Falling back to single core")
-            parallel = False
-        ECRadVers += "db"
     if(parallel and parallel_cores > globalsettings.max_cores):
         print("The maximum amount of cores for the current machine is: ", globalsettings.max_cores )
         print("Settings amount of cores to maximum for best performance")
@@ -40,19 +29,20 @@ def SetupECRadBatch(Config, Scenario):
         os.environ['OMP_STACKSIZE'] = "{0:d}k".format(stacksize)
     else:
         parallel_cores = 1 # serial
-    os.environ['ECRad_working_dir_1'] = Config["Execution"]["scratch_dir"]
-    os.environ['ECRad'] = ECRadVers
+    os.environ['ECRad_WORKING_DIR'] = Config["Execution"]["scratch_dir"]
+    os.environ['ECRad_DRIVER_DIR'] = globalsettings.ECRadPylibRoot
     launch_options_dict = {}
     launch_options_dict["jobname"] = "-J " + "E{0:5d}".format(Scenario["shot"])
-    launch_options_dict["IO"] = "-o {0:s} -e {1:s} ".format(os.path.join(Config["Execution"]["scratch_dir"], "ECRad.stdout"), \
-                                                            os.path.join(Config["Execution"]["scratch_dir"], "ECRad.stderr"))
+    launch_options_dict["stdout"] = "-o {0:s}".format(os.path.join(Config["Execution"]["scratch_dir"], "ECRad.stdout"))
+    launch_options_dict["stderr"] = "-e {0:s}".format(os.path.join(Config["Execution"]["scratch_dir"], "ECRad.stderr"))
     launch_options_dict["partition"] = globalsettings.partition_function(parallel_cores, Config["Execution"]["wall_time"])
     launch_options_dict["qos"] = globalsettings.qos_function(parallel_cores, Config["Execution"]["wall_time"])
+    launch_options_dict["account"] = globalsettings.account_fuction()
     launch_options_dict["memory"] = "--mem-per-cpu={0:d}M".format(int(Config["Execution"]["vmem"] / parallel_cores))
-    launch_options_dict["cpus"] = " --cpus-per-task={0:d}".format(parallel_cores)
+    launch_options_dict["cpus"] = "--cpus-per-task={0:d}".format(parallel_cores)
     InvokeECRad = ["sbatch"]
     for key in launch_options_dict:
-        InvokeECRad += " " + [launch_options_dict[key]]
-    InvokeECRad += " " + [globalsettings.ECRadPathBSUB]
+        InvokeECRad += [launch_options_dict[key]]
+    InvokeECRad += [globalsettings.ECRadPathBSUB]
     return InvokeECRad
 

@@ -1,0 +1,13 @@
+#!/bin/bash -l
+#SBATCH --export=ALL
+#SBATCH --ntasks=1
+#SBATCH --nodes=1
+#SBATCH --wait
+#SBATCH --chdir=$ECRad_DRIVER_DIR
+
+export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK:-1}
+
+# For pinning threads correctly:
+export OMP_PLACES=cores 
+
+srun python ECRad_Driver.py $ECRad_working_dir_1
