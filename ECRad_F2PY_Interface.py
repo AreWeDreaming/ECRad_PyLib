@@ -31,7 +31,7 @@ class ECRadF2PYInterface:
             print("Failed to load serial version of ECRad_Python")
             print("Currently set ECRad dir: " + globalsettings.ECRadLibDir)
         try:
-            import ECRad_pythonOMPdb as ECRad_pythonOMP
+            import ECRad_pythonOMP as ECRad_pythonOMP
         except Exception as e:
             ECRad_pythonOMP = None
             print(e)
