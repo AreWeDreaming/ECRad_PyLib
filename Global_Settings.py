@@ -74,7 +74,6 @@ class GlobalSettingsITM:
         self.ECRadGUIRoot = "../ECRad_GUI/"
         self.ECRadPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRad")
         self.ECRadPathBSUB = os.path.join(self.ECRadRoot,"ECRad_submit.bsub")
-        self.TB_path = "/gss_efgw_work/work/g2sdenk/torbeam/lib-OUT/"
         self.qos_function = qos_function_itm
         self.partition_function = partition_function_itm
         self.account_fuction = account_function_current_user
@@ -94,7 +93,6 @@ class GlobalSettingsAUG:
         self.ECRadGUIRoot = "../ECRad_GUI/"
         self.ECRadPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRad")
         self.ECRadPathBSUB = os.path.join(self.ECRadPylibRoot,"ECRad_Driver_submit.bsub")
-        self.TB_path = "/afs/ipp-garching.mpg.de/home/s/sdenk/torbeam/lib-OUT"
         self.qos_function = qos_function_tok
         self.partition_function = partition_function_tok
         self.account_fuction = account_function_current_user
@@ -112,11 +110,27 @@ class GlobalSettingsMIT:
         self.ECRadGUIRoot = "../ECRad_GUI/"
         self.ECRadPath = os.path.join(self.ECRadRoot,"bin","ECRad")
         self.ECRadPathBSUB = os.path.join(self.ECRadPylibRoot,"ECRad_Driver_submit.bsub")
-        self.TB_path = "/afs/ipp-garching.mpg.de/home/s/sdenk/torbeam/lib-OUT"
         self.qos_function = qos_function_engaging
         self.partition_function = partition_function_engaging
         self.account_fuction = account_function_current_user
         self.max_cores = 32
+        self.plot_mode = "Presentation"
+
+class GlobalSettingsITER:
+    def __init__(self):
+        self.AUG = False  # True  -> Start with True, set it to false if we run into problems
+        self.root = os.path.expanduser("~/")
+        self.ECRadRoot = "../ECRad_core/"
+        self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot,"bin")
+#         self.ECRadRoot =      # "/afs/ipp/home/s/sdenk/ECRad_testing/augd_ecrad/"# "/afs/ipp/home/r/rrf/F90/IDA/augd_ecrad/"
+        self.ECRadPylibRoot = "../ECRad_PyLib/"
+        self.ECRadGUIRoot = "../ECRad_GUI/"
+        self.ECRadPath = os.path.join(self.ECRadRoot,"bin","ECRad")
+        self.ECRadPathBSUB = os.path.join(self.ECRadPylibRoot,"ECRad_Driver_submit.bsub")
+        self.qos_function = qos_function_engaging
+        self.partition_function = partition_function_engaging
+        self.account_fuction = account_function_current_user
+        self.max_cores = 16
         self.plot_mode = "Presentation"
         
 class GlobalSettingsIRIS:
@@ -130,7 +144,6 @@ class GlobalSettingsIRIS:
         self.ECRadGUIRoot = "../ECRad_GUI/"
         self.ECRadPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRad")
         self.ECRadPathBSUB = os.path.join(self.ECRadPylibRoot,"ECRad_Driver_submit.bsub")
-        self.TB_path = "/afs/ipp-garching.mpg.de/home/s/sdenk/torbeam/lib-OUT"
         self.qos_function = qos_function_iris
         self.partition_function = partition_function_iris
         self.account_fuction = account_function_current_user
@@ -166,6 +179,8 @@ try:
         globalsettings = GlobalSettingsIRIS()
     elif("cm.cluster" in socket.getfqdn()):
         globalsettings = GlobalSettingsMIT()
+    elif("iter" in socket.getfqdn()):
+        globalsettings = GlobalSettingsITER()
     else:
         globalsettings = GlobalSettingsEXT()
 except KeyError:
