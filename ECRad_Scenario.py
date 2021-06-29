@@ -5,9 +5,11 @@ Created on Mar 20, 2019
 '''
 from collections import OrderedDict as od
 import os
+import imas
 from scipy.io import loadmat, savemat
 from Global_Settings import globalsettings, GlobalSettingsAUG
 import numpy as np
+np.set_printoptions(threshold=np.inf)
 from Basic_Methods.Equilibrium_Utils import EQDataExt, EQDataSlice
 from Diag_Types import Diag, ECRH_diag, ECI_diag, EXT_diag
 from Distribution_IO import load_f_from_mat
@@ -142,11 +144,16 @@ class ECRadScenario(dict):
         for key in self['diagnostic']:
             self['diagnostic'][key] = []
         if(times is None):
-            times = ece.channel.time
+            times = ece.channel[0].time
+            if len(times)==0:
+                times=[0]
         for time in times:
             self['diagnostic']["f"].append([])
             for ch in ece.channel:
-                itime = np.argmin(np.abs(time - ch['time']))
+                try:
+                    itime = np.argmin(np.abs(time - ch.time))
+                except:
+                    itime=0
                 self['diagnostic']["f"][-1].append(ch.frequency.data[itime])
         self['diagnostic']["f"] = np.array(self['diagnostic']["f"])
         self["dimensions"]["N_ch"] = len(self["diagnostic"]["f"][0])
@@ -158,9 +165,9 @@ class ECRadScenario(dict):
         self['diagnostic']["phi"][:] = np.rad2deg(ece.line_of_sight.first_point.phi)
         self['diagnostic']["z"][:] = ece.line_of_sight.first_point.z
         self['diagnostic']["phi_tor"][:] = \
-             np.rad2deg(ece.line_of_sight.second_point.phi) - self.diagnostic.phi[:] 
-        dR = ece.line_of_sight.second_point.r - self['diagnostic']["R"][:]
-        dz = ece.line_of_sight.second_point.z - self['diagnostic']["z"][:]
+             np.rad2deg(ece.line_of_sight.second_point.phi) - np.rad2deg(ece.line_of_sight.first_point.phi)
+        dR = ece.line_of_sight.second_point.r - ece.line_of_sight.first_point.r
+        dz = ece.line_of_sight.second_point.z - ece.line_of_sight.first_point.z
         self['diagnostic']["theta_pol"][:] = -np.rad2deg(np.arctan(dz/dR))
 
     def set_up_profiles_from_imas(self, core_profiles, equilibrium, times):
@@ -171,7 +178,7 @@ class ECRadScenario(dict):
             itime_equilibrium = np.argmin(np.abs(equilibrium.time - time))
             self["plasma"]["rhop_prof"].append(
                 np.sqrt((equilibrium.time_slice[itime_equilibrium].global_quantities.psi_axis - \
-                         core_profiles.profiles_1d[itime_profiles].grid.psi) /\
+                         equilibrium.time_slice[itime_equilibrium].profiles_1d.psi) /\
                         (equilibrium.time_slice[itime_equilibrium].global_quantities.psi_axis - \
                          equilibrium.time_slice[itime_equilibrium].global_quantities.psi_boundary)))
             self["plasma"]["Te"].append(
@@ -179,8 +186,10 @@ class ECRadScenario(dict):
             self["plasma"]["ne"].append(
                 core_profiles.profiles_1d[itime_profiles].electrons.density)
         self["plasma"]["rhop_prof"] = np.array(self["plasma"]["rhop_prof"])
+        self["plasma"]["prof_reference"] = "rhop_prof"
         self["plasma"]["Te"] = np.array(self["plasma"]["Te"])
         self["plasma"]["ne"] = np.array(self["plasma"]["ne"])
+
 
     def set_up_equilibrium_from_imas(self, equilibrium, wall, times):
         self["plasma"]["eq_dim"] = True
@@ -197,15 +206,18 @@ class ECRadScenario(dict):
                 equilibrium.time_slice[itime].global_quantities.magnetic_axis.r,\
                 equilibrium.time_slice[itime].global_quantities.magnetic_axis.z))
         self["plasma"]["eq_data_2D"].set_slices_from_ext(times, EQ_slices)
-        self["dimensions"]["N_vessel_bd"] = np.array([ \
+        self["plasma"]["vessel_bd"] = np.array([ \
             wall.description_2d[0].limiter.unit[0].outline.r,
             wall.description_2d[0].limiter.unit[0].outline.z]).T
+            
+
 
     def set_up_from_imas(self, equilibrium_ids, profile_ids, ece_ids, wall_ids, times):
         self.set_up_launch_from_imas(ece_ids, times)
         self.set_up_equilibrium_from_imas(equilibrium_ids, wall_ids, times)
         self.set_up_profiles_from_imas(profile_ids, equilibrium_ids, times)
         self.set_up_dimensions()
+
 
 
     def set_up_launch_from_omas(self, ods, times=None):
@@ -267,14 +279,14 @@ class ECRadScenario(dict):
                 ods['equilibrium']['time_slice'][itime]['global_quantities']['magnetic_axis']['r'],\
                 ods['equilibrium']['time_slice'][itime]['global_quantities']['magnetic_axis']['z']))
         self["plasma"]["eq_data_2D"].set_slices_from_ext(times, EQ_slices)
-        self["dimensions"]["N_vessel_bd"] = np.array([ \
+        self["plasma"]["vessel_bd"] = np.array([ \
             ods['wall.description_2d.0.limiter.unit.0.outline.r'],
             ods['wall.description_2d.0.limiter.unit.0.outline.z']]).T
 
     def set_up_from_omas(self, ods, times):
-        self.set_up_launch_from_imas(ods, times)
-        self.set_up_equilibrium_from_imas(ods, times)
-        self.set_up_profiles_from_imas(ods, times)
+        self.set_up_launch_from_omas(ods, times)
+        self.set_up_equilibrium_from_omas(ods, times)
+        self.set_up_profiles_from_omas(ods, times)
         self.set_up_dimensions()    
 
     def set_up_dimensions(self):
@@ -562,6 +574,7 @@ class ECRadScenario(dict):
             var[...] = self["scaling"][sub_key]
         var = rootgrp["Scenario"].createVariable("plasma" + "_" + "eq_dim", "i8")
         var[...] = self["plasma"]["eq_dim"]
+
         if(self["plasma"]["eq_dim"] == 3):
             for sub_key in ["B_ref", "s_plus", "s_max", \
                            "interpolation_acc", "fourier_coeff_trunc", \
@@ -582,26 +595,34 @@ class ECRadScenario(dict):
                                                      "equilibrium_files", str, ('N_time',))
             var[:] = self["plasma"]["eq_data_3D"]["equilibrium_files"]
         else:
+            print('else')
             for sub_key in ["R", "z"]:
                 var = rootgrp["Scenario"].createVariable("plasma" + "_" + \
                                                          "eq_data_2D" + "_" +  sub_key, "f8", \
                                                          ("N_time", "N_eq_2D_" + sub_key))
                 var[:] = self["plasma"]['eq_data_2D'].get_single_attribute_from_all_slices(sub_key)
+
             for sub_key in ["Psi", "rhop", "Br", "Bt", "Bz"]:
                 var = rootgrp["Scenario"].createVariable("plasma" + "_" + \
                                                          "eq_data_2D" + "_" +  sub_key, "f8", \
                                                          ("N_time", "N_eq_2D_R", "N_eq_2D_z"))
+                if np.shape(self["plasma"]['eq_data_2D'].get_single_attribute_from_all_slices(sub_key))[1]==0:
+                    print('Array is empty: '+sub_key)
                 var[:] = self["plasma"]['eq_data_2D'].get_single_attribute_from_all_slices(sub_key)
+                
             for sub_key in ["R_ax", "z_ax", "Psi_ax", "Psi_sep"]:
                 var = rootgrp["Scenario"].createVariable("plasma" + "_" + \
                                                          "eq_data_2D" + "_" +  sub_key, "f8", \
                                                          ("N_time",))
                 var[:] = self["plasma"]['eq_data_2D'].get_single_attribute_from_all_slices(sub_key)
+
             var = rootgrp["Scenario"].createVariable("plasma" + "_" + \
                                                      "vessel_bd", "f8", \
                                                      ("N_vessel_bd", "N_vessel_dim"))
             var[...,0] = self["plasma"]['vessel_bd'][...,0]
+
             var[...,1] = self["plasma"]['vessel_bd'][...,1]
+
         for sub_key in self["diagnostic"].keys():
             if(sub_key == "diag_name"):
                 var = rootgrp["Scenario"].createVariable("diagnostic_" +  sub_key, str, \
@@ -611,21 +632,20 @@ class ECRadScenario(dict):
                 var = rootgrp["Scenario"].createVariable("diagnostic_" +  sub_key, "f8", \
                                                              ("N_time","N_ch"))
                 var[:] = self["diagnostic"][sub_key]
+
         if(globalsettings.AUG):
             for sub_key in self["AUG"].keys():
-                if(sub_key.endswith("_ed")):
-                    var = rootgrp["Scenario"].createVariable("AUG_" +  sub_key, "i8", \
-                                                             ("str_dim",))
-                else:
-                    var = rootgrp["Scenario"].createVariable("AUG_" +  sub_key, str, \
-                                                             ("str_dim",))
+                var = rootgrp["Scenario"].createVariable("AUG_" +  sub_key, str, \
+                                                         ("str_dim",))
                 var[0] = self["AUG"][sub_key]
         used_diag_dict_sub_keys = ["diags_exp", "diags_diag", \
                                    "diags_ed", "diags_Extra_arg_1",\
                                    "diags_Extra_arg_2","diags_Extra_arg_3"]
         used_diag_dict_formatted = {}
+
         for sub_key in used_diag_dict_sub_keys:
             used_diag_dict_formatted[sub_key] = []
+
         for diagname in self["used_diags_dict"]:
             cur_diag = self["used_diags_dict"][diagname]
             if((diagname == "ECN" or diagname == "ECO" or diagname == "ECI")):
@@ -654,6 +674,7 @@ class ECRadScenario(dict):
                 used_diag_dict_formatted["diags_ed"].append(str(cur_diag.ed))
         rootgrp["Scenario"].createVariable("used_diags_dict_" +  "diags", str, \
                                            ("N_used_diags",))
+
         for sub_key in used_diag_dict_sub_keys:
             rootgrp["Scenario"].createVariable("used_diags_dict_" +  sub_key, str, \
                                                ("N_used_diags",))
@@ -662,6 +683,7 @@ class ECRadScenario(dict):
             for sub_key in used_diag_dict_sub_keys:
                 rootgrp["Scenario"]["used_diags_dict_" + sub_key][idiag] = \
                     used_diag_dict_formatted[sub_key][idiag]
+
         if(filename is not None):
             rootgrp.close()
 
