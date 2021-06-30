@@ -1225,8 +1225,8 @@ def load_IDA_data(shot, timepoints=None, exp="AUGD", ed=0, double_entries_allowe
     # IDA_ne_rhop_scal_mat = IDA.getSignal(\
     #                "ecenrpsc", dtype=np.double)
     try:
-        # if(sys.version_info.major == 3):
-        #     raise Exception("Cannot load IDA ECE data in python 3")
+        if(sys.version_info.major == 3):
+            raise Exception("Cannot load IDA ECE data in python 3")
         IDA_ECE_rhop_mat = IDA.getSignalGroup("ece_rhop", dtype=np.double)
         IDA_ECE_dat_mat = IDA.getSignalGroup("ece_dat", dtype=np.double)
         IDA_ECE_unc_mat = IDA.getSignalGroup("ece_unc", dtype=np.double)
