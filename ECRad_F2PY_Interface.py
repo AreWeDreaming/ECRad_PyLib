@@ -97,7 +97,7 @@ class ECRadF2PYInterface:
                                            Scenario["diagnostic"]["R"][itime], np.deg2rad(Scenario["diagnostic"]["phi"][itime]), \
                                            Scenario["diagnostic"]["z"][itime], np.deg2rad(Scenario["diagnostic"]["phi_tor"][itime]),\
                                            np.deg2rad(Scenario["diagnostic"]["theta_pol"][itime]), Scenario["diagnostic"]["dist_focus"][itime], \
-                                           Scenario["diagnostic"]["width"][itime])
+                                           Scenario["diagnostic"]["width"][itime], Scenario["diagnostic"]["pol_coeff_X"][itime])
         if(Config["Execution"]["parallel"]):
             self.cur_ECRad.set_ecrad_thread_count(Config["Execution"]["parallel_cores"])
         
@@ -214,6 +214,8 @@ class ECRadF2PYInterface:
             for ich in range(Result["dimensions"]["N_ch"]):
                 for imode in range(Result["dimensions"]["N_mode"]):
                     for ir in range(Result["dimensions"]["N_ray"]):
+                        if(Result["dimensions"]["N_LOS"][-1][ich,imode, ir] == 0):
+                            continue
                         Result[key]["s"][-1][ich,imode,ir][:], \
                             Result[key]["x"][-1][ich,imode,ir][:], \
                             Result[key]["y"][-1][ich,imode,ir][:], \
