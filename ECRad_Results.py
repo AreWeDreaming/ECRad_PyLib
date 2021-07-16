@@ -557,7 +557,7 @@ class ECRadResults(dict):
         self.init = True
         return True
     
-    def get_default_filename_and_edition(self, scratch=False):
+    def get_default_filename_and_edition(self, scratch=False, id=None):
         if(scratch):
             dir = self.Config["Execution"]["scratch_dir"]
         else:
@@ -565,18 +565,22 @@ class ECRadResults(dict):
         diag_str = ""
         for key in self.Scenario["used_diags_dict"]:
             diag_str += key
-        ed = 1
-        filename = os.path.join(dir, "ECRad_{0:5d}_{1:s}_ed{2:d}.nc".format(self.Scenario["shot"], diag_str, ed))
-        while(os.path.exists(filename)):
-            ed += 1
+        if(id is None):
+            ed = 1
             filename = os.path.join(dir, "ECRad_{0:5d}_{1:s}_ed{2:d}.nc".format(self.Scenario["shot"], diag_str, ed))
-        return filename, ed
+            while(os.path.exists(filename)):
+                ed += 1
+                filename = os.path.join(dir, "ECRad_{0:5d}_{1:s}_ed{2:d}.nc".format(self.Scenario["shot"], diag_str, ed))
+            return filename, ed
+        else:
+            filename = os.path.join(dir, "ECRad_Results_{0:d}.nc".format(id))
+            return filename, 0
 
-    def to_netcdf(self, filename=None, scratch=False):
+    def to_netcdf(self, filename=None, scratch=False, id=None):
         if(filename is not None):
             rootgrp = Dataset(filename, "w", format="NETCDF4")
         else:
-            filename, self.edition = self.get_default_filename_and_edition(scratch)
+            filename, self.edition = self.get_default_filename_and_edition(scratch, id=id)
             rootgrp = Dataset(filename, "w", format="NETCDF4")
         rootgrp.createGroup("Results")
         self.Config.to_netcdf(rootgrp=rootgrp)

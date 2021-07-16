@@ -30,19 +30,22 @@ def SetupECRadBatch(Config, Scenario):
     else:
         parallel_cores = 1 # serial
     os.environ['ECRad_WORKING_DIR'] = Config["Execution"]["scratch_dir"]
-    os.environ['HDF5_USE_FILE_LOCKING']="FALSE"
+    os.environ['HDF5_USE_FILE_LOCKING'] = "FALSE"
     print("Scratch dir set to: " + os.environ['ECRad_WORKING_DIR'])
     launch_options_dict = {}
-    launch_options_dict["jobname"] = "-J " + "E{0:5d}".format(Scenario["shot"])
-    launch_options_dict["stdout"] = "-o {0:s}".format(os.path.join(Config["Execution"]["scratch_dir"], "ECRad.stdout"))
-    launch_options_dict["stderr"] = "-e {0:s}".format(os.path.join(Config["Execution"]["scratch_dir"], "ECRad.stderr"))
-    launch_options_dict["partition"] = globalsettings.partition_function(parallel_cores, Config["Execution"]["wall_time"])
-    launch_options_dict["qos"] = globalsettings.qos_function(parallel_cores, Config["Execution"]["wall_time"])
-    launch_options_dict["account"] = globalsettings.account_fuction()
-    launch_options_dict["memory"] = "--mem-per-cpu={0:d}M".format(int(Config["Execution"]["vmem"] / parallel_cores))
-    launch_options_dict["cpus"] = "--cpus-per-task={0:d}".format(parallel_cores)
-    launch_options_dict["chdir"] = "--chdir=" + globalsettings.ECRadPylibRoot
-    InvokeECRad = ["sbatch"]
+    if(globalsettings.batch_submission_cmd == "sbatch"):
+        launch_options_dict["jobname"] = "-J " + "E{0:5d}".format(Scenario["shot"])
+        launch_options_dict["stdout"] = "-o {0:s}".format(os.path.join(Config["Execution"]["scratch_dir"], "ECRad.stdout"))
+        launch_options_dict["stderr"] = "-e {0:s}".format(os.path.join(Config["Execution"]["scratch_dir"], "ECRad.stderr"))
+        launch_options_dict["partition"] = globalsettings.partition_function(parallel_cores, Config["Execution"]["wall_time"])
+        launch_options_dict["qos"] = globalsettings.qos_function(parallel_cores, Config["Execution"]["wall_time"])
+        launch_options_dict["account"] = globalsettings.account_fuction()
+        launch_options_dict["memory"] = "--mem-per-cpu={0:d}M".format(int(Config["Execution"]["vmem"] / parallel_cores))
+        launch_options_dict["cpus"] = "--cpus-per-task={0:d}".format(parallel_cores)
+        launch_options_dict["chdir"] = "--chdir=" + globalsettings.ECRadPylibRoot
+        InvokeECRad = [globalsettings.batch_submission_cmd]
+    else:
+        InvokeECRad = [globalsettings.batch_submission_cmd]
     for key in launch_options_dict:
         if(len(launch_options_dict[key]) > 0):
             InvokeECRad += [launch_options_dict[key]]

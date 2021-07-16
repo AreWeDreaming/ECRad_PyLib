@@ -74,6 +74,7 @@ class GlobalSettingsITM:
         self.ECRadGUIRoot = os.path.abspath("../ECRad_GUI/")
         self.ECRadPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRad")
         self.ECRadPathBSUB = os.path.join(self.ECRadRoot,"ECRad_submit.bsub")
+        self.batch_submission_cmd = "sbatch"
         self.qos_function = qos_function_itm
         self.partition_function = partition_function_itm
         self.account_fuction = account_function_current_user
@@ -92,6 +93,7 @@ class GlobalSettingsAUG:
         self.ECRadGUIRoot = os.path.abspath("../ECRad_GUI/")
         self.ECRadPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRad")
         self.ECRadPathBSUB = os.path.join(self.ECRadPylibRoot,"ECRad_Driver_submit.bsub")
+        self.batch_submission_cmd = "sbatch"
         self.qos_function = qos_function_tok
         self.partition_function = partition_function_tok
         self.account_fuction = account_function_current_user
@@ -107,6 +109,7 @@ class GlobalSettingsMIT:
         self.ECRadPylibRoot = os.path.abspath("../ECRad_PyLib/")
         self.ECRadGUIRoot = os.path.abspath("../ECRad_GUI/")
         self.ECRadPath = os.path.join(self.ECRadRoot,"bin","ECRad")
+        self.batch_submission_cmd = "sbatch"
         self.ECRadPathBSUB = os.path.join(self.ECRadPylibRoot,"ECRad_Driver_submit.bsub")
         self.qos_function = qos_function_engaging
         self.partition_function = partition_function_engaging
@@ -124,6 +127,7 @@ class GlobalSettingsITER:
         self.ECRadGUIRoot = os.path.abspath("../ECRad_GUI/")
         self.ECRadPath = os.path.join(self.ECRadRoot,"bin","ECRad")
         self.ECRadPathBSUB = os.path.join(self.ECRadPylibRoot,"ECRad_Driver_submit.bsub")
+        self.batch_submission_cmd = "sbatch"
         self.qos_function = qos_function_engaging
         self.partition_function = partition_function_engaging
         self.account_fuction = account_function_current_user
@@ -140,6 +144,7 @@ class GlobalSettingsIRIS:
         self.ECRadGUIRoot = os.path.abspath("../ECRad_GUI/")
         self.ECRadPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRad")
         self.ECRadPathBSUB = os.path.join(self.ECRadPylibRoot,"ECRad_Driver_submit.bsub")
+        self.batch_submission_cmd = "sbatch"
         self.qos_function = qos_function_iris
         self.partition_function = partition_function_iris
         self.account_fuction = account_function_current_user
@@ -160,6 +165,7 @@ class GlobalSettingsEXT:
             self.ECRadLibDir = os.path.join(self.ECRadRoot, "bin")
         self.ECRadPathBSUB = os.path.join(self.ECRadPylibRoot,"ECRad_Driver_submit.bsub")
         self.TB_path = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/torbeam_repo/TORBEAM/branches/lib-OUT/"
+        self.batch_submission_cmd = "bash"
         self.qos_function = qos_function_tok
         self.partition_function = partition_function_tok
         self.account_fuction = account_function_current_user
