@@ -62,7 +62,7 @@ def qos_function_engaging(cores, wall_time):
     return "--qos=psfc_24h"
 
 def account_function_current_user():
-    return "--account=" + getpass.getuser()
+    return ""
 
 class GlobalSettingsITM:
     def __init__(self):
