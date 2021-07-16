@@ -30,6 +30,7 @@ def SetupECRadBatch(Config, Scenario):
     else:
         parallel_cores = 1 # serial
     os.environ['ECRad_WORKING_DIR'] = Config["Execution"]["scratch_dir"]
+    os.environ['HDF5_USE_FILE_LOCKING']="FALSE"
     print("Scratch dir set to: " + os.environ['ECRad_WORKING_DIR'])
     launch_options_dict = {}
     launch_options_dict["jobname"] = "-J " + "E{0:5d}".format(Scenario["shot"])
