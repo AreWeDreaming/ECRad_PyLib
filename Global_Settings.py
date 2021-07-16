@@ -167,7 +167,7 @@ class GlobalSettingsEXT:
         self.qos_function = qos_function_tok
         self.partition_function = partition_function_tok
         self.account_fuction = account_function_current_user
-        self.max_cores = multiprocessing.cpu_count()
+        self.max_cores = multiprocessing.cpu_count() / 2
         self.pylib_folder = "../ECRad_PyLib"
         self.GUI_folder = "../ECRad_GUI"
         self.plot_mode = "Software"
