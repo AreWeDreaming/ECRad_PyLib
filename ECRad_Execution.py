@@ -47,5 +47,7 @@ def SetupECRadBatch(Config, Scenario):
         if(len(launch_options_dict[key]) > 0):
             InvokeECRad += [launch_options_dict[key]]
     InvokeECRad += [globalsettings.ECRadPathBSUB]
-    return InvokeECRad
+    run_id = np.random.randint(1000000,9999999)
+    os.environ['ECRad_RUN_ID'] = str(run_id)
+    return InvokeECRad, run_id
 
