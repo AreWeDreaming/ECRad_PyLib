@@ -73,10 +73,10 @@ def GetECRadExec(Config, Scenario, time):
 
 def prepare_input_files(Config, Scenario, index, copy_dist=True, \
                         ext_result = None):
-    working_dir = Config.scratch_dir
+    working_dir = Config["Execution"]["scratch_dir"]
     # eq_exp = Config.EQ_exp always exp
     ECRad_data_path = os.path.join(working_dir, "ECRad_data", "")
-    if(Config.extra_output):
+    if(Config["Execution"]["extra_output"]):
         if(os.path.isdir(ECRad_data_path)):
         #Get rid of old data -> This ensures that the new data is really new
             rmtree(ECRad_data_path)
@@ -88,7 +88,7 @@ def prepare_input_files(Config, Scenario, index, copy_dist=True, \
             return False
         print("Created folder " + ECRad_data_path)#
 #         if(Config.dstf != "GB"):
-        Ich_path = os.path.join(ECRad_data_path, "Ich" + Config.dstf)
+        Ich_path = os.path.join(ECRad_data_path, "Ich" + Config["Physics"]["dstf"])
 #         else:
 #             Ich_path = os.path.join(ECRad_data_path, "IchGe")
         if(not os.path.isdir(Ich_path)):
@@ -130,53 +130,53 @@ def prepare_input_files(Config, Scenario, index, copy_dist=True, \
 #     if(Config.dstf == "GB"):
 #         input_file.write("Ge" + "\n")  # Model does not distinguish between Ge and GB
 #     else:
-    input_file.write(Config.dstf + "\n")
-    if(Config.extra_output):
+    input_file.write(Config["Physics"]["dstf"] + "\n")
+    if(Config["Execution"]["extra_output"]):
         input_file.write("T\n")
     else:
         input_file.write("F\n")
-    if(Config.raytracing):
+    if(Config["Physics"]["raytracing"]):
         input_file.write("F\n")
     else:
         input_file.write("T\n")
-    if(Config.ripple):
+    if(Config["Physics"]["ripple"]):
         input_file.write("T\n")
     else:
         input_file.write("F\n")
-    if(Config.weak_rel):
+    if(Config["Physics"]["weak_rel"]):
         input_file.write("T\n")
     else:
         input_file.write("F\n")
-    input_file.write("{0:1.12E}".format(Config.ratio_for_3rd_harm) + "\n")
-    input_file.write(str(Config.reflec_model) + "\n")
-    input_file.write("{0:1.12E}".format(Config.reflec_X) + "\n")
-    input_file.write("{0:1.12E}".format(Config.reflec_O) + "\n")
-    input_file.write(str(Config.considered_modes) + "\n")
-    input_file.write("{0:1.12E}".format(Config.mode_conv) + "\n")
-    input_file.write(str(Config.N_freq) + "\n")
-    input_file.write(str(Config.N_ray) + "\n")
-    input_file.write("{0:1.12E}".format(Config.large_ds) + "\n")
-    input_file.write("{0:1.12E}".format(Config.small_ds) + "\n")
-    input_file.write("{0:1.12E}".format(Config.R_shift) + "\n")
-    input_file.write("{0:1.12E}".format(Config.z_shift) + "\n")
-    input_file.write("{0:10d}".format(Config.max_points_svec) + "\n")
-    if(Config.use_ext_rays):
+    input_file.write("{0:1.12E}".format(Config["Physics"]["ratio_for_3rd_harm"]) + "\n")
+    input_file.write(str(0) + "\n")
+    input_file.write("{0:1.12E}".format(Config["Physics"]["reflec_X"]) + "\n")
+    input_file.write("{0:1.12E}".format(Config["Physics"]["reflec_O"]) + "\n")
+    input_file.write(str(Config["Physics"]["considered_modes"]) + "\n")
+    input_file.write("{0:1.12E}".format(Config["Physics"]["mode_conv"]) + "\n")
+    input_file.write(str(Config["Physics"]["N_freq"]) + "\n")
+    input_file.write(str(Config["Physics"]["N_ray"]) + "\n")
+    input_file.write("{0:1.12E}".format(Config["Numerics"]["large_ds"]) + "\n")
+    input_file.write("{0:1.12E}".format(Config["Numerics"]["small_ds"]) + "\n")
+    input_file.write("{0:1.12E}".format(Config["Physics"]["R_shift"]) + "\n")
+    input_file.write("{0:1.12E}".format(Config["Physics"]["z_shift"]) + "\n")
+    input_file.write("{0:10d}".format(Config["Numerics"]["max_points_svec"] ) + "\n")
+    if(Config["Physics"]["use_ext_rays"]):
         input_file.write("T\n")
     else:
         input_file.write("F\n")
-    if(Scenario.use3Dscen.used):
+    if(Scenario["plasma"]["eq_dim"] == 3):
         input_file.write("3D\n")
-    elif(Scenario.plasma_dict["Te"][0].ndim == 2):
+    elif(Scenario["plasma"]["2D_prof"]):
         input_file.write("2D\n")
     else:
         input_file.write("1D\n")
     input_file.flush()
     input_file.close()
-    if(Config.use_ext_rays):
+    if(Config["Physics"]["use_ext_rays"]):
         if(ext_result is None):
             raise ValueError("Told to write external rays. but no external result provided")
         write_ext_ray_input(ECRad_data_path, Config, Scenario, index, ext_result)
-    if(Scenario.use3Dscen.used):
+    if(Scenario["plasma"]["eq_dim"] == 3):
         try:
             use3dconfigfile = open(os.path.join(ECRad_data_path, "equ3D_info"), "w")
             use3dconfigfile.write(os.path.basename(Scenario.use3Dscen.equilibrium_file) + "\n")
@@ -246,6 +246,8 @@ def prepare_input_files(Config, Scenario, index, copy_dist=True, \
             Te_par_file.write("{0: 1.12E} {1: 1.12E}\n".format(Scenario.GENE_obj.rhop[i], Te_par[i]))
         Te_par_file.close()
     return True
+
+
 
 def write_ext_ray_input(ECRad_data_path, Config, Scenario, index, ext_results):
     ext_ray_path = os.path.join(ECRad_data_path, "ext_rays")

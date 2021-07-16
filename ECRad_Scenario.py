@@ -11,7 +11,7 @@ import numpy as np
 from Basic_Methods.Equilibrium_Utils import EQDataExt, EQDataSlice
 from Diag_Types import Diag, ECRH_diag, ECI_diag, EXT_diag
 from Distribution_IO import load_f_from_mat
-from Distribution_Classes import Gene, GeneBiMax
+from Distribution_Classes import Distribution, Gene, GeneBiMax
 from netCDF4 import Dataset
 if(globalsettings.AUG):
     from ECRad_DIAG_AUG import DefaultDiagDict
@@ -330,9 +330,9 @@ class ECRadScenario(dict):
             self["plasma"]["2D_prof"] = mdict["profile_dimension"] > 1
         except KeyError:
             if(increase_time_dim):
-                self["plasma"]["2D_prof"] = mdict["Te"].ndim  > 1
+                self["plasma"]["2D_prof"] = mdict["Te"].ndim > 1
             else:
-                self["plasma"]["2D_prof"] = mdict["Te"][0].ndim  > 1
+                self["plasma"]["2D_prof"] = mdict["Te"][0].ndim > 1
         # Loading from .mat sometimes adds single entry arrays that we don't want
         at_least_1d_keys = ["diag", "time", "Diags_exp", "Diags_diag", "Diags_ed", "Extra_arg_1", "Extra_arg_2", "Extra_arg_3", \
                             "used_diags"]
@@ -662,6 +662,8 @@ class ECRadScenario(dict):
             for sub_key in used_diag_dict_sub_keys:
                 rootgrp["Scenario"]["used_diags_dict_" + sub_key][idiag] = \
                     used_diag_dict_formatted[sub_key][idiag]
+        if(self["plasma"]["dist_obj"] is not None):
+            self["plasma"]["dist_obj"].to_netcdf(rootgrp)
         if(filename is not None):
             rootgrp.close()
 
@@ -745,6 +747,9 @@ class ECRadScenario(dict):
                 if(diag_key in list(self["used_diags_dict"])):
                     self["avail_diags_dict"].update({diag_key: self["used_diags_dict"][diag_key]})
         self.default_diag = list(self["used_diags_dict"].keys())[0]
+        if("BounceDistribution" in rootgrp.groups.keys()):
+            self["plasma"]["dist_obj"] = Distribution()
+            self["plasma"]["dist_obj"].from_netcdf(rootgrp)
         if(filename is not None):
             rootgrp.close()
         
