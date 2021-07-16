@@ -68,10 +68,10 @@ class GlobalSettingsITM:
     def __init__(self):
         self.AUG = True  # True  -> Start with True, set it to false if we run into problems
         self.root = os.path.expanduser("~/")
-        self.ECRadRoot = "/afs/eufus.eu/g2itmdev/user/g2sdenk/git/augd_ecrad"
-        self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot,os.environ['SYS'])
-        self.ECRadPylibRoot = "../ECRad_PyLib/"
-        self.ECRadGUIRoot = "../ECRad_GUI/"
+        self.ECRadRoot = os.path.abspath("../ECRad_core")
+        self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot, os.environ['SYS'])
+        self.ECRadPylibRoot = os.path.abspath("../ECRad_PyLib/")
+        self.ECRadGUIRoot = os.path.abspath("../ECRad_GUI/")
         self.ECRadPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRad")
         self.ECRadPathBSUB = os.path.join(self.ECRadRoot,"ECRad_submit.bsub")
         self.qos_function = qos_function_itm
@@ -87,10 +87,9 @@ class GlobalSettingsAUG:
         self.AUG = True  # True  -> Start with True, set it to false if we run into problems
         self.root = os.path.expanduser("~/")
         self.ECRadRoot = "../ECRad_core/"
-        self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot,os.environ['SYS'])
-#         self.ECRadRoot =      # "/afs/ipp/home/s/sdenk/ECRad_testing/augd_ecrad/"# "/afs/ipp/home/r/rrf/F90/IDA/augd_ecrad/"
-        self.ECRadPylibRoot = "../ECRad_PyLib/"
-        self.ECRadGUIRoot = "../ECRad_GUI/"
+        self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot, os.environ['SYS'])
+        self.ECRadPylibRoot = os.path.abspath("../ECRad_PyLib/")
+        self.ECRadGUIRoot = os.path.abspath("../ECRad_GUI/")"
         self.ECRadPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRad")
         self.ECRadPathBSUB = os.path.join(self.ECRadPylibRoot,"ECRad_Driver_submit.bsub")
         self.qos_function = qos_function_tok
@@ -103,11 +102,10 @@ class GlobalSettingsMIT:
     def __init__(self):
         self.AUG = False  # True  -> Start with True, set it to false if we run into problems
         self.root = os.path.expanduser("~/")
-        self.ECRadRoot = "../ECRad_core/"
-        self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot,"bin")
-#         self.ECRadRoot =      # "/afs/ipp/home/s/sdenk/ECRad_testing/augd_ecrad/"# "/afs/ipp/home/r/rrf/F90/IDA/augd_ecrad/"
-        self.ECRadPylibRoot = "../ECRad_PyLib/"
-        self.ECRadGUIRoot = "../ECRad_GUI/"
+        self.ECRadRoot = os.path.abspath("../ECRad_core")
+        self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot, "bin")
+        self.ECRadPylibRoot = os.path.abspath("../ECRad_PyLib/")
+        self.ECRadGUIRoot = os.path.abspath("../ECRad_GUI/")
         self.ECRadPath = os.path.join(self.ECRadRoot,"bin","ECRad")
         self.ECRadPathBSUB = os.path.join(self.ECRadPylibRoot,"ECRad_Driver_submit.bsub")
         self.qos_function = qos_function_engaging
@@ -120,11 +118,10 @@ class GlobalSettingsITER:
     def __init__(self):
         self.AUG = False  # True  -> Start with True, set it to false if we run into problems
         self.root = os.path.expanduser("~/")
-        self.ECRadRoot = "../ECRad_core/"
-        self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot,"bin")
-#         self.ECRadRoot =      # "/afs/ipp/home/s/sdenk/ECRad_testing/augd_ecrad/"# "/afs/ipp/home/r/rrf/F90/IDA/augd_ecrad/"
-        self.ECRadPylibRoot = "../ECRad_PyLib/"
-        self.ECRadGUIRoot = "../ECRad_GUI/"
+        self.ECRadRoot = os.path.abspath("../ECRad_core")
+        self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot, "bin")
+        self.ECRadPylibRoot = os.path.abspath("../ECRad_PyLib/")
+        self.ECRadGUIRoot = os.path.abspath("../ECRad_GUI/")
         self.ECRadPath = os.path.join(self.ECRadRoot,"bin","ECRad")
         self.ECRadPathBSUB = os.path.join(self.ECRadPylibRoot,"ECRad_Driver_submit.bsub")
         self.qos_function = qos_function_engaging
@@ -137,11 +134,10 @@ class GlobalSettingsIRIS:
     def __init__(self):
         self.AUG = False
         self.root = os.path.expanduser("~/")
-        self.ECRadRoot = "../ECRad_core/"
-        self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot,os.environ['SYS'])
-#         self.ECRadRoot =      # "/afs/ipp/home/s/sdenk/ECRad_testing/augd_ecrad/"# "/afs/ipp/home/r/rrf/F90/IDA/augd_ecrad/"
-        self.ECRadPylibRoot = "../ECRad_PyLib/"
-        self.ECRadGUIRoot = "../ECRad_GUI/"
+        self.ECRadRoot = os.path.abspath("../ECRad_core")
+        self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot, "bin")
+        self.ECRadPylibRoot = os.path.abspath("../ECRad_PyLib/")
+        self.ECRadGUIRoot = os.path.abspath("../ECRad_GUI/")
         self.ECRadPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRad")
         self.ECRadPathBSUB = os.path.join(self.ECRadPylibRoot,"ECRad_Driver_submit.bsub")
         self.qos_function = qos_function_iris
