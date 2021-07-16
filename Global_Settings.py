@@ -166,6 +166,7 @@ class GlobalSettingsEXT:
         self.TB_path = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/torbeam_repo/TORBEAM/branches/lib-OUT/"
         self.qos_function = qos_function_tok
         self.partition_function = partition_function_tok
+        self.account_fuction = account_function_current_user
         self.max_cores = multiprocessing.cpu_count()
         self.pylib_folder = "../ECRad_PyLib"
         self.GUI_folder = "../ECRad_GUI"

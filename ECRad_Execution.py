@@ -42,7 +42,8 @@ def SetupECRadBatch(Config, Scenario):
     launch_options_dict["cpus"] = "--cpus-per-task={0:d}".format(parallel_cores)
     InvokeECRad = ["sbatch"]
     for key in launch_options_dict:
-        InvokeECRad += [launch_options_dict[key]]
+        if(len(launch_options_dict[key]) > 0):
+            InvokeECRad += [launch_options_dict[key]]
     InvokeECRad += [globalsettings.ECRadPathBSUB]
     return InvokeECRad
 
