@@ -378,6 +378,7 @@ class ECRadResults(dict):
         modes, modes_mix = self.set_dimensions()
         for key in ["Trad"]:
             for sub_key in self.sub_keys[key]:
+                self[key][sub_key] = np.zeros(self.get_shape(key))
                 for i_mode, mode in enumerate(modes_mix):
                     if(sub_key == "T"):
                         self[key][sub_key] = np.exp(-self["Trad"]["tau"])
@@ -385,11 +386,11 @@ class ECRadResults(dict):
                     elif(sub_key == "T_second"):
                         self[key][sub_key] = np.exp(-self["Trad"]["tau_second"])
                         continue
-                    self[key][sub_key] = np.zeros(self.get_shape(key))
                     mdict_key = sub_key.replace("second","comp")
                     self[key][sub_key][...,i_mode,:] = mdict[mode+mdict_key].reshape(self.get_shape(key,stop=1) + \
-                                                                                     self.get_shape(key,start=2))
+                                                                                     self.get_shape(key,start=2)) *1.e3
         if(self["dimensions"]["N_mode"] > 1):
+            mode_info_printed = False
             # mode resolved resonances are not available in .mat files
             for key in ["resonance"]:
                 for sub_key in self.sub_keys[key]:
@@ -406,6 +407,11 @@ class ECRadResults(dict):
                     try:
                         self[key][sub_key][...,0,:] = mdict[formatted_key].reshape(self.get_shape(key,stop=1) + \
                                                                                    self.get_shape(key,start=2))
+                        if(not mode_info_printed):
+                            print("INFO:: No mode specific resonances in .mat files. Using mixed modes for all resonances.")
+                            mode_info_printed = True
+                        for imode in range(1,3):
+                            self[key][sub_key][...,imode,:] = self[key][sub_key][...,0,:]
                     except KeyError:
                         print("INFO: Couldn't load " + sub_key + " from result file")
         else:
@@ -440,7 +446,7 @@ class ECRadResults(dict):
                 else:
                     mdict_key = sub_key
                 if(mdict_key+mode not in mdict.keys()):
-                    print("INFO: Failed to reshape " + key + "/" + sub_key)
+                    print("Cannot find " + key + "/" + sub_key + " in .mat")
                     if(sub_key not in self.failed_keys[key]):
                         self.failed_keys[key].append(sub_key)
                     continue
@@ -452,6 +458,7 @@ class ECRadResults(dict):
                     mdict[mdict_key+mode] = np.expand_dims(mdict[mdict_key+mode],2)
         for key in ["ray", "BPD"]:
             for sub_key in self.sub_keys[key]:
+                sub_key_error_printed = False
                 if(key == "BPD"):
                     mdict_key = None
                     #3D rhot
@@ -488,7 +495,8 @@ class ECRadResults(dict):
                     else:
                         mdict_key = sub_key
                     if(mdict_key+mode not in mdict.keys()):
-                        print("INFO: Cannot load " + key + "/" + sub_key)
+                        if(sub_key !="R"):
+                            print("INFO: Cannot load " + key + "/" + sub_key)
                         if(sub_key not in self.failed_keys[key]):
                             self.failed_keys[key].append(sub_key)
                         continue
@@ -500,10 +508,19 @@ class ECRadResults(dict):
                             for i_mode, mode in enumerate(modes):
                                 self["ray"][sub_key][i_time][i_ch].append([])
                                 for i_ray in range(self["dimensions"]["N_ray"]):
-                                    self["ray"][sub_key][i_time][i_ch][i_mode].append( \
-                                      mdict[mdict_key+mode][i_time][i_ch][i_ray])
-                                    self["dimensions"]["N_LOS"][i_time][i_ch][i_mode][i_ray] = \
-                                      len(self["ray"][sub_key][i_time][i_ch][i_mode][i_ray])
+                                    try:
+                                        self["ray"][sub_key][i_time][i_ch][i_mode].append( \
+                                                mdict[mdict_key+mode][i_time][i_ch][i_ray])
+                                        self["dimensions"]["N_LOS"][i_time][i_ch][i_mode][i_ray] = \
+                                                len(self["ray"][sub_key][i_time][i_ch][i_mode][i_ray])
+                                    except IndexError:
+                                        if(not sub_key_error_printed):
+                                            print("INFO: Failed to load {0:s} {1:s}".format(key,sub_key))
+                                            print("INFO: For time index {0:d} channel {1:d} mode index {2:d} ray {3:d}".format(
+                                                    i_time, i_ch, i_mode, i_ray))
+                                            sub_key_error_printed = True
+                                        self["ray"][sub_key][i_time][i_ch][i_mode].append([])
+                                        self["dimensions"]["N_LOS"][i_time][i_ch][i_mode][i_ray] = 0
                     # Convert to ragged np array
                     self["ray"][sub_key] = np.array(self["ray"][sub_key], dtype=np.object)
         self["weights"]["ray_weights"] = mdict["ray_weights"]
@@ -528,8 +545,9 @@ class ECRadResults(dict):
             for ich in range(self["dimensions"]["N_ch"]):
                 for imode in range(self["dimensions"]["N_mode"]):
                     for iray in range(self["dimensions"]["N_ray"]):
-                        self["ray"]["R"][itime,ich,imode,iray] = np.sqrt(self["ray"]["x"][itime,ich,imode,iray]**2 + \
-                                                                         self["ray"]["y"][itime,ich,imode,iray]**2)
+                        if(self["dimensions"]["N_LOS"][i_time][i_ch][i_mode][i_ray] > 0):
+                            self["ray"]["R"][itime,ich,imode,iray] = np.sqrt(self["ray"]["x"][itime,ich,imode,iray]**2 + \
+                                                                            self["ray"]["y"][itime,ich,imode,iray]**2)
         # We fix R later so we do not need to delete it
         self.failed_keys["ray"].remove("R")
         self["git"]["ECRad"] = mdict["ECRad_git_tag"]

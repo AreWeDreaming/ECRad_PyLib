@@ -133,15 +133,17 @@ def load_f_from_mat(filename=None, mdict = None, use_dist_prefix=False):
                 break
     elif(use_dist_prefix):
         dist_prefix = "dist_"
+    dist_obj = Distribution()
     if(dist_prefix + "rhot_prof" not in mdict):
-        return Distribution(None, mdict[dist_prefix + "rhop_prof"], mdict[dist_prefix + "u"], mdict[dist_prefix + "pitch"], mdict[dist_prefix + "f"], \
+        dist_obj.set(None, mdict[dist_prefix + "rhop_prof"], mdict[dist_prefix + "u"], mdict[dist_prefix + "pitch"], mdict[dist_prefix + "f"], \
                             mdict[dist_prefix + "rhot_1D_profs"], mdict[dist_prefix + "rhop_1D_profs"], mdict[dist_prefix + "Te_init"], \
                             mdict[dist_prefix + "ne_init"])
     else:
-        return Distribution(mdict[dist_prefix + "rhot_prof"], mdict[dist_prefix + "rhop_prof"], \
+        dist_obj.set(mdict[dist_prefix + "rhot_prof"], mdict[dist_prefix + "rhop_prof"], \
                             mdict[dist_prefix + "u"], mdict[dist_prefix + "pitch"], mdict[dist_prefix + "f"], 
                             mdict[dist_prefix + "rhot_1D_profs"], mdict[dist_prefix + "rhop_1D_profs"], \
                             mdict[dist_prefix + "Te_init"], mdict[dist_prefix + "ne_init"])
+    return dist_obj
 
 def read_waves_mat_to_beam(waves_mat, EQSlice, use_wave_prefix=False):
     # Load waves object from .mat file created by AECM GUI (GRAY or TORAYFOM)

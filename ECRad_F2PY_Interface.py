@@ -9,6 +9,7 @@ from ECRad_Config import ECRadConfig
 import os
 import sys
 import numpy as np
+from scipy.interpolate import InterpolatedUnivariateSpline
 sys.path.append(globalsettings.ECRadLibDir)
 from scipy import constants as cnst
 from time import sleep
@@ -190,14 +191,62 @@ class ECRadF2PYInterface:
                     Result["resonance"]["z_warm_second"][-1][imode,:] = \
                     self.cur_ECRad.get_trad_resonances_extra_output(imode, Result["dimensions"]["N_ch"])
                 Result["Trad"]["T_second"][-1][imode,:] = np.exp(-Result["Trad"]["tau_second"][-1][imode,:])
+            key = "weights"
+            for sub_key in Result.sub_keys[key]:
+                Result[key][sub_key].append(np.zeros(Result.get_shape(sub_key, start=1)))
+            for ich in range(Result["dimensions"]["N_ch"]):
+                Result[key]["ray_weights"][-1][ich,:], Result[key]["freq_weights"][-1][ich,:] = \
+                    self.cur_ECRad.get_weights(Result["dimensions"]["N_ray"], Result["dimensions"]["N_freq"], ich + 1)
+            if(Result["dimensions"]["N_mode"] > 1):
+                for imode in range(Result["dimensions"]["N_mode"]):
+                    Result["weights"]["mode_frac"][-1][imode,:], \
+                    Result["weights"]["mode_frac_second"][-1][imode,:] = \
+                        self.cur_ECRad.get_mode_weights(Result["dimensions"]["N_ch"], imode+1)
+            else:
+                Result["weights"]["mode_frac"][-1][imode,:] = 1.0
+                Result["weights"]["mode_frac_second"][-1][imode,:] = 1.0
             key = "BPD"
             for sub_key in [rho, "BPD", "BPD_second"]:
                 Result[key][sub_key].append(np.zeros(Result.get_shape(key, start=1)))
             for ich in range(Result["dimensions"]["N_ch"]):
-                for imode in range(Result["dimensions"]["N_mode"]):
+                if(Result["dimensions"]["N_mode"] > 1):
+                    rho_max = np.inf
+                    rho_min = -np.inf
+                    for imode in range(Result["dimensions"]["N_mode"]):
+                        Result[key][rho][-1][ich,imode + 1,:], \
+                            Result[key]["BPD"][-1][ich,imode + 1,:], Result[key]["BPD_second"][-1][ich,imode + 1,:] = \
+                            self.cur_ECRad.get_bpd(ich + 1, imode + 1, Result["dimensions"]["N_BPD"])
+                        rho_max_mode = np.max(Result[key][rho][-1][ich,imode + 1,:])
+                        rho_min_mode = np.min(Result[key][rho][-1][ich,imode + 1,:])
+                        if rho_max_mode != rho_min_mode:
+                            if rho_max_mode < rho_max:
+                                rho_max = rho_max_mode
+                            if rho_min_mode > rho_min:
+                                rho_min = rho_min_mode
+                    Result[key][rho][-1][ich,0,:] = np.linspace(rho_min, rho_max, Result.get_shape(key, start=-1)[0])
+                    for imode in range(Result["dimensions"]["N_mode"]):
+                        if(Result["Trad"]["Trad"][-1][0,ich] > 0.e0 
+                               and Result["Trad"]["Trad"][-1][imode + 1,ich] > 0.e0):
+                            BPD_spl = InterpolatedUnivariateSpline(Result[key][rho][-1][ich,imode + 1,:], 
+                                    Result[key]["BPD"][-1][ich,imode + 1,:])
+                            Result[key]["BPD"][-1][ich,0,:] += \
+                                    BPD_spl(Result[key][rho][-1][ich,0,:]) \
+                                    * Result["weights"]["mode_frac"][-1][imode,ich] \
+                                    * Result["Trad"]["Trad"][-1][imode + 1,ich] / Result["Trad"]["Trad"][-1][0,ich]
+                        if(Result["Trad"]["Trad_second"][-1][0,ich] > 0.e0 
+                               and Result["Trad"]["Trad_second"][-1][imode + 1,ich] > 0.e0):
+                            BPD_seccond_spl = InterpolatedUnivariateSpline(Result[key][rho][-1][ich,imode + 1,:], 
+                                    Result[key]["BPD_second"][-1][ich,imode + 1,:])
+                            Result[key]["BPD_second"][-1][ich,0,:] += \
+                                    BPD_seccond_spl(Result[key][rho][-1][ich,0,:]) \
+                                    * Result["weights"]["mode_frac_second"][-1][imode,ich] \
+                                    * Result["Trad"]["Trad_second"][-1][imode + 1,ich] / Result["Trad"]["Trad_second"][-1][0,ich]
+                        
+                else:
+                    imode = 0
                     Result[key][rho][-1][ich,imode,:], \
-                        Result[key]["BPD"][-1][ich,imode,:], Result[key]["BPD_second"][-1][ich,imode,:] = \
-                        self.cur_ECRad.get_bpd(ich + 1, imode + 1, Result["dimensions"]["N_BPD"])
+                            Result[key]["BPD"][-1][ich,imode,:], Result[key]["BPD_second"][-1][ich,imode,:] = \
+                            self.cur_ECRad.get_bpd(ich + 1, imode + 1, Result["dimensions"]["N_BPD"])
             key = "ray"
             Result["dimensions"]["N_LOS"].append(np.zeros(Result.get_shape("ray", start=1, stop=-1), dtype=np.int))
             for ich in range(Result["dimensions"]["N_ch"]):
@@ -257,20 +306,6 @@ class ECRadF2PYInterface:
                         Result[key]["Y"][-1][ich,imode,ir] *= cnst.e/(cnst.m_e* 2.0 * np.pi * f)
                         Result[key]["X"][-1][ich,imode,ir] = cnst.e**2*Result[key]["ne"][-1][ich,imode,ir] / \
                                                           (cnst.epsilon_0*cnst.m_e* (2.0 * np.pi * f)**2)
-            key = "weights"
-            for sub_key in Result.sub_keys[key]:
-                Result[key][sub_key].append(np.zeros(Result.get_shape(sub_key, start=1)))
-            for ich in range(Result["dimensions"]["N_ch"]):
-                Result[key]["ray_weights"][-1][ich,:], Result[key]["freq_weights"][-1][ich,:] = \
-                    self.cur_ECRad.get_weights(Result["dimensions"]["N_ray"], Result["dimensions"]["N_freq"], ich + 1)
-            if(Result["dimensions"]["N_mode"] > 1):
-                for imode in range(Result["dimensions"]["N_mode"]):
-                    Result["weights"]["mode_frac"][-1][imode,:], \
-                    Result["weights"]["mode_frac_second"][-1][imode,:] = \
-                        self.cur_ECRad.get_mode_weights(Result["dimensions"]["N_ch"], imode+1)
-            else:
-                Result["weights"]["mode_frac"][-1][imode,:] = 1.0
-                Result["weights"]["mode_frac_second"][-1][imode,:] = 1.0
         return Result
     
     def eval_Trad(self, Scenario, Config, itime):
@@ -297,12 +332,28 @@ class ECRadF2PYInterface:
 #         lines = stringio_output.readlines()
 #         for line in lines:
 #             output_queue.put(line)
-        
+
+    def set_distribution(self, Scenario, Config, itime):
+        if(Config["Physics"]["dstf"] == "Re"):
+            self.cur_ECRad.set_ecrad_ffp_dist(Scenario["plasma"]["dist_obj"].rhop,
+                    Scenario["plasma"]["dist_obj"].u,
+                    Scenario["plasma"]["dist_obj"].pitch,
+                    Scenario["plasma"]["dist_obj"].f_log)
+        elif(Config["Physics"]["dstf"] == "Ge"):
+            self.cur_ECRad.set_ecrad_gene_dist(Scenario["plasma"]["dist_obj"].rhop,
+                    Scenario["plasma"]["dist_obj"].v_par,
+                    Scenario["plasma"]["dist_obj"].mu_norm,
+                    Scenario["plasma"]["dist_obj"].f0_log,
+                    Scenario["plasma"]["dist_obj"].f_log[itime])
+
+
         
     def process_single_timepoint(self, Result, itime):
         self.reset()
         self.set_config_and_diag(Result.Config, Result.Scenario, itime)
         self.set_equilibrium(Result.Scenario, itime)
+        if(Result.Config["Physics"]["dstf"] != "Th"):
+            self.set_distribution(Result.Scenario, Result.Config, itime)
         self.make_rays(Result.Scenario, itime)
         Result = self.run_and_get_output(Result, itime)
         return Result
