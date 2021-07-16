@@ -30,7 +30,7 @@ def SetupECRadBatch(Config, Scenario):
     else:
         parallel_cores = 1 # serial
     os.environ['ECRad_WORKING_DIR'] = Config["Execution"]["scratch_dir"]
-    os.environ['ECRad_DRIVER_DIR'] = globalsettings.ECRadPylibRoot
+    print("Scratch dir set to: " + os.environ['ECRad_WORKING_DIR'])
     launch_options_dict = {}
     launch_options_dict["jobname"] = "-J " + "E{0:5d}".format(Scenario["shot"])
     launch_options_dict["stdout"] = "-o {0:s}".format(os.path.join(Config["Execution"]["scratch_dir"], "ECRad.stdout"))
@@ -40,6 +40,7 @@ def SetupECRadBatch(Config, Scenario):
     launch_options_dict["account"] = globalsettings.account_fuction()
     launch_options_dict["memory"] = "--mem-per-cpu={0:d}M".format(int(Config["Execution"]["vmem"] / parallel_cores))
     launch_options_dict["cpus"] = "--cpus-per-task={0:d}".format(parallel_cores)
+    launch_options_dict["chdir"] = "--chdir=" + globalsettings.ECRadPylibRoot
     InvokeECRad = ["sbatch"]
     for key in launch_options_dict:
         if(len(launch_options_dict[key]) > 0):
