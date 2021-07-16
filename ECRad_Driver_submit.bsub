@@ -8,5 +8,4 @@ export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK:-1}
 
 # For pinning threads correctly:
 export OMP_PLACES=cores
-echo $ECRad_JOB_ID
 python ECRad_Driver.py $ECRad_WORKING_DIR/Config_$ECRad_RUN_ID.nc $ECRad_WORKING_DIR/Scenario_$ECRad_RUN_ID.nc
