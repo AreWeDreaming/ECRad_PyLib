@@ -43,6 +43,16 @@ def SetupECRadBatch(Config, Scenario):
         launch_options_dict["memory"] = "--mem-per-cpu={0:d}M".format(int(Config["Execution"]["vmem"] / parallel_cores))
         launch_options_dict["cpus"] = "--cpus-per-task={0:d}".format(parallel_cores)
         launch_options_dict["chdir"] = "--chdir=" + globalsettings.ECRadPylibRoot
+        walltime = Config["Execution"]["wall_time"]
+        days = int(walltime/24)
+        walltime -= days*24
+        hours = int(walltime)
+        walltime -= hours
+        minutes = int(walltime*60)
+        walltime -= minutes/60
+        seconds = int(walltime*3600)
+        time_str = "{0:d}-{1:02d}:{2:02d}:{3:02d}".format(days, hours, minutes, seconds)
+        launch_options_dict["time"] = "--time=" + time_str
         InvokeECRad = [globalsettings.batch_submission_cmd]
     else:
         InvokeECRad = [globalsettings.batch_submission_cmd]
