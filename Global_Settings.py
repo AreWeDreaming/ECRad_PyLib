@@ -98,7 +98,7 @@ class GlobalSettingsAUG:
         self.partition_function = partition_function_tok
         self.account_fuction = account_function_current_user
         self.max_cores = 32
-        self.plot_mode = "Presentation"
+        self.plot_mode = "Software"
 
 class GlobalSettingsMIT:
     def __init__(self):
