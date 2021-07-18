@@ -92,7 +92,7 @@ class GlobalSettingsAUG:
         self.ECRadPylibRoot = os.path.abspath("../ECRad_PyLib/")
         self.ECRadGUIRoot = os.path.abspath("../ECRad_GUI/")
         self.ECRadPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRad")
-        self.ECRadPathBSUB = os.path.join(self.ECRadPylibRoot,"ECRad_Driver_submit.bsub")
+        self.ECRadPathBSUB = os.path.join(self.ECRadPylibRoot,"ECRad_Driver_submit_IPP.bsub")
         self.batch_submission_cmd = "sbatch"
         self.qos_function = qos_function_tok
         self.partition_function = partition_function_tok

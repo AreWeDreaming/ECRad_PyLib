@@ -1,0 +1,11 @@
+#!/usr/bin/tcsh
+#SBATCH --export=ALL
+#SBATCH --ntasks=1
+#SBATCH --nodes=1
+#SBATCH --wait
+
+setenv OMP_NUM_THREADS ${SLURM_CPUS_PER_TASK:-1}
+
+# For pinning threads correctly:
+setenv OMP_PLACES cores
+python ECRad_Driver.py $ECRad_WORKING_DIR/Config_$ECRad_RUN_ID.nc $ECRad_WORKING_DIR/Scenario_$ECRad_RUN_ID.nc
