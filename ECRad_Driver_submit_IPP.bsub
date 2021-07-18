@@ -3,7 +3,7 @@
 #SBATCH --ntasks=1
 #SBATCH --nodes=1
 #SBATCH --wait
-open_mp_threads = $SLURM_CPUS_PER_TASK - 1
+@ open_mp_threads = $SLURM_CPUS_PER_TASK - 1
 setenv OMP_NUM_THREADS $open_mp_threads
 # For pinning threads correctly:
 setenv OMP_PLACES cores
