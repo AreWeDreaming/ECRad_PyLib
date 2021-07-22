@@ -39,11 +39,11 @@ class ECRadResults(dict):
         self.scales["Trad"] = {"Trad":1.e-3, "tau":1.0, "T":1.0, \
                               "Trad_second":1.e-3, "tau_second":1.0, "T_second":1.0}
         self.xaxis_link["Trad"] = ["resonance" ,"Trad"]
-        self.legend_entries["Trad"] = {"Trad":r"$T_\mathrm{rad}$", "tau":r"$\tau$", "T":r"$T$", \
-                                       "Trad_second":r"$T_\mathrm{rad,2nd\,model}$", \
-                                       "tau_second":r"$\tau_\mathrm{2nd\,model}$", "T_second":r"$T_\mathrm{2nd\,model}$"}
-        self.labels["Trad"] = {"Trad":r"$T_\mathrm{rad}$", "tau":r"$\tau$", "T":r"$T$", \
-                              "Trad_second":r"$T_\mathrm{rad}$", "tau_second":r"$\tau$", "T_second":r"$T$"}
+        self.legend_entries["Trad"] = {"Trad":r"$T_" + globalsettings.mathrm + r"{rad}$", "tau":r"$\tau$", "T":r"$T$", \
+                                       "Trad_second":r"$T_" + globalsettings.mathrm + r"{rad,2nd\,model}$", \
+                                       "tau_second":r"$\tau_" + globalsettings.mathrm + r"{2nd\,model}$", "T_second":r"$T_" + globalsettings.mathrm + r"{2nd\,model}$"}
+        self.labels["Trad"] = {"Trad":r"$T_" + globalsettings.mathrm + r"{rad}$", "tau":r"$\tau$", "T":r"$T$", \
+                              "Trad_second":r"$T_" + globalsettings.mathrm + r"{rad}$", "tau_second":r"$\tau$", "T_second":r"$T$"}
         self.graph_style["Trad"] = "point"
         self.sub_keys["resonance"] = ["s_cold", "R_cold", "z_cold", \
                                       "rhop_cold", "rhot_cold", "s_warm", "R_warm", \
@@ -62,36 +62,36 @@ class ECRadResults(dict):
                 self.units["resonance"][sub_key] = "m"
             self.scales["resonance"][sub_key] = 1.0
         self.xaxis_link["resonance"] = ["Trad", "resonance"]
-        self.legend_entries["resonance"] = {"s_cold":r"$s_\mathrm{cold}$", \
-                                   "R_cold":r"$R_\mathrm{cold}$", \
-                                   "z_cold":r"$z_\mathrm{cold}$", \
-                                   "rhop_cold":r"$\rho_\mathrm{pol,cold}$", \
-                                   "rhot_cold":r"$\rho_\mathrm{tor,cold}$", \
-                                   "s_warm":r"$s_\mathrm{warm}$", \
-                                   "R_warm":r"$R_\mathrm{warm}$", \
-                                   "z_warm":r"$z_\mathrm{warm}$", \
-                                   "rhop_warm":r"$\rho_\mathrm{pol,warm}$", \
-                                   "rhot_warmd":r"$\rho_\mathrm{tor,warm}$", \
-                                   "s_warm_second":r"$s_\mathrm{warm,\,2nd\,model}$", \
-                                   "R_warm_second":r"$R_\mathrm{warm,\,2nd\,model}$", \
-                                   "z_warm_second":r"$z_\mathrm{warm,\,2nd\,model}$", \
-                                   "rhop_warm_second":r"$\rho_\mathrm{pol,warm,\,2nd\,model}$", \
-                                   "rhot_warm_second":r"$\rho_\mathrm{tor,warm,\,2nd\,model}$"}
-        self.labels["resonance"] = {"s_cold":r"$s_\mathrm{cold}$", \
-                                   "R_cold":r"$R_\mathrm{cold}$", \
-                                   "z_cold":r"$z_\mathrm{cold}$", \
-                                   "rhop_cold":r"$\rho_\mathrm{pol,cold}$", \
-                                   "rhot_cold":r"$\rho_\mathrm{tor,cold}$", \
-                                   "s_warm":r"$s_\mathrm{warm}$", \
-                                   "R_warm":r"$R_\mathrm{warm}$", \
-                                   "z_warm":r"$z_\mathrm{warm}$", \
-                                   "rhop_warm":r"$\rho_\mathrm{pol,warm}$", \
-                                   "rhot_warmd":r"$\rho_\mathrm{tor,warm}$", \
-                                   "s_warm_second":r"$s_\mathrm{warm}$", \
-                                   "R_warm_second":r"$R_\mathrm{warm}$", \
-                                   "z_warm_second":r"$z_\mathrm{warm}$", \
-                                   "rhop_warm_second":r"$\rho_\mathrm{pol,warm}$", \
-                                   "rhot_warm_second":r"$\rho_\mathrm{tor,warm}$"}
+        self.legend_entries["resonance"] = {"s_cold":r"$s_" + globalsettings.mathrm + r"{cold}$", \
+                                   "R_cold":r"$R_" + globalsettings.mathrm + r"{cold}$", \
+                                   "z_cold":r"$z_" + globalsettings.mathrm + r"{cold}$", \
+                                   "rhop_cold":r"$\rho_" + globalsettings.mathrm + r"{pol,cold}$", \
+                                   "rhot_cold":r"$\rho_" + globalsettings.mathrm + r"{tor,cold}$", \
+                                   "s_warm":r"$s_" + globalsettings.mathrm + r"{warm}$", \
+                                   "R_warm":r"$R_" + globalsettings.mathrm + r"{warm}$", \
+                                   "z_warm":r"$z_" + globalsettings.mathrm + r"{warm}$", \
+                                   "rhop_warm":r"$\rho_" + globalsettings.mathrm + r"{pol,warm}$", \
+                                   "rhot_warmd":r"$\rho_" + globalsettings.mathrm + r"{tor,warm}$", \
+                                   "s_warm_second":r"$s_" + globalsettings.mathrm + r"{warm,\,2nd\,model}$", \
+                                   "R_warm_second":r"$R_" + globalsettings.mathrm + r"{warm,\,2nd\,model}$", \
+                                   "z_warm_second":r"$z_" + globalsettings.mathrm + r"{warm,\,2nd\,model}$", \
+                                   "rhop_warm_second":r"$\rho_" + globalsettings.mathrm + r"{pol,warm,\,2nd\,model}$", \
+                                   "rhot_warm_second":r"$\rho_" + globalsettings.mathrm + r"{tor,warm,\,2nd\,model}$"}
+        self.labels["resonance"] = {"s_cold":r"$s_" + globalsettings.mathrm + r"{cold}$", \
+                                   "R_cold":r"$R_" + globalsettings.mathrm + r"{cold}$", \
+                                   "z_cold":r"$z_" + globalsettings.mathrm + r"{cold}$", \
+                                   "rhop_cold":r"$\rho_" + globalsettings.mathrm + r"{pol,cold}$", \
+                                   "rhot_cold":r"$\rho_" + globalsettings.mathrm + r"{tor,cold}$", \
+                                   "s_warm":r"$s_" + globalsettings.mathrm + r"{warm}$", \
+                                   "R_warm":r"$R_" + globalsettings.mathrm + r"{warm}$", \
+                                   "z_warm":r"$z_" + globalsettings.mathrm + r"{warm}$", \
+                                   "rhop_warm":r"$\rho_" + globalsettings.mathrm + r"{pol,warm}$", \
+                                   "rhot_warmd":r"$\rho_" + globalsettings.mathrm + r"{tor,warm}$", \
+                                   "s_warm_second":r"$s_" + globalsettings.mathrm + r"{warm}$", \
+                                   "R_warm_second":r"$R_" + globalsettings.mathrm + r"{warm}$", \
+                                   "z_warm_second":r"$z_" + globalsettings.mathrm + r"{warm}$", \
+                                   "rhop_warm_second":r"$\rho_" + globalsettings.mathrm + r"{pol,warm}$", \
+                                   "rhot_warm_second":r"$\rho_" + globalsettings.mathrm + r"{tor,warm}$"}
         self.graph_style["resonance"] = "point"
         self.sub_keys["ray"] = ["s", "x", "y",  "R", "z", \
                                 "Nx", "Ny", "Nz", \
@@ -108,35 +108,35 @@ class ECRadResults(dict):
                                 "v_g_perp"]
         self.shapes["ray"] = ["N_time", "N_ch", "N_mode", "N_ray", "N_LOS"]
         self.legend_entries["ray"] = {"s":r"$s$", "x":r"$x$", "y":r"$y$",  "R":r"$R$", "z":r"$z$", \
-                                      "Nx":r"$N_\mathrm{x}$", "Ny":r"$N_\mathrm{y}$", \
-                                      "Nz":r"$N_\mathrm{z}$", "Bx":r"$B_\mathrm{x}$", \
-                                      "By":r"$B_\mathrm{y}$", "Bz":r"$B_\mathrm{z}$", \
-                                      "H":r"Hamiltonian", "N":r"$N_\mathrm{ray}$", \
-                                      "Nc":r"$N_\mathrm{disp}$", "X":r"Stix Parameter $X$", \
-                                      "Y":r"Stix Parameter $Y$", "rhop":r"$\rho_\mathrm{pol}$", \
-                                      "rhot":r"$\rho_\mathrm{tor}$", "Te":r"$T_\mathrm{e}$", \
-                                      "ne":r"$n_\mathrm{e}$", "theta":r"$\theta$", \
-                                      "BPD":"BPD", "BPD_second":"BPD$_\mathrm{2nd\,model}$", \
-                                      "Trad":r"$T_\mathrm{rad}$", "Trad_second":r"$T_\mathrm{rad,\,2nd\,model}}$", \
+                                      "Nx":r"$N_" + globalsettings.mathrm + r"{x}$", "Ny":r"$N_" + globalsettings.mathrm + r"{y}$", \
+                                      "Nz":r"$N_" + globalsettings.mathrm + r"{z}$", "Bx":r"$B_" + globalsettings.mathrm + r"{x}$", \
+                                      "By":r"$B_" + globalsettings.mathrm + r"{y}$", "Bz":r"$B_" + globalsettings.mathrm + r"{z}$", \
+                                      "H":r"Hamiltonian", "N":r"$N_" + globalsettings.mathrm + r"{ray}$", \
+                                      "Nc":r"$N_" + globalsettings.mathrm + r"{disp}$", "X":r"Stix Parameter $X$", \
+                                      "Y":r"Stix Parameter $Y$", "rhop":r"$\rho_" + globalsettings.mathrm + r"{pol}$", \
+                                      "rhot":r"$\rho_" + globalsettings.mathrm + r"{tor}$", "Te":r"$T_" + globalsettings.mathrm + r"{e}$", \
+                                      "ne":r"$n_" + globalsettings.mathrm + r"{e}$", "theta":r"$\theta$", \
+                                      "BPD":"BPD", "BPD_second":"BPD$_" + globalsettings.mathrm + r"{2nd\,model}$", \
+                                      "Trad":r"$T_" + globalsettings.mathrm + r"{rad}$", "Trad_second":r"$T_" + globalsettings.mathrm + r"{rad,\,2nd\,model}}$", \
                                       "em":r"$j$", \
-                                      "em_second":r"$j_{\mathrm{2nd\,model}}$", "ab":r"$\alpha$", \
-                                      "ab_second":r"$\alpha_{\mathrm{2nd\,model}}$", "T":r"$\mathcal{T}$", \
-                                      "T_second":r"$\mathcal{T}_{\mathrm{2nd\,model}}$", "v_g_perp":r"$v_{\mathrm{g},\perp}$"}
+                                      "em_second":r"$j_{" + globalsettings.mathrm + r"{2nd\,model}}$", "ab":r"$\alpha$", \
+                                      "ab_second":r"$\alpha_{" + globalsettings.mathrm + r"{2nd\,model}}$", "T":r"$\mathcal{T}$", \
+                                      "T_second":r"$\mathcal{T}_{" + globalsettings.mathrm + r"{2nd\,model}}$", "v_g_perp":r"$v_{" + globalsettings.mathrm + r"{g},\perp}$"}
         self.labels["ray"] = {"s":r"$s$", "x":r"$x$", "y":r"$y$",  "R":r"$R$", "z":r"$z$", \
-                              "Nx":r"$N_\mathrm{x}$", "Ny":r"$N_\mathrm{y}$", \
-                             "Nz":r"$N_\mathrm{z}$", "Bx":r"$B_\mathrm{x}$", \
-                             "By":r"$B_\mathrm{y}$", "Bz":r"$B_\mathrm{z}$", \
-                             "H":r"Hamiltonian", "N":r"$N_\mathrm{ray}$", \
-                             "Nc":r"$N_\mathrm{disp}$", "X":r"Stix Parameter $X$", \
-                             "Y":r"Stix Parameter $Y$", "rhop":r"$\rho_\mathrm{pol}$", \
-                             "rhot":r"$\rho_\mathrm{tor}$", "Te":r"$T_\mathrm{e}$", \
-                             "ne":r"$n_\mathrm{e}$", "theta":r"$\theta$", \
+                              "Nx":r"$N_" + globalsettings.mathrm + r"{x}$", "Ny":r"$N_" + globalsettings.mathrm + r"{y}$", \
+                             "Nz":r"$N_" + globalsettings.mathrm + r"{z}$", "Bx":r"$B_" + globalsettings.mathrm + r"{x}$", \
+                             "By":r"$B_" + globalsettings.mathrm + r"{y}$", "Bz":r"$B_" + globalsettings.mathrm + r"{z}$", \
+                             "H":r"Hamiltonian", "N":r"$N_" + globalsettings.mathrm + r"{ray}$", \
+                             "Nc":r"$N_" + globalsettings.mathrm + r"{disp}$", "X":r"Stix Parameter $X$", \
+                             "Y":r"Stix Parameter $Y$", "rhop":r"$\rho_" + globalsettings.mathrm + r"{pol}$", \
+                             "rhot":r"$\rho_" + globalsettings.mathrm + r"{tor}$", "Te":r"$T_" + globalsettings.mathrm + r"{e}$", \
+                             "ne":r"$n_" + globalsettings.mathrm + r"{e}$", "theta":r"$\theta$", \
                              "BPD":"BPD", "BPD_second":"BPD", \
-                             "Trad":r"$T_\mathrm{rad}$", "Trad_second":r"$T_\mathrm{rad}$", \
+                             "Trad":r"$T_" + globalsettings.mathrm + r"{rad}$", "Trad_second":r"$T_" + globalsettings.mathrm + r"{rad}$", \
                              "em":r"$j_\omega$", \
                              "em_second":r"$j_\omega$", "ab":r"$\alpha_\omega$", \
                              "ab_second":r"$\alpha_\omega$", "T":r"$\mathcal{T}_\omega$", \
-                             "T_second":r"$\mathcal{T}_\omega$", "v_g_perp":r"$v_{\mathrm{g},\perp}$"}
+                             "T_second":r"$\mathcal{T}_\omega$", "v_g_perp":r"$v_{" + globalsettings.mathrm + r"{g},\perp}$"}
         self.units["ray"] = {"s":"m", "x":"m", "y":"m", "R":"m", "z":"m", \
                              "Nx":"", "Ny":"", "Nz":"", \
                              "Bx":"T", "By":"T", "Bz":"T", \
@@ -171,10 +171,10 @@ class ECRadResults(dict):
         self.graph_style["ray"] = "line"
         self.sub_keys["BPD"] = ["rhop", "rhot", "BPD", "BPD_second"]
         self.scales["BPD"] = {"rhop":1.0, "rhot":1.0, "BPD":1.0, "BPD_second":1.0}
-        self.labels["BPD"] = {"rhop":r"$\rho_\mathrm{pol}$", "rhot":r"$\rho_\mathrm{tor}$", \
+        self.labels["BPD"] = {"rhop":r"$\rho_" + globalsettings.mathrm + r"{pol}$", "rhot":r"$\rho_" + globalsettings.mathrm + r"{tor}$", \
                              "BPD":"BPD","BPD_second":"BPD"}
-        self.legend_entries["BPD"] = {"rhop":r"$\rho_\mathrm{pol}$", "rhot":r"$\rho_\mathrm{tor}$", \
-                                      "BPD":"BPD","BPD_second":"BPD$_\mathrm{2nd\,model}$"}
+        self.legend_entries["BPD"] = {"rhop":r"$\rho_" + globalsettings.mathrm + r"{pol}$", "rhot":r"$\rho_" + globalsettings.mathrm + r"{tor}$", \
+                                      "BPD":"BPD","BPD_second":"BPD$_" + globalsettings.mathrm + r"{2nd\,model}$"}
         self.units["BPD"] = {"rhop":"", "rhot":"", "BPD":"m$^{-1}$", \
                               "BPD_second":"m$^{-1}$"}
         self.xaxis_link["BPD"] = ["BPD"]

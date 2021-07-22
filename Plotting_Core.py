@@ -3134,27 +3134,27 @@ class PlottingCore:
             if(plot_mode == "Software"):
                 if(ax_flag == "Te_trace"):
                     ax.set_xlabel(r"$t$ [s]")
-                    ax.set_ylabel(r"$T_\mathrm{rad}$  [keV]")
+                    ax.set_ylabel(r"$T_" + globalsettings.mathrm + r"{rad}$  [keV]")
                     if(vline is not None):
                         if(color is not None):
                             ax.vlines(vline, -10 * np.abs(y_range[0]), 10 * y_range[1], linestyle='dotted', color=color)
                         else:
                             ax.vlines(vline, -10 * np.abs(y_range[0]), 10 * y_range[1], linestyle='dotted')
                 elif(ax_flag == "Te_Te_Trad"):
-                    ax.set_ylabel(r"$T_\mathrm{e/rad}$ [keV]")
-                    ax.set_xlabel(r"$\rho_\mathrm{pol}$", fontsize=int(plt.rcParams['axes.labelsize'] * 1.33))
+                    ax.set_ylabel(r"$T_" + globalsettings.mathrm + r"{e/rad}$ [keV]")
+                    ax.set_xlabel(r"$\rho_" + globalsettings.mathrm + r"{pol}$", fontsize=int(plt.rcParams['axes.labelsize'] * 1.33))
                 elif(ax_flag == "Te"):
-                    ax.set_ylabel(r"$T_\mathrm{e}$ [keV]")
-                    ax.set_xlabel(r"$\rho_\mathrm{pol}$", fontsize=int(plt.rcParams['axes.labelsize'] * 1.33))
+                    ax.set_ylabel(r"$T_" + globalsettings.mathrm + r"{e}$ [keV]")
+                    ax.set_xlabel(r"$\rho_" + globalsettings.mathrm + r"{pol}$", fontsize=int(plt.rcParams['axes.labelsize'] * 1.33))
                 elif(ax_flag == "Te_tor"):
-                    ax.set_ylabel(r"$T_\mathrm{e}$ [keV]")
-                    ax.set_xlabel(r"$\rho_\mathrm{tor}$")
+                    ax.set_ylabel(r"$T_" + globalsettings.mathrm + r"{e}$ [keV]")
+                    ax.set_xlabel(r"$\rho_" + globalsettings.mathrm + r"{tor}$")
                 elif(ax_flag == "tau"):
                     ax.set_ylabel(r"$\tau_\omega$")
-                    ax.set_xlabel(r"$\rho_\mathrm{pol}$")
+                    ax.set_xlabel(r"$\rho_" + globalsettings.mathrm + r"{pol}$")
                 elif(ax_flag == "Trad_trace"):
                         ax.set_xlabel(r"$t$ [s]")
-                        ax.set_ylabel(r"$T_\mathrm{rad}$ [keV]")
+                        ax.set_ylabel(r"$T_" + globalsettings.mathrm + r"{rad}$ [keV]")
                         if(vline is not None):
                             if(color is not None):
                                 ax.vlines(vline, -10 * np.abs(y_range[0]), 10 * y_range[1], linestyle='dotted', color=color)

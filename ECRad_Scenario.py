@@ -107,12 +107,12 @@ class ECRadScenario(dict):
         self["plasma"]["eq_data_3D"]["vessel_filename"] = ""
         # Define a couple of lables used in plotting
         self.labels = {}
-        self.labels["Te"] = r"$T_\mathrm{e}$"
-        self.labels["ne"] = r"$n_\mathrm{e}$"
-        self.labels["rhop"] = r"$\rho_\mathrm{pol}$"
-        self.labels["Br"] = r"$B_\mathrm{r}$"
-        self.labels["Bt"] = r"$B_\mathrm{t}$" 
-        self.labels["Bz"] = r"$B_\mathrm{z}$"
+        self.labels["Te"] = r"$T_" + globalsettings.mathrm + r"{e}$"
+        self.labels["ne"] = r"$n_" + globalsettings.mathrm + r"{e}$"
+        self.labels["rhop"] = r"$\rho_" + globalsettings.mathrm + r"{pol}$"
+        self.labels["Br"] = r"$B_" + globalsettings.mathrm + r"{r}$"
+        self.labels["Bt"] = r"$B_" + globalsettings.mathrm + r"{t}$" 
+        self.labels["Bz"] = r"$B_" + globalsettings.mathrm + r"{z}$"
         self.units = {}
         self.units["Te"] = r"[keV]"
         self.units["ne"] = r"$[\times 10^{19}$m$^{-3}$]"

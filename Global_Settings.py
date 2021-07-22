@@ -82,6 +82,7 @@ class GlobalSettingsITM:
         self.pylib_folder = "../ECRad_Pylib"
         self.GUI_folder = "../ECRad_GUI"
         self.plot_mode = "Presentation"
+        self.mathrm = r"\mathrm"
                 
 class GlobalSettingsAUG:
     def __init__(self):
@@ -99,6 +100,7 @@ class GlobalSettingsAUG:
         self.account_fuction = account_function_current_user
         self.max_cores = 32
         self.plot_mode = "Software"
+        self.mathrm = r""
 
 class GlobalSettingsMIT:
     def __init__(self):
@@ -116,6 +118,7 @@ class GlobalSettingsMIT:
         self.account_fuction = account_function_current_user
         self.max_cores = 32
         self.plot_mode = "Software"
+        self.mathrm = r""
 
 class GlobalSettingsITER:
     def __init__(self):
@@ -133,6 +136,7 @@ class GlobalSettingsITER:
         self.account_fuction = account_function_current_user
         self.max_cores = 16
         self.plot_mode = "Presentation"
+        self.mathrm = r"\mathrm"
         
 class GlobalSettingsIRIS:
     def __init__(self):
@@ -150,6 +154,7 @@ class GlobalSettingsIRIS:
         self.account_fuction = account_function_current_user
         self.max_cores = 16
         self.plot_mode = "Presentation"
+        self.mathrm = r"\mathrm"
         
         
 class GlobalSettingsEXT:
@@ -172,7 +177,8 @@ class GlobalSettingsEXT:
         self.max_cores = multiprocessing.cpu_count() / 2
         self.pylib_folder = "../ECRad_PyLib"
         self.GUI_folder = "../ECRad_GUI"
-        self.plot_mode = "Software"
+        self.plot_mode = "Presentation"
+        self.mathrm = r"\mathrm"
 try:        
     if("mpg.de" in socket.getfqdn()):
         globalsettings = GlobalSettingsAUG()
