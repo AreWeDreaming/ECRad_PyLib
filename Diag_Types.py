@@ -225,6 +225,7 @@ class EXT_diag(BasicDiag):  #  Makes no sense to inherit properties we do not wa
         for sub_key in ["f", "df", "R", "phi", "z", "theta_pol", \
                         "phi_tor", "dist_focus", "width", "pol_coeff_X"]:
             setattr(self, sub_key, np.array(rootgrp["Scenario"]["diagnostic_" + sub_key])[itime])
+        self.N_ch = len(self.f)
         
         
     def set_from_mat(self, ray_launch_file):
