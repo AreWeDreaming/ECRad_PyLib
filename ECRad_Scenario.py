@@ -13,7 +13,7 @@ np.set_printoptions(threshold=np.inf)
 from Basic_Methods.Equilibrium_Utils import EQDataExt, EQDataSlice
 from Diag_Types import Diag, ECRH_diag, ECI_diag, EXT_diag
 from Distribution_IO import load_f_from_mat
-from Distribution_Classes import Gene, GeneBiMax
+from Distribution_Classes import Distribution, Gene, GeneBiMax
 from netCDF4 import Dataset
 if(globalsettings.AUG):
     from ECRad_DIAG_AUG import DefaultDiagDict
@@ -109,12 +109,12 @@ class ECRadScenario(dict):
         self["plasma"]["eq_data_3D"]["vessel_filename"] = ""
         # Define a couple of lables used in plotting
         self.labels = {}
-        self.labels["Te"] = r"$T_\mathrm{e}$"
-        self.labels["ne"] = r"$n_\mathrm{e}$"
-        self.labels["rhop"] = r"$\rho_\mathrm{pol}$"
-        self.labels["Br"] = r"$B_\mathrm{r}$"
-        self.labels["Bt"] = r"$B_\mathrm{t}$" 
-        self.labels["Bz"] = r"$B_\mathrm{z}$"
+        self.labels["Te"] = r"$T_" + globalsettings.mathrm + r"{e}$"
+        self.labels["ne"] = r"$n_" + globalsettings.mathrm + r"{e}$"
+        self.labels["rhop"] = r"$\rho_" + globalsettings.mathrm + r"{pol}$"
+        self.labels["Br"] = r"$B_" + globalsettings.mathrm + r"{r}$"
+        self.labels["Bt"] = r"$B_" + globalsettings.mathrm + r"{t}$" 
+        self.labels["Bz"] = r"$B_" + globalsettings.mathrm + r"{z}$"
         self.units = {}
         self.units["Te"] = r"[keV]"
         self.units["ne"] = r"$[\times 10^{19}$m$^{-3}$]"
@@ -683,6 +683,8 @@ class ECRadScenario(dict):
             for sub_key in used_diag_dict_sub_keys:
                 rootgrp["Scenario"]["used_diags_dict_" + sub_key][idiag] = \
                     used_diag_dict_formatted[sub_key][idiag]
+        if(self["plasma"]["dist_obj"] is not None):
+            self["plasma"]["dist_obj"].to_netcdf(rootgrp)
 
         if(filename is not None):
             rootgrp.close()
@@ -767,6 +769,9 @@ class ECRadScenario(dict):
                 if(diag_key in list(self["used_diags_dict"])):
                     self["avail_diags_dict"].update({diag_key: self["used_diags_dict"][diag_key]})
         self.default_diag = list(self["used_diags_dict"].keys())[0]
+        if("BounceDistribution" in rootgrp.groups.keys()):
+            self["plasma"]["dist_obj"] = Distribution()
+            self["plasma"]["dist_obj"].from_netcdf(rootgrp)
         if(filename is not None):
             rootgrp.close()
         

@@ -1,6 +1,5 @@
 '''
 Created on Jan 29, 2017
-
 @author: sdenk
 '''
 import os
@@ -62,18 +61,19 @@ def qos_function_engaging(cores, wall_time):
     return "--qos=psfc_24h"
 
 def account_function_current_user():
-    return "--account=" + getpass.getuser()
+    return ""
 
 class GlobalSettingsITM:
     def __init__(self):
         self.AUG = True  # True  -> Start with True, set it to false if we run into problems
         self.root = os.path.expanduser("~/")
-        self.ECRadRoot = "/afs/eufus.eu/g2itmdev/user/g2sdenk/git/augd_ecrad"
-        self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot,os.environ['SYS'])
-        self.ECRadPylibRoot = "../ECRad_PyLib/"
-        self.ECRadGUIRoot = "../ECRad_GUI/"
+        self.ECRadRoot = os.path.abspath("../ECRad_core")
+        self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot, os.environ['SYS'])
+        self.ECRadPylibRoot = os.path.abspath("../ECRad_PyLib/")
+        self.ECRadGUIRoot = os.path.abspath("../ECRad_GUI/")
         self.ECRadPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRad")
         self.ECRadPathBSUB = os.path.join(self.ECRadRoot,"ECRad_submit.bsub")
+        self.batch_submission_cmd = "sbatch"
         self.qos_function = qos_function_itm
         self.partition_function = partition_function_itm
         self.account_fuction = account_function_current_user
@@ -81,74 +81,79 @@ class GlobalSettingsITM:
         self.pylib_folder = "../ECRad_Pylib"
         self.GUI_folder = "../ECRad_GUI"
         self.plot_mode = "Presentation"
+        self.mathrm = r"\mathrm"
                 
 class GlobalSettingsAUG:
     def __init__(self):
         self.AUG = True  # True  -> Start with True, set it to false if we run into problems
         self.root = os.path.expanduser("~/")
         self.ECRadRoot = "../ECRad_core/"
-        self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot,os.environ['SYS'])
-#         self.ECRadRoot =      # "/afs/ipp/home/s/sdenk/ECRad_testing/augd_ecrad/"# "/afs/ipp/home/r/rrf/F90/IDA/augd_ecrad/"
-        self.ECRadPylibRoot = "../ECRad_PyLib/"
-        self.ECRadGUIRoot = "../ECRad_GUI/"
+        self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot, os.environ['SYS'])
+        self.ECRadPylibRoot = os.path.abspath("../ECRad_PyLib/")
+        self.ECRadGUIRoot = os.path.abspath("../ECRad_GUI/")
         self.ECRadPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRad")
-        self.ECRadPathBSUB = os.path.join(self.ECRadPylibRoot,"ECRad_Driver_submit.bsub")
+        self.ECRadPathBSUB = os.path.join(self.ECRadPylibRoot,"ECRad_Driver_submit_IPP.bsub")
+        self.batch_submission_cmd = "sbatch"
         self.qos_function = qos_function_tok
         self.partition_function = partition_function_tok
         self.account_fuction = account_function_current_user
         self.max_cores = 32
-        self.plot_mode = "Presentation"
+        self.plot_mode = "Software"
+        self.mathrm = r""
 
 class GlobalSettingsMIT:
     def __init__(self):
         self.AUG = False  # True  -> Start with True, set it to false if we run into problems
         self.root = os.path.expanduser("~/")
-        self.ECRadRoot = "../ECRad_core/"
-        self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot,"bin")
-#         self.ECRadRoot =      # "/afs/ipp/home/s/sdenk/ECRad_testing/augd_ecrad/"# "/afs/ipp/home/r/rrf/F90/IDA/augd_ecrad/"
-        self.ECRadPylibRoot = "../ECRad_PyLib/"
-        self.ECRadGUIRoot = "../ECRad_GUI/"
+        self.ECRadRoot = os.path.abspath("../ECRad_core")
+        self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot, "bin")
+        self.ECRadPylibRoot = os.path.abspath("../ECRad_PyLib/")
+        self.ECRadGUIRoot = os.path.abspath("../ECRad_GUI/")
         self.ECRadPath = os.path.join(self.ECRadRoot,"bin","ECRad")
+        self.batch_submission_cmd = "sbatch"
         self.ECRadPathBSUB = os.path.join(self.ECRadPylibRoot,"ECRad_Driver_submit.bsub")
         self.qos_function = qos_function_engaging
         self.partition_function = partition_function_engaging
         self.account_fuction = account_function_current_user
         self.max_cores = 32
-        self.plot_mode = "Presentation"
+        self.plot_mode = "Software"
+        self.mathrm = r""
 
 class GlobalSettingsITER:
     def __init__(self):
         self.AUG = False  # True  -> Start with True, set it to false if we run into problems
         self.root = os.path.expanduser("~/")
-        self.ECRadRoot = "../ECRad_core/"
-        self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot,"bin")
-#         self.ECRadRoot =      # "/afs/ipp/home/s/sdenk/ECRad_testing/augd_ecrad/"# "/afs/ipp/home/r/rrf/F90/IDA/augd_ecrad/"
-        self.ECRadPylibRoot = "../ECRad_PyLib/"
-        self.ECRadGUIRoot = "../ECRad_GUI/"
+        self.ECRadRoot = os.path.abspath("../ECRad_core")
+        self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot, "bin")
+        self.ECRadPylibRoot = os.path.abspath("../ECRad_PyLib/")
+        self.ECRadGUIRoot = os.path.abspath("../ECRad_GUI/")
         self.ECRadPath = os.path.join(self.ECRadRoot,"bin","ECRad")
         self.ECRadPathBSUB = os.path.join(self.ECRadPylibRoot,"ECRad_Driver_submit.bsub")
+        self.batch_submission_cmd = "sbatch"
         self.qos_function = qos_function_engaging
         self.partition_function = partition_function_engaging
         self.account_fuction = account_function_current_user
         self.max_cores = 16
         self.plot_mode = "Presentation"
+        self.mathrm = r"\mathrm"
         
 class GlobalSettingsIRIS:
     def __init__(self):
         self.AUG = False
         self.root = os.path.expanduser("~/")
-        self.ECRadRoot = "../ECRad_core/"
-        self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot,os.environ['SYS'])
-#         self.ECRadRoot =      # "/afs/ipp/home/s/sdenk/ECRad_testing/augd_ecrad/"# "/afs/ipp/home/r/rrf/F90/IDA/augd_ecrad/"
-        self.ECRadPylibRoot = "../ECRad_PyLib/"
-        self.ECRadGUIRoot = "../ECRad_GUI/"
+        self.ECRadRoot = os.path.abspath("../ECRad_core")
+        self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot, "bin")
+        self.ECRadPylibRoot = os.path.abspath("../ECRad_PyLib/")
+        self.ECRadGUIRoot = os.path.abspath("../ECRad_GUI/")
         self.ECRadPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRad")
         self.ECRadPathBSUB = os.path.join(self.ECRadPylibRoot,"ECRad_Driver_submit.bsub")
+        self.batch_submission_cmd = "sbatch"
         self.qos_function = qos_function_iris
         self.partition_function = partition_function_iris
         self.account_fuction = account_function_current_user
         self.max_cores = 16
         self.plot_mode = "Presentation"
+        self.mathrm = r"\mathrm"
         
         
 class GlobalSettingsEXT:
@@ -164,12 +169,15 @@ class GlobalSettingsEXT:
             self.ECRadLibDir = os.path.join(self.ECRadRoot, "bin")
         self.ECRadPathBSUB = os.path.join(self.ECRadPylibRoot,"ECRad_Driver_submit.bsub")
         self.TB_path = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/torbeam_repo/TORBEAM/branches/lib-OUT/"
+        self.batch_submission_cmd = "bash"
         self.qos_function = qos_function_tok
         self.partition_function = partition_function_tok
-        self.max_cores = multiprocessing.cpu_count()
+        self.account_fuction = account_function_current_user
+        self.max_cores = multiprocessing.cpu_count() / 2
         self.pylib_folder = "../ECRad_PyLib"
         self.GUI_folder = "../ECRad_GUI"
-        self.plot_mode = "Software"
+        self.plot_mode = "Presentation"
+        self.mathrm = r"\mathrm"
 try:        
     if("mpg.de" in socket.getfqdn()):
         globalsettings = GlobalSettingsAUG()

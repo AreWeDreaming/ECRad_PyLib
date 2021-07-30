@@ -1,6 +1,5 @@
 '''
 Created on Jun 19, 2019
-
 @author: sdenk
 '''
 # Tools to generate the ASCII distribution files required by ECRad and load the distribution class from .mat files or hdf5 files in case of GENE distributions
@@ -133,15 +132,17 @@ def load_f_from_mat(filename=None, mdict = None, use_dist_prefix=False):
                 break
     elif(use_dist_prefix):
         dist_prefix = "dist_"
+    dist_obj = Distribution()
     if(dist_prefix + "rhot_prof" not in mdict):
-        return Distribution(None, mdict[dist_prefix + "rhop_prof"], mdict[dist_prefix + "u"], mdict[dist_prefix + "pitch"], mdict[dist_prefix + "f"], \
+        dist_obj.set(None, mdict[dist_prefix + "rhop_prof"], mdict[dist_prefix + "u"], mdict[dist_prefix + "pitch"], mdict[dist_prefix + "f"], \
                             mdict[dist_prefix + "rhot_1D_profs"], mdict[dist_prefix + "rhop_1D_profs"], mdict[dist_prefix + "Te_init"], \
                             mdict[dist_prefix + "ne_init"])
     else:
-        return Distribution(mdict[dist_prefix + "rhot_prof"], mdict[dist_prefix + "rhop_prof"], \
+        dist_obj.set(mdict[dist_prefix + "rhot_prof"], mdict[dist_prefix + "rhop_prof"], \
                             mdict[dist_prefix + "u"], mdict[dist_prefix + "pitch"], mdict[dist_prefix + "f"], 
                             mdict[dist_prefix + "rhot_1D_profs"], mdict[dist_prefix + "rhop_1D_profs"], \
                             mdict[dist_prefix + "Te_init"], mdict[dist_prefix + "ne_init"])
+    return dist_obj
 
 def read_waves_mat_to_beam(waves_mat, EQSlice, use_wave_prefix=False):
     # Load waves object from .mat file created by AECM GUI (GRAY or TORAYFOM)
@@ -872,6 +873,3 @@ def load_and_export_fortran_friendly(args):
     rhop, R, z, beta_par, mu_norm, f, f0, g, Te, ne, B0 = make_dist_from_Gene_input(rpath, shot, time, eq_exp=eq_exp, eq_diag=eq_diag, eq_ed=eq_ed)
     #    Te_perp, Te_par, ne_prof = get_dist_moments_non_rel(rhop, beta_par, mu_norm, f, Te, ne, B0, slices=1, ne_out=True)
     export_gene_fortran_friendly(wpath, rhop, beta_par, mu_norm, f, f0, B0)  
-
-
-

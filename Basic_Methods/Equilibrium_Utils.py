@@ -1,6 +1,5 @@
 '''
 Created on Jan 29, 2017
-
 @author: sdenk
 '''
 import os
@@ -248,9 +247,10 @@ class EQDataExt:
 
     def get_axis(self, time, get_Psi=False):
         cur_slice = self.GetSlice(time)
-        if(cur_slice.R_ax is not None and \
-           cur_slice.z_ax is not None):
-           return cur_slice.R_ax, cur_slice.z_ax
+        if(cur_slice.R_ax is not None and 
+                cur_slice.z_ax is not None):
+            if(cur_slice.R_ax > 0.e0):
+                return cur_slice.R_ax, cur_slice.z_ax
         R = cur_slice.R
         z = cur_slice.z
         Psi = np.copy(cur_slice.Psi)
@@ -424,6 +424,3 @@ class EQDataExt:
         if(unwrap):
             return R_LFS[0], z_LFS[0]
         return R_LFS, z_LFS
-
-
-
