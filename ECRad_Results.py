@@ -318,7 +318,7 @@ class ECRadResults(dict):
             if(index[ndim] == 0):
                 return ""
             else:
-                return "ray #" + str(index[ndim] + 1)
+                return r"ray \#" + str(index[ndim] + 1)
         else:
             raise ValueError("ECRadResults.get_index_reference could unexpected dim ref " + key + " " + sub_key + " " + str(ndim))
                            
