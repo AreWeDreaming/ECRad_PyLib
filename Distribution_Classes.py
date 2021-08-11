@@ -222,10 +222,6 @@ class Distribution:
         self.u = None
         self.pitch = None
         self.f = None
-        self.vars = {"rhop_1D_profs":self.rhop_1D_profs, "rhot_1D_profs":self.rhot_1D_profs,
-                     "Te_init":self.Te_init, "ne_init":self.ne_init, 
-                     "rhop":self.rhop, "rhot":self.rhot, 
-                     "u":self.u, "pitch":self.pitch, "f": self.f}
         self.dims = {"rhop_1D_profs":("N_1D_profs",), "rhot_1D_profs":("N_1D_profs",),
                      "Te_init":("N_1D_profs",), "ne_init":("N_1D_profs",), 
                      "rhop":("N_rho",), "rhot":("N_rho",), 
@@ -249,7 +245,7 @@ class Distribution:
     
     def post_process(self):
         zero = 1.e-30
-        self.f_log = f
+        self.f_log = self.f
         self.f_log[self.f_log < zero] = zero
         self.f_log10 = np.log10(self.f_log)
         self.f_log = np.log(self.f_log)
@@ -291,11 +287,15 @@ class Distribution:
         self.rhop_1D_profs = mdict[dist_prefix + "rhop_1D_profs"]
         self.Te_init = mdict[dist_prefix + "Te_init"]
         self.ne_init = mdict[dist_prefix + "ne_init"]
-        self.rhop = mdict[dist_prefix + "rhop"]
-        self.rhot = mdict[dist_prefix + "rhot"]
+        self.rhop = mdict[dist_prefix + "rhop_prof"]
+        try:
+            self.rhot = mdict[dist_prefix + "rhot_prof"]
+        except KeyError:
+            self.rhot = None
         self.u = mdict[dist_prefix + "u"]
         self.pitch = mdict[dist_prefix + "pitch"]
         self.f = mdict[dist_prefix + "f"]
+        self.post_process()
     
     def export_dist_to_matlab(self, mdict = None, filename=None, dist_prefix = ""):
         if(mdict is None):
@@ -305,8 +305,8 @@ class Distribution:
         mdict[dist_prefix + "Te_init"] = self.Te_init
         mdict[dist_prefix + "ne_init"] = self.ne_init
         f = self.f
-        mdict[dist_prefix + "rhop"] = self.rhop
-        mdict[dist_prefix + "rhot"] = self.rhot
+        mdict[dist_prefix + "rhop_prof"] = self.rhop
+        mdict[dist_prefix + "rhot_prof"] = self.rhot
         mdict[dist_prefix + "u"] = self.u
         mdict[dist_prefix + "pitch"] = self.pitch
         mdict[dist_prefix + "f"] = f
@@ -322,17 +322,20 @@ class Distribution:
             raise ValueError("Either rootgrp or filename must not be None!")
         rootgrp.createGroup("BounceDistribution")
         rootgrp["BounceDistribution"].createDimension("N_rho", len(self.rhop))
-        rootgrp["BounceDistribution"].createDimension("N_u", len(self.rhop))
-        rootgrp["BounceDistribution"].createDimension("N_pitch", len(self.rhop))
-        rootgrp["BounceDistribution"].createDimension("N_1D_profs", len(self.rhop))
-        for key in self.vars.keys():
-            var = rootgrp["BounceDistribution"].createVariable(key, "f8", self.dims[key])
-            var[:] = self.vars[key]
+        rootgrp["BounceDistribution"].createDimension("N_u", len(self.u))
+        rootgrp["BounceDistribution"].createDimension("N_pitch", len(self.pitch))
+        rootgrp["BounceDistribution"].createDimension("N_1D_profs", len(self.rhop_1D_profs))
+        for key in self.dims:
+            if(getattr(self, key) is not None):
+                var = rootgrp["BounceDistribution"].createVariable(key, "f8", self.dims[key])
+                var[:] = getattr(self, key)
         
     def from_netcdf(self, rootgrp = None, filename=None):
         if(rootgrp is None and filename is not None):
             rootgrp = Dataset(filename, "r", format="NETCDF4")
         elif(filename is None and rootgrp is None):
             raise ValueError("Either rootgrp or filename must not be None!")
-        for key in self.vars.keys():
-            self.vars[key] = np.array(rootgrp["BounceDistribution"][key])
+        for key in self.dims:
+            if(key in list(rootgrp["BounceDistribution"].variables.keys())):
+                setattr(self, key, np.array(rootgrp["BounceDistribution"][key]))
+        self.post_process()

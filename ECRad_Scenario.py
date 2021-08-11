@@ -157,8 +157,11 @@ class ECRadScenario(dict):
         self['diagnostic']["R"][:] = ece.line_of_sight.first_point.r
         self['diagnostic']["phi"][:] = np.rad2deg(ece.line_of_sight.first_point.phi)
         self['diagnostic']["z"][:] = ece.line_of_sight.first_point.z
-        self['diagnostic']["phi_tor"][:] = \
-             np.rad2deg(ece.line_of_sight.second_point.phi) - self.diagnostic.phi[:] 
+        x_1 = ece.line_of_sight.first_point.r * np.cos(ece.line_of_sight.first_point.phi)
+        x_2 = ece.line_of_sight.second_point.r * np.sin(ece.line_of_sight.second_point.phi)
+        y_1 = ece.line_of_sight.first_point.r * np.cos(ece.line_of_sight.first_point.phi)
+        y_2 = ece.line_of_sight.second_point.r * np.sin(ece.line_of_sight.second_point.phi)
+        self['diagnostic']["phi_tor"][:] = np.rad2deg(np.arctan2(y_2 - y_1, x_2 - x_1))
         dR = ece.line_of_sight.second_point.r - self['diagnostic']["R"][:]
         dz = ece.line_of_sight.second_point.z - self['diagnostic']["z"][:]
         self['diagnostic']["theta_pol"][:] = -np.rad2deg(np.arctan(dz/dR))
@@ -227,8 +230,11 @@ class ECRadScenario(dict):
         self['diagnostic']["R"][:] = ods['ece']['line_of_sight']['first_point']["r"]
         self['diagnostic']["phi"][:] = np.rad2deg(ods['ece']['line_of_sight']['first_point']["phi"])
         self['diagnostic']["z"][:] = ods['ece']['line_of_sight']['first_point']["z"]
-        self['diagnostic']["phi_tor"][:] = \
-             np.rad2deg(ods['ece']['line_of_sight']['second_point']["phi"]) - self['diagnostic']["phi"][:] 
+        x_1 = ods['ece']['line_of_sight']['first_point']["r"] * np.cos(ods['ece']['line_of_sight']['first_point']["phi"])
+        x_2 = ods['ece']['line_of_sight']['second_point']["r"] * np.sin(ods['ece']['line_of_sight']['second_point']["phi"])
+        y_1 = ods['ece']['line_of_sight']['first_point']["r"] * np.cos(ods['ece']['line_of_sight']['first_point']["phi"])
+        y_2 = ods['ece']['line_of_sight']['second_point']["r"] * np.sin(ods['ece']['line_of_sight']['second_point']["phi"])
+        self['diagnostic']["phi_tor"][:] = np.rad2deg(np.arctan2(y_2 - y_1, x_2 - x_1))
         dR = ods['ece']['line_of_sight']['second_point']["r"] - self['diagnostic']["R"][:]
         dz = ods['ece']['line_of_sight']['second_point']["z"] - self['diagnostic']["z"][:]
         self['diagnostic']["theta_pol"][:] = -np.rad2deg(np.arctan(dz/dR))
@@ -525,8 +531,9 @@ class ECRadScenario(dict):
         if(not self["plasma"]["2D_prof"]):
             self["dimensions"]["N_profiles"] = len(self["plasma"]["Te"][0])
         try:        
-            self.load_dist_obj(mdict=mdict)
+            self.load_dist_obj_from_mat(mdict=mdict)
         except Exception:
+            self["plasma"]["dist_obj"] = None
             print("No distribution data in current Scenario")
 
     def to_netcdf(self, filename=None, rootgrp=None):
@@ -762,8 +769,14 @@ class ECRadScenario(dict):
         self.to_netcdf(filename=self.scenario_file)
 
 
-    def load_dist_obj(self, filename=None, mdict=None):
-        self["plasma"]["dist_obj"] = load_f_from_mat(filename, use_dist_prefix=None)
+    def load_dist_obj_from_mat(self, mdict=None, filename=None):
+        self["plasma"]["dist_obj"] = Distribution()
+        self["plasma"]["dist_obj"].from_mat(filename=filename, mdict=mdict)
+
+
+    def load_dist_obj_from_netcdf(self, rootgrp=None, filename=None):
+        self["plasma"]["dist_obj"] = Distribution()
+        self["plasma"]["dist_obj"].from_netcdf(rootgrp=rootgrp, filename=filename)
         
     def load_GENE_obj(self, filename, dstf):
         it = 0 # Only single time point supported
