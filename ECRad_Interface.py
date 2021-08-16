@@ -750,6 +750,8 @@ def load_from_plasma(filename):
     if(not plasma_dict["2D_prof"]):
         plasma_dict["prof_reference"] = rootgrp["Plasma"]["prof_reference"][0]
         plasma_dict[plasma_dict["prof_reference"]] = np.array(rootgrp["Plasma"][plasma_dict["prof_reference"]])
+    else:
+        plasma_dict["prof_reference"] = "2D"
     if(plasma_dict["eq_dim"] == 3):
         for sub_key in ["B_ref", "s_plus", "s_max", \
                         "interpolation_acc", "fourier_coeff_trunc", \

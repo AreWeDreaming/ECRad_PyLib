@@ -451,7 +451,7 @@ class ECRadScenario(dict):
                 self["plasma"]["rhot_prof"] = mdict["rhot_prof"]
             except KeyError:
                 print("Could not find rho_tor profile")
-                if(self["plasma"]["eqq_dim"] == 3):
+                if(self["plasma"]["eq_dim"] == 3):
                     print("INFO: 3D Scenario identified")
                     print("INFO: Overriding rhot_prof with rhop_prof")
                     self["plasma"]["rhot_prof"] = mdict["rhop_prof"]

@@ -243,6 +243,26 @@ class Distribution:
         self.Te_init = Te_init
         self.ne_init = ne_init
     
+    def plot(self, rhop=None, rhot=None):
+        from Plotting_Configuration import plt
+        if(rhot is not None):
+            irho = np.argmin(np.abs(rhot-self.rhot))
+        elif(rhop is not None):
+            irho = np.argmin(np.abs(rhop-self.rhop))
+        else:
+            raise ValueError("Either rhop or rhot must not be None")
+        try:
+            cmap = plt.cm.get_cmap("plasma")
+        except ValueError:
+            cmap = plt.cm.get_cmap("jet")
+        levels = np.arange(-13, 5, 1)
+        cont1 = plt.contourf(self.uxx, self.ull, self.f_cycl_log10[irho], levels=levels, cmap=cmap)
+        cont2 = plt.contour(self.uxx, self.ull, self.f_cycl_log10[irho], levels=levels, colors='k',
+                            hold='on', alpha=0.25, linewidths=1)
+        cb = plt.gcf().colorbar(cont1, ax=plt.gca(), ticks=[-10, -5, 0, 5])
+        plt.gca().set_xlabel(r"$u_\parallel$")
+        plt.gca().set_ylabel(r"$u_\perp$")
+        
     def post_process(self):
         zero = 1.e-30
         self.f_log = self.f
