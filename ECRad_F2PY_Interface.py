@@ -130,7 +130,7 @@ class ECRadF2PYInterface:
                                                      Scenario["plasma"]["Te"][itime] * Scenario["scaling"]["Te_scale"], \
                                                      Scenario["plasma"]["ne"][itime] * Scenario["scaling"]["ne_scale"], \
                                                      eq_slice.rhop, eq_slice.Br, eq_slice.Bt, \
-                                                     eq_slice.Br, R_ax, z_ax)
+                                                     eq_slice.Bz, R_ax, z_ax)
             else:
                 self.cur_ECRad.initialize_ecrad(self.N_ch, 1, 1, eq_slice.R, \
                                                 eq_slice.z, eq_slice.rhop, eq_slice.Br, \
