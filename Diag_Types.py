@@ -224,7 +224,7 @@ class EXT_diag(BasicDiag):  #  Makes no sense to inherit properties we do not wa
         rootgrp = Dataset(filename, "r", format="NETCDF4")
         for sub_key in ["f", "df", "R", "phi", "z", "theta_pol", \
                         "phi_tor", "dist_focus", "width", "pol_coeff_X"]:
-            setattr(self, sub_key, np.array(rootgrp["Scenario"]["diagnostic_" + sub_key])[itime])
+            setattr(self, sub_key, np.array(rootgrp["Diagnostic"]["diagnostic_" + sub_key])[itime])
         self.N_ch = len(self.f)
         
         

@@ -153,6 +153,10 @@ class ECRadScenario(dict):
         for key in self['diagnostic']:
             if(key == "f"):
                 continue
+            elif(key == "pol_coeff_X"):
+                self['diagnostic'][key] = -np.ones(self['diagnostic']["f"].shape)
+            else:
+                self['diagnostic'][key] = np.zeros(self['diagnostic']["f"].shape)
             self['diagnostic'][key] = np.zeros(self['diagnostic']["f"].shape)
         self['diagnostic']["R"][:] = ece.line_of_sight.first_point.r
         self['diagnostic']["phi"][:] = np.rad2deg(ece.line_of_sight.first_point.phi)
@@ -215,18 +219,32 @@ class ECRadScenario(dict):
         for key in self['diagnostic']:
             self['diagnostic'][key] = []
         if(times is None):
-            times = ods['ece']['channel']['time']
+            times = ods['ece']['channel[0]']['time']
         for time in times:
             self['diagnostic']["f"].append([])
-            for ch in ods['ece']['channel']:
+            for ch in ods['ece']['channel'].values():
                 itime = np.argmin(np.abs(time - ch['time']))
-                self['diagnostic']["f"][-1].append(ch['frequency']['data'][itime])
+                self['diagnostic']["f"][-1].append(ch['frequency.data'][itime])
         self['diagnostic']["f"] = np.array(self['diagnostic']["f"])
         self["dimensions"]["N_ch"] = len(self["diagnostic"]["f"][0])
         for key in self['diagnostic']:
             if(key == "f"):
                 continue
-            self['diagnostic'][key] = np.zeros(self['diagnostic']["f"].shape)
+            elif(key == "pol_coeff_X"):
+                self['diagnostic'][key] = -np.ones(self['diagnostic']["f"].shape)
+            elif(key == "diag_name"):
+                name_first = ods['ece']['channel[0].name']
+                name_last = ods['ece']['channel[{0:d}].name'.format(self["dimensions"]["N_ch"] - 1)]
+                i = 0
+                while i < min(len(name_first), len(name_last)):
+                    if(name_first[i] == name_last[i]):
+                        i += 1
+                    else:
+                        break
+                self['diagnostic'][key] = np.zeros(self['diagnostic']["f"].shape, dtype="|S{0:d}".format(i))
+                self['diagnostic'][key][:] = name_first[:i]
+            else:
+                self['diagnostic'][key] = np.zeros(self['diagnostic']["f"].shape)
         self['diagnostic']["R"][:] = ods['ece']['line_of_sight']['first_point']["r"]
         self['diagnostic']["phi"][:] = np.rad2deg(ods['ece']['line_of_sight']['first_point']["phi"])
         self['diagnostic']["z"][:] = ods['ece']['line_of_sight']['first_point']["z"]
