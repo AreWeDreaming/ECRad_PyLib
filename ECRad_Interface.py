@@ -3,6 +3,7 @@ Created on Dec 9, 2015
 
 @author: sdenk
 '''
+from Distribution_Classes import Distribution
 from Global_Settings import globalsettings
 import os
 import numpy as np
@@ -771,6 +772,12 @@ def load_from_plasma(filename):
             eq_slice_data[sub_key] = np.array(rootgrp["Plasma"]["eq_data_2D" + "_" +  sub_key])
         plasma_dict['eq_data_2D'].fill_with_slices_from_dict(plasma_dict["time"], eq_slice_data)
         plasma_dict['vessel_bd'] = np.array(rootgrp["Plasma"]["vessel_bd"])
+    try:
+        plasma_dict['dist_obj'] = Distribution()
+        plasma_dict['dist_obj'].from_netcdf(rootgrp=rootgrp)
+    except Exception:
+        print("INFO:: No distribution function in file")
+        plasma_dict['dist_obj'] = None
     rootgrp.close()
     return plasma_dict
 
