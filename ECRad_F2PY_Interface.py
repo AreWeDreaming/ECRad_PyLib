@@ -144,7 +144,7 @@ class ECRadF2PYInterface:
             ne = Scenario["plasma"]["ne"][itime]
             Te = Scenario["plasma"]["Te"][itime]
             rho_res = self.cur_ECRad.make_rays_ecrad(self.N_ch, rho, ne * Scenario["scaling"]["ne_scale"], \
-                                                 rho, Te * Scenario["scaling"]["Te_scale"])
+                                                     rho, Te * Scenario["scaling"]["Te_scale"])
         return rho_res
     
     def run_and_get_output(self, Result, itime):

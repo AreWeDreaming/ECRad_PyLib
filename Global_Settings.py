@@ -83,6 +83,7 @@ class GlobalSettingsITM:
         self.GUI_folder = "../ECRad_GUI"
         self.plot_mode = "Presentation"
         self.mathrm = r"\mathrm"
+        self.omas = False
                 
 class GlobalSettingsAUG:
     def __init__(self):
@@ -101,6 +102,7 @@ class GlobalSettingsAUG:
         self.max_cores = 32
         self.plot_mode = "Software"
         self.mathrm = r""
+        self.omas = False
 
 class GlobalSettingsMIT:
     def __init__(self):
@@ -119,6 +121,7 @@ class GlobalSettingsMIT:
         self.max_cores = 32
         self.plot_mode = "Software"
         self.mathrm = r""
+        self.omas = False
 
 class GlobalSettingsITER:
     def __init__(self):
@@ -137,6 +140,11 @@ class GlobalSettingsITER:
         self.max_cores = 16
         self.plot_mode = "Presentation"
         self.mathrm = r"\mathrm"
+        self.omas = True
+        try:
+            import omas
+        except ImportError:
+            self.omas = False
         
 class GlobalSettingsIRIS:
     def __init__(self):
@@ -155,6 +163,11 @@ class GlobalSettingsIRIS:
         self.max_cores = 16
         self.plot_mode = "Presentation"
         self.mathrm = r"\mathrm"
+        self.omas = True
+        try:
+            import omas
+        except ImportError:
+            self.omas = False
         
         
 class GlobalSettingsEXT:
@@ -179,6 +192,11 @@ class GlobalSettingsEXT:
         self.GUI_folder = "../ECRad_GUI"
         self.plot_mode = "Presentation"
         self.mathrm = r"\mathrm"
+        self.omas = True
+        try:
+            import omas
+        except ImportError:
+            self.omas = False
 try:        
     if("mpg.de" in socket.getfqdn()):
         globalsettings = GlobalSettingsAUG()
