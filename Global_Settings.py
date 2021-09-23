@@ -1,6 +1,5 @@
 '''
 Created on Jan 29, 2017
-
 @author: sdenk
 '''
 import os
@@ -8,7 +7,6 @@ import multiprocessing
 import sys
 from glob import glob
 import socket
-import getpass
 
 def qos_function_tok(cores, wall_time):
     if(cores == 1):

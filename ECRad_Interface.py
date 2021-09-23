@@ -1,6 +1,5 @@
 '''
 Created on Dec 9, 2015
-
 @author: sdenk
 '''
 from Distribution_Classes import Distribution

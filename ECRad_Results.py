@@ -1,6 +1,5 @@
 '''
 Created on Dec 7, 2020
-
 @author: Severin Denk
 Restructuring of the old ECRadresults class. Uses the OMFit style approach where the parent class is a dictionary
 '''
@@ -703,5 +702,3 @@ if(__name__ == "__main__"):
 #     res.to_netcdf("/mnt/c/Users/Severin/ECRad_regression/W7X/ECRad_20180823016002_EXT_Scenario.nc")
 #     res.reset()
 #     res.from_netcdf("/mnt/c/Users/Severin/ECRad_regression/W7X/ECRad_20180823016002_EXT_Scenario.nc")
-    
-    

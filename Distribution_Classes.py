@@ -1,6 +1,5 @@
 '''
 Created on Jun 19, 2019
-
 @author: sdenk
 '''
 
@@ -278,7 +277,7 @@ class Distribution:
         ax_ne.set_ylabel(r"$n_\mathrm{e}$ [10$^{19}\times$ m$^{-3}$]")
         ax.legend()
         ax_ne.legend()
-        
+
     def post_process(self):
         zero = 1.e-30
         self.f_log = self.f

@@ -1,6 +1,5 @@
 '''
 Created on Nov 22, 2019
-
 @author: g2sdenk
 '''
 from Global_Settings import globalsettings
@@ -387,5 +386,3 @@ if(__name__ == "__main__"):
     Trad, tau = ecrad_f2py_interface.eval_Trad(Scenario, Config, 0)
     plt.plot(rhop_out, Trad / 1.e3, "+")
     plt.show()
-    
-    

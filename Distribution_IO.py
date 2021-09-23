@@ -1,6 +1,5 @@
 '''
 Created on Jun 19, 2019
-
 @author: sdenk
 '''
 # Tools to generate the ASCII distribution files required by ECRad and load the distribution class from .mat files or hdf5 files in case of GENE distributions
@@ -874,6 +873,3 @@ def load_and_export_fortran_friendly(args):
     rhop, R, z, beta_par, mu_norm, f, f0, g, Te, ne, B0 = make_dist_from_Gene_input(rpath, shot, time, eq_exp=eq_exp, eq_diag=eq_diag, eq_ed=eq_ed)
     #    Te_perp, Te_par, ne_prof = get_dist_moments_non_rel(rhop, beta_par, mu_norm, f, Te, ne, B0, slices=1, ne_out=True)
     export_gene_fortran_friendly(wpath, rhop, beta_par, mu_norm, f, f0, B0)  
-
-
-
