@@ -142,11 +142,16 @@ class ECRadScenario(dict):
         for key in self['diagnostic']:
             self['diagnostic'][key] = []
         if(times is None):
-            times = ece.channel.time
+            times = ece.channel[0].time
+            if(len(times) == 0):
+                times = [0.0]   
         for time in times:
             self['diagnostic']["f"].append([])
             for ch in ece.channel:
-                itime = np.argmin(np.abs(time - ch['time']))
+                try:
+                    itime = np.argmin(np.abs(time - ch['time']))
+                except ValueError:
+                    itime = 0
                 self['diagnostic']["f"][-1].append(ch.frequency.data[itime])
         self['diagnostic']["f"] = np.array(self['diagnostic']["f"])
         self["dimensions"]["N_ch"] = len(self["diagnostic"]["f"][0])
@@ -208,7 +213,7 @@ class ECRadScenario(dict):
                 equilibrium.time_slice[itime].global_quantities.magnetic_axis.r,\
                 equilibrium.time_slice[itime].global_quantities.magnetic_axis.z))
         self["plasma"]["eq_data_2D"].set_slices_from_ext(times, EQ_slices)
-        self["dimensions"]["N_vessel_bd"] = np.array([ \
+        self["plasma"]["vessel_bd"] = np.array([ \
             wall.description_2d[0].limiter.unit[0].outline.r,
             wall.description_2d[0].limiter.unit[0].outline.z]).T
 
@@ -304,9 +309,9 @@ class ECRadScenario(dict):
             ods['wall.description_2d.0.limiter.unit.0.outline.z']]).T
 
     def set_up_from_omas(self, ods, times):
-        self.set_up_launch_from_imas(ods, times)
-        self.set_up_equilibrium_from_imas(ods, times)
-        self.set_up_profiles_from_imas(ods, times)
+        self.set_up_launch_from_omas(ods, times)
+        self.set_up_equilibrium_from_omas(ods, times)
+        self.set_up_profiles_from_omas(ods, times)
         self.set_up_dimensions()    
 
     def set_up_dimensions(self):

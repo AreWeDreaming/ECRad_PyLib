@@ -14,6 +14,7 @@ from Distribution_Helper_Functions import get_dist_moments_non_rel, get_0th_and_
 from Distribution_Functions import Juettner1D
 from scipy.io import savemat, loadmat
 from netCDF4 import Dataset
+from Distribution_Functions import Juettner2D_cycl
 class Beam:
     # For ECRH beams. Rays structure contains information on the individual rays forming the beam.
     def __init__(self, rhot, rhop, PW, j, PW_tot, j_tot, PW_beam=None, j_beam=None, rays=None):
@@ -262,6 +263,21 @@ class Distribution:
         cb = plt.gcf().colorbar(cont1, ax=plt.gca(), ticks=[-10, -5, 0, 5])
         plt.gca().set_xlabel(r"$u_\parallel$")
         plt.gca().set_ylabel(r"$u_\perp$")
+
+    def plot_Te_ne(self):
+        from Plotting_Configuration import plt
+        fig = plt.figure()
+        ax = fig.add_subplot(211)
+        ax_ne = fig.add_subplot(212, sharex=ax)
+        ax.plot(self.rhop_1D_profs, self.Te_init/1.e3, label=r"$T_\mathrm{e,init}$")
+        ax.plot(self.rhop, self.Te/1.e3, label=r"$T_\mathrm{e}$")
+        ax_ne.plot(self.rhop_1D_profs, self.ne_init / 1.e19, label=r"$n_\mathrm{e,init}$")
+        ax_ne.plot(self.rhop, self.ne / 1.e19, label=r"$n_\mathrm{e}$")
+        ax_ne.set_xlabel(r"$\rho_\mathrm{pol}$")
+        ax.set_ylabel(r"$T_\mathrm{e}$ [keV]")
+        ax_ne.set_ylabel(r"$n_\mathrm{e}$ [10$^{19}\times$ m$^{-3}$]")
+        ax.legend()
+        ax_ne.legend()
         
     def post_process(self):
         zero = 1.e-30
@@ -275,7 +291,9 @@ class Distribution:
         self.f_cycl_log = np.zeros(self.f_cycl.shape)
         self.ne = np.zeros(len(self.rhop))
         self.Te = np.zeros(len(self.rhop))
-        ne_spl = InterpolatedUnivariateSpline(self.rhop_1D_profs[self.rhop_1D_profs < 1.0], self.ne_init[self.rhop_1D_profs < 1.0])
+        ne_inter = self.ne_init[self.rhop_1D_profs < 1.0]
+        ne_inter[ne_inter < 1.e15] = 1.e15
+        ne_spl = InterpolatedUnivariateSpline(self.rhop_1D_profs[self.rhop_1D_profs < 1.0], np.log(ne_inter))
         uxx_mat, ull_mat = np.meshgrid(self.uxx, self.ull)
         u_mat = np.sqrt(ull_mat**2 + uxx_mat**2)
         pitch_mat = np.zeros(u_mat.shape)
@@ -286,7 +304,7 @@ class Distribution:
             self.f_cycl_log[i] = f_spl(u_mat, pitch_mat, grid=False)
             self.ne[i], self.Te[i] = get_0th_and_2nd_moment(self.ull, self.uxx, np.exp(self.f_cycl_log[i]))
             print("Finished distribution profile slice {0:d}/{1:d}".format(i + 1, len(self.rhop)))
-        self.ne = self.ne * ne_spl(self.rhop)
+        self.ne = self.ne * np.exp(ne_spl(self.rhop))
         self.f_cycl = np.exp(self.f_cycl_log)
         self.f_cycl_log10 = np.log10(self.f_cycl)
         print("distribution shape:", self.f.shape)
@@ -359,3 +377,19 @@ class Distribution:
             if(key in list(rootgrp["BounceDistribution"].variables.keys())):
                 setattr(self, key, np.array(rootgrp["BounceDistribution"][key]))
         self.post_process()
+
+    def fill_with_thermal(self, rhop, Te_profile, ne_profile, rhot=None):
+        self.rhop = rhop
+        self.u = np.linspace(0.0, 2.5, 150)
+        self.pitch = np.linspace(0.0, 2.0*np.pi, 150)
+        if(rhot is not None):
+            self.rhot_1D_profs = rhot
+            self.rhot = rhot
+        self.rhop_1D_profs = rhop
+        self.Te_init = Te_profile
+        self.ne_init = ne_profile
+        self.rhop = rhop
+        self.f = (self.rhop.shape, self.u.shape, self.pitch.shape)
+        u_mesh, pitch_mesh = np.meshgrid(self.u, self.pitch, indexing="ij")
+        for i, Te in enumerate(Te_profile):
+            self.f[i] = Juettner2D_cycl(u_mesh, Te)
