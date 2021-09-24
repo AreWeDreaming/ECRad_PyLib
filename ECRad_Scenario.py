@@ -5,7 +5,6 @@ Created on Mar 20, 2019
 '''
 from collections import OrderedDict as od
 import os
-import imas
 from scipy.io import loadmat, savemat
 from Global_Settings import globalsettings, GlobalSettingsAUG
 import numpy as np
