@@ -150,7 +150,7 @@ class ECRadScenario(dict):
             self['diagnostic']["f"].append([])
             for ch in ece.channel:
                 try:
-                    itime = np.argmin(np.abs(time - ch['time']))
+                    itime = np.argmin(np.abs(time - ch.time))
                 except ValueError:
                     itime = 0
                 self['diagnostic']["f"][-1].append(ch.frequency.data[itime])
