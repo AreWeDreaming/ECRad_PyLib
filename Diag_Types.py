@@ -34,27 +34,43 @@ class Diag(BasicDiag):
         self.properties.append("ed")
         self.descriptions_dict["ed"] = "Edition"
         self.data_types_dict["ed"] = "integer"
-        self.t_smooth = t_smooth
-        self.properties.append("t_smooth")
-        self.descriptions_dict["t_smooth"] = "time window for smoothing"
-        self.data_types_dict["t_smooth"] = "real"
-        self.mode_filter = mode_filter
-        self.properties.append("mode_filter")
-        self.descriptions_dict["mode_filter"] = "Filter MHD modes"
-        self.data_types_dict["mode_filter"] = "bool"
-        self.mode_width = mode_width
-        self.properties.append("mode_width")
-        self.descriptions_dict["mode_width"] = "width of MHD mode [Hz]"
-        self.data_types_dict["mode_width"] = "real"
-        self.freq_cut_off = freq_cut_off
-        self.properties.append("freq_cut_off")
-        self.descriptions_dict["freq_cut_off"] = "low frequency cut of Fourier filter [Hz]"
-        self.data_types_dict["freq_cut_off"] = "real"
-        self.mode_harmonics = mode_harmonics
-        self.properties.append("mode_harmonics")
-        self.descriptions_dict["mode_harmonics"] = "harmonics to consider in filter"
-        self.data_types_dict["mode_harmonics"] = "integer"
+        # self.t_smooth = t_smooth
+        # self.properties.append("t_smooth")
+        # self.descriptions_dict["t_smooth"] = "time window for smoothing"
+        # self.data_types_dict["t_smooth"] = "real"
+        # self.mode_filter = mode_filter
+        # self.properties.append("mode_filter")
+        # self.descriptions_dict["mode_filter"] = "Filter MHD modes"
+        # self.data_types_dict["mode_filter"] = "bool"
+        # self.mode_width = mode_width
+        # self.properties.append("mode_width")
+        # self.descriptions_dict["mode_width"] = "width of MHD mode [Hz]"
+        # self.data_types_dict["mode_width"] = "real"
+        # self.freq_cut_off = freq_cut_off
+        # self.properties.append("freq_cut_off")
+        # self.descriptions_dict["freq_cut_off"] = "low frequency cut of Fourier filter [Hz]"
+        # self.data_types_dict["freq_cut_off"] = "real"
+        # self.mode_harmonics = mode_harmonics
+        # self.properties.append("mode_harmonics")
+        # self.descriptions_dict["mode_harmonics"] = "harmonics to consider in filter"
+        # self.data_types_dict["mode_harmonics"] = "integer"
 
+class CECE_diag(Diag):
+    def __init__(self, name, exp, diag_str, ed, t_smooth=1.e-3):
+         Diag.__init__(self, name, exp, diag_str, ed, t_smooth)
+         self.f = None
+         self.df = None
+         # CECE sits on wg 8
+         self.wg = 8
+         # distance is 55 mm
+         self.dtoECESI = 0.055
+
+    def set_f_info(self, f, df):
+        self.f = f
+        self.df = df
+
+    def get_f_info(self):
+        return self.f, self.df
 
 class ECI_diag(Diag):
     def __init__(self, name, exp, diag_str, ed, Rz_exp, Rz_diag, Rz_ed, t_smooth=1.e-3):
@@ -147,7 +163,7 @@ class EXT_diag(BasicDiag):  #  Makes no sense to inherit properties we do not wa
         self.data_types_dict["dist_focus"] = "real"
         self.width = np.array([0.3])
         self.properties.append("width")
-        self.descriptions_dict["width"] = "Beam width at antenna"
+        self.descriptions_dict["width"] = "Beam width at antenna [m]"
         self.data_types_dict["width"] = "real"
         self.pol_coeff_X = np.array([0.3])
         self.properties.append("pol_coeff_X")

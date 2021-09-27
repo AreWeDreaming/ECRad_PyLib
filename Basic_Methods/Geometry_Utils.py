@@ -129,6 +129,31 @@ def check_neighbor(x1_cp, y1_cp, x2_cp, y2_cp, x, y, z):
         add_point = False
     return add_point
 
+def get_theta_pol_phi_tor_from_two_points(x1_vec, x2_vec):
+    # x should be carthesian coordinates
+    # It does not matter if they are rotated around the origin in the torus center
+    # by phi. I.e. x=R also works as long as it is consistent.
+    # Phi is defined as the angle between the k_1 = -r_1 and k_2 = r_2 - r_1
+    R1 = np.linalg.norm(x1_vec[:2])
+    R2 = np.linalg.norm(x2_vec[:2])
+    theta_pol = get_theta_pol_from_two_points(np.array([R1, x1_vec[2]]), 
+                                              np.array([R2, x2_vec[2]]))
+    phi_tor = get_phi_tor_from_two_points(x1_vec[:2], x2_vec[:2])
+    return theta_pol, phi_tor
+
+def get_theta_pol_from_two_points(R1_vec, R2_vec):
+    # R1_vec and R2_vec should be 2D and lie in the R,z plane
+    dR = R2_vec[0] - R1_vec[0] 
+    dz = R2_vec[1] - R1_vec[1]
+    theta_pol = np.rad2deg(np.arctan(dz/dR))
+    return theta_pol
+
+def get_phi_tor_from_two_points(x1_vec, x2_vec):
+    # x1_vec and x2_vec should be 2D and lie in the x,y plane
+    phi_tor = -np.rad2deg(np.arccos((-x1_vec[0] * (x2_vec[0] - x1_vec[0]) - x1_vec[1] * (x2_vec[1] - x1_vec[1])) / 
+                                                    (np.linalg.norm(x1_vec) * np.linalg.norm(x2_vec - x1_vec))))
+    return phi_tor
+
 class Contouring():
     def __init__(self, x, y, Z, debug=False):
         if(np.any(np.array(Z.shape) < 4)):

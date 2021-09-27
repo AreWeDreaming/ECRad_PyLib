@@ -2,7 +2,91 @@ import numpy as np                # trig functs
 import scipy.constants as const   # to get physical constants
 import matplotlib.pyplot as plt   
 import matplotlib.patches as pat  # to draw rectangles
-    
+from Basic_Methods.Geometry_Utils import get_theta_pol_from_two_points, get_phi_tor_from_two_points
+
+def get_ECE_launch_v2(wgIn, antenna, dtoECESI, freqsSI, dfreqsSI):
+    ECE_launch = {}
+    ECE_launch["f"] = freqsSI
+    ECE_launch["df"] = dfreqsSI
+    ECE_launch["pol_coeff_X"] = -np.ones(ECE_launch["f"].shape)
+    for key in ["R", 'phi', "z", "theta_pol", "phi_tor", "dist_focus", "width"]:
+        ECE_launch[key] = np.zeros(ECE_launch["f"].shape)
+    # Middle between sector 8 and 9 and 22.5 degrees/sector
+    ECE_launch["phi"][:] = 22.5 * 8.5
+    # Use a position outside the flux matrix and beyond the window
+    R_start = 3.0
+    # Position at center of machine for second point
+    R_geo = 1.65
+    for i, f in enumerate(freqsSI):
+        x_tor, y  = plot1DECE(wgIn, antenna, dtoECESI * 1.e3, f/1.e9, "toroidal", doPlot=False, verb=False)
+        y = y.T
+        x_pol, z = plot1DECE(wgIn, antenna, dtoECESI * 1.e3, f/1.e9, "poloidal", doPlot=False, verb=False)
+        z = z.T
+        i_start_ax_tor = np.argmin(np.abs(x_tor - R_start))
+        i_start_ax_pol = np.argmin(np.abs(x_pol - R_start))
+        i_geo_ax_tor = np.argmin(np.abs(x_tor - R_geo))
+        i_geo_ax_pol = np.argmin(np.abs(x_pol - R_geo))
+        x1_mid_tor = np.array([x_tor[i_start_ax_tor], y[2][i_start_ax_tor]])
+        x1_mid_pol = np.array([x_pol[i_start_ax_pol], z[2][i_start_ax_pol]])
+        x2_mid_tor = np.array([x_tor[i_geo_ax_tor], y[2][i_geo_ax_tor]])
+        x2_mid_pol = np.array([x_pol[i_geo_ax_pol], z[2][i_geo_ax_pol]])
+        ECE_launch["R"][i] = x1_mid_pol[0]
+        ECE_launch["phi"][i] += np.rad2deg(np.arctan2(x1_mid_tor[1], x1_mid_tor[0]))
+        ECE_launch["z"][i] = x1_mid_pol[1]
+        w1 = np.abs(y[0][i_start_ax_tor] - y[4][i_start_ax_tor])
+        w2 = np.abs(z[0][i_start_ax_pol] - z[4][i_start_ax_pol])
+        ECE_launch["width"][i] = (w1 + w2) / 2.0
+        ECE_launch["theta_pol"][i] = \
+                get_theta_pol_from_two_points(x1_mid_pol, x2_mid_pol)
+        ECE_launch["phi_tor"][i] = \
+                get_phi_tor_from_two_points(x1_mid_tor, x2_mid_tor)
+        # Calculate intersections in pol and tor plane with central ray for both peripheral rays
+        x_mid_vec_tor = np.array([x_tor[i_geo_ax_tor], y[1][i_geo_ax_tor]]) - x1_mid_tor
+        x_mid_vec_pol = np.array([x_pol[i_geo_ax_pol], z[1][i_geo_ax_pol]]) - x1_mid_pol
+        x_intersects = []
+        y_intersects = []
+        z_intersects = []
+        for i_periph in [0,4]:
+            # Compute intersections between central and the two peripheral rays
+            # Need to select the correct indices of the central vector, hence the masks
+            # First toroidal plane then poloidal plane
+            x_intersects.append([])
+            for x, x0, x_vec, ax, i_start, i_centre, ax_intersects in zip([x_tor, x_pol], [x1_mid_tor, x1_mid_pol], 
+                                                  [x_mid_vec_tor, x_mid_vec_pol], [y, z],
+                                                  [i_start_ax_tor, i_start_ax_pol], [i_geo_ax_tor, i_geo_ax_pol], \
+                                                  [y_intersects, z_intersects]):
+                x0_periph = np.array([x[i_start], ax[i_periph][i_start]])
+                k_periph = np.array([x[i_centre], ax[i_periph][i_centre]]) - x0_periph
+                # R.H.S. of the matrix equation
+                b = x0 - x0_periph
+                #      ( -x_mid_vec[0] k_periph[0] )
+                # A = (                             ) 
+                #      ( -x_mid_vec[1] k_periph[1] )
+                A = np.array([[-x_vec[0], k_periph[0]],
+                              [-x_vec[1], k_periph[1]]])
+                s1, s2 = np.linalg.solve(A, b)
+                x_intersects[-1].append(x0[0] + x_vec[0]* s1)
+                ax_intersects.append(x0[1] + x_vec[1] * s1)
+        # ECRad needs the real distance between origin and focus point. Since the optical axis is not aligned with R
+        # we need to also consider the distance in the y and z plane when calculating the distance between focus and
+        # origin
+        # Due to numerical errors the R is not precisely the same for the toroidal and poloidal projections
+        # Hence we average over the two different Rs to get a single value
+        x_orig_3D = np.array([(x1_mid_tor[0] + x1_mid_pol[0])/2.0, x1_mid_tor[1], x1_mid_pol[1]])
+        # The beam is astigmatic and the poloidal and toroidal plane have different focus points in x or R
+        # We first average over the different focus points in R for the two different projections
+        # This is necessary so we can establish a single focus point in 3D for each peripheral ray
+        x_intersects = np.mean(x_intersects, axis=1)
+        # Calcualate average distance to the focus points of the two peripheral rays
+        for j in range(2):
+            ECE_launch["dist_focus"][i] += np.linalg.norm(x_orig_3D - np.array([x_intersects[j], y_intersects[j], z_intersects[j]]))**2
+        ECE_launch["dist_focus"][i] /= 2
+    return ECE_launch
+        
+
+def line(x0, vec, s):
+    return x0 + vec*s
+
 
 def plot1DECE(wgIn = 8, antenna = 'CECE', dtoECE = 55, 
               freq = 110, project = 'poloidal', doPlot = True, verb = True):
@@ -12,7 +96,7 @@ def plot1DECE(wgIn = 8, antenna = 'CECE', dtoECE = 55,
     # at the lenses' interfaces 
     #plot
     # 199X      I. Classen - original author of "finalSuttrop.m" upon which this code is based
-    # 2017      S. Freethy - translated finalSuttrop into pyhon
+    # 2017      S. Freethy - translated finalSuttrop into python
     # Dec 2019  P. Molina  - adds comments + waveguide positions + different projections
     #                        and absolute machine coordinates
     
@@ -735,4 +819,8 @@ def validateQparams(freq=110, dtoECE=55, rRes = 2040, zRes = 78.3):
     print('after moving into the plasma: ', disWinRes, '[mm]')
     print(' beam radius at resonance ', str(wAtRes), '[mm] \n')
     
-  
+
+if(__name__ == "__main__"):
+    # plot1DECE(wgIn = 8, antenna = 'CECE', dtoECE = 55, 
+    #           freq = 110, project = 'toroidal', doPlot = True, verb = True)
+    get_ECE_launch_v2(8, "CECE", 0.055, np.array([110.e9, 115.e9]))

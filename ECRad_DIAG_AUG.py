@@ -5,13 +5,15 @@ Created on Dec 16, 2015
 '''
 from collections import OrderedDict as od
 import numpy as np
-from Diag_Types import Diag, ECI_diag, ECRH_diag, EXT_diag
+from Diag_Types import Diag, CECE_diag, ECI_diag, ECRH_diag, EXT_diag
 import getpass
 
 DefaultDiagDict = od()
-for diag_name in ["ECE", "CTC", "CTA", "IEC", "ECN", "ECO", "EXT"]:
+for diag_name in ["ECE", "CTC", "CTA", "IEC", "ECN", "ECO", "CEC", "EXT"]:
     if(diag_name == "ECE"):
         DefaultDiagDict.update({diag_name: Diag(diag_name, "AUGD", "RMD", 0)})
+    elif(diag_name == "CEC"):
+        DefaultDiagDict.update({diag_name: CECE_diag(diag_name, "AUGD", "RMD", 0)})    
     elif(diag_name == "ECN" or diag_name == "ECO"):
         Rz_diag = "RZO"
         if("N" in diag_name):
