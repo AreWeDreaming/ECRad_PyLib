@@ -188,7 +188,7 @@ class ECRadScenario(dict):
             itime_equilibrium = np.argmin(np.abs(equilibrium.time - time))
             self["plasma"]["rhop_prof"].append(
                 np.sqrt((equilibrium.time_slice[itime_equilibrium].global_quantities.psi_axis - \
-                         equilibrium.time_slice[itime_equilibrium].profiles_1d.psi) /\
+                         core_profiles.time_slice[itime_profiles].profiles_1d.psi) /\
                         (equilibrium.time_slice[itime_equilibrium].global_quantities.psi_axis - \
                          equilibrium.time_slice[itime_equilibrium].global_quantities.psi_boundary)))
             self["plasma"]["Te"].append(
