@@ -408,58 +408,53 @@ class PlottingCore:
 #        self.axlist[0].get_yaxis().set_major_locator(MaxNLocator(nbins=3, steps=steps_y))
 #        self.axlist[0].get_yaxis().set_minor_locator(MaxNLocator(nbins=6, steps=steps_y / 4.0)
 
-    def B_plot(self, Result, itime, ich, mode_str, ray_launch, N_ray):
-        self.setup_axes("single", "Frequencies")
-        if(N_ray == 1):
-            mask = Result.ray["rhop" + mode_str][itime][ich] > 0
-            s = Result.ray["s" + mode_str][itime][ich][mask]
-            R = np.sqrt(Result.ray["x" + mode_str][itime][ich][mask]**2 + \
-                        Result.ray["y" + mode_str][itime][ich][mask]**2)
-            freq = np.zeros(len(R))
-            freq[:] = ray_launch[itime]["f"][ich] / 1.e9
-            f_c_1 = Result.ray["Y" + mode_str][itime][ich][mask] * freq
-            f_p = np.sqrt(Result.ray["X" + mode_str][itime][ich][mask]) * freq
-        else:
-            mask = Result.ray["rhop" + mode_str][itime][ich][0] > 0
-            s = Result.ray["s" + mode_str][itime][ich][0][mask]
-            R = np.sqrt(Result.ray["x" + mode_str][itime][ich][0][mask]**2 + \
-                        Result.ray["y" + mode_str][itime][ich][0][mask]**2)
-            freq = np.zeros(len(R))
-            freq[:] = ray_launch[itime]["f"][ich] / 1.e9
-            f_c_1 = Result.ray["Y" + mode_str][itime][ich][0][mask] * freq
-            if(np.any(Result.ray["X" + mode_str][itime][ich][0][mask]> 1.e10)):
-                #Error in ECRad_Result, missing 1/omega**2
-                f_p = np.sqrt(Result.ray["X" + mode_str][itime][ich][0][mask] / (freq *1.e9 * 2* np.pi) ** 2) * freq
-            else:
-                f_p = np.sqrt(Result.ray["X" + mode_str][itime][ich][0][mask]) * freq
-        f_c_2 = f_c_1 * 2.0
-        f_c_3 = f_c_1 * 3.0
-        f_R = f_c_1 * (np.sqrt(1.0 + 4.0 * (f_p * 2.0 * np.pi) ** 2 / (f_c_1 * 2.0 * np.pi) ** 2) + 1.0) / 2.0
-        self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[R, f_c_1], \
+    def B_plot(self, Result, itime, ich_list, imode_list, ir_list):
+        get_plasma_freqs = True
+        freqs = []
+        Rs = []
+        for ich, imode, ir in zip(ich_list, imode_list, ir_list):
+            self.setup_axes("single", "Frequencies")
+            mask = Result["ray"]["rhop"][itime][ich][imode][ir] > 0
+            Rs.append(Result["ray"]["R"][itime][ich][imode][ir][mask])
+            freqs.append(np.zeros(Rs[-1].shape))
+            freqs[-1][:] = Result.Scenario["diagnostic"]["f"][itime][ich]
+            if(get_plasma_freqs):
+                f_c_1 = Result["ray"]["Y"][itime][ich][imode][ir][mask] * freqs[-1][:]
+                f_p = np.sqrt(Result["ray"]["X"][itime][ich][imode][ir][mask]) * freqs[-1][:]
+                f_c_2 = f_c_1 * 2.0
+                f_c_3 = f_c_1 * 3.0
+                f_R = f_c_1 * (np.sqrt(1.0 + 4.0 * (f_p * 2.0 * np.pi) ** 2 / (f_c_1 * 2.0 * np.pi) ** 2) + 1.0) / 2.0
+            get_plasma_freqs = False
+        self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[Rs[0], f_c_1/1.e9], \
                     name=r"$f_\mathrm{c}$", marker="--", color=(0.4, 0.4, 0.0), \
                          y_range_in=self.y_range_list[0], ax_flag="f")
-        self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[R, f_c_2], \
+        self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[Rs[0], f_c_2/1.e9], \
                 name=r"$2 f_\mathrm{c}$", marker="-", color=(0.2, 0.6, 0.0), \
                      y_range_in=self.y_range_list[0], ax_flag="f")
-        self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[R, f_p], \
+        self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[Rs[0], f_p/1.e9], \
                     name=r"$f_\mathrm{p}$", marker=":", color=(0.2, 0.0, 0.6), \
                          y_range_in=self.y_range_list[0], ax_flag="f")
-        self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[R, f_c_3], \
+        self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[Rs[0], f_c_3/1.e9], \
                     name=r"$3 f_\mathrm{c}$", marker="--", color=(0.0, 0.4, 0.4), \
                          y_range_in=self.y_range_list[0], ax_flag="f")
-        self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[R, freq], \
-                    name=r"$f_\mathrm{ECE}$", marker="-", color=(0.0, 0.0, 0.0), \
-                         y_range_in=self.y_range_list[0], ax_flag="f")
+        label = r"$f_\mathrm{ECE}$"
+        for R, freq in zip(Rs, freqs):
+            self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[R, freq/1.e9], \
+                        name=label, marker="-", color=(0.0, 0.0, 0.0), \
+                            y_range_in=self.y_range_list[0], ax_flag="f")
+            label = ""
         self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], data=[R, f_R], \
                     name=r"$f_\mathrm{R}$", marker=":", color=(0.6, 0.0, 0.3), \
                          y_range_in=self.y_range_list[0], ax_flag="f")
         self.model_color_index = 0
-        for n, color in zip(range(1, 4),[(0.4, 0.4, 0.0), (0.2, 0.6, 0.0), (0.0, 0.4, 0.4)]):
-            R_spl = InterpolatedUnivariateSpline(s, R)
-            fc_spl = InterpolatedUnivariateSpline(s, f_c_1 * n - freq)
-            s_res = fc_spl.roots()
-            if(len(s_res) > 0):
-                self.axlist[0].vlines(R_spl(s_res), self.y_range_list[0][0], self.y_range_list[0][1], linestyle='dotted', color=color)
+        # VLines for intersections probably to much if we plot many channels
+        # s = Result["ray"]["s"][itime][ich][imode][ir][mask]
+        # for n, color in zip(range(1, 4),[(0.4, 0.4, 0.0), (0.2, 0.6, 0.0), (0.0, 0.4, 0.4)]):
+        #     R_spl = InterpolatedUnivariateSpline(s, R)
+        #     fc_spl = InterpolatedUnivariateSpline(s, f_c_1 * n - freq)
+        #     s_res = fc_spl.roots()
+        #     if(len(s_res) > 0):
+        #         self.axlist[0].vlines(R_spl(s_res), self.y_range_list[0][0], self.y_range_list[0][1], linestyle='dotted', color=color)
         self.create_legends("single")
         return self.fig
 
