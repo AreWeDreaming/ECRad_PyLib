@@ -14,7 +14,7 @@ def get_ECE_launch_v2(wgIn, antenna, dtoECESI, freqsSI, dfreqsSI):
     # Middle between sector 8 and 9 and 22.5 degrees/sector
     ECE_launch["phi"][:] = 22.5 * 8.5
     # Use a position outside the flux matrix and beyond the window
-    R_start = 3.0
+    R_start = 3.540
     # Position at center of machine for second point
     R_geo = 1.65
     for i, f in enumerate(freqsSI):
@@ -33,9 +33,9 @@ def get_ECE_launch_v2(wgIn, antenna, dtoECESI, freqsSI, dfreqsSI):
         ECE_launch["R"][i] = x1_mid_pol[0]
         ECE_launch["phi"][i] += np.rad2deg(np.arctan2(x1_mid_tor[1], x1_mid_tor[0]))
         ECE_launch["z"][i] = x1_mid_pol[1]
-        w1 = np.abs(y[0][i_start_ax_tor] - y[4][i_start_ax_tor])
-        w2 = np.abs(z[0][i_start_ax_pol] - z[4][i_start_ax_pol])
-        ECE_launch["width"][i] = (w1 + w2) / 2.0
+        # The synthetic CECE diagnostic does not care about the toroidal plane
+        # Therefore, we throw it out
+        ECE_launch["width"][i] = np.abs(z[0][i_start_ax_pol] - z[4][i_start_ax_pol])
         ECE_launch["theta_pol"][i] = \
                 get_theta_pol_from_two_points(x1_mid_pol, x2_mid_pol)
         ECE_launch["phi_tor"][i] = \
@@ -76,11 +76,11 @@ def get_ECE_launch_v2(wgIn, antenna, dtoECESI, freqsSI, dfreqsSI):
         # The beam is astigmatic and the poloidal and toroidal plane have different focus points in x or R
         # We first average over the different focus points in R for the two different projections
         # This is necessary so we can establish a single focus point in 3D for each peripheral ray
+        # We discard the one from the toroidal plane because the synthetic diagnostic for GENE does not care about the toroidal plane
         x_intersects = np.mean(x_intersects, axis=1)
         # Calcualate average distance to the focus points of the two peripheral rays
-        for j in range(2):
-            ECE_launch["dist_focus"][i] += np.linalg.norm(x_orig_3D - np.array([x_intersects[j], y_intersects[j], z_intersects[j]]))**2
-        ECE_launch["dist_focus"][i] /= 2
+        # The synthetic CECE diagnostic only cares about the z plane so we throw out the toroidal plane
+        ECE_launch["dist_focus"][i] = np.linalg.norm(x_orig_3D - np.array([x_intersects[1], y_intersects[1], z_intersects[1]]))
     return ECE_launch
         
 
@@ -823,4 +823,6 @@ def validateQparams(freq=110, dtoECE=55, rRes = 2040, zRes = 78.3):
 if(__name__ == "__main__"):
     # plot1DECE(wgIn = 8, antenna = 'CECE', dtoECE = 55, 
     #           freq = 110, project = 'toroidal', doPlot = True, verb = True)
-    get_ECE_launch_v2(8, "CECE", 0.055, np.array([110.e9, 115.e9]))
+    ECE_launch = get_ECE_launch_v2(8, "CECE", 0.055, np.array([110.4e9, 115.e9]),  np.array([100.e6, 100.e6]))
+    print(ECE_launch)
+    print(ECE_launch["width"]/2.0)
