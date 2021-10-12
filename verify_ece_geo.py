@@ -41,4 +41,4 @@ def verify_CECE_LOS(ECRad_results_file):
     plt.show()
 
 if(__name__ == "__main__"):
-    verify_CECE_LOS("/mnt/c/Users/Severin/ECRad/ECRad2D/ECRad_36974_CEC_ed12.nc")
+    verify_CECE_LOS("/mnt/c/Users/Severin/ECRad/AUG_CECE/ECRad_36974_CEC_ed1.nc")

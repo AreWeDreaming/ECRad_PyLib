@@ -4,6 +4,7 @@ from ECRad_Results import ECRadResults
 from Plotting_Configuration import plt
 from Plotting_Core import PlottingCore
 
+
 def plot_harmonics_and_frequencies(res_file):
     Results = ECRadResults()
     Results.load(res_file)
@@ -15,6 +16,6 @@ def plot_harmonics_and_frequencies(res_file):
     pc_obj.B_plot(Results, 0,ich_list, imode_list, ir_list)
     plt.show()
 
-
 if __name__ == "__main__":
+    # verify_CECE_LOS("/mnt/c/Users/Severin/ECRad/AUG_CECE/ECRad_36974_CEC_ed1.nc")
     plot_harmonics_and_frequencies("/mnt/c/Users/Severin/ECRad/ITER/ECRad_104103_EXT_ed37.nc")

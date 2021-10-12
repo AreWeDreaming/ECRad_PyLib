@@ -89,19 +89,24 @@ def line(x0, vec, s):
 
 
 def plot1DECE(wgIn = 8, antenna = 'CECE', dtoECE = 55, 
-              freq = 110, project = 'poloidal', doPlot = True, verb = True):
-
-    # This code plots the paths of central and 1/e^2 intensity rays out of
-    # the 1D ECE antennas into the plasma. It uses Snell's law in a 2D geometry 
-    # at the lenses' interfaces 
-    #plot
-    # 199X      I. Classen - original author of "finalSuttrop.m" upon which this code is based
-    # 2017      S. Freethy - translated finalSuttrop into python
-    # Dec 2019  P. Molina  - adds comments + waveguide positions + different projections
-    #                        and absolute machine coordinates
+              freq = 110, project = 'poloidal', corr=1.0, doPlot = True, verb = True):
+    """Ray-traces EM beam from (C)ECE waveguides in sector 9 to the plasma
     
-    # Inputs
-    # --------
+    This code plots the paths of central and 1/e^2 intensity rays out of
+    the 1D ECE antennas into the plasma. It uses Snell's law in a 2D geometry 
+    at the lenses' interfaces 
+    
+    History:
+    199X        I. Classen - original author of "finalSuttrop.m" upon which this code is based
+    2017        S. Freethy - translated finalSuttrop into pyhon
+    Dec 2019    P. Molina - adds comments + waveguide positions + different projections
+                            and absolute machine coordinates
+    Jul 2021    P. Molina - adds vacuum window
+    Oct 2021    P. Molina - include fix to vacuum window position from J. Friessen
+    Oct 12 21   M. Willensdorfer/P. Molina - noticed and fixed bug that prevented rays from entering v window
+    
+    Parameters
+    ---------
     #   wgIn    - gives the waveguide number input into ECE optics
     #             default is 8 for CECE's waveguide position as of Jan 2020
     #             can be anything inside [1.. 12]
@@ -110,15 +115,19 @@ def plot1DECE(wgIn = 8, antenna = 'CECE', dtoECE = 55,
     #             55mm -default - refers to the separation when the RF box is flushed against back of rail (see wiki)
     #   freq    - frequency in GHz
     #   project - poloidal or toroidal plane projection to calc/plot
+    #   corr    - a correction to the launching angles to avoid clipping at vaccum window surface. Defaults to 1.0 = no correction
     #   doPlot  - 1 to show plots
     #   verb    - verbose on/off
     
-    # Outputs
-    # ---------  
-    #   x       - radial vector = 1D
-    #   z       - nx3 matrix defining vertical position of 3 rays
-    #             bottom, central, and top 1/e^2 intensity Gaussian beam rays
+    Returns
+    ---------  
+    #   x       - radial vector. AUG coordinates
+    #   z       - vertical position vector. aug coords.
+    #             nx5 matrix defining vertical position of 5 rays: complex ray tracing
+    #             2 divergence, 2 waist rays, and one central ray (3rd one)
+    #             Find definitions in Harvey et al. Optical Engineering, 54(3), 035105 (2015).
     #   
+    """
     
     ###################################
     # Positioning definitions 
@@ -270,17 +279,22 @@ def plot1DECE(wgIn = 8, antenna = 'CECE', dtoECE = 55,
     nvw          = 1.949 # from Heraus see 1D ECE optics in the CECE wiki.
     windWbot     = 33.0 #[mm] bottom width of vacuum window
     windWtop     = 40.0 #[mm] top width of vacuum window
-    xWindOutside = -3577.0 # from measurements of AUG 3D CAD drawings. 
+    xWindInside  = -3577.0 #[mm] distance from machine center to inside side of vacuum window. Straight side.
+    # (from plasma side)  from email from Johannes Freisen 2021: 
+    # dem Plasma ist die gerade Seite des Vakuum-Fensters zugeneigt und die 
+    # Verschraubung ist von außen. Die 3577mm sind der kürzeste Abstand von der 
+    # Z-Achse bis zur geraden Seite Vakuum-Fenster Innenseite/Plasmaseite
+    xWindOutside = xWindInside - ((windWbot+windWtop)/2.0) # from measurements of AUG 3D CAD drawings. 
     # x position of window facing the outside : i.e. not the lasma. This surface is tilted.
-    xWindInside  = xWindOutside+((windWbot+windWtop)/2.0) # this surface is perfectly flat
-    # See Johannes. Believed to be +/-1mm accurate
-    # define slope of tilted section, useful for ray tracing later
-    m, b = (-370.0/7.0), -188995  
-    # define y=mx+b coordinates of tilted window side. obtained by arithmetics on window dimensions
+    # See Johannes. Believed to be +/-5mm accurate
     
     # yWindow     = 0       # by definition above
-    # zWindow     = 0 +z0   # by definition of sect9 frame of reference
-    diamWin     = 185*2 # window and structure diameters same to within 1mm
+    # zWindow     = 0 + z0   # by definition of sect9 frame of reference
+    diamWin     = 185*2 # window and structure diameters same to within 1mm    
+    # define slope of tilted section, useful for ray tracing later
+    # define y=mx+b coordinates of tilted window side. obtained by arithmetics on window dimensions
+    m, b = (-diamWin/(windWtop-windWbot)), (+(z0+diamWin/2.0)-(-diamWin/(windWtop-windWbot))*(xWindInside-windWtop))
+    # m is slope from tilted window, b using the window's top right corner point    
     
     xOutStruct  = -3617  # 'outward' structure meaning outside from the plasma perspective  
     xInStruct   = -3430    
@@ -321,7 +335,7 @@ def plot1DECE(wgIn = 8, antenna = 'CECE', dtoECE = 55,
             print('Antenna radial position ', xAn, '[mm]')
         elif project == 'toroidal':
             # July 2021. Have a rectangular D band horn. Compute the beam radius in the toroidal dimension
-            print(' **Warning**: chosen toroidal antenna pattern. \n\r **Careful** vacuum window not implemented well! ')
+            print('**Warning**: chosen toroidal antenna pattern. \n\r **Careful** vacuum window not implemented well! ')
             wMouth  = 15*0.35  # pg 163 rect horns. Goldsmidth chp 7.
             # 15 from measurements of inside of rectangular horn
             # Goldsmith page 163. Table 7.1 w/a = 0.35 rect horn. a = 15mm. wx = a*0.35
@@ -360,7 +374,7 @@ def plot1DECE(wgIn = 8, antenna = 'CECE', dtoECE = 55,
     # these are [-divergence ray, -waist ray, chief ray, + waist ray, + divergence ray]
     
     # ** correction for vignetting ** guess angle that is cleared by structure
-    corr    = 0.87
+    #corr    = 0.83 # now accept as input
     alfa    = np.array(alfa)*corr
     # ** correction for vignetting **
     
@@ -461,7 +475,7 @@ def plot1DECE(wgIn = 8, antenna = 'CECE', dtoECE = 55,
             elif (x[i+1] > xWindInside-windWtop) and (x[i+1] < xWindInside-windWbot) and (invw[k] == 0):
                 # maybe inside vwindow. check if it's on the surface there.
                 if (z[i+1,k] < ((m*(x[i+1]-dx))+b)) and ( z[i+1,k] > ((m*(x[i+1]+dx))+b) ):
-                    #print(' entered LHS vacuum window YAY!')
+                    #print('entered window, ray ', str(k))
                     #print('x=', x[i+1], 'y=', z[i+1,k])
                     winHeight   = diamWin 
                     winWidth    = 40-33
@@ -475,7 +489,7 @@ def plot1DECE(wgIn = 8, antenna = 'CECE', dtoECE = 55,
                         
             #if vacuum window is exited.
             elif (invw[k]==1) and (x[i+1] > xWindInside-dx) and (x[i+1] < xWindInside+dx):
-                #print(' exited RHS vacuum window YAY!')
+                #print(' exited RHS vacuum window, ray ', str(k))
                 #print('x=', x[i+1], 'y=', z[i+1,k])
                 # surface angle - flat side of window: atan(CL[1]/CL[0]=infty) = atan(0)
                 alfaR       = 0
