@@ -13,7 +13,10 @@ from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
 from scipy.optimize import minimize
 from Plotting_Configuration import plt
 from shutil import copyfile
-import f90nml
+try:
+    import f90nml
+except ImportError:
+    print("ERROR! Module f90nml not installed. No torbeam support!")
 class Ray:
     def __init__(self, s, x, y, z, H, N, N_cold, Te=0, ne=0, Y=0, X=0, x_tb=0, y_tb=0, z_tb=0, \
                                                                        x_tbp1=0, y_tbp1=0, z_tbp1=0, \
