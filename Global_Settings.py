@@ -180,7 +180,7 @@ class GlobalSettingsEXT:
         else:
             self.ECRadLibDir = os.path.join(self.ECRadRoot, "bin")
         self.ECRadPathBSUB = os.path.join(self.ECRadPylibRoot,"ECRad_Driver_submit.bsub")
-        self.TB_path = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/torbeam_repo/TORBEAM/branches/lib-OUT/"
+        self.TB_path = os.path.abspath("../libtorbeam")
         self.batch_submission_cmd = "bash"
         self.qos_function = qos_function_tok
         self.partition_function = partition_function_tok
