@@ -15,7 +15,7 @@ try:
     except:
         libECRH = np.ctypeslib.load_library("libaug_ecrh_setmirrors", '/afs/ipp-garching.mpg.de/home/e/ecrh/sys/amd64_sles15/')
 except:
-    print("Failed to find ECRad library CTA/CTC and IEC will not work")
+    print("Error! Failed to find ECRH library. CTA/CTC and IEC will not work")
     libECRH = None
 import datetime
 from ECRH_Launcher import ECRHLauncher
