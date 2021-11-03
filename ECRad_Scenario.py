@@ -713,8 +713,11 @@ class ECRadScenario(dict):
         for sub_key in self["diagnostic"].keys():
             self["diagnostic"][sub_key] = np.array(rootgrp["Scenario"]["diagnostic_" + sub_key])
         if(globalsettings.AUG):
-            for sub_key in self["AUG"].keys():
-                self["AUG"][sub_key] = rootgrp["Scenario"]["AUG_" +  sub_key][0]
+            try:
+                for sub_key in self["AUG"].keys():
+                    self["AUG"][sub_key] = rootgrp["Scenario"]["AUG_" +  sub_key][0]
+            except Exception as e:
+                print("INFO: No AUG specific info in Scenario")
         self["dimensions"]["N_used_diags"] = len(rootgrp["Scenario"]["used_diags_dict_diags"])
         self["used_diags_dict"] = od()
         for idiag, diagname in enumerate(rootgrp["Scenario"]["used_diags_dict_diags"]):
