@@ -48,20 +48,19 @@ class ECRadDriver():
                 self.Result.Scenario.drop_time_point(itime)
                 self.Result.set_dimensions()
         self.Result.tidy_up(autosave=False)
-        self.Result.to_netcdf(scratch=True, id=id)
+        self.Result.to_netcdf(scratch=True, ed=id)
         
     def process_time_point(self, itime):
         self.Result = self.ECRad_F2PY_interface.process_single_timepoint(self.Result, itime)
         
 if(__name__=="__main__"):
+    id = None
     try:
         Config_file = sys.argv[1]
         Scenario_file = sys.argv[2]
         ids = re.findall("_(\d{7})", os.path.basename(Scenario_file))
         if(len(ids) == 1):
             id = int(ids[0])
-        else:
-            id = None
     except:
         Config_file=os.path.join(os.path.expanduser("~"), ".ECRad_GUI_Default.nc") 
         Scenario_file=os.path.join(os.path.expanduser("~"), ".ECRad_GUI_last_scenario.nc")
