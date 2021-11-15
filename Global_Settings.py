@@ -170,7 +170,7 @@ class GlobalSettingsIRIS:
         
 class GlobalSettingsEXT:
     def __init__(self):
-        self.AUG = False  # True  -> Start with True, set it to false if we run into problems
+        self.AUG = True  # True  -> Start with True, set it to false if we run into problems
         self.root = os.path.expanduser("~/")
         self.ECRadRoot = os.path.abspath("../ECRad_core")
         self.ECRadPylibRoot = os.path.abspath("../ECRad_PyLib/")

@@ -163,4 +163,4 @@ def torbeam_interface(working_dir, shot, time, itime, plasma_dict, eq_slice, ece
 
 if __name__ == "__main__":
     CECE_workflow("/mnt/c/Users/Severin/ECRad/AUG_CECE/", 
-                  "/mnt/c/Users/Severin/ECRad/AUG_CECE/CECE_Results/ECRad_38420_CEC_ed1.nc", 3.0)
+                  "/mnt/c/Users/Severin/ECRad/AUG_CECE/ECRad_38423_CEC_ed3.nc", 3.0)

@@ -48,7 +48,7 @@ class ECRadDriver():
                 self.Result.Scenario.drop_time_point(itime)
                 self.Result.set_dimensions()
         self.Result.tidy_up(autosave=False)
-        self.Result.to_netcdf(scratch=True, id=id)
+        self.Result.to_netcdf(scratch=True, ed=id)
         
     def process_time_point(self, itime):
         self.Result = self.ECRad_F2PY_interface.process_single_timepoint(self.Result, itime)
