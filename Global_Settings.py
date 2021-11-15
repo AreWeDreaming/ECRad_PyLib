@@ -1,6 +1,5 @@
 '''
 Created on Jan 29, 2017
-
 @author: sdenk
 '''
 import os
@@ -8,7 +7,6 @@ import multiprocessing
 import sys
 from glob import glob
 import socket
-import getpass
 
 def qos_function_tok(cores, wall_time):
     if(cores == 1):
@@ -83,6 +81,7 @@ class GlobalSettingsITM:
         self.GUI_folder = "../ECRad_GUI"
         self.plot_mode = "Presentation"
         self.mathrm = r"\mathrm"
+        self.omas = False
                 
 class GlobalSettingsAUG:
     def __init__(self):
@@ -101,6 +100,7 @@ class GlobalSettingsAUG:
         self.max_cores = 32
         self.plot_mode = "Software"
         self.mathrm = r""
+        self.omas = False
 
 class GlobalSettingsMIT:
     def __init__(self):
@@ -119,6 +119,7 @@ class GlobalSettingsMIT:
         self.max_cores = 32
         self.plot_mode = "Software"
         self.mathrm = r""
+        self.omas = False
 
 class GlobalSettingsITER:
     def __init__(self):
@@ -137,6 +138,11 @@ class GlobalSettingsITER:
         self.max_cores = 16
         self.plot_mode = "Presentation"
         self.mathrm = r"\mathrm"
+        self.omas = True
+        try:
+            import omas
+        except ImportError:
+            self.omas = False
         
 class GlobalSettingsIRIS:
     def __init__(self):
@@ -155,6 +161,11 @@ class GlobalSettingsIRIS:
         self.max_cores = 16
         self.plot_mode = "Presentation"
         self.mathrm = r"\mathrm"
+        self.omas = True
+        try:
+            import omas
+        except ImportError:
+            self.omas = False
         
         
 class GlobalSettingsEXT:
@@ -169,7 +180,7 @@ class GlobalSettingsEXT:
         else:
             self.ECRadLibDir = os.path.join(self.ECRadRoot, "bin")
         self.ECRadPathBSUB = os.path.join(self.ECRadPylibRoot,"ECRad_Driver_submit.bsub")
-        self.TB_path = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/torbeam_repo/TORBEAM/branches/lib-OUT/"
+        self.TB_path = os.path.abspath("../libtorbeam")
         self.batch_submission_cmd = "bash"
         self.qos_function = qos_function_tok
         self.partition_function = partition_function_tok
@@ -179,6 +190,11 @@ class GlobalSettingsEXT:
         self.GUI_folder = "../ECRad_GUI"
         self.plot_mode = "Presentation"
         self.mathrm = r"\mathrm"
+        self.omas = True
+        try:
+            import omas
+        except ImportError:
+            self.omas = False
 try:        
     if("mpg.de" in socket.getfqdn()):
         globalsettings = GlobalSettingsAUG()

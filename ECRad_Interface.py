@@ -1,8 +1,8 @@
 '''
 Created on Dec 9, 2015
-
 @author: sdenk
 '''
+from Distribution_Classes import Distribution
 from Global_Settings import globalsettings
 import os
 import numpy as np
@@ -19,6 +19,7 @@ from Distribution_IO import export_gene_fortran_friendly, \
 from scipy.interpolate import InterpolatedUnivariateSpline
 from TB_Communication import make_topfile_no_data_load, make_Te_ne_files
 from netCDF4 import Dataset
+from ece_optics_2019 import get_ECE_launch_v2
 
 def GetECRadExec(Config, Scenario, time):
     # Determine OMP stacksize
@@ -299,6 +300,7 @@ def get_ECE_launch_info(shot, diag):
     ECE_launch["R"] = np.zeros(len(ECE_launch["f"]))
     ECE_launch["R"][:] = 3.90
     ECE_launch["z"] = np.zeros(len(ECE_launch["f"]))
+    ECE_launch["pol_coeff_X"] = -np.ones(len(ECE_launch["f"]))
     wg_last = 0
     R = np.zeros(N)
     z = np.zeros(N)
@@ -354,6 +356,7 @@ def get_ECE_launch_info(shot, diag):
     del(Geo_Los) # Delete to avoid problems with conflicting libraries
     return ECE_launch
 
+
 def get_diag_launch(shot, time, used_diag_dict, gy_dict=None, ECI_dict=None):
     print("ECRad data will be written for diags ", used_diag_dict)
     launch_array = []
@@ -361,6 +364,11 @@ def get_diag_launch(shot, time, used_diag_dict, gy_dict=None, ECI_dict=None):
         launch = {}
         if(used_diag_dict[diag].name == "ECE"):
             launch = get_ECE_launch_info(shot, used_diag_dict[diag])
+        elif(used_diag_dict[diag].name == "CEC"):
+            if(used_diag_dict[diag].f is None):
+                raise ValueError("ERROR:: The correlation ECE frequencies have not been loaded!")
+            launch = get_ECE_launch_v2(used_diag_dict[diag].wg, "CECE", 
+                    used_diag_dict[diag].dtoECESI, used_diag_dict[diag].f, used_diag_dict[diag].df)
         elif(used_diag_dict[diag].name == "IEC"):
             launch["f"] = []
             dfreq_IEC = 3.0e9
@@ -388,7 +396,7 @@ def get_diag_launch(shot, time, used_diag_dict, gy_dict=None, ECI_dict=None):
 #            R_curv = gy_dict[str(used_diag_dict[diag].beamline)].curv_y
 #            dist_foc = (launch["f"] ** 2 * np.pi ** 2 * R_curv * launch["width"] ** 4) / (cnst.c ** 2 * R_curv ** 2 + launch["f"] ** 2 * np.pi ** 2 * launch["width"] ** 4)
 #            launch["dist_focus"][:] = dist_foc
-        if(used_diag_dict[diag].name == "CTC" or used_diag_dict[diag].name == "CTA"):
+        elif(used_diag_dict[diag].name == "CTC" or used_diag_dict[diag].name == "CTA"):
             if(type(time) != float):
                 time = float(time)
             if(used_diag_dict[diag].name == "CTC"):
@@ -472,7 +480,7 @@ def get_diag_launch(shot, time, used_diag_dict, gy_dict=None, ECI_dict=None):
             launch["phi_tor"][:] += used_diag_dict[diag].tor_angle_cor
             launch["width"][:] = gy_dict[str(used_diag_dict[diag].beamline)].width_y
             launch["dist_focus"][:] = gy_dict[str(used_diag_dict[diag].beamline)].curv_y
-        if(diag == "ECN" or diag == "ECO"):
+        elif(diag == "ECN" or diag == "ECO"):
             if(ECI_dict is None):
                 raise ValueError("ECI_dict has to present if diag.name is ECN or ECO!")
             phi_ECE = (8.5e0) * 22.5 / 180.0 * np.pi
@@ -492,7 +500,7 @@ def get_diag_launch(shot, time, used_diag_dict, gy_dict=None, ECI_dict=None):
                 launch["df"][:] = 0.7e9
             else:
                 launch["df"][:] = 0.39e9
-        if(used_diag_dict[diag].name == "EXT"):
+        elif(used_diag_dict[diag].name == "EXT"):
             launch["f"] = np.copy(used_diag_dict[diag].f)
             launch["df"] = np.copy(used_diag_dict[diag].df)
             launch["R"] = np.copy(used_diag_dict[diag].R)
@@ -750,6 +758,8 @@ def load_from_plasma(filename):
     if(not plasma_dict["2D_prof"]):
         plasma_dict["prof_reference"] = rootgrp["Plasma"]["prof_reference"][0]
         plasma_dict[plasma_dict["prof_reference"]] = np.array(rootgrp["Plasma"][plasma_dict["prof_reference"]])
+    else:
+        plasma_dict["prof_reference"] = "2D"
     if(plasma_dict["eq_dim"] == 3):
         for sub_key in ["B_ref", "s_plus", "s_max", \
                         "interpolation_acc", "fourier_coeff_trunc", \
@@ -769,6 +779,12 @@ def load_from_plasma(filename):
             eq_slice_data[sub_key] = np.array(rootgrp["Plasma"]["eq_data_2D" + "_" +  sub_key])
         plasma_dict['eq_data_2D'].fill_with_slices_from_dict(plasma_dict["time"], eq_slice_data)
         plasma_dict['vessel_bd'] = np.array(rootgrp["Plasma"]["vessel_bd"])
+    try:
+        plasma_dict['dist_obj'] = Distribution()
+        plasma_dict['dist_obj'].from_netcdf(rootgrp=rootgrp)
+    except Exception:
+        print("INFO:: No distribution function in file")
+        plasma_dict['dist_obj'] = None
     rootgrp.close()
     return plasma_dict
 

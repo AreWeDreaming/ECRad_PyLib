@@ -1,6 +1,5 @@
 '''
 Created on Jan 29, 2017
-
 @author: sdenk
 '''
 import os
@@ -425,6 +424,3 @@ class EQDataExt:
         if(unwrap):
             return R_LFS[0], z_LFS[0]
         return R_LFS, z_LFS
-
-
-

@@ -8,8 +8,10 @@ import os
 from scipy.io import loadmat, savemat
 from Global_Settings import globalsettings, GlobalSettingsAUG
 import numpy as np
+np.set_printoptions(threshold=np.inf)
 from Basic_Methods.Equilibrium_Utils import EQDataExt, EQDataSlice
-from Diag_Types import Diag, ECRH_diag, ECI_diag, EXT_diag
+from Basic_Methods.Geometry_Utils import get_theta_pol_phi_tor_from_two_points
+from Diag_Types import CECE_diag, Diag, ECRH_diag, ECI_diag, EXT_diag, CECE_diag
 from Distribution_IO import load_f_from_mat
 from Distribution_Classes import Distribution, Gene, GeneBiMax
 from netCDF4 import Dataset
@@ -142,26 +144,41 @@ class ECRadScenario(dict):
         for key in self['diagnostic']:
             self['diagnostic'][key] = []
         if(times is None):
-            times = ece.channel.time
+            times = ece.channel[0].time
+            if len(times) == 0:
+                times = [0.0]   
         for time in times:
             self['diagnostic']["f"].append([])
             for ch in ece.channel:
-                itime = np.argmin(np.abs(time - ch['time']))
+                try:
+                    itime = np.argmin(np.abs(time - ch.time))
+                except ValueError:
+                    itime = 0
                 self['diagnostic']["f"][-1].append(ch.frequency.data[itime])
         self['diagnostic']["f"] = np.array(self['diagnostic']["f"])
         self["dimensions"]["N_ch"] = len(self["diagnostic"]["f"][0])
         for key in self['diagnostic']:
             if(key == "f"):
                 continue
+            elif(key == "pol_coeff_X"):
+                self['diagnostic'][key] = -np.ones(self['diagnostic']["f"].shape)
+            else:
+                self['diagnostic'][key] = np.zeros(self['diagnostic']["f"].shape)
             self['diagnostic'][key] = np.zeros(self['diagnostic']["f"].shape)
         self['diagnostic']["R"][:] = ece.line_of_sight.first_point.r
         self['diagnostic']["phi"][:] = np.rad2deg(ece.line_of_sight.first_point.phi)
         self['diagnostic']["z"][:] = ece.line_of_sight.first_point.z
-        self['diagnostic']["phi_tor"][:] = \
-             np.rad2deg(ece.line_of_sight.second_point.phi) - self.diagnostic.phi[:] 
-        dR = ece.line_of_sight.second_point.r - self['diagnostic']["R"][:]
-        dz = ece.line_of_sight.second_point.z - self['diagnostic']["z"][:]
-        self['diagnostic']["theta_pol"][:] = -np.rad2deg(np.arctan(dz/dR))
+        x1_vec = np.array([
+                ece.line_of_sight.first_point.r * np.cos(ece.line_of_sight.first_point.phi),
+                ece.line_of_sight.first_point.r * np.sin(ece.line_of_sight.first_point.phi), 
+                ece.line_of_sight.first_point.z])
+        x2_vec = np.array([
+                ece.line_of_sight.second_point.r * np.cos(ece.line_of_sight.second_point.phi),
+                ece.line_of_sight.second_point.r * np.sin(ece.line_of_sight.second_point.phi), 
+                ece.line_of_sight.second_point.z])
+        # Phi is defined as the angle between the k_1 = -r_1 and k_2 = r_2 - r_1
+        self['diagnostic']["theta_pol"][:], self['diagnostic']["phi_tor"][:] = \
+                get_theta_pol_phi_tor_from_two_points(x1_vec, x2_vec)
 
     def set_up_profiles_from_imas(self, core_profiles, equilibrium, times):
         for key in self["plasma"]:
@@ -179,8 +196,10 @@ class ECRadScenario(dict):
             self["plasma"]["ne"].append(
                 core_profiles.profiles_1d[itime_profiles].electrons.density)
         self["plasma"]["rhop_prof"] = np.array(self["plasma"]["rhop_prof"])
+        self["plasma"]["prof_reference"] = "rhop_prof"
         self["plasma"]["Te"] = np.array(self["plasma"]["Te"])
         self["plasma"]["ne"] = np.array(self["plasma"]["ne"])
+
 
     def set_up_equilibrium_from_imas(self, equilibrium, wall, times):
         self["plasma"]["eq_dim"] = True
@@ -197,9 +216,11 @@ class ECRadScenario(dict):
                 equilibrium.time_slice[itime].global_quantities.magnetic_axis.r,\
                 equilibrium.time_slice[itime].global_quantities.magnetic_axis.z))
         self["plasma"]["eq_data_2D"].set_slices_from_ext(times, EQ_slices)
-        self["dimensions"]["N_vessel_bd"] = np.array([ \
+        self["plasma"]["vessel_bd"] = np.array([ \
             wall.description_2d[0].limiter.unit[0].outline.r,
             wall.description_2d[0].limiter.unit[0].outline.z]).T
+            
+
 
     def set_up_from_imas(self, equilibrium_ids, profile_ids, ece_ids, wall_ids, times):
         self.set_up_launch_from_imas(ece_ids, times)
@@ -208,30 +229,50 @@ class ECRadScenario(dict):
         self.set_up_dimensions()
 
 
+
     def set_up_launch_from_omas(self, ods, times=None):
         for key in self['diagnostic']:
             self['diagnostic'][key] = []
         if(times is None):
-            times = ods['ece']['channel']['time']
+            times = ods['ece']['channel[0]']['time']
         for time in times:
             self['diagnostic']["f"].append([])
-            for ch in ods['ece']['channel']:
+            for ch in ods['ece']['channel'].values():
                 itime = np.argmin(np.abs(time - ch['time']))
-                self['diagnostic']["f"][-1].append(ch['frequency']['data'][itime])
+                self['diagnostic']["f"][-1].append(ch['frequency.data'][itime])
         self['diagnostic']["f"] = np.array(self['diagnostic']["f"])
         self["dimensions"]["N_ch"] = len(self["diagnostic"]["f"][0])
         for key in self['diagnostic']:
             if(key == "f"):
                 continue
-            self['diagnostic'][key] = np.zeros(self['diagnostic']["f"].shape)
+            elif(key == "pol_coeff_X"):
+                self['diagnostic'][key] = -np.ones(self['diagnostic']["f"].shape)
+            elif(key == "diag_name"):
+                name_first = ods['ece']['channel[0].name']
+                name_last = ods['ece']['channel[{0:d}].name'.format(self["dimensions"]["N_ch"] - 1)]
+                i = 0
+                while i < min(len(name_first), len(name_last)):
+                    if(name_first[i] == name_last[i]):
+                        i += 1
+                    else:
+                        break
+                self['diagnostic'][key] = np.zeros(self['diagnostic']["f"].shape, dtype="|S{0:d}".format(i))
+                self['diagnostic'][key][:] = name_first[:i]
+            else:
+                self['diagnostic'][key] = np.zeros(self['diagnostic']["f"].shape)
         self['diagnostic']["R"][:] = ods['ece']['line_of_sight']['first_point']["r"]
         self['diagnostic']["phi"][:] = np.rad2deg(ods['ece']['line_of_sight']['first_point']["phi"])
         self['diagnostic']["z"][:] = ods['ece']['line_of_sight']['first_point']["z"]
-        self['diagnostic']["phi_tor"][:] = \
-             np.rad2deg(ods['ece']['line_of_sight']['second_point']["phi"]) - self['diagnostic']["phi"][:] 
-        dR = ods['ece']['line_of_sight']['second_point']["r"] - self['diagnostic']["R"][:]
-        dz = ods['ece']['line_of_sight']['second_point']["z"] - self['diagnostic']["z"][:]
-        self['diagnostic']["theta_pol"][:] = -np.rad2deg(np.arctan(dz/dR))
+        x1_vec = np.array([
+                ods['ece']['line_of_sight']['first_point']["r"] * np.cos(ods['ece']['line_of_sight']['first_point']["phi"]),
+                ods['ece']['line_of_sight']['first_point']["r"] * np.sin(ods['ece']['line_of_sight']['first_point']["phi"]), 
+                ods['ece']['line_of_sight']['first_point']["z"]])
+        x2_vec = np.array([
+                ods['ece']['line_of_sight']['second_point']["r"] * np.cos(ods['ece']['line_of_sight']['second_point']["phi"]),
+                ods['ece']['line_of_sight']['second_point']["r"] * np.sin(ods['ece']['line_of_sight']['second_point']["phi"]),
+                ods['ece']['line_of_sight']['second_point']["z"]])
+        self['diagnostic']["theta_pol"][:], self['diagnostic']["phi_tor"][:] = \
+                get_theta_pol_phi_tor_from_two_points(x1_vec, x2_vec)
 
     def set_up_profiles_from_omas(self, ods, times):
         for key in self["plasma"]:
@@ -267,14 +308,14 @@ class ECRadScenario(dict):
                 ods['equilibrium']['time_slice'][itime]['global_quantities']['magnetic_axis']['r'],\
                 ods['equilibrium']['time_slice'][itime]['global_quantities']['magnetic_axis']['z']))
         self["plasma"]["eq_data_2D"].set_slices_from_ext(times, EQ_slices)
-        self["dimensions"]["N_vessel_bd"] = np.array([ \
+        self["plasma"]["vessel_bd"] = np.array([ \
             ods['wall.description_2d.0.limiter.unit.0.outline.r'],
             ods['wall.description_2d.0.limiter.unit.0.outline.z']]).T
 
     def set_up_from_omas(self, ods, times):
-        self.set_up_launch_from_imas(ods, times)
-        self.set_up_equilibrium_from_imas(ods, times)
-        self.set_up_profiles_from_imas(ods, times)
+        self.set_up_launch_from_omas(ods, times)
+        self.set_up_equilibrium_from_omas(ods, times)
+        self.set_up_profiles_from_omas(ods, times)
         self.set_up_dimensions()    
 
     def set_up_dimensions(self):
@@ -361,11 +402,20 @@ class ECRadScenario(dict):
                     print(e)
         self["shot"] = mdict["shot"]
         if(globalsettings.AUG):
-            self["AUG"]["IDA_exp"] = mdict["IDA_exp"]
-            self["AUG"]["IDA_ed"] = mdict["IDA_ed"]
-            self["AUG"]["EQ_exp"] = mdict["EQ_exp"]
-            self["AUG"]["EQ_diag"] = mdict["EQ_diag"]
-            self["AUG"]["EQ_ed"] = mdict["EQ_ed"]
+            try:
+                self["AUG"]["IDA_exp"] = mdict["IDA_exp"]
+                self["AUG"]["IDA_ed"] = mdict["IDA_ed"]
+                self["AUG"]["EQ_exp"] = mdict["EQ_exp"]
+                self["AUG"]["EQ_diag"] = mdict["EQ_diag"]
+                self["AUG"]["EQ_ed"] = mdict["EQ_ed"]
+            except KeyError:
+                print("WARNING:: Failed to load AUG specific keywords from Scenarios.")
+                print("WARNING:: Replacing them with default values.")
+                self["AUG"]["IDA_exp"] = "AUGD"
+                self["AUG"]["IDA_ed"] = 0
+                self["AUG"]["EQ_exp"] = "AUGD"
+                self["AUG"]["EQ_diag"] = "EQH"
+                self["AUG"]["EQ_ed"] = 0
             self["used_diags_dict"] = od()
         self.default_diag = mdict["used_diags"][0]
         self["dimensions"]["N_used_diags"] = len(mdict["used_diags"])
@@ -445,7 +495,7 @@ class ECRadScenario(dict):
                 self["plasma"]["rhot_prof"] = mdict["rhot_prof"]
             except KeyError:
                 print("Could not find rho_tor profile")
-                if(self["plasma"]["eqq_dim"] == 3):
+                if(self["plasma"]["eq_dim"] == 3):
                     print("INFO: 3D Scenario identified")
                     print("INFO: Overriding rhot_prof with rhop_prof")
                     self["plasma"]["rhot_prof"] = mdict["rhop_prof"]
@@ -525,8 +575,9 @@ class ECRadScenario(dict):
         if(not self["plasma"]["2D_prof"]):
             self["dimensions"]["N_profiles"] = len(self["plasma"]["Te"][0])
         try:        
-            self.load_dist_obj(mdict=mdict)
+            self.load_dist_obj_from_mat(mdict=mdict)
         except Exception:
+            self["plasma"]["dist_obj"] = None
             print("No distribution data in current Scenario")
 
     def to_netcdf(self, filename=None, rootgrp=None):
@@ -562,6 +613,7 @@ class ECRadScenario(dict):
             var[...] = self["scaling"][sub_key]
         var = rootgrp["Scenario"].createVariable("plasma" + "_" + "eq_dim", "i8")
         var[...] = self["plasma"]["eq_dim"]
+
         if(self["plasma"]["eq_dim"] == 3):
             for sub_key in ["B_ref", "s_plus", "s_max", \
                            "interpolation_acc", "fourier_coeff_trunc", \
@@ -582,26 +634,34 @@ class ECRadScenario(dict):
                                                      "equilibrium_files", str, ('N_time',))
             var[:] = self["plasma"]["eq_data_3D"]["equilibrium_files"]
         else:
+            # print('else')
             for sub_key in ["R", "z"]:
                 var = rootgrp["Scenario"].createVariable("plasma" + "_" + \
                                                          "eq_data_2D" + "_" +  sub_key, "f8", \
                                                          ("N_time", "N_eq_2D_" + sub_key))
                 var[:] = self["plasma"]['eq_data_2D'].get_single_attribute_from_all_slices(sub_key)
+
             for sub_key in ["Psi", "rhop", "Br", "Bt", "Bz"]:
                 var = rootgrp["Scenario"].createVariable("plasma" + "_" + \
                                                          "eq_data_2D" + "_" +  sub_key, "f8", \
                                                          ("N_time", "N_eq_2D_R", "N_eq_2D_z"))
+                if np.shape(self["plasma"]['eq_data_2D'].get_single_attribute_from_all_slices(sub_key))[1]==0:
+                    print('Array is empty: '+sub_key)
                 var[:] = self["plasma"]['eq_data_2D'].get_single_attribute_from_all_slices(sub_key)
+                
             for sub_key in ["R_ax", "z_ax", "Psi_ax", "Psi_sep"]:
                 var = rootgrp["Scenario"].createVariable("plasma" + "_" + \
                                                          "eq_data_2D" + "_" +  sub_key, "f8", \
                                                          ("N_time",))
                 var[:] = self["plasma"]['eq_data_2D'].get_single_attribute_from_all_slices(sub_key)
+
             var = rootgrp["Scenario"].createVariable("plasma" + "_" + \
                                                      "vessel_bd", "f8", \
                                                      ("N_vessel_bd", "N_vessel_dim"))
             var[...,0] = self["plasma"]['vessel_bd'][...,0]
+
             var[...,1] = self["plasma"]['vessel_bd'][...,1]
+
         for sub_key in self["diagnostic"].keys():
             if(sub_key == "diag_name"):
                 var = rootgrp["Scenario"].createVariable("diagnostic_" +  sub_key, str, \
@@ -611,21 +671,25 @@ class ECRadScenario(dict):
                 var = rootgrp["Scenario"].createVariable("diagnostic_" +  sub_key, "f8", \
                                                              ("N_time","N_ch"))
                 var[:] = self["diagnostic"][sub_key]
+
         if(globalsettings.AUG):
             for sub_key in self["AUG"].keys():
-                if(sub_key.endswith("_ed")):
+                if(sub_key in ["IDA_ed", "EQ_ed"]):
                     var = rootgrp["Scenario"].createVariable("AUG_" +  sub_key, "i8", \
-                                                             ("str_dim",))
+                                                            ("str_dim",))
+                    var[0] = self["AUG"][sub_key]
                 else:
                     var = rootgrp["Scenario"].createVariable("AUG_" +  sub_key, str, \
-                                                             ("str_dim",))
-                var[0] = self["AUG"][sub_key]
+                                                            ("str_dim",))
+                    var[0] = self["AUG"][sub_key]
         used_diag_dict_sub_keys = ["diags_exp", "diags_diag", \
                                    "diags_ed", "diags_Extra_arg_1",\
                                    "diags_Extra_arg_2","diags_Extra_arg_3"]
         used_diag_dict_formatted = {}
+
         for sub_key in used_diag_dict_sub_keys:
             used_diag_dict_formatted[sub_key] = []
+
         for diagname in self["used_diags_dict"]:
             cur_diag = self["used_diags_dict"][diagname]
             if((diagname == "ECN" or diagname == "ECO" or diagname == "ECI")):
@@ -652,7 +716,7 @@ class ECRadScenario(dict):
                 used_diag_dict_formatted["diags_exp"].append(cur_diag.exp)
                 used_diag_dict_formatted["diags_diag"].append(cur_diag.diag)
                 used_diag_dict_formatted["diags_ed"].append(str(cur_diag.ed))
-        rootgrp["Scenario"].createVariable("used_diags_dict_" +  "diags", str, \
+        rootgrp["Scenario"].createVariable("used_diags_dict_diags", str, \
                                            ("N_used_diags",))
         for sub_key in used_diag_dict_sub_keys:
             rootgrp["Scenario"].createVariable("used_diags_dict_" +  sub_key, str, \
@@ -716,8 +780,14 @@ class ECRadScenario(dict):
             try:
                 for sub_key in self["AUG"].keys():
                     self["AUG"][sub_key] = rootgrp["Scenario"]["AUG_" +  sub_key][0]
-            except Exception as e:
-                print("INFO: No AUG specific info in Scenario")
+            except IndexError:
+                print("WARNING:: Failed to load AUG specific keywords from Scenarios.")
+                print("WARNING:: Replacing them with default values.")
+                self["AUG"]["IDA_exp"] = "AUGD"
+                self["AUG"]["IDA_ed"] = 0
+                self["AUG"]["EQ_exp"] = "AUGD"
+                self["AUG"]["EQ_diag"] = "EQH"
+                self["AUG"]["EQ_ed"] = 0
         self["dimensions"]["N_used_diags"] = len(rootgrp["Scenario"]["used_diags_dict_diags"])
         self["used_diags_dict"] = od()
         for idiag, diagname in enumerate(rootgrp["Scenario"]["used_diags_dict_diags"]):
@@ -737,6 +807,14 @@ class ECRadScenario(dict):
                                                                    int(rootgrp["Scenario"]["used_diags_dict_diags_Extra_arg_1"][idiag]), \
                                                                    float(rootgrp["Scenario"]["used_diags_dict_diags_Extra_arg_2"][idiag]), \
                                                                    rootgrp["Scenario"]["used_diags_dict_diags_Extra_arg_3"][idiag] == "True")})
+            elif("CEC" == diagname.upper()):
+                self["used_diags_dict"].update({diagname: CECE_diag(diagname, \
+                                                                    rootgrp["Scenario"]["used_diags_dict_diags_exp"][idiag], \
+                                                                    rootgrp["Scenario"]["used_diags_dict_diags_diag"][idiag], \
+                                                                    int(rootgrp["Scenario"]["used_diags_dict_diags_ed"][idiag]))})
+                # CECE diag expects f to be time independent -> ndim = 1
+                self["used_diags_dict"][diagname].set_f_info(self["diagnostic"]['f'][0][self["diagnostic"]['diag_name'][0] == 'CEC'], 
+                                                             self["diagnostic"]['df'][0][self["diagnostic"]['diag_name'][0] =='CEC'])
             elif("EXT" == diagname.upper()):
                 self["used_diags_dict"].update({diagname: EXT_diag(diagname)})
                 self["used_diags_dict"][diagname].set_from_scenario_diagnostic(self["diagnostic"],0)
@@ -765,9 +843,18 @@ class ECRadScenario(dict):
         self.to_netcdf(filename=self.scenario_file)
 
 
-    def load_dist_obj(self, filename=None, mdict=None):
-        self["plasma"]["dist_obj"] = load_f_from_mat(filename, use_dist_prefix=None)
-        
+    def load_dist_obj(self, filename=None):
+        self["plasma"]["dist_obj"] = Distribution()
+        if(filename is not None):
+            ext = os.path.splitext(filename)[1]
+            if(ext == ".mat"):
+                self["plasma"]["dist_obj"].from_mat(filename=filename)
+            elif(ext == ".nc"):
+               self["plasma"]["dist_obj"].from_netcdf(filename=filename)
+            else:
+                print("ERROR: Extension " + ext + " is unknown")
+                raise(ValueError)
+
     def load_GENE_obj(self, filename, dstf):
         it = 0 # Only single time point supported
         try:

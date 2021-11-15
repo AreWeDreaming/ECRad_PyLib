@@ -1,6 +1,7 @@
 /__pycache__/
 /.pydevproject.bak
 /.pydevproject.bak0
+/__pycache/
 /id
 /test
 /whatever
@@ -9,3 +10,4 @@
 dd.py
 map_equ.py
 .vscode/launch.json
+*.pyc

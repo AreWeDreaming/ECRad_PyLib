@@ -23,7 +23,7 @@ class ECRadConfig(dict):
         self.sub_keys["Physics"] = ["dstf", "raytracing", "ripple", \
                                     "weak_rel", "considered_modes", \
                                     "N_freq", "N_ray", \
-                                    "ratio_for_3rd_harm", "mode_conv" ,\
+                                    "ratio_for_3rd_harm", "tau_ignore", "mode_conv" ,\
                                     "reflec_X", "reflec_O", \
                                     "R_shift", "z_shift", \
                                     "use_ext_rays"]
@@ -40,6 +40,7 @@ class ECRadConfig(dict):
         self["Physics"]["N_freq"] = 1
         self["Physics"]["N_ray"] = 1
         self["Physics"]["ratio_for_3rd_harm"] = 0.4
+        self["Physics"]["tau_ignore"] = 1.e-8
         self["Physics"]["considered_modes"] = 1
         # 1 -> Only X
         # 2 -> Only O
@@ -63,26 +64,27 @@ class ECRadConfig(dict):
         self["Numerics"]["small_ds"] = 2.5e-4
         self["Numerics"]["max_points_svec"] = 20000
         self["Numerics"]["N_BPD"] = 2000
-        self.types = {"working_dir":str, "scratch_dir":str, "dstf":str, "extra_output": "b", \
-                      "debug": "b", "batch": "b", "parallel": "b",  \
-                      "parallel_cores": "i8", "wall_time": "f8", \
-                      "vmem": "i8", "raytracing": "b", "ripple": "b", \
-                      "weak_rel": "b", "N_freq" : "i8",  "N_ray": "i8", \
-                      "ratio_for_3rd_harm": "f8", "considered_modes" : "i8", \
-                      "mode_conv" : "f8", "reflec_X" : "f8","reflec_O" : "f8", \
-                      "R_shift" : "f8","z_shift" : "f8","large_ds" : "f8",\
-                      "small_ds" : "f8","max_points_svec" : "i8","use_ext_rays" : "b", \
+        self.types = {"working_dir":str, "scratch_dir":str, "dstf":str, "extra_output": "b", 
+                      "debug": "b", "batch": "b", "parallel": "b",  
+                      "parallel_cores": "i8", "wall_time": "f8", 
+                      "vmem": "i8", "raytracing": "b", "ripple": "b", 
+                      "weak_rel": "b", "N_freq" : "i8",  "N_ray": "i8", 
+                      "ratio_for_3rd_harm": "f8", "tau_ignore" :"f8", "considered_modes" : "i8", 
+                      "mode_conv" : "f8", "reflec_X" : "f8","reflec_O" : "f8", 
+                      "R_shift" : "f8","z_shift" : "f8","large_ds" : "f8",
+                      "small_ds" : "f8","max_points_svec" : "i8","use_ext_rays" : "b", 
                       "N_BPD" : "i8"}
-        self.nice_labels = {"working_dir":"Working dir.", "scratch_dir":"Scratch dir.","dstf":"Distribution type", "extra_output": "Extra output", \
-                            "debug": "Debug", "batch": "Batch", "parallel": "Parallel",  \
-                            "parallel_cores": "# cores", "wall_time": "wall time [h]", \
-                            "vmem": "virtual memory [MB]", "raytracing": "Raytracing", "ripple": "Magn. field Ripple", \
-                            "weak_rel": "Relativistic cor. for rt.", "N_freq" : "# frequencies",  "N_ray": "# rays", \
-                            "ratio_for_3rd_harm": "omega_c/omega w. 3rd", "considered_modes" : "Modes to consider", \
-                            "mode_conv" : "mode conv. ratio", "reflec_X" : "Wall refl. coeff. X-mode", \
-                            "reflec_O" : "Wall refl. coeff. O-mode", "use_ext_rays" : "Use ext rays", \
-                            "R_shift" : "R shift [m]","z_shift" : "z shift [m]", "large_ds" :  "Large step size [m]",\
-                            "small_ds" : "Small step size [m]","max_points_svec" : "Max points on LOS", \
+        self.nice_labels = {"working_dir":"Working dir.", "scratch_dir":"Scratch dir.","dstf":"Distribution type", "extra_output": "Extra output", 
+                            "debug": "Debug", "batch": "Batch", "parallel": "Parallel",  
+                            "parallel_cores": "# cores", "wall_time": "wall time [h]", 
+                            "vmem": "virtual memory [MB]", "raytracing": "Raytracing", "ripple": "Magn. field Ripple", 
+                            "weak_rel": "Relativistic cor. for rt.", "N_freq" : "# frequencies",  "N_ray": "# rays", 
+                            "ratio_for_3rd_harm": "omega_c/omega w. 3rd", "tau_ignore": "tau threshhold for computation of alpha/j",
+                            "considered_modes" : "Modes to consider", 
+                            "mode_conv" : "mode conv. ratio", "reflec_X" : "Wall refl. coeff. X-mode", 
+                            "reflec_O" : "Wall refl. coeff. O-mode", "use_ext_rays" : "Use ext rays", 
+                            "R_shift" : "R shift [m]","z_shift" : "z shift [m]", "large_ds" :  "Large step size [m]",
+                            "small_ds" : "Small step size [m]","max_points_svec" : "Max points on LOS", 
                             "N_BPD" : "Points for BPD"}
         
     def load(self, filename=None, mdict=None, rootgrp=None, default=False):
@@ -168,14 +170,18 @@ class ECRadConfig(dict):
                 continue
         for key in self.main_keys:
             for sub_key in self.sub_keys[key]:
-                if(sub_key in ["working_dir", "scratch_dir"]):
-                    continue
-                if(self.types[sub_key] == "b"):
-                    self[key][sub_key] = bool(rootgrp["Config"][key + "_" + sub_key][...])
-                elif(self.types[sub_key] == str):
-                    self[key][sub_key] = rootgrp["Config"][key + "_" + sub_key][0]
-                else:
-                    self[key][sub_key] = rootgrp["Config"][key + "_" + sub_key][...].item()
+                try:
+                    if(sub_key in ["working_dir", "scratch_dir"]):
+                        continue
+                    if(self.types[sub_key] == "b"):
+                        self[key][sub_key] = bool(rootgrp["Config"][key + "_" + sub_key][...])
+                    elif(self.types[sub_key] == str):
+                        self[key][sub_key] = rootgrp["Config"][key + "_" + sub_key][0]
+                    else:
+                        self[key][sub_key] = rootgrp["Config"][key + "_" + sub_key][...].item()
+                except IndexError:
+                    print("ERROR: Cannot find {0:s} in Config file.".format(key + "/" + sub_key))
+                    print("INFO: Using default value.")
         if(filename is not None):
             rootgrp.close()
 

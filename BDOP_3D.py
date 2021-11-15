@@ -20,13 +20,15 @@ from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
 from scipy.io import loadmat
 import scipy.odr as odr
 from ECRad_Results import ECRadResults
+from Distribution_Classes import Distribution
+
 
 def func(beta, x):
     return beta[0] * np.exp(-(x - beta[1]) ** 2 / beta[2] ** 2)
 
-def make_f_inter(dist, EQObj, working_dir=None, dist_obj=None, time=None):
-    if(dist in ["Re", "ReComp", "Ge", "GeComp"]):
-        res_dist = dist.replace("Comp", "")
+def make_f_inter(dstf, EQObj, working_dir=None, dist_obj=None, time=None):
+    if(dstf in ["Re", "ReComp", "Ge", "GeComp"]):
+        res_dist = dstf.replace("Comp", "")
     else:
         res_dist = "thermal"
     EqSlice = EQObj.GetSlice(time)
@@ -37,70 +39,52 @@ def make_f_inter(dist, EQObj, working_dir=None, dist_obj=None, time=None):
     else:
         rhop_Bmin, Bmin = EQObj.get_B_min(time, dist_obj.rhop, append_B_ax=True)
         f_inter = FInterpolator(dist_obj=dist_obj, dist=res_dist, rhop_Bmin=rhop_Bmin, Bmin=Bmin)
-    if(dist == "Ge"):
+    if(dstf == "Ge"):
         f_inter_scnd = FInterpolator(working_dir, dist="Ge0", EqSlice=EqSlice)
         return f_inter, f_inter_scnd # Gene f0 distribution
     else:
         return f_inter, None # None will be replaced with f_inter based on thermal distribution
 
 
-def make_3DBDOP_for_ray(result, time, ch, ir, m, B_ax, f_inter=None, N_pnts=100):
+def make_3DBDOP_for_ray(result, time, ch, imode, ir, m, B_ax, f_inter=None, N_pnts=100):
     # Currently only supported for non-Gene distributions
     if(result.dist_obj is None):
         dist = "Th"
     else:
         dist = result.Config.dstf
-    svec, freq, Trad, T, BPD = load_data_for_3DBDOP(result, time, dist, ch, ir=ir, get_BPD=True)
+    svec, freq, Trad, T, BPD = load_data_for_3DBDOP(result, time, dist, ch, imode, ir=ir, get_BPD=True)
     s = distribute_points(svec["s"], BPD, N_pnts)
     return BDOP_3D(s, svec, freq, Trad, T, f_inter, dist, B_ax, m=m)
     
 
-def load_data_for_3DBDOP(Results, time, dist, ch, ir=1, get_BPD=False):
+def load_data_for_3DBDOP(Results, time, dist, ch, imode, ir=1, get_BPD=False):
     ich = ch - 1
-    itime_Scenario = np.argmin(np.abs(Results.Scenario.plasma_dict["time"] - time))
-    freq = Results.Scenario.ray_launch[itime_Scenario]["f"][ich]
-    itime = np.argmin(np.abs(Results.time - time))
+    itime = np.argmin(np.abs(Results.Scenario["time"] - time))
+    freq = Results.Scenario["diagnostic"]["f"][itime][ich]
     svec = {}
-    if(Results.Config.N_ray == 1):
-        svec["rhop"] = Results.ray["rhopX"][itime][ich]
-        svec["s"] = Results.ray["sX"][itime][ich][svec["rhop"] != -1.0]
-        svec["R"] = np.sqrt(Results.ray["xX"][itime][ich][svec["rhop"] != -1.0] ** 2 + \
-                            Results.ray["yX"][itime][ich][svec["rhop"] != -1.0] ** 2)
-        svec["z"] = Results.ray["zX"][itime][ich][svec["rhop"] != -1.0]
-        svec["Te"] = Results.ray["TeX"][itime][ich][svec["rhop"] != -1.0]
-        svec["theta"] = Results.ray["thetaX"][itime][ich][svec["rhop"] != -1.0]
-        svec["freq_2X"] = Results.ray["YX"][itime][ich][svec["rhop"] != -1.0] * 2.0 * freq
-        svec["N_abs"] = Results.ray["NcX"][itime][ich][svec["rhop"] != -1.0]
-    else:
-        ray_index = ir - 1
-        svec["rhop"] = Results.ray["rhopX"][itime][ich][ray_index]
-        svec["s"] = Results.ray["sX"][itime][ich][ray_index][svec["rhop"] != -1.0]
-        svec["R"] = np.sqrt(Results.ray["xX"][itime][ich][ray_index][svec["rhop"] != -1.0] ** 2 + \
-                            Results.ray["yX"][itime][ich][ray_index][svec["rhop"] != -1.0] ** 2)
-        svec["z"] = Results.ray["zX"][itime][ich][ray_index][svec["rhop"] != -1.0]
-        svec["Te"] = Results.ray["TeX"][itime][ich][ray_index][svec["rhop"] != -1.0]
-        svec["theta"] = Results.ray["thetaX"][itime][ich][ray_index][svec["rhop"] != -1.0]
-        svec["freq_2X"] = Results.ray["YX"][itime][ich][ray_index][svec["rhop"] != -1.0] * 2.0 * freq
-        svec["N_abs"] = Results.ray["NcX"][itime][ich][ray_index][svec["rhop"] != -1.0]
-    ne_spl = InterpolatedUnivariateSpline(Results.Scenario.plasma_dict[Results.Scenario.plasma_dict["prof_reference"]][itime_Scenario], \
-                                          np.log(Results.Scenario.plasma_dict["ne"][itime_Scenario]), ext=3)
+    ray_index = ir - 1
+    svec["rhop"] = Results["ray"]["rhop"][itime][ich][imode][ray_index]
+    svec["s"] = Results["ray"]["s"][itime][ich][imode][ray_index][svec["rhop"] != -1.0]
+    svec["R"] = Results["ray"]["R"][itime][ich][imode][ray_index][svec["rhop"] != -1.0]
+    svec["z"] = Results["ray"]["z"][itime][ich][imode][ray_index][svec["rhop"] != -1.0]
+    svec["Te"] = Results["ray"]["Te"][itime][ich][imode][ray_index][svec["rhop"] != -1.0]
+    svec["theta"] = Results["ray"]["theta"][itime][ich][imode][ray_index][svec["rhop"] != -1.0]
+    svec["freq_2X"] = Results["ray"]["Y"][itime][ich][imode][ray_index][svec["rhop"] != -1.0] * 2.0 * freq
+    svec["N_abs"] = Results["ray"]["Nc"][itime][ich][imode][ray_index][svec["rhop"] != -1.0]
+    ne_spl = InterpolatedUnivariateSpline(Results.Scenario["plasma"][Results.Scenario["plasma"]["prof_reference"]][itime], \
+                                          np.log(Results.Scenario["plasma"]["ne"][itime]), ext=3)
     svec["ne"] = np.exp(ne_spl(svec["rhop"][svec["rhop"] != -1.0]))
+    imode_mix = min(imode + 1, Results.Config["Physics"]["considered_modes"])
     if(dist != "ReTh"):
-        Trad = Results.Trad[itime][ich]
-        if(len(Results.ray["TX"]) == 0):
-            raise ValueError("WARNING THERE IS NO TRANSMIVITY DATA AVAILABLE")
-        elif(Results.Config.N_ray == 1):
-            T = Results.ray["TX"][itime][ich]
-            if(get_BPD):
-                BPD = Results.ray["BPDX"][itime][ich]
-        else:
-            T = Results.ray["TX"][itime][ich][ray_index]
-            if(get_BPD):
-                BPD = Results.ray["BPDX"][itime][ich][ray_index]
-    else:
-        T = Results.ray["T_secondX"][itime][ich][ray_index]
+        Trad = Results["Trad"]["Trad"][itime][imode_mix][ich]
+        T = Results["ray"]["T"][itime][ich][imode][ray_index]
         if(get_BPD):
-                BPD = Results.ray["BPD_secondX"][itime][ich][ray_index]
+            BPD = Results["ray"]["BPD"][itime][ich][imode][ray_index]
+    else:
+        Trad = Results["Trad"]["Trad_seccond"][itime][imode_mix][ich]
+        T = Results["ray"]["T_secondX"][itime][ich][imode][ray_index]
+        if(get_BPD):
+                BPD = Results["ray"]["BPD_secondX"][itime][ich][imode][ray_index]
     T = T[svec["rhop"] != -1.0]
     if(get_BPD):
         BPD = BPD[svec["rhop"] != -1.0]
@@ -131,19 +115,19 @@ def distribute_points(x, weight, N_pnts):
     return np.array(x_weighted)
 
 class BDOP_3D:
-    def __init__(self, s, svec, freq, Trad, T, f_inter, dist, B_ax, m=2, f_inter_scnd=None):
+    def __init__(self, s, svec, freq, Trad, T, f_inter, dstf, B_ax, m=2, f_inter_scnd=None):
         rhop_max = 1.02
         u_par_max = 2.0
-        if(dist in ["Re", "ReComp"]):
-            dist_mode = "ext"
-        elif(dist in ["Ge", "GeComp"]):
-            dist_mode = "gene"
+        if(dstf in ["Re", "ReComp"]):
+            dstf_mode = "ext"
+        elif(dstf in ["Ge", "GeComp"]):
+            dstf_mode = "gene"
         else:
-            dist_mode = "thermal"
+            dstf_mode = "thermal"
         em_abs_Alb_obj = EmAbsAlb()
-        em_abs_Alb_obj.dist_mode = dist_mode
+        em_abs_Alb_obj.dist_mode = dstf_mode
         self.f_inter = f_inter
-        if(dist == "Ge"):
+        if(dstf == "Ge"):
             B0 = self.f_inter.B0
         # Already did this msot likely, but doesnt hurt tp do it again
         for key in svec:
@@ -191,22 +175,22 @@ class BDOP_3D:
             freq_2X = freq_2X_spl(s[i])
             theta = theta_spl(s[i])
             T_cur = T_spl(s[i])
-            if("Re" == dist or "Lu" == dist):
+            if("Re" == dstf or "Lu" == dstf):
                 if(self.f_inter.B_min_spline(rhop).item() == 0.0):
                     self.zeta.append(1.0)
                 else:
                     self.zeta.append(np.pi * freq_2X * cnst.m_e / (cnst.e * self.f_inter.B_min_spline(rhop).item()))
                     if(self.zeta[-1] < 1.0):
                         self.zeta[-1] = 1.0
-            elif(dist == "Ge"):
+            elif(dstf == "Ge"):
                 self.zeta.append(np.pi * freq_2X * cnst.m_e / (cnst.e * B0))
             if(em_abs_Alb_obj.is_resonant(rhop, Te, ne, freq_2X, theta, freq, m)):
                 x, y, spline = self.f_inter.get_spline(rhop, Te)
                 dist_inter_slice = DistributionInterpolator(x, y, spline)
-                if(dist == "Ge"):
+                if(dstf == "Ge"):
                     em_abs_Alb_obj.j_abs_Alb(rhop, Te, ne, \
                                              freq_2X, theta, freq, dist_inter_slice, B0, m=m)
-                elif("Re" == dist or "Lu" == dist):
+                elif("Re" == dstf or "Lu" == dstf):
                     em_abs_Alb_obj.j_abs_Alb(rhop, Te, ne, \
                                              freq_2X, theta, freq, dist_inter_slice, \
                                              self.f_inter.B_min_spline(rhop).item(), m=m)
@@ -263,7 +247,7 @@ class BDOP_3D:
                     self.f.append(em_abs_Alb_obj.dist(self.u_par[-1], self.u_perp[-1], mu, cur_svec))
                     u, pitch, spline = self.f_inter_scnd.get_spline(rhop, Te)
                     dist_inter_slice = DistributionInterpolator(u, pitch, spline)
-                    if(dist == "Ge"):
+                    if(dstf == "Ge"):
                         em_abs_Alb_obj.j_abs_Alb(rhop, Te, ne, \
                                                  freq_2X, theta, freq, dist_inter_slice, B0)
                     else:
@@ -508,22 +492,22 @@ def make_3DBDOP_cut_GUI(Results, fig,  time, ch, dist="Th", dist_mat_filename=No
                            single_ray_BPD=False, Teweight=False, ECRH_freq=ECRH_freq, \
                            mat_for_waves=wave_mat_filename, mat_for_distribution=dist_mat_filename)
 
-def make_3DBDOP_cut_standalone(matfilename, time, ch_list, m_list, dist, include_ECRH=False, \
+def make_3DBDOP_cut_standalone(filename, time, ch_list, mode_list, m_list, dist, include_ECRH=False, \
                                single_Beam=False, m_ECRH_list=[2], only_contribution=False, \
                                single_ray_BPD=False, Teweight=False, ECRH_freq=140.e9, \
                                wave_mat_filename=None, mat_for_distribution=None, \
                                rhop_range=[0,1.0], BPD_fac=1.0):
     Results = ECRadResults()
     fig = plt.figure(figsize=(16.5, 8.5))
-    Results.from_mat_file(matfilename)
-    fig = make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=include_ECRH, \
+    Results.load(filename)
+    fig = make_3DBDOP_cut(fig, Results, time, ch_list, mode_list, m_list, dist, include_ECRH=include_ECRH, \
                     single_Beam=single_Beam, m_ECRH_list=m_ECRH_list, only_contribution=only_contribution, \
                     single_ray_BPD=single_ray_BPD, Teweight=Teweight, ECRH_freq=ECRH_freq, \
                     mat_for_waves=wave_mat_filename, mat_for_distribution=mat_for_distribution, \
                     rhop_range=rhop_range, BPD_fac=BPD_fac)
     plt.show()
 
-def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=False, \
+def make_3DBDOP_cut(fig, Results, time, ch_list, mode_list, m_list, dist, include_ECRH=False, \
                     single_Beam=False, m_ECRH_list=[2], only_contribution=False, \
                     single_ray_BPD=False, Teweight=False, ECRH_freq=140.e9, \
                     mat_for_waves=None, mat_for_distribution=None, rhop_range=[0,1.0], \
@@ -533,37 +517,45 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
     distribution_rhop = None
     BDOP_list = []
     use_fit_for_s_important = False
-    itime = np.argmin(np.abs(Results.Scenario.plasma_dict["time"] - time))
-    rhop_Te = Results.Scenario.plasma_dict[Results.Scenario.plasma_dict["prof_reference"]][itime] * Results.Scenario.Te_rhop_scale
-    Te = np.log(Results.Scenario.plasma_dict["Te"][itime] * Results.Scenario.Te_scale)  # from IDA always positive definite
-    rhop_ne = Results.Scenario.plasma_dict[Results.Scenario.plasma_dict["prof_reference"]][itime] * Results.Scenario.ne_rhop_scale
-    ne = np.log(Results.Scenario.plasma_dict["ne"][itime] * Results.Scenario.ne_scale)  # from IDA always positive definite
-    EqSlice = Results.Scenario.plasma_dict["eq_data"][itime]
-    EQObj = EQDataExt(Results.Scenario.shot, Ext_data=True)
-    EQObj.set_slices_from_ext(Results.Scenario.plasma_dict["time"], Results.Scenario.plasma_dict["eq_data"])
+    itime = np.argmin(np.abs(Results.Scenario["time"] - time))
+    rhop_Te = Results.Scenario["plasma"][Results.Scenario["plasma"]["prof_reference"]][itime] * Results.Scenario["scaling"]["Te_rhop_scale"]
+    Te = np.log(Results.Scenario["plasma"]["Te"][itime] * Results.Scenario["scaling"]["Te_scale"])  # from IDA always positive definite
+    rhop_ne = Results.Scenario["plasma"][Results.Scenario["plasma"]["prof_reference"]][itime] * Results.Scenario["scaling"]["ne_rhop_scale"]
+    ne = np.log(Results.Scenario["plasma"]["ne"][itime] * Results.Scenario["scaling"]["ne_scale"])  # from IDA always positive definite
+    EQObj = Results.Scenario["plasma"]["eq_data_2D"]
     B_ax = EQObj.get_B_on_axis(time)
     R_ax, z_ax = EQObj.get_axis(time)
+    EqSlice = EQObj.GetSlice(time)
     Te_spline = InterpolatedUnivariateSpline(rhop_Te, Te)
     ne_spline = InterpolatedUnivariateSpline(rhop_ne, ne)
     print("Position of magn. axus", R_ax, z_ax)
-    if(mat_for_distribution is not None):
-        mat = loadmat(mat_for_distribution, squeeze_me=True)
-        dist_obj = load_f_from_mat(mat_for_distribution, use_dist_prefix=None)
-        if(include_ECRH and mat_for_waves is not None):
-            waves_mat = loadmat(mat_for_waves, squeeze_me=True)
-            linear_beam = read_waves_mat_to_beam(waves_mat, EqSlice, use_wave_prefix=None)
-            EQObjAug = EQData(Results.Scenario.shot, EQ_exp=Results.Scenario.EQ_exp, \
-                              EQ_diag=Results.Scenario.EQ_diag, EQ_ed=Results.Scenario.EQ_ed)
-            linear_beam.rhop = EQObjAug.rhot_to_rhop(time, linear_beam.rhot)
+    if(Results.Scenario["plasma"]["2D_prof"]):
+        print("ERROR: Cannot calculate 3D BPD for 2D profiles")
+        return
+    if(Results.Scenario["plasma"]["dist_obj"] is None):
+        if(Results.Config["Physics"]["dstf"] == "Th"):
+            Results.Config["physics"]["dstf"] = Distribution()
+            Results.Config["physics"]["dstf"].fill_with_thermal(
+                    Results.Scenario["plasma"]["rhop_prof"], 
+                    Results.Scenario["plasma"]["Te"],
+                    Results.Scenario["plasma"]["ne"])
+        else:
+            print("ERROR: Could not find distribution function in Scenario")
+            print("ERROR: If this is an old Scenario you will need to rerun ECRad.")
+            return
+    dist_obj = Results.Scenario["plasma"]["dist_obj"]
+    if(include_ECRH and mat_for_waves is not None):
+        waves_mat = loadmat(mat_for_waves, squeeze_me=True)
+        linear_beam = read_waves_mat_to_beam(waves_mat, EqSlice, use_wave_prefix=None)
+        EQObjAug = EQData(Results.Scenario["shot"], EQ_exp=Results.Scenario["AUG"]["EQ_exp"], \
+                            EQ_diag=Results.Scenario["AUG"]["EQ_diag"], EQ_ed=Results.Scenario["AUG"]["EQ_ed"])
+        linear_beam.rhop = EQObjAug.rhot_to_rhop(time, linear_beam.rhot)
 #             for rhop_gray, rhop_aug in zip(linear_beam.rhop , rhop_temp):
 #                 print(rhop_gray, rhop_aug)
 #             return
-            quasi_linear_beam = read_dist_mat_to_beam(mat, use_dist_prefix=None)
-            if(single_Beam):
-                linear_beam.rays = linear_beam.rays[1:2]
-    else:
-        dist_obj = None
-    freq = ECRH_freq
+        quasi_linear_beam = read_dist_mat_to_beam(mat_for_distribution, use_dist_prefix=None)
+        if(single_Beam):
+            linear_beam.rays = linear_beam.rays[1:2]
     cmaps = []
     u_par_range = [np.inf, -np.inf]
     u_perp_range = [0, -np.inf]
@@ -577,70 +569,26 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
     s_BPD_dict = {}
     rhop_BPD_dict = {}
     ECRH_colors = ["magenta", "red"]
-    for ch, m_ch in zip(ch_list, m_list):
+    steps_in_plasma = 0
+    for ch, imode, m_ch in zip(ch_list, mode_list, m_list):
         ich = ch - 1
+        freq = Results.Scenario["diagnostic"]["f"][itime][ich]
+        ray_list = []
+        ray_BPD_spl_list = []
+        for iray in range(Results.Config["Physics"]["N_ray"]):
+            ray_dict = {}
+            for sub_key in Results.sub_keys["ray"]:
+                ray_dict[sub_key] = Results["ray"][sub_key][itime][ich][imode][iray]
+            if(steps_in_plasma < len(ray_dict["rhop"][ray_dict["rhop"] >= 0.0])):
+                steps_in_plasma = len(ray_dict["rhop"][ray_dict["rhop"] >= 0.0])
+            ray_list.append(ray_dict)
+            ray_BPD_spl_list.append(InterpolatedUnivariateSpline(ray_list[-1]["s"], ray_list[-1]["BPD"]))
         if(ich in ch_done_list):
             R_BPD_list.append(R_BPD_dict[str(ich)])
             s_BPD_list.append(s_BPD_dict[str(ich)])
             continue
         else:
             ch_done_list.append(ich)
-        ray_list = []
-        ray_BPD_spl_list = []
-        iray = 2
-        steps_in_plasma = 0
-        if(Results.Config.N_ray == 1):
-            ray_dict = {}
-            ray_dict["s"] = Results.ray["sX"][itime][ich]
-            ray_dict["x"] = Results.ray["xX"][itime][ich]
-            ray_dict["y"] = Results.ray["yX"][itime][ich]
-            ray_dict["z"] = Results.ray["zX"][itime][ich]
-            ray_dict["rhop"] = Results.ray["rhopX"][itime][ich]
-            ray_dict["BPD"] = Results.ray["BPDX"][itime][ich]
-            ray_dict["BPD_second"] = Results.ray["BPD_secondX"][itime][ich]
-            ray_dict["N_ray"] = Results.ray["NX"][itime][ich]
-            ray_dict["N_cold"] = Results.ray["NcX"][itime][ich]
-            ray_dict["theta"] = Results.ray["thetaX"][itime][ich]
-            spl = InterpolatedUnivariateSpline(ray_dict["s"], ray_dict["x"])
-            ray_dict["Nx"] = spl.derivative(1)(ray_dict["s"])
-            spl = InterpolatedUnivariateSpline(ray_dict["s"], ray_dict["y"])
-            ray_dict["Ny"] = spl.derivative(1)(ray_dict["s"])
-            spl = InterpolatedUnivariateSpline(ray_dict["s"], ray_dict["z"])
-            ray_dict["Nz"] = spl.derivative(1)(ray_dict["s"])
-            norm = ray_dict["N_ray"] / np.sqrt(ray_dict["Nx"] ** 2 + ray_dict["Ny"] ** 2 + ray_dict["Nz"] ** 2)
-            ray_dict["Nx"] *= norm
-            ray_dict["Ny"] *= norm
-            ray_dict["Nz"] *= norm
-            steps_in_plasma = len(ray_dict["rhop"][ray_dict["rhop"] >= 0.0])
-            ray_list.append(dict(ray_dict))
-            ray_BPD_spl_list.append(InterpolatedUnivariateSpline(ray_list[-1]["s"], ray_list[-1]["BPD"]))
-        else:
-            for iray in range(Results.Config.N_ray):
-                ray_dict = {}
-                ray_dict["s"] = Results.ray["sX"][itime][ich][iray]
-                ray_dict["x"] = Results.ray["xX"][itime][ich][iray]
-                ray_dict["y"] = Results.ray["yX"][itime][ich][iray]
-                ray_dict["z"] = Results.ray["zX"][itime][ich][iray]
-                ray_dict["rhop"] = Results.ray["rhopX"][itime][ich][iray]
-                ray_dict["BPD"] = Results.ray["BPDX"][itime][ich][iray]
-                ray_dict["BPD_second"] = Results.ray["BPD_secondX"][itime][ich][iray]
-                ray_dict["N_ray"] = Results.ray["NX"][itime][ich][iray]
-                ray_dict["N_cold"] = Results.ray["NcX"][itime][ich][iray]
-                ray_dict["theta"] = Results.ray["thetaX"][itime][ich][iray]
-                spl = InterpolatedUnivariateSpline(ray_dict["s"], ray_dict["x"])
-                ray_dict["Nx"] = spl.derivative(1)(ray_dict["s"])
-                spl = InterpolatedUnivariateSpline(ray_dict["s"], ray_dict["y"])
-                ray_dict["Ny"] = spl.derivative(1)(ray_dict["s"])
-                spl = InterpolatedUnivariateSpline(ray_dict["s"], ray_dict["z"])
-                ray_dict["Nz"] = spl.derivative(1)(ray_dict["s"])
-                norm = ray_dict["N_ray"] / np.sqrt(ray_dict["Nx"] ** 2 + ray_dict["Ny"] ** 2 + ray_dict["Nz"] ** 2)
-                ray_dict["Nx"] *= norm
-                ray_dict["Ny"] *= norm
-                ray_dict["Nz"] *= norm
-                if(steps_in_plasma < len(ray_dict["rhop"][ray_dict["rhop"] >= 0.0])):
-                    steps_in_plasma = len(ray_dict["rhop"][ray_dict["rhop"] >= 0.0])
-                ray_list.append(dict(ray_dict))
-                ray_BPD_spl_list.append(InterpolatedUnivariateSpline(ray_list[-1]["s"], ray_list[-1]["BPD"]))
         BPD_ray_dict = ray_list[0]  # Central ray
         rhop_BPD_ray = BPD_ray_dict["rhop"]
         s_ray = BPD_ray_dict["s"]
@@ -657,7 +605,7 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
         BPD_ch_binned = np.zeros(n_rhop)
         for i in range(len(rhop_binned)):
             # Recalculate BDOP for an unsigned rhop grid
-            for ray, ray_BPD_spl, ray_weight in zip(ray_list, ray_BPD_spl_list, Results.weights["ray"][itime][ich]):
+            for ray, ray_BPD_spl, ray_weight in zip(ray_list, ray_BPD_spl_list, Results["weights"]["ray_weights"][itime][ich]):
                 root_spl_ray = InterpolatedUnivariateSpline(ray["s"], ray["rhop"] - rhop_binned[i])
                 for root in root_spl_ray.roots():
                     BPD_ch_binned[i] += ray_BPD_spl(root) * ray_weight
@@ -668,7 +616,7 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
         BPD_ch_cropped = np.zeros(n_rhop)
         for i in range(len(rhop_cropped)):
             # Recalculate BDOP for an unsigned rhop grid
-            for ray, ray_BPD_spl, ray_weight in zip(ray_list, ray_BPD_spl_list, Results.weights["ray"][itime][ich]):
+            for ray, ray_BPD_spl, ray_weight in zip(ray_list, ray_BPD_spl_list, Results["weights"]["ray_weights"][itime][ich]):
                 root_spl_ray = InterpolatedUnivariateSpline(ray["s"], ray["rhop"] - rhop_cropped[i])
                 for root in root_spl_ray.roots():
                     BPD_ch_cropped[i] += ray_BPD_spl(root) * ray_weight
@@ -737,7 +685,7 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
             ax_depo.plot(rhop_binned, BPD_ch_binned / np.max(BPD_ch_binned) * BPD_fac, label=label, linestyle="-", color="blue")  # for channel {0:d}".format(ich)
     f_inter, f_inter_scnd = make_f_inter(dist, EQObj, dist_obj=dist_obj, time=time)
     for ch, m_ch, s_important in zip(ch_list, m_list, s_BPD_list):
-        svec, freq, Trad, T, = load_data_for_3DBDOP(Results, time, dist, ch) # expects channel number not channel index
+        svec, freq, Trad, T, = load_data_for_3DBDOP(Results, time, dist, ch, imode) # expects channel number not channel index
         BDOP_list.append(BDOP_3D(s_important, svec, freq, Trad, T, f_inter, dist, B_ax, m=m_ch, f_inter_scnd=f_inter_scnd))
         m = cm.ScalarMappable(cmap=plt.cm.get_cmap("winter"))
         m.set_array(np.linspace(0.0, 1.0, 20))
@@ -944,10 +892,10 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, m_list, dist, include_ECRH=Fals
         ax_reso.set_ylim(u_par_range[0], u_par_range[1])
         ax_reso.set_ylabel(r"$u_\parallel$")
         ax_reso.set_xlabel(r"$u_\perp$")
-        ax_reso.get_xaxis().set_major_locator(MaxNLocator(nbins=3, steps=steps))
-        ax_reso.get_xaxis().set_minor_locator(MaxNLocator(nbins=6, steps=steps / 2.0))
-        ax_reso.get_yaxis().set_major_locator(MaxNLocator(nbins=4, steps=steps))
-        ax_reso.get_yaxis().set_minor_locator(MaxNLocator(nbins=8, steps=steps / 2.0))
+        # ax_reso.get_xaxis().set_major_locator(MaxNLocator(nbins=3, steps=steps))
+        # ax_reso.get_xaxis().set_minor_locator(MaxNLocator(nbins=6, steps=steps / 2.0))
+        # ax_reso.get_yaxis().set_major_locator(MaxNLocator(nbins=4, steps=steps))
+        # ax_reso.get_yaxis().set_minor_locator(MaxNLocator(nbins=8, steps=steps / 2.0))
         ax_reso.set_aspect("equal")
         plt.tight_layout()
     return fig
@@ -961,16 +909,14 @@ if(__name__ == "__main__"):
 #                                ECRH_freq=105.e9, wave_mat_filename="/tokp/work/sdenk/Backup_PhD_stuff/DRELAX_Results_2nd_batch/GRAY_rays_35662_4.40.mat", \
 #                                mat_for_distribution= "/tokp/work/sdenk/Backup_PhD_stuff/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat",\
 #                                 rhop_range=[0,0.3]) #20 # 48  # 94 # 144 -> second last each
-    make_3DBDOP_cut_standalone("/tokp/work/sdenk/DRELAX_final/DRELAX_run_3224.mat", \
-                                   3.84, [], [2], "Re", \
-                                   include_ECRH=True, m_ECRH_list=[2], \
-                                   ECRH_freq=105.e9, wave_mat_filename="/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3224.mat", \
-                                   mat_for_distribution= "/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3224.mat",\
-                                   rhop_range=[0, 0.3], BPD_fac=1.0) #20 # 48  # 88 # 115 # 136 -> second last each
-
-#     make_3DBDOP_cut_standalone("/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3011.mat", \
-#                                3.84, [29], [2], "Re", \
-#                                include_ECRH=False, m_ECRH_list=[2], \
-#                                ECRH_freq=105.e9, wave_mat_filename="/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3011.mat", \
-#                                mat_for_distribution= "/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3011.mat",\
-#                                rhop_range=[0, 0.99]) #20 # 48  # 94 # 144 -> second last each
+    # make_3DBDOP_cut_standalone("/tokp/work/sdenk/DRELAX_final/DRELAX_run_3224.mat", \
+    #                                3.84, [], [2], "Re", \
+    #                                include_ECRH=True, m_ECRH_list=[2], \
+    #                                ECRH_freq=105.e9, wave_mat_filename="/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3224.mat", \
+    #                                mat_for_distribution= "/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3224.mat",\
+    #                                rhop_range=[0, 0.3], BPD_fac=1.0) #20 # 48  # 88 # 115 # 136 -> second last each
+    make_3DBDOP_cut_standalone("/mnt/c/Users/Severin/ECRad/HFS_LHCD/ECRad_147634_EXT_ed1.nc", \
+                               4.52, [25], [0], [2], "Re", \
+                               include_ECRH=False, m_ECRH_list=[2], \
+                               ECRH_freq=105.e9,\
+                               rhop_range=[0, 0.99]) #20 # 48  # 94 # 144 -> second last each

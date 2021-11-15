@@ -1,6 +1,5 @@
 '''
 Created on Nov 22, 2019
-
 @author: g2sdenk
 '''
 from Global_Settings import globalsettings
@@ -82,6 +81,7 @@ class ECRadF2PYInterface:
                                             Config["Physics"]["raytracing"], \
                                             Config["Physics"]["ripple"], 1.20, Config["Physics"]["weak_rel"], \
                                             Config["Physics"]["ratio_for_3rd_harm"], \
+                                            Config["Physics"]["tau_ignore"], \
                                             Config["Physics"]["considered_modes"], \
                                             Config["Physics"]["reflec_X"], Config["Physics"]["reflec_O"], False, \
                                            Config["Numerics"]["max_points_svec"], \
@@ -130,7 +130,7 @@ class ECRadF2PYInterface:
                                                      Scenario["plasma"]["Te"][itime] * Scenario["scaling"]["Te_scale"], \
                                                      Scenario["plasma"]["ne"][itime] * Scenario["scaling"]["ne_scale"], \
                                                      eq_slice.rhop, eq_slice.Br, eq_slice.Bt, \
-                                                     eq_slice.Br, R_ax, z_ax)
+                                                     eq_slice.Bz, R_ax, z_ax)
             else:
                 self.cur_ECRad.initialize_ecrad(self.N_ch, 1, 1, eq_slice.R, \
                                                 eq_slice.z, eq_slice.rhop, eq_slice.Br, \
@@ -144,7 +144,7 @@ class ECRadF2PYInterface:
             ne = Scenario["plasma"]["ne"][itime]
             Te = Scenario["plasma"]["Te"][itime]
             rho_res = self.cur_ECRad.make_rays_ecrad(self.N_ch, rho, ne * Scenario["scaling"]["ne_scale"], \
-                                                 rho, Te * Scenario["scaling"]["Te_scale"])
+                                                     rho, Te * Scenario["scaling"]["Te_scale"])
         return rho_res
     
     def run_and_get_output(self, Result, itime):
@@ -387,5 +387,3 @@ if(__name__ == "__main__"):
     Trad, tau = ecrad_f2py_interface.eval_Trad(Scenario, Config, 0)
     plt.plot(rhop_out, Trad / 1.e3, "+")
     plt.show()
-    
-    

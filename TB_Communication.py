@@ -13,12 +13,10 @@ from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
 from scipy.optimize import minimize
 from Plotting_Configuration import plt
 from shutil import copyfile
-
-tb_path = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/torbeam_repo/TORBEAM/branches/lib-OUT/"
-
-tb_path_itm = "/marconi_work/eufus_gw/work/g2sdenk/torbeam/lib-OUT/"
-# "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/torbeam/"
-#
+try:
+    import f90nml
+except ImportError:
+    print("ERROR! Module f90nml not installed. No torbeam support!")
 class Ray:
     def __init__(self, s, x, y, z, H, N, N_cold, Te=0, ne=0, Y=0, X=0, x_tb=0, y_tb=0, z_tb=0, \
                                                                        x_tbp1=0, y_tbp1=0, z_tbp1=0, \
@@ -397,7 +395,7 @@ def make_topfile_from_ext_data(working_dir, shot, time, EQ, rhop, Te, ne, grid=F
 
 def make_TORBEAM_no_data_load(working_dir, shot, time, rho_prof, Te_prof, ne_prof, R, z, \
                               psi, Br, Bt, Bz, psi_ax, psi_sep, launches, ITM=False, \
-                              ITER=False, Z_eff=None, mode = -1):
+                              ITER=False, mode = -1):
     TB_out_dir = os.path.join(working_dir, "{0:d}_{1:1.3f}_rays".format(shot, time))
     if(not os.path.isdir(TB_out_dir)):
         os.mkdir(TB_out_dir)
@@ -407,12 +405,14 @@ def make_TORBEAM_no_data_load(working_dir, shot, time, rho_prof, Te_prof, ne_pro
     prepare_TB_data_no_data_load(TB_out_dir, shot, time, rho_prof, Te_prof, ne_prof, R, z, psi, Br, Bt, Bz, psi_ax, psi_sep, ITM)
     beam_index = 0
     for launch in launches:
-        make_inbeam(TB_out_dir, launch, mode, time, 0, cyl=False, ITM=ITM, ITER=ITER, Z_eff=Z_eff)
+        make_inbeam(TB_out_dir, launch, mode, time, 0, cyl=False, ITM=ITM, ITER=ITER)
         try:
-            call([os.path.join(tb_lib_path, "a.out"), ""])
-        except OSError:
-            print("Weird OS error")
-            print()
+            if(ITER):
+                call([os.path.join(tb_lib_path, "build/bin", "a.out_C"), ""])
+            else:
+                call([os.path.join(tb_lib_path, "build/bin", "a.out_B"), ""])
+        except OSError as e:
+            print("Weird OS error", e)
             os.chdir(org_path)
             return
         copyfile(os.path.join(TB_out_dir, "t1_LIB.dat"), \
@@ -470,171 +470,70 @@ def prepare_TB_data_no_data_load(working_dir, shot, time, rho_prof, Te_prof, ne_
         ne_file.write("{0: 1.12E} {1: 1.12E}\n".format(new_rho_prof[i], ne_new[i]))
     ne_file.close()
 
-def make_inbeam(working_dir, launch, mode, time, inbeam_no=0, cyl=False, ITM=False, ITER=False, Z_eff=None):
-    tb_lib_path = globalsettings.TB_path
-    inbeam_file = open(os.path.join(tb_lib_path, "inbeam_tracing.dat"))
-    inbeam_lines = inbeam_file.readlines()
-    inbeam_file.close()
-    double_check_dict = {}
-    double_check_dict["freq_set"] = False
-    double_check_dict["mode_set"] = False
-    double_check_dict["pol_angle_set"] = False
-    double_check_dict["tor_angle_set"] = False
-    double_check_dict["x_set"] = False
-    double_check_dict["y_set"] = False
-    double_check_dict["z_set"] = False
-    double_check_dict["curv_y_set"] = False
-    double_check_dict["curv_z_set"] = False
-    double_check_dict["width_y_set"] = False
-    double_check_dict["width_z_set"] = False
-    double_check_dict["PW_set"] = False
-    if(Z_eff is not None):
-        double_check_dict["xzeff_set"] = False
-    for i in range(len(inbeam_lines)):
-        try:
-            if("xf" in inbeam_lines[i]):
-                inbeam_lines[i] = " xf =           {0:1.6e},\n".format(launch.f)
-                double_check_dict["freq_set"] = True
-        except ValueError as e:
-            print(e)
-            print(launch.f)
-            return
-        if("nmod" in inbeam_lines[i]):
-            inbeam_lines[i] = " nmod = {0: d},\n".format(mode)
-            double_check_dict["mode_set"] = True
-        elif("xtordeg" in inbeam_lines[i]):
-            if(not ITER):
-                if(cyl):
-                    inbeam_lines[i] = " xtordeg =           {0:1.6f},\n".format(launch.phi_tor)
-                else:
-                    inbeam_lines[i] = " xtordeg =           {0:1.6f},\n".format(launch.phi_tor + launch.phi)
-            elif(launch.alpha is not None and launch.beta is not None):
-                if(cyl):
-                    inbeam_lines[i] = " xtordeg =           {0:1.6f},\n".format(np.rad2deg(launch.beta))
-                else:
-                    inbeam_lines[i] = " xtordeg =           {0:1.6f},\n".format(np.rad2deg(launch.beta))
-            else:
-                print("Error ITER selcted but neither alpha nor beta provided")
-                raise(AttributeError)
-            double_check_dict["tor_angle_set"] = True
-        elif("xpoldeg" in inbeam_lines[i]):
-            if(not ITER):
-                inbeam_lines[i] = " xpoldeg =           {0:1.6f},\n".format(launch.theta_pol)
-            elif(launch.alpha is not None and launch.beta is not None):
-                inbeam_lines[i] = " xpoldeg =           {0:1.6f},\n".format(np.rad2deg(launch.alpha))
-            else:
-                print("Error ITER selcted but neither alpha nor beta provided")
-                raise(AttributeError)
-            double_check_dict["pol_angle_set"] = True
-        elif("xxb" in inbeam_lines[i]):
-            if(cyl):
-                inbeam_lines[i] = " xxb =           {0:1.6f},\n".format(launch.R * 100.0)
-            else:
-                inbeam_lines[i] = " xxb =           {0:1.6f},\n".format(launch.x * 100.0)
-            double_check_dict["x_set"] = True
-        elif("xyb" in inbeam_lines[i]):
-            if(cyl):
-                inbeam_lines[i] = " xyb =           {0:1.6f},\n".format(0.0)
-            else:
-                inbeam_lines[i] = " xyb =           {0:1.6f},\n".format(launch.y * 100.0)  #
-            double_check_dict["y_set"] = True
-        elif("xzb" in inbeam_lines[i]):
-            inbeam_lines[i] = " xzb =           {0:1.6f},\n".format(launch.z * 100.0)
-            double_check_dict["z_set"] = True
-        elif(Z_eff is not None and "xzeff" in inbeam_lines[i]):
-            Z_eff_av = np.mean(Z_eff)
-            inbeam_lines[i] = " xzeff =           {0:1.6f},\n".format(Z_eff_av)
-            double_check_dict["xzeff_set"] = True
-        try:
-            if(launch.gy_launch):
-                if(launch.curv_y == 0.e0):
-                    print("Zero encountered in curvature")
-                    print("Error!: Gyrotron data not properly read")
-                    return
-                if("xryyb" in inbeam_lines[i]):
-                    inbeam_lines[i] = " xryyb =           {0:1.6f},\n".format(launch.curv_y * 100.0)
-                    double_check_dict["curv_y_set"] = True
-                elif("xrzzb" in inbeam_lines[i]):
-                    inbeam_lines[i] = " xrzzb =           {0:1.6f},\n".format(launch.curv_z * 100.0)
-                    double_check_dict["curv_z_set"] = True
-                elif("xwyyb" in inbeam_lines[i]):
-                    inbeam_lines[i] = " xwyyb =           {0:1.6f},\n".format(launch.width_y * 100.0)
-                    double_check_dict["width_y_set"] = True
-                elif("xwzzb" in inbeam_lines[i]):
-                    inbeam_lines[i] = " xwzzb =           {0:1.6f},\n".format(launch.width_z * 100.0)
-                    double_check_dict["width_z_set"] = True
-                elif("xpw0" in inbeam_lines[i]):
-                    inbeam_lines[i] = " xpw0 =           {0:1.6f},\n".format(launch.PW / 1.e6)
-                    double_check_dict["PW_set"] = True
-            else:
-                if("xryyb" in inbeam_lines[i]):
-                    if(launch.curv_y is not None):
-                        inbeam_lines[i] = " xryyb =           {0:1.6f},\n".format(launch.curv_y * 100.0)
-                    else:
-                        inbeam_lines[i] = " xryyb =           {0:1.6f},\n".format(0.8 * 100.0)
-                    double_check_dict["curv_y_set"] = True
-                elif("xrzzb" in inbeam_lines[i]):
-                    if(launch.curv_z is not None):
-                        inbeam_lines[i] = " xrzzb =           {0:1.6f},\n".format(launch.curv_z * 100.0)
-                    else:
-                        inbeam_lines[i] = " xrzzb =           {0:1.6f},\n".format(0.8 * 100.0)
-                    double_check_dict["curv_z_set"] = True
-                elif("xwyyb" in inbeam_lines[i]):
-                    if(launch.width_y is not None):
-                        inbeam_lines[i] = " xwyyb =           {0:1.6f},\n".format(launch.width_y * 100.0)
-                    else:
-                        inbeam_lines[i] = " xwyyb =           {0:1.6f},\n".format(0.02 * 100.0)
-                    double_check_dict["width_y_set"] = True
-                elif("xwzzb" in inbeam_lines[i]):
-                    if(launch.width_z is not None):
-                        inbeam_lines[i] = " xwzzb =           {0:1.6f},\n".format(launch.width_z * 100.0)
-                    else:
-                        inbeam_lines[i] = " xwzzb =           {0:1.6f},\n".format(0.02 * 100.0)
-                    double_check_dict["width_z_set"] = True
-                elif("xpw0" in inbeam_lines[i]):
-                    inbeam_lines[i] = " xpw0 =           {0:1.6f},\n".format(500.e3 / 1.e6)
-                    double_check_dict["PW_set"] = True
-        except AttributeError:
-            if("xryyb" in inbeam_lines[i]):
-                if(launch.curv_y is not None):
-                    inbeam_lines[i] = " xryyb =           {0:1.6f},\n".format(launch.curv_y * 100.0)
-                else:
-                    inbeam_lines[i] = " xryyb =           {0:1.6f},\n".format(0.8 * 100.0)
-                double_check_dict["curv_y_set"] = True
-            elif("xrzzb" in inbeam_lines[i]):
-                if(launch.curv_z is not None):
-                    inbeam_lines[i] = " xrzzb =           {0:1.6f},\n".format(launch.curv_z * 100.0)
-                else:
-                    inbeam_lines[i] = " xrzzb =           {0:1.6f},\n".format(0.8 * 100.0)
-                double_check_dict["curv_z_set"] = True
-            elif("xwyyb" in inbeam_lines[i]):
-                if(launch.width_y is not None):
-                    inbeam_lines[i] = " xwyyb =           {0:1.6f},\n".format(launch.width_y * 100.0)
-                else:
-                    inbeam_lines[i] = " xwyyb =           {0:1.6f},\n".format(0.02 * 100.0)
-                double_check_dict["width_y_set"] = True
-            elif("xwzzb" in inbeam_lines[i]):
-                if(launch.width_z is not None):
-                    inbeam_lines[i] = " xwzzb =           {0:1.6f},\n".format(launch.width_z * 100.0)
-                else:
-                    inbeam_lines[i] = " xwzzb =           {0:1.6f},\n".format(0.02 * 100.0)
-                double_check_dict["width_z_set"] = True
-            elif("xpw0" in inbeam_lines[i]):
-                inbeam_lines[i] = " xpw0 =           {0:1.6f},\n".format(500.e3 / 1.e6)
-                double_check_dict["PW_set"] = True
-    for checked_quant in double_check_dict:
-        if(not double_check_dict[checked_quant]):
-            print("ERROR!! " + checked_quant + " was not put into the inbeam file")
-            raise IOError
-    print('Inbeam file successfully parsed!')
-    if(inbeam_no == 0):
-        inbeam_file = open(os.path.join(working_dir, "inbeam.dat"), "w")
+def make_inbeam(working_dir, launch, mode, time, inbeam_no=0, cyl=False, ITM=False, ITER=False):
+    parser =  f90nml.parser.Parser()
+    inbeam = parser.read(os.path.join(globalsettings.ECRadPylibRoot, "inbeam.dat"))
+    inbeam["edata"]["xf"] = launch.f
+    inbeam["edata"]["nmod"] = mode
+    # inbeam["edata"]["nrel"] = 1
+    inbeam["edata"]["npow"] = 0
+    inbeam["edata"]["ncd"] = 0
+    if(not ITER):
+        if(cyl):
+            inbeam["edata"]["xtordeg"] = launch.phi_tor
+        else:
+            inbeam["edata"]["xtordeg"] = launch.phi_tor + launch.phi
+    elif(launch.alpha is not None and launch.beta is not None):
+        if(cyl):
+            inbeam["edata"]["xtordeg"] =  np.rad2deg(launch.beta)
+        else:
+            inbeam["edata"]["xtordeg"] = np.rad2deg(launch.beta)
     else:
-        inbeam_file = open(os.path.join(working_dir, "inbeam{0:d}.dat".format(inbeam_no + 1)), "w")
-    for line in inbeam_lines:
-        inbeam_file.write(line)
-    inbeam_file.flush()
-    inbeam_file.close()
+        raise ValueError("For ITER alpha and beta must be set for launch")
+    if(not ITER):
+        inbeam["edata"]["xpoldeg"] = launch.theta_pol
+    elif(launch.alpha is not None and launch.beta is not None):
+        inbeam["edata"]["xpoldeg"] = np.rad2deg(launch.alpha)
+    else:
+        raise ValueError("For ITER alpha and beta must be set for launch")
+    if(cyl):
+        inbeam["edata"]["xxb"] = launch.R * 100.0
+    else:
+        inbeam["edata"]["xxb"] = launch.x * 100.0
+    if(cyl):
+        inbeam["edata"]["xyb"] = 0.0
+    else:
+        inbeam["edata"]["xyb"] = launch.y * 100.0
+    inbeam["edata"]["xzb"] = launch.z * 100.0
+    if(launch.gy_launch):
+        if(launch.curv_y == 0.e0):
+            print("Zero encountered in curvature")
+            print("Error!: Gyrotron data not properly read")
+            return
+        inbeam["edata"]["xryyb"] = launch.curv_y * 100.0
+        inbeam["edata"]["xrzzb"] = launch.curv_z * 100.0
+        inbeam["edata"]["xwyyb"] = launch.width_y * 100.0
+        inbeam["edata"]["xwzzb"] = launch.width_z * 100.0
+        inbeam["edata"]["xpw0"] = launch.PW / 1.e6
+    else:
+        if(launch.curv_y is not None):
+            inbeam["edata"]["xryyb"] = launch.curv_y * 100.0
+        else:
+            inbeam["edata"]["xryyb"] = 80.0
+        if(launch.curv_z is not None):
+            inbeam["edata"]["xrzzb"] = launch.curv_z * 100.0
+        else:
+            inbeam["edata"]["xrzzb"] = 80.0
+        if(launch.width_y is not None):
+            inbeam["edata"]["xwyyb"] = launch.width_y * 100.0
+        else:
+            inbeam["edata"]["xwyyb"] = 2.0
+        if(launch.width_y is not None):
+            inbeam["edata"]["xwzzb"] = launch.width_y * 100.0
+        else:
+            inbeam["edata"]["xwzzb"] = 2.0
+        inbeam["edata"]["xpw0"] = 0.5
+    inbeam.write(os.path.join(working_dir, "inbeam.dat"), force=True)
 
 def load_TB_beam_details(filename):
     # Note: All TB inputs with lenght units are expected to be in "m" !

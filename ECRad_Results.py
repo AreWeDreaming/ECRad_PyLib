@@ -1,10 +1,10 @@
 '''
 Created on Dec 7, 2020
-
 @author: Severin Denk
 Restructuring of the old ECRadresults class. Uses the OMFit style approach where the parent class is a dictionary
 '''
 
+from Distribution_Classes import Distribution
 import numpy as np
 np.set_printoptions(threshold=10)
 import os
@@ -318,7 +318,7 @@ class ECRadResults(dict):
             if(index[ndim] == 0):
                 return ""
             else:
-                return "ray #" + str(index[ndim] + 1)
+                return r"ray \#" + str(index[ndim] + 1)
         else:
             raise ValueError("ECRadResults.get_index_reference could unexpected dim ref " + key + " " + sub_key + " " + str(ndim))
                            
@@ -557,7 +557,7 @@ class ECRadResults(dict):
         self.init = True
         return True
     
-    def get_default_filename_and_edition(self, scratch=False, id=None):
+    def get_default_filename_and_edition(self, scratch=False, ed=None):
         if(scratch):
             dir = self.Config["Execution"]["scratch_dir"]
         else:
@@ -565,7 +565,7 @@ class ECRadResults(dict):
         diag_str = ""
         for key in self.Scenario["used_diags_dict"]:
             diag_str += key
-        if(id is None):
+        if(ed is None):
             ed = 1
             filename = os.path.join(dir, "ECRad_{0:5d}_{1:s}_ed{2:d}.nc".format(self.Scenario["shot"], diag_str, ed))
             while(os.path.exists(filename)):
@@ -573,14 +573,14 @@ class ECRadResults(dict):
                 filename = os.path.join(dir, "ECRad_{0:5d}_{1:s}_ed{2:d}.nc".format(self.Scenario["shot"], diag_str, ed))
             return filename, ed
         else:
-            filename = os.path.join(dir, "ECRad_Results_{0:d}.nc".format(id))
+            filename = os.path.join(dir, "ECRad_Results_{0:d}.nc".format(ed))
             return filename, 0
 
-    def to_netcdf(self, filename=None, scratch=False, id=None):
+    def to_netcdf(self, filename=None, scratch=False, ed=None):
         if(filename is not None):
             rootgrp = Dataset(filename, "w", format="NETCDF4")
         else:
-            filename, self.edition = self.get_default_filename_and_edition(scratch, id=id)
+            filename, self.edition = self.get_default_filename_and_edition(scratch, ed=ed)
             rootgrp = Dataset(filename, "w", format="NETCDF4")
         rootgrp.createGroup("Results")
         self.Config.to_netcdf(rootgrp=rootgrp)
@@ -589,8 +589,7 @@ class ECRadResults(dict):
             if(np.isscalar(self["dimensions"][sub_key])):
                 rootgrp["Results"].createDimension(sub_key, self["dimensions"][sub_key])
             else:
-                rootgrp["Results"].createDimension(sub_key, None)
-                    
+                rootgrp["Results"].createDimension(sub_key, None)                    
         for key in self.result_keys:
             if(key == "dimensions" or key == "ray"):
                 continue
@@ -693,14 +692,13 @@ if(__name__ == "__main__"):
 #     res.from_mat("/mnt/c/Users/Severin/ECRad/ECRad_33585_EXT_ed1.mat")
 #     res.to_netcdf("/mnt/c/Users/Severin/ECRad/ECRad_33585_EXT_ed1.nc")
 #"/mnt/c/Users/Severin/ECRad_regression/AUGX3/ECRad_32934_EXT_ed1.nc"
-    res.from_mat("/mnt/c/Users/Severin/ECRad/ECRad_35662_EXT_ed8.mat")
-    res.to_netcdf("/mnt/c/Users/Severin/ECRad/ECRad_35662_EXT_ed8.nc")
+    # res.from_mat("/mnt/c/Users/Severin/ECRad/ECRad_35662_EXT_ed8.mat")
+    # res.to_netcdf("/mnt/c/Users/Severin/ECRad/ECRad_35662_EXT_ed8.nc")
 #     res.reset()
-    res.from_netcdf("/mnt/c/Users/Severin/ECRad/Yu/ECRad_179328_EXT_ed11.nc")
+    res.from_netcdf("/mnt/c/Users/Severin/ECRad/HFS_LHCD/ECRad_147634_EXT_ed1.nc")
+    res.Scenario["plasma"]["dist_obj"].plot_Te_ne()
 #     res.reset()
 #     res.from_mat("/mnt/c/Users/Severin/ECRad_regression/W7X/ECRad_20180823016002_EXT_ed19.mat")
 #     res.to_netcdf("/mnt/c/Users/Severin/ECRad_regression/W7X/ECRad_20180823016002_EXT_Scenario.nc")
 #     res.reset()
 #     res.from_netcdf("/mnt/c/Users/Severin/ECRad_regression/W7X/ECRad_20180823016002_EXT_Scenario.nc")
-    
-    
