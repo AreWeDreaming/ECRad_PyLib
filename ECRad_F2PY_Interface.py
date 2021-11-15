@@ -44,6 +44,13 @@ class ECRadF2PYInterface:
             print(e)
             print("Failed to load debug version of ECRad_Python")
             print("Currently set ECRad dir: " + globalsettings.ECRadLibDir)
+        try:
+            import ECRad_pythonOMPdb
+        except Exception as e:
+            ECRad_pythonOMPdb = None
+            print(e)
+            print("Failed to load parallel debug version of ECRad_Python")
+            print("Currently set ECRad dir: " + globalsettings.ECRadLibDir)
         if(ECRad_python is None and ECRad_pythondb is None 
                 and ECRad_pythonOMP is None):
             print("Failed to load any version of ECRad_Python")
@@ -61,17 +68,24 @@ class ECRadF2PYInterface:
             self.ECRad_debug = ECRad_pythondb.ecrad_python
         else:
             self.ECRad_debug = None
+        if(ECRad_pythonOMPdb is not None):
+            self.ECRad_pythonOMPdb = ECRad_pythonOMPdb.ecrad_python
+        else:
+            self.ECRad_debug = None
         self.cur_ECRad = None
 #         self.ECRad_3D_extension = ECRad_python_3D_extension.ecrad_python_3d_extension
 
     def set_config_and_diag(self, Config, Scenario, itime):
         # This sets up the environment variables for OpenMP
         # Si units and radians
-        if(Config["Execution"]["debug"]):
+        if(Config["Execution"]["debug"] and not Config["Execution"]["parallel"]):
             print("Running ECRad with debug symbols.")
             self.cur_ECRad = self.ECRad_debug
+        elif(Config["Execution"]["debug"]):
+            print("Running ECRad with debug symbols and OpenMP.")
+            self.cur_ECRad = self.ECRad_pythonOMPdb
         elif(Config["Execution"]["parallel"]):
-            print("Running OPENMP ECRad.")
+            print("Running OpenMP ECRad.")
             self.cur_ECRad = self.ECRadOMP
         else:
             self.cur_ECRad = self.ECRad
