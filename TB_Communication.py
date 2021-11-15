@@ -643,7 +643,7 @@ class launch:
         self.y = y
         self.z = z
         self.R = np.sqrt(x ** 2 + y ** 2)
-        self.phi = np.arctan2(self.y, self.x)
+        self.phi = np.rad2deg(np.arctan2(self.y, self.x))
         self.phi_tor = phi_tor
         self.theta_pol = theta_pol
         self.curv_y = dist_foc

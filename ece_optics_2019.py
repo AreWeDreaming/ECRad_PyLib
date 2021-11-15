@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as pat  # to draw rectangles
 from Basic_Methods.Geometry_Utils import get_theta_pol_from_two_points, get_phi_tor_from_two_points
 
-def get_ECE_launch_v2(wgIn, antenna, dtoECESI, freqsSI, dfreqsSI):
+def get_ECE_launch_v2(wgIn, antenna, dtoECESI, freqsSI, dfreqsSI, R_start = 3.540):
     ECE_launch = {}
     ECE_launch["f"] = freqsSI
     ECE_launch["df"] = dfreqsSI
@@ -14,7 +14,6 @@ def get_ECE_launch_v2(wgIn, antenna, dtoECESI, freqsSI, dfreqsSI):
     # Middle between sector 8 and 9 and 22.5 degrees/sector
     ECE_launch["phi"][:] = 22.5 * 8.5
     # Use a position outside the flux matrix and beyond the window
-    R_start = 3.540
     # Position at center of machine for second point
     R_geo = 1.65
     for i, f in enumerate(freqsSI):
@@ -33,54 +32,23 @@ def get_ECE_launch_v2(wgIn, antenna, dtoECESI, freqsSI, dfreqsSI):
         ECE_launch["R"][i] = x1_mid_pol[0]
         ECE_launch["phi"][i] += np.rad2deg(np.arctan2(x1_mid_tor[1], x1_mid_tor[0]))
         ECE_launch["z"][i] = x1_mid_pol[1]
-        # The synthetic CECE diagnostic does not care about the toroidal plane
-        # Therefore, we throw it out
-        ECE_launch["width"][i] = np.abs(z[0][i_start_ax_pol] - z[4][i_start_ax_pol])
         ECE_launch["theta_pol"][i] = \
                 get_theta_pol_from_two_points(x1_mid_pol, x2_mid_pol)
         ECE_launch["phi_tor"][i] = \
                 get_phi_tor_from_two_points(x1_mid_tor, x2_mid_tor)
-        # Calculate intersections in pol and tor plane with central ray for both peripheral rays
-        x_mid_vec_tor = np.array([x_tor[i_geo_ax_tor], y[1][i_geo_ax_tor]]) - x1_mid_tor
-        x_mid_vec_pol = np.array([x_pol[i_geo_ax_pol], z[1][i_geo_ax_pol]]) - x1_mid_pol
-        x_intersects = []
-        y_intersects = []
-        z_intersects = []
-        for i_periph in [0,4]:
-            # Compute intersections between central and the two peripheral rays
-            # Need to select the correct indices of the central vector, hence the masks
-            # First toroidal plane then poloidal plane
-            x_intersects.append([])
-            for x, x0, x_vec, ax, i_start, i_centre, ax_intersects in zip([x_tor, x_pol], [x1_mid_tor, x1_mid_pol], 
-                                                  [x_mid_vec_tor, x_mid_vec_pol], [y, z],
-                                                  [i_start_ax_tor, i_start_ax_pol], [i_geo_ax_tor, i_geo_ax_pol], \
-                                                  [y_intersects, z_intersects]):
-                x0_periph = np.array([x[i_start], ax[i_periph][i_start]])
-                k_periph = np.array([x[i_centre], ax[i_periph][i_centre]]) - x0_periph
-                # R.H.S. of the matrix equation
-                b = x0 - x0_periph
-                #      ( -x_mid_vec[0] k_periph[0] )
-                # A = (                             ) 
-                #      ( -x_mid_vec[1] k_periph[1] )
-                A = np.array([[-x_vec[0], k_periph[0]],
-                              [-x_vec[1], k_periph[1]]])
-                s1, s2 = np.linalg.solve(A, b)
-                x_intersects[-1].append(x0[0] + x_vec[0]* s1)
-                ax_intersects.append(x0[1] + x_vec[1] * s1)
-        # ECRad needs the real distance between origin and focus point. Since the optical axis is not aligned with R
-        # we need to also consider the distance in the y and z plane when calculating the distance between focus and
-        # origin
-        # Due to numerical errors the R is not precisely the same for the toroidal and poloidal projections
-        # Hence we average over the two different Rs to get a single value
-        x_orig_3D = np.array([(x1_mid_tor[0] + x1_mid_pol[0])/2.0, x1_mid_tor[1], x1_mid_pol[1]])
-        # The beam is astigmatic and the poloidal and toroidal plane have different focus points in x or R
-        # We first average over the different focus points in R for the two different projections
-        # This is necessary so we can establish a single focus point in 3D for each peripheral ray
-        # We discard the one from the toroidal plane because the synthetic diagnostic for GENE does not care about the toroidal plane
-        x_intersects = np.mean(x_intersects, axis=1)
-        # Calcualate average distance to the focus points of the two peripheral rays
-        # The synthetic CECE diagnostic only cares about the z plane so we throw out the toroidal plane
-        ECE_launch["dist_focus"][i] = np.linalg.norm(x_orig_3D - np.array([x_intersects[1], y_intersects[1], z_intersects[1]]))
+        # Calculate the waist 
+        # https://www.spiedigitallibrary.org/journals/optical-engineering/volume-54/issue-03/035105/Modeling-physical-optics-phenomena-by-complex-ray-tracing/10.1117/1.OE.54.3.035105.full?SSO=1
+        # The synthetic CECE diagnostic does not care about the toroidal plane
+        # Therefore, we throw it out for calculating the beam waist
+        waist = np.zeros(len(x_pol[i_start_ax_pol:]))
+        waist = np.sqrt( ((z[2,i_start_ax_pol]-z[0,i_start_ax_pol:])**2)+((z[2,i_start_ax_pol:]-z[1,i_start_ax_pol:])**2) ) 
+        waist += np.sqrt( ((z[2,i_start_ax_pol:]-z[3,i_start_ax_pol:])**2)+((z[2,i_start_ax_pol:]-z[4,i_start_ax_pol:])**2) )
+        waist /= 2
+        ECE_launch["width"][i] = waist[0]
+        i_min_waist = np.argmin(waist)
+        ECE_launch["dist_focus"][i] = (ECE_launch["R"][i] - x_pol[i_start_ax_pol+i_min_waist])**2
+        ECE_launch["dist_focus"][i] += (ECE_launch["z"][i] - z[2][i_start_ax_pol+i_min_waist])**2
+        ECE_launch["dist_focus"][i] = np.sqrt(ECE_launch["dist_focus"][i])
     return ECE_launch
         
 
