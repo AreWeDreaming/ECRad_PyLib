@@ -129,6 +129,8 @@ def torbeam_interface(working_dir, shot, time, itime, plasma_dict, eq_slice, ece
                 plt.plot(x, z.T[0], ":")
                 plt.plot(x, z.T[2], "-.")
                 plt.plot(x, z.T[4], ":")
+                plt.gca().set_xlabel(r"$R$ [m]")
+                plt.gca().set_ylabel(r"$z$ [m]")
             i_min = np.argmin(np.abs((R_center[mask]-R_res[ich])**2 + (z_center[mask]-z_res[ich])**2))
             width = np.sqrt((Rz_data.T[2][i_min]*1.e-2 - R_center[i_min])**2 
                             + (Rz_data.T[3][i_min]*1.e-2 - z_center[i_min])**2)

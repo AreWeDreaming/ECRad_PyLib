@@ -86,10 +86,8 @@ class ECRadScenario(dict):
             self["AUG"]["EQ_diag"] = "EQH"
             self["AUG"]["EQ_ed"] = 0
             self["plasma"]["Bt_vac_scale"] = 1.005
-            self.data_source = "aug_database"
             self.default_diag = "ECE"
-        else:
-            self.data_source = None
+        self.data_source = "Unknown"
         self["plasma"]["Bt_vac_scale"] = 1.0
         self.default_diag = "EXT"
         self["plasma"]["eq_data_2D"] = EQDataExt(self["shot"], \
@@ -117,7 +115,7 @@ class ECRadScenario(dict):
         self.labels["Bz"] = r"$B_" + globalsettings.mathrm + r"{z}$"
         self.units = {}
         self.units["Te"] = r"[keV]"
-        self.units["ne"] = r"$[\times 10^{19}$m$^{-3}$]"
+        self.units["ne"] = r"$[10^{19}$m$^{-3}$]"
         self.units["rhop"] = r""
         self.units["Br"] = r"[T]"
         self.units["Bt"] = r"[T]"
@@ -207,6 +205,13 @@ class ECRadScenario(dict):
         EQ_slices = []
         for time in times:
             itime = np.argmin(np.abs(equilibrium.time - time))
+            rect_index = -1
+            for grid_index in range(len(equilibrium.time_slice[itime].profiles_2d)):
+                if(equilibrium.time_slice[itime].profiles_2d[grid_index].grid_type.index == 1):
+                    rect_index = grid_index
+                    break
+            if(rect_index == -1):
+                raise ValueError("No rectangular grid defined for selected IDS. Choose different IDS!")
             prof_2D = equilibrium.time_slice[itime].profiles_2d[0]
             EQ_slices.append(EQDataSlice(\
                 time, prof_2D.grid.dim1,prof_2D.grid.dim2,\
@@ -566,8 +571,6 @@ class ECRadScenario(dict):
                 self["plasma"]["prof_reference"] = "rhot_prof"
         if("data_source" in mdict):
             self.data_source = mdict["data_source"]
-        elif(globalsettings.AUG):
-            self.data_source = "aug_database"
         else:
             self.data_source = "Unknown"
         self.plasma_set = True
@@ -827,6 +830,10 @@ class ECRadScenario(dict):
             for diag_key in self["avail_diags_dict"]:
                 if(diag_key in list(self["used_diags_dict"])):
                     self["avail_diags_dict"].update({diag_key: self["used_diags_dict"][diag_key]})
+        if(filename is not None):
+            self.data_source = filename
+        else:
+            self.data_source = "Unknown"
         self.default_diag = list(self["used_diags_dict"].keys())[0]
         if("BounceDistribution" in rootgrp.groups.keys()):
             self["plasma"]["dist_obj"] = Distribution()

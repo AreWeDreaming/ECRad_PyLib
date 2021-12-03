@@ -143,7 +143,7 @@ class ECRadResults(dict):
                              "H":"", "N":"", "Nc":"", \
                              "X":"", "Y":"", \
                              "rhop":"", "rhot":"",\
-                             "Te":r"keV", "ne":r"$\times 10^{19}$m$^{-3}$", \
+                             "Te":r"keV", "ne":r"$10^{19}$m$^{-3}$", \
                              "theta":r"$^\circ$", "BPD":r"m$^{-1}$", \
                              "BPD_second":r"m$^{-1}$", \
                              "Trad":r"keV", "Trad_second":r"keV", \
