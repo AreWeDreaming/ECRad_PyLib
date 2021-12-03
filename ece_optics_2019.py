@@ -57,7 +57,7 @@ def line(x0, vec, s):
 
 
 def plot1DECE(wgIn = 8, antenna = 'CECE', dtoECE = 55, 
-              freq = 110, project = 'poloidal', corr=1.0, doPlot = True, verb = True):
+              freq = 110, project = 'poloidal', corr=0.85, doPlot = True, verb = True):
     """Ray-traces EM beam from (C)ECE waveguides in sector 9 to the plasma
     
     This code plots the paths of central and 1/e^2 intensity rays out of
