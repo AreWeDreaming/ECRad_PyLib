@@ -56,14 +56,26 @@ class Diag(BasicDiag):
         # self.data_types_dict["mode_harmonics"] = "integer"
 
 class CECE_diag(Diag):
-    def __init__(self, name, exp, diag_str, ed, t_smooth=1.e-3):
+    def __init__(self, name, exp, diag_str, ed, wg=8, dtoECESI=0.055, corr=0.85, t_smooth=1.e-3):
          Diag.__init__(self, name, exp, diag_str, ed, t_smooth)
          self.f = None
          self.df = None
-         # CECE sits on wg 8
-         self.wg = 8
-         # distance is 55 mm
-         self.dtoECESI = 0.055
+         # Wave guide no.
+         self.wg = wg
+         # Shift to 1D ECE
+         self.dtoECESI = dtoECESI
+         # Vignetting correction
+         self.corr = corr
+         self.properties.append("wg")
+         self.descriptions_dict["wg"] = "Waveguide"
+         self.data_types_dict["wg"] = "integer"
+         self.properties.append("dtoECESI")
+         self.descriptions_dict["dtoECESI"] = "Shift wrt. 1D ECE"
+         self.data_types_dict["dtoECESI"] = "real"
+         self.properties.append("corr")
+         self.descriptions_dict["corr"] = "Vignetting correction"
+         self.data_types_dict["corr"] = "real"
+
 
     def set_f_info(self, f, df):
         self.f = f

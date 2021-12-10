@@ -699,6 +699,10 @@ class ECRadScenario(dict):
                 used_diag_dict_formatted["diags_Extra_arg_1"].append(cur_diag.Rz_exp)
                 used_diag_dict_formatted["diags_Extra_arg_2"].append(cur_diag.Rz_diag)
                 used_diag_dict_formatted["diags_Extra_arg_3"].append(str(cur_diag.Rz_ed))
+            elif(diagname == 'CEC'):
+                used_diag_dict_formatted["diags_Extra_arg_1"].append(str(cur_diag.wg))
+                used_diag_dict_formatted["diags_Extra_arg_2"].append("{0:1.7e}".format(cur_diag.dtoECESI))
+                used_diag_dict_formatted["diags_Extra_arg_3"].append("{0:1.7e}".format(cur_diag.corr))
             elif("CT" in diagname or "IEC" in diagname):
                 used_diag_dict_formatted["diags_Extra_arg_1"].append(str(cur_diag.beamline))
                 used_diag_dict_formatted["diags_Extra_arg_2"].append("{0:1.8f}".format(cur_diag.pol_coeff_X))
@@ -811,10 +815,21 @@ class ECRadScenario(dict):
                                                                    float(rootgrp["Scenario"]["used_diags_dict_diags_Extra_arg_2"][idiag]), \
                                                                    rootgrp["Scenario"]["used_diags_dict_diags_Extra_arg_3"][idiag] == "True")})
             elif("CEC" == diagname.upper()):
-                self["used_diags_dict"].update({diagname: CECE_diag(diagname, \
-                                                                    rootgrp["Scenario"]["used_diags_dict_diags_exp"][idiag], \
-                                                                    rootgrp["Scenario"]["used_diags_dict_diags_diag"][idiag], \
-                                                                    int(rootgrp["Scenario"]["used_diags_dict_diags_ed"][idiag]))})
+                try:
+                    self["used_diags_dict"].update({diagname: CECE_diag(diagname, \
+                                                                        rootgrp["Scenario"]["used_diags_dict_diags_exp"][idiag], 
+                                                                        rootgrp["Scenario"]["used_diags_dict_diags_diag"][idiag], 
+                                                                        int(rootgrp["Scenario"]["used_diags_dict_diags_ed"][idiag]),
+                                                                        wg=int(rootgrp["Scenario"]["used_diags_dict_diags_Extra_arg_1"][idiag]), 
+                                                                        dtoECESI=float(rootgrp["Scenario"]["used_diags_dict_diags_Extra_arg_2"][idiag]), 
+                                                                        corr=float(rootgrp["Scenario"]["used_diags_dict_diags_Extra_arg_3"][idiag]))})
+                except:
+                    print("ERROR: Could not load CECE parameters. Setting defaults!")
+                    self["used_diags_dict"].update({diagname: CECE_diag(diagname, 
+                                                                        rootgrp["Scenario"]["used_diags_dict_diags_exp"][idiag], 
+                                                                        rootgrp["Scenario"]["used_diags_dict_diags_diag"][idiag],
+                                                                        int(rootgrp["Scenario"]["used_diags_dict_diags_ed"][idiag]))})                    
+
                 # CECE diag expects f to be time independent -> ndim = 1
                 self["used_diags_dict"][diagname].set_f_info(self["diagnostic"]['f'][0][self["diagnostic"]['diag_name'][0] == 'CEC'], 
                                                              self["diagnostic"]['df'][0][self["diagnostic"]['diag_name'][0] =='CEC'])

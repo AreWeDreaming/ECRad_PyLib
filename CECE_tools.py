@@ -79,12 +79,12 @@ def run_ECE_TORBEAM_ECRad_Scenario(working_dir, Results, time, logfile=None, imo
     diag = Results.Scenario["used_diags_dict"]["CEC"]
     f = Results.Scenario["diagnostic"]["f"][itime]
     df = Results.Scenario["diagnostic"]["df"][itime]
-    ece_launch = get_ECE_launch_v2(wgIn=diag.wg, antenna="CECE",dtoECESI=diag.dtoECESI, freqsSI=f, dfreqsSI=df, R_start=2.5)
+    ece_launch = get_ECE_launch_v2(wgIn=diag.wg, antenna="CECE",dtoECESI=diag.dtoECESI, freqsSI=f, dfreqsSI=df, R_start=2.5, corr=diag.corr)
     TB_results = torbeam_interface(working_dir, Results.Scenario["shot"], time, itime, 
             plasma_dict, eq_slice, ece_launch, 
             R_res = Results["resonance"]["R_warm"][itime][imode], 
             z_res = Results["resonance"]["z_warm"][itime][imode], 
-            logfile=logfile, wg=diag.wg, dtoECESI=diag.dtoECESI)
+            logfile=logfile, wg=diag.wg, dtoECESI=diag.dtoECESI, corr=diag.corr)
 
 
 def run_ECE_TORBEAM_AUG(working_dir, shot, time, frequencies, launch_override=None, EQ_exp="AUGD", 
@@ -94,11 +94,14 @@ def run_ECE_TORBEAM_AUG(working_dir, shot, time, frequencies, launch_override=No
     itime = 0
     EQ_obj = EQData(shot, EQ_exp=EQ_exp, EQ_diag=EQ_diag, EQ_ed=EQ_ed)
     eq_slice = EQ_obj.GetSlice(time, bt_vac_correction=bt_vac_correction)
-    ece_launch = get_ECE_launch_v2(8, "CECE", 0.055, frequencies, np.zeros(len(frequencies)))
+    if(launch_override is not None):
+        ece_launch = launch_override
+    else:
+        ece_launch = get_ECE_launch_v2(8, "CECE", 0.055, frequencies, np.zeros(len(frequencies)), R=2.5)
     TB_results = torbeam_interface(working_dir, shot, time, itime, IDA_dict, eq_slice, ece_launch)
 
 def torbeam_interface(working_dir, shot, time, itime, plasma_dict, eq_slice, ece_launch, R_res, z_res,
-                      wg=8, dtoECESI=0.055, logfile=None, TB_plot=True):
+                      wg=8, dtoECESI=0.055, corr=0.85, logfile=None, TB_plot=True, only_TB=False):
     cece_launches = []
     for ich in range(len(ece_launch["f"])):
         cece_launches.append(launch())
@@ -110,12 +113,15 @@ def torbeam_interface(working_dir, shot, time, itime, plasma_dict, eq_slice, ece
                               eq_slice.Psi_ax, eq_slice.Psi_sep, cece_launches, ITM=False, 
                               ITER=False, mode = -1)
     for ich in range(len(ece_launch["f"])):
+        TB_failed = False
         Rz_data = np.loadtxt(os.path.join(working_dir, "{0:d}_{1:1.3f}_rays".format(shot, time), 
                              "Rz_beam_{0:1d}.dat".format(ich + 1).replace(",", "")))
         R_center = Rz_data.T[0] * 1.e-2
         mask = np.logical_and(R_center > np.min(eq_slice.R), R_center < np.max(eq_slice.R))
         z_center = Rz_data.T[1] * 1.e-2
         mask[np.logical_and(z_center < np.min(eq_slice.z), z_center > np.max(eq_slice.z))] = False
+        x = None
+        z = None
         try:
             if(not np.any(mask)):
                 raise ValueError("No points inside flux Matrix!")
@@ -127,10 +133,16 @@ def torbeam_interface(working_dir, shot, time, itime, plasma_dict, eq_slice, ece
                 x, z = plot1DECE(wgIn=wg, freq=ece_launch["f"][ich]/1.e9, dtoECE=dtoECESI*1.e3, project='poloidal', doPlot=False)
                 plt.plot(R_center, z_center)
                 plt.plot(x, z.T[0], ":")
+                plt.plot(x, z.T[1], ":")
                 plt.plot(x, z.T[2], "-.")
+                plt.plot(x, z.T[3], ":")
                 plt.plot(x, z.T[4], ":")
+                v_min = min(np.min(z), np.min(Rz_data.T[1:][::2]*1.e-2))
+                v_max = max(np.max(z), np.max(Rz_data.T[1:][::2]*1.e-2))
+                plt.vlines([R_res[ich]], v_min, v_max, linestyles="--", colors="k")
                 plt.gca().set_xlabel(r"$R$ [m]")
                 plt.gca().set_ylabel(r"$z$ [m]")
+                plt.gca().set_aspect("equal")
             i_min = np.argmin(np.abs((R_center[mask]-R_res[ich])**2 + (z_center[mask]-z_res[ich])**2))
             width = np.sqrt((Rz_data.T[2][i_min]*1.e-2 - R_center[i_min])**2 
                             + (Rz_data.T[3][i_min]*1.e-2 - z_center[i_min])**2)
@@ -138,29 +150,32 @@ def torbeam_interface(working_dir, shot, time, itime, plasma_dict, eq_slice, ece
                 logfile.write("TORBEAM width channel {0:d}: {1:1.3f} cm\n".format(ich+1, width*1.e2))
             else:
                 print("TORBEAM width channel {0:d}: {1:1.3f} cm\n".format(ich+1, width*1.e2))
-            return
+            if only_TB:
+                return
         except ValueError:
-            pass
-        print("Failed to run TORBEAM. Using vacuum values!")
-        x, z = plot1DECE(wgIn=wg, freq=ece_launch["f"][ich]/1.e9, dtoECE=dtoECESI*1.e3, project='poloidal', doPlot=False)
-        waist = np.zeros(len(x))
-        waist = np.sqrt( ((z[:,2]-z[:,0])**2)+((z[:,2]-z[:, 1])**2) ) 
-        waist += np.sqrt( ((z[:,2]-z[:,3])**2)+((z[:,2]-z[:, 4])**2) )
-        waist /= 2
-        R_center = x
-        mask = np.logical_and(R_center > np.min(eq_slice.R), R_center < np.max(eq_slice.R))
-        z_center = z.T[2]
-        mask[np.logical_or(z_center < np.min(eq_slice.z), z_center > np.max(eq_slice.z))] = False
-        if(not np.any(mask)):
-            raise ValueError("No resonance found!")
-        i_min = np.argmin(np.abs((R_center-R_res[ich])**2 + (z_center-z_res[ich])**2))
-        if(logfile is not None):
-            logfile.write("Vacuum width channel {0:d}: {1:1.3f} cm\n".format(ich + 1, waist[i_min] * 100.0))
-        else:
-            print("Vacuum width channel {0:d}: {1:1.3f} cm\n".format(ich + 1, waist[i_min]  * 100.0))
+            print("Failed to run TORBEAM. Using vacuum values!")
+            TB_failed = True
+        if(not only_TB or TB_failed):
+            if(x is None or z is None):
+                x, z = plot1DECE(wgIn=wg, freq=ece_launch["f"][ich]/1.e9, dtoECE=dtoECESI*1.e3, project='poloidal', doPlot=False)
+            waist = np.zeros(len(x))
+            waist = np.sqrt( ((z[:,2]-z[:,0])**2)+((z[:,2]-z[:, 1])**2) ) 
+            waist += np.sqrt( ((z[:,2]-z[:,3])**2)+((z[:,2]-z[:, 4])**2) )
+            waist /= 2
+            R_center = x
+            mask = np.logical_and(R_center > np.min(eq_slice.R), R_center < np.max(eq_slice.R))
+            z_center = z.T[2]
+            mask[np.logical_or(z_center < np.min(eq_slice.z), z_center > np.max(eq_slice.z))] = False
+            if(not np.any(mask)):
+                raise ValueError("No resonance found!")
+            i_min = np.argmin(np.abs((R_center-R_res[ich])**2 + (z_center-z_res[ich])**2))
+            if(logfile is not None):
+                logfile.write("Vacuum width channel {0:d}: {1:1.3f} cm\n".format(ich + 1, waist[i_min] * 100.0))
+            else:
+                print("Vacuum width channel {0:d}: {1:1.3f} cm\n".format(ich + 1, waist[i_min]  * 100.0))
 
 
 
 if __name__ == "__main__":
     CECE_workflow("/mnt/c/Users/Severin/ECRad/AUG_CECE/", 
-                  "/mnt/c/Users/Severin/ECRad/AUG_CECE/ECRad_38420_CEC_ed1.nc", 3.0)
+                  "/mnt/c/Users/Severin/ECRad/AUG_CECE/ECRad_38423_CEC_ed4.nc", 3.0)

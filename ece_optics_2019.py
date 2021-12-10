@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as pat  # to draw rectangles
 from Basic_Methods.Geometry_Utils import get_theta_pol_from_two_points, get_phi_tor_from_two_points
 
-def get_ECE_launch_v2(wgIn, antenna, dtoECESI, freqsSI, dfreqsSI, R_start = 3.540):
+def get_ECE_launch_v2(wgIn, antenna, dtoECESI, freqsSI, dfreqsSI, R_start = 3.540, corr=0.85):
     ECE_launch = {}
     ECE_launch["f"] = freqsSI
     ECE_launch["df"] = dfreqsSI
@@ -17,9 +17,9 @@ def get_ECE_launch_v2(wgIn, antenna, dtoECESI, freqsSI, dfreqsSI, R_start = 3.54
     # Position at center of machine for second point
     R_geo = 1.65
     for i, f in enumerate(freqsSI):
-        x_tor, y  = plot1DECE(wgIn, antenna, dtoECESI * 1.e3, f/1.e9, "toroidal", doPlot=False, verb=False)
+        x_tor, y  = plot1DECE(wgIn, antenna, dtoECESI * 1.e3, f/1.e9, "toroidal", doPlot=False, verb=False, corr=corr)
         y = y.T
-        x_pol, z = plot1DECE(wgIn, antenna, dtoECESI * 1.e3, f/1.e9, "poloidal", doPlot=False, verb=False)
+        x_pol, z = plot1DECE(wgIn, antenna, dtoECESI * 1.e3, f/1.e9, "poloidal", doPlot=False, verb=False, corr=corr)
         z = z.T
         i_start_ax_tor = np.argmin(np.abs(x_tor - R_start))
         i_start_ax_pol = np.argmin(np.abs(x_pol - R_start))
