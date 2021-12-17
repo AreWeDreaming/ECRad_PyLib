@@ -87,18 +87,19 @@ def run_ECE_TORBEAM_ECRad_Scenario(working_dir, Results, time, logfile=None, imo
             logfile=logfile, wg=diag.wg, dtoECESI=diag.dtoECESI, corr=diag.corr)
 
 
-def run_ECE_TORBEAM_AUG(working_dir, shot, time, frequencies, launch_override=None, EQ_exp="AUGD", 
-                        EQ_diag="EQH", EQ_ed=0, bt_vac_correction = 1.005, IDA_exp="AUGD", IDA_ed=0):
-    # NOT TESTED!
-    IDA_dict = load_IDA_data(shot, [time], IDA_exp, IDA_ed)
-    itime = 0
-    EQ_obj = EQData(shot, EQ_exp=EQ_exp, EQ_diag=EQ_diag, EQ_ed=EQ_ed)
-    eq_slice = EQ_obj.GetSlice(time, bt_vac_correction=bt_vac_correction)
-    if(launch_override is not None):
-        ece_launch = launch_override
-    else:
-        ece_launch = get_ECE_launch_v2(8, "CECE", 0.055, frequencies, np.zeros(len(frequencies)), R=2.5)
-    TB_results = torbeam_interface(working_dir, shot, time, itime, IDA_dict, eq_slice, ece_launch)
+# def run_ECE_TORBEAM_AUG(working_dir, shot, time, frequencies, launch_override=None, EQ_exp="AUGD", 
+#                         EQ_diag="EQH", EQ_ed=0, bt_vac_correction = 1.005, 
+#                         IDA_exp="AUGD", IDA_ed=0, wg=8,dtoECESI=0.055, corr=0.85):
+#     # NOT TESTED!
+#     IDA_dict = load_IDA_data(shot, [time], IDA_exp, IDA_ed)
+#     itime = 0
+#     EQ_obj = EQData(shot, EQ_exp=EQ_exp, EQ_diag=EQ_diag, EQ_ed=EQ_ed)
+#     eq_slice = EQ_obj.GetSlice(time, bt_vac_correction=bt_vac_correction)
+#     if(launch_override is not None):
+#         ece_launch = launch_override
+#     else:
+#         ece_launch = get_ECE_launch_v2(wg, "CECE", dtoECESI, frequencies, np.zeros(len(frequencies)), R=2.5, corr=corr)
+#     TB_results = torbeam_interface(working_dir, shot, time, itime, IDA_dict, eq_slice, ece_launch)
 
 def torbeam_interface(working_dir, shot, time, itime, plasma_dict, eq_slice, ece_launch, R_res, z_res,
                       wg=8, dtoECESI=0.055, corr=0.85, logfile=None, TB_plot=True, only_TB=False):
