@@ -1,5 +1,5 @@
 #!/usr/bin/tcsh
-#SBATCH --export=NONE
+#SBATCH --export=ALL
 #SBATCH --ntasks=1
 #SBATCH --nodes=1
 #SBATCH --wait
