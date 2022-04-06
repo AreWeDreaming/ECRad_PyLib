@@ -14,12 +14,12 @@ from Basic_Methods.Data_Fitting import make_fit, gauss_fit_func
 from Plotting_Configuration import plt
 from ece_optics_2019 import plot1DECE
 
-def CECE_workflow(working_dir, Results_filename, time):
+def CECE_workflow(working_dir, Results_filename, time, diag_name="CEC"):
     Results = ECRadResults()
     Results.load(Results_filename)
     logfile = open(os.path.join(working_dir, f"CECE_params_{Results.Scenario['shot']}"), "w")
-    run_ECE_TORBEAM_ECRad_Scenario(working_dir, Results, time, logfile=logfile)
     get_BPD_width(Results, 0, logfile=logfile)
+    run_ECE_TORBEAM_ECRad_Scenario(working_dir, Results, time, logfile=logfile, diag_name=diag_name)
     logfile.close()
     plt.show()
 
@@ -63,7 +63,7 @@ def get_BPD_width(Results, itime=0, logfile=None):
         width = np.abs(R_spl(s_in)-R_spl(s_out))
         if(logfile is not None):
             logfile.write("Channel {0:d} R position: {1:1.3f} cm\n".format(ich + 1, R_spl(s_center)))
-            logfile.write("Channel {0:d} R width: {1:1.3f} cm\n".format(ich + 1, width*1.e2))
+            logfile.write("Channel {0:d} R width: {1:1.3f} mm\n".format(ich + 1, width*1.e3))
         else:
             print("Channel {0:d} R width: {1:1.3f} cm\n".format(ich + 1, width*1.e2))
     plt.legend()
@@ -72,19 +72,28 @@ def get_BPD_width(Results, itime=0, logfile=None):
     plt.suptitle(f"\# {Results.Scenario['shot']}")
 
 
-def run_ECE_TORBEAM_ECRad_Scenario(working_dir, Results, time, logfile=None, imode=0):
+def run_ECE_TORBEAM_ECRad_Scenario(working_dir, Results, time, logfile=None, imode=0, diag_name="CEC"):
     itime = np.argmin(np.abs(Results.Scenario["time"] - time))
     plasma_dict = Results.Scenario["plasma"]
     eq_slice = Results.Scenario["plasma"]["eq_data_2D"].GetSlice(time)
-    diag = Results.Scenario["used_diags_dict"]["CEC"]
+    diag = Results.Scenario["used_diags_dict"][diag_name]
     f = Results.Scenario["diagnostic"]["f"][itime]
     df = Results.Scenario["diagnostic"]["df"][itime]
-    ece_launch = get_ECE_launch_v2(wgIn=diag.wg, antenna="CECE",dtoECESI=diag.dtoECESI, freqsSI=f, dfreqsSI=df, R_start=2.5, corr=diag.corr)
+    if(diag_name is not "CEC"):
+        wg = 8
+        dtoECESI = 0.055
+        corr = 0.84
+    else:
+        wg = diag.wg
+        dtoECESI = diag.dtoECESI
+        corr = diag.corr
+    ece_launch = get_ECE_launch_v2(wgIn=wg, antenna="CECE", dtoECESI=dtoECESI,
+            freqsSI=f, dfreqsSI=df, R_start=2.5, corr=corr)
     TB_results = torbeam_interface(working_dir, Results.Scenario["shot"], time, itime, 
             plasma_dict, eq_slice, ece_launch, 
             R_res = Results["resonance"]["R_warm"][itime][imode], 
             z_res = Results["resonance"]["z_warm"][itime][imode], 
-            logfile=logfile, wg=diag.wg, dtoECESI=diag.dtoECESI, corr=diag.corr)
+            logfile=logfile, wg=wg, dtoECESI=dtoECESI, corr=corr)
 
 
 # def run_ECE_TORBEAM_AUG(working_dir, shot, time, frequencies, launch_override=None, EQ_exp="AUGD", 
@@ -179,4 +188,4 @@ def torbeam_interface(working_dir, shot, time, itime, plasma_dict, eq_slice, ece
 
 if __name__ == "__main__":
     CECE_workflow("/mnt/c/Users/Severin/ECRad/AUG_CECE/", 
-                  "/mnt/c/Users/Severin/ECRad/AUG_CECE/ECRad_38423_CEC_ed4.nc", 3.0)
+                  "/mnt/c/Users/Severin/ECRad/AUG_CECE/ECRad_38423_CEC_ed4.nc", 3.0, diag_name="CEC")

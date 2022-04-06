@@ -496,6 +496,35 @@ def test_wn_PnPoly():
                 ax.plot(x[i], y[i], "*r")
     plt.show()
 
+def findCirclefrom3pnts(p1, p2, p3):
+    """
+        Expects 3 2d points
+    """
+    v12 = p1 - p2
+    v13 = p1 - p3
+
+    # x1^2 - x3^2
+     # y1^2 - y3^2
+    s13 = p1**2 - p3**2
+   
+    s21 = p2**2 - p1**2
+    f = ((s13[0] * v12[0] + s13[1] *
+          v12[0] + s21[0] * v13[0] +
+          s21[1] * v13[0]) / (2.0 *
+          (-v13[1] * v12[0] + v12[1] * v13[0])))
+
+    g = ((s13[0] * v12[1] + s13[1] * v12[1] +
+          s21[0] * v13[1] + s21[1] * v13[1]) /
+          (2.0 * (-v13[0] * v12[1] + v12[0] * v13[1])))
+ 
+    c = (-np.linalg.norm(p1**2) -
+         2 * g * p1[0] - 2 * f * p1[1])
+ 
+    # eqn of circle be x^2 + y^2 + 2*g*x + 2*f*y + c = 0
+    # where centre is (-g, -f) and
+    # radius r as r^2 = g^2 + f^2 - c
+    sqr_of_r = g * g + f * f - c
+    return np.sqrt(sqr_of_r), np.array([-g,-f])    
 
 if(__name__ == "__main__"):
     x = np.linspace(1.0, 2.0, 500)

@@ -26,13 +26,13 @@ if(plot_mode != "Software"):
 #
 if(plot_mode == "Article"):
     plt.rc('font', **{'family':'serif', 'serif':['Computer Modern Roman'], 'size' : 30})  # 24
-    plt.rcParams["legend.fontsize"] = 22  # 18 #20
-    plt.rcParams['axes.titlesize'] = 30  # 24 #36
-    plt.rcParams['axes.labelsize'] = 30  # 24 #36
+    plt.rcParams["legend.fontsize"] = 18 # 18 #20
+    plt.rcParams['axes.titlesize'] = 24  # 24 #36
+    plt.rcParams['axes.labelsize'] = 24  # 24 #36
     plt.rc('text', usetex=True)
 elif(plot_mode == "Presentation"):
     plt.rc('font', **{'family':'serif', 'serif':['Computer Modern Roman'], 'size' : 30})  # 24
-    plt.rcParams["legend.fontsize"] = 22  # 18 #20
+    plt.rcParams["legend.fontsize"] = 18  # 18 #20
     plt.rcParams['axes.titlesize'] = 24  #  # 24 #36
     plt.rcParams['axes.labelsize'] = 24  # 24 #36
     plt.rc('text', usetex=True)

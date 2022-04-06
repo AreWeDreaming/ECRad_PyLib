@@ -109,6 +109,8 @@ class EQDataExt:
                 
     def insert_slices_from_ext(self, times, slices, transpose=False):
         new_slices = copy.deepcopy(slices)
+        # Convert to list to allow append
+        self.times = list(self.times)
         for time, eq_slice in zip(times, slices):
             if(time not in self.times):
                 self.times.append(time)
