@@ -262,13 +262,13 @@ class ECRadF2PYInterface:
                             Result[key]["BPD"][-1][ich,imode,:], Result[key]["BPD_second"][-1][ich,imode,:] = \
                             self.cur_ECRad.get_bpd(ich + 1, imode + 1, Result["dimensions"]["N_BPD"])
             key = "ray"
-            Result["dimensions"]["N_LOS"].append(np.zeros(Result.get_shape("ray", start=1, stop=-1), dtype=np.int))
+            Result["dimensions"]["N_LOS"].append(np.zeros(Result.get_shape("ray", start=1, stop=-1), dtype=int))
             for ich in range(Result["dimensions"]["N_ch"]):
                 for imode in range(Result["dimensions"]["N_mode"]):
                     for ir in range(Result["dimensions"]["N_ray"]):
                         Result["dimensions"]["N_LOS"][-1][ich,imode, ir] = self.cur_ECRad.get_ray_length(ich + 1, imode + 1, ir + 1)
             for sub_key in Result.sub_keys["ray"]:
-                Result[key][sub_key].append(np.zeros(Result.get_shape("ray", start=1, stop=-1),dtype=np.object))
+                Result[key][sub_key].append(np.zeros(Result.get_shape("ray", start=1, stop=-1),dtype=object))
                 for ich in range(Result["dimensions"]["N_ch"]):
                     for imode in range(Result["dimensions"]["N_mode"]):
                         for ir in range(Result["dimensions"]["N_ray"]):
