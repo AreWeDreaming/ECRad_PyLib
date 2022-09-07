@@ -4,7 +4,7 @@ Created on Dec 29, 2015
 @author: sdenk
 '''
 import numpy as np
-from Basic_Methods.Data_Fitting import make_fit
+from plasma_math_tools.data_fitting import make_fit
 from Global_Settings import globalsettings
 if(globalsettings.AUG):
     from Shotfile_Handling_AUG import get_data_calib

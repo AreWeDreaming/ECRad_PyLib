@@ -26,7 +26,7 @@ from scipy.integrate import simps
 from Em_Albajar import EmAbsAlb, SVec, DistributionInterpolator, GeneDistributionInterpolator
 from ECRad_Interface import read_svec_dict_from_file
 from TB_Communication import make_topfile_from_ext_data
-from Basic_Methods.Equilibrium_Utils import EQDataExt
+from Equilibrium_Utils import EQDataExt
 from scipy.io import loadmat
 from ECRad_Results import ECRadResults
 from Distribution_Functions import Juettner2D, Gauss_norm, Gauss_not_norm, \

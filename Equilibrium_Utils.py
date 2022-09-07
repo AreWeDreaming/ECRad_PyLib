@@ -7,7 +7,7 @@ import numpy as np
 from scipy.optimize import minimize
 from scipy.interpolate import RectBivariateSpline, InterpolatedUnivariateSpline
 import copy
-from Basic_Methods.Geometry_Utils import get_contour, get_Surface_area_of_torus, get_arclength, get_av_radius
+from plasma_math_tools.geometry_utils import get_contour, get_Surface_area_of_torus, get_arclength, get_av_radius
 from scipy import __version__ as scivers
 import scipy.optimize as scopt
 

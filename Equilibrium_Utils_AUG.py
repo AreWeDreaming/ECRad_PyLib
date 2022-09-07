@@ -10,7 +10,7 @@ import dd
 from map_equ import equ_map
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline
-from Basic_Methods.Equilibrium_Utils import EQDataExt, EQDataSlice
+from Equilibrium_Utils import EQDataExt, EQDataSlice
 from scipy import __version__ as scivers
 from scipy import constants as cnst
 

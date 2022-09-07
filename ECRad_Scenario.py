@@ -9,8 +9,8 @@ from scipy.io import loadmat, savemat
 from Global_Settings import globalsettings, GlobalSettingsAUG
 import numpy as np
 np.set_printoptions(threshold=np.inf)
-from Basic_Methods.Equilibrium_Utils import EQDataExt, EQDataSlice
-from Basic_Methods.Geometry_Utils import get_theta_pol_phi_tor_from_two_points
+from Equilibrium_Utils import EQDataExt, EQDataSlice
+from plasma_math_tools.geometry_utils import get_theta_pol_phi_tor_from_two_points
 from Diag_Types import CECE_diag, Diag, ECRH_diag, ECI_diag, EXT_diag, CECE_diag
 from Distribution_IO import load_f_from_mat
 from Distribution_Classes import Distribution, Gene, GeneBiMax

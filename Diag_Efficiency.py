@@ -5,7 +5,7 @@ Created on 11.06.2019
 '''
 from Global_Settings import globalsettings
 from BDOP_3D import make_3DBDOP_for_ray, make_f_inter, make_PowerDepo_3D_for_ray
-from Basic_Methods.Equilibrium_Utils import EQDataExt
+from Equilibrium_Utils import EQDataExt
 if(globalsettings.AUG):
     from Equilibrium_Utils_AUG import EQData
 from ECRad_Results import ECRadResults

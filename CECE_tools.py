@@ -10,7 +10,7 @@ from ECRad_Results import ECRadResults
 import numpy as np
 import os
 from scipy import constants as cnst
-from Basic_Methods.Data_Fitting import make_fit, gauss_fit_func
+from plasma_math_tools.data_fitting import make_fit, gauss_fit_func
 from Plotting_Configuration import plt
 from ece_optics_2019 import plot1DECE
 

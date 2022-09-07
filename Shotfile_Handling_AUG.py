@@ -16,7 +16,7 @@ from scipy.interpolate import RectBivariateSpline, InterpolatedUnivariateSpline,
 from Equilibrium_Utils_AUG import EQData
 import scipy.constants as cnst
 from Diag_Types import Diag
-from Basic_Methods.Data_Processing import remove_mode
+from Data_Processing import remove_mode
 from Get_ECRH_Config import get_ECRH_viewing_angles
 from Plotting_Configuration import plt
 AUG_profile_diags = ["IDA", "RMD", "CEC", "VTA", "CEZ", "COZ", "CUZ"]

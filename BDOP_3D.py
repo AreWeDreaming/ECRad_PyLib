@@ -13,7 +13,7 @@ from Distribution_IO import read_waves_mat_to_beam, read_dist_mat_to_beam, \
 from Distribution_Functions import Juettner2D
 if(globalsettings.AUG):
     from Equilibrium_Utils_AUG import EQData
-from Basic_Methods.Equilibrium_Utils import EQDataExt
+from Equilibrium_Utils import EQDataExt
 from Em_Albajar import EmAbsAlb, DistributionInterpolator, SVec, N_with_pol_vec
 import scipy.constants as cnst
 from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline

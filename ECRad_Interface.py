@@ -12,7 +12,7 @@ if(globalsettings.AUG):
     vessel_file = os.path.join(globalsettings.ECRadPylibRoot,'ASDEX_Upgrade_vessel.txt')
 from shutil import copyfile, rmtree
 from scipy.io import loadmat
-from Basic_Methods.Equilibrium_Utils import EQDataExt
+from Equilibrium_Utils import EQDataExt
 from Em_Albajar import SVec, EmAbsAlb
 from Distribution_IO import export_gene_fortran_friendly, \
                             export_gene_bimax_fortran_friendly, export_fortran_friendly

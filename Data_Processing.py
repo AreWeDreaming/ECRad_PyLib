@@ -6,7 +6,7 @@ Created on Jun 19, 2019
 import numpy as np
 from scipy.signal import medfilt
 from scipy import fftpack
-from Basic_Methods.Data_Fitting import make_fit
+from plasma_math_tools.data_fitting import make_fit
 # Can be used to filter modes from data
 # Useful to reduce systematic uncertainties in calibration of discharges with modes
 def remove_mode(t, s, harmonics=None, mode_width=100.0, low_freq=100.0):

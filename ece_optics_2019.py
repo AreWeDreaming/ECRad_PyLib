@@ -2,7 +2,7 @@ import numpy as np                # trig functs
 import scipy.constants as const   # to get physical constants
 import matplotlib.pyplot as plt   
 import matplotlib.patches as pat  # to draw rectangles
-from Basic_Methods.Geometry_Utils import get_theta_pol_from_two_points, get_phi_tor_from_two_points
+from plasma_math_tools.geometry_utils import get_theta_pol_from_two_points, get_phi_tor_from_two_points
 
 def get_ECE_launch_v2(wgIn, antenna, dtoECESI, freqsSI, dfreqsSI, R_start = 3.540, corr=0.85):
     ECE_launch = {}
