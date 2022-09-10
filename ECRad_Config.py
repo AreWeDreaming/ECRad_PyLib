@@ -180,7 +180,7 @@ class ECRadConfig(dict):
                     else:
                         self[key][sub_key] = rootgrp["Config"][key + "_" + sub_key][...].item()
                 except IndexError:
-                    print("ERROR: Cannot find {0:s} in Config file.".format(key + "/" + sub_key))
+                    print("WARNING: Cannot find {0:s} in Config file.".format(key + "/" + sub_key))
                     print("INFO: Using default value.")
         if(filename is not None):
             rootgrp.close()

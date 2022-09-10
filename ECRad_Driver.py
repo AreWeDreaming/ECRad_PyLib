@@ -11,6 +11,7 @@ from ECRad_Scenario import ECRadScenario
 import sys
 import os
 import re
+import time
 class ECRadDriver():
     '''
     Driver for ECRad. Passes information to ECRad, runs ECRad and extracts results
@@ -64,14 +65,17 @@ if(__name__=="__main__"):
     except:
         Config_file=os.path.join(os.path.expanduser("~"), ".ECRad_GUI_Default.nc") 
         Scenario_file=os.path.join(os.path.expanduser("~"), ".ECRad_GUI_last_scenario.nc")
+    
     driver = ECRadDriver(Scenario_file=Scenario_file, Config_file=Config_file)
-
 #     driver = ECRadDriver(Scenario_file="/mnt/c/Users/Severin/ECRad/ECRad_33585_EXT_ed1.nc", \
 #                          Config_file="/mnt/c/Users/Severin/ECRad/ECRad_33585_EXT_ed1.nc")
 #     driver = ECRadDriver(Scenario_file="/mnt/c/Users/Severin/ECRad_regression/AUGX3/ECRad_32934_EXT_ed1.nc", \
 #                          Config_file="/mnt/c/Users/Severin/ECRad_regression/AUGX3/ECRad_32934_EXT_ed1.nc")
     # driver = ECRadDriver(Scenario_file="/mnt/c/Users/Severin/ECRad/Yu/ECRad_179328_EXT_ed11.nc", \
     #                      Config_file="/mnt/c/Users/Severin/ECRad/Yu/ECRad_179328_EXT_ed11.nc")
+    start_time = time.time()
     driver.run(id=id)
+    end_time = time.time()
+    print(f"ECRad ran in {end_time-start_time} seconds")
     
     

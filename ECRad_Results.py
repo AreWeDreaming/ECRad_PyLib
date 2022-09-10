@@ -198,7 +198,7 @@ class ECRadResults(dict):
         self.shapes["freq_weights"] = ["N_time", "N_ch", "N_freq"]
         self.xaxis_link["weights"] = ["weights"]
         self.graph_style["BPD"] = "line"
-        self["git"] = {"ECRad":"Unknoiwn", "GUI":"Unknoiwn", "Pylib":"Unknoiwn"}
+        self["git"] = {"ECRad":"Unknown", "GUI":"Unknown", "Pylib":"Unknown"}
         self["types"] = {}
         for key in self.result_keys:
             if(key == 'dimensions'):
@@ -615,21 +615,22 @@ class ECRadResults(dict):
             except Exception as e:
                 print(key, sub_key)
                 raise e
-        key = "ray"
-        for sub_key in self.sub_keys["ray"]:
-            if(sub_key in self.failed_keys[key]):
-                continue
-            elif(len(self[key][sub_key]) == 0):
-                continue
-            var = rootgrp["Results"].createVariable(key + "_" + sub_key,dtype, tuple(self.shapes[key]))
-            for i_time in range(self["dimensions"]["N_time"]):
-                for i_ch in range(self["dimensions"]["N_ch"]):
-                    for i_mode in range(self["dimensions"]["N_mode"]):
-                        for i_ray in range(self["dimensions"]["N_ray"]):
-                            var[i_time,i_ch,i_mode,i_ray,:] =  self[key][sub_key][i_time,i_ch,i_mode,i_ray]
-        # Get the shape information of the individual LOS length into the NETCDF file
-        var = rootgrp["Results"].createVariable("dimensions" + "_" + "N_LOS", "i8", self.shapes["ray"][:-1])
-        var[:] = self["dimensions"]["N_LOS"]
+        if(self.Config["Execution"]["extra_output"]):
+            key = "ray"
+            for sub_key in self.sub_keys["ray"]:
+                if(sub_key in self.failed_keys[key]):
+                    continue
+                elif(len(self[key][sub_key]) == 0):
+                    continue
+                var = rootgrp["Results"].createVariable(key + "_" + sub_key,dtype, tuple(self.shapes[key]))
+                for i_time in range(self["dimensions"]["N_time"]):
+                    for i_ch in range(self["dimensions"]["N_ch"]):
+                        for i_mode in range(self["dimensions"]["N_mode"]):
+                            for i_ray in range(self["dimensions"]["N_ray"]):
+                                var[i_time,i_ch,i_mode,i_ray,:] =  self[key][sub_key][i_time,i_ch,i_mode,i_ray]
+            # Get the shape information of the individual LOS length into the NETCDF file
+            var = rootgrp["Results"].createVariable("dimensions" + "_" + "N_LOS", "i8", self.shapes["ray"][:-1])
+            var[:] = self["dimensions"]["N_LOS"]
         rootgrp["Results"].comment = self.comment
         rootgrp["Results"].edition = self.edition
         rootgrp["Results"].ECRad_git_tag = self["git"]["ECRad"]
@@ -644,7 +645,6 @@ class ECRadResults(dict):
         self.Scenario.from_netcdf(rootgrp=rootgrp)
         for sub_key in rootgrp["Results"].dimensions.keys():
             self["dimensions"][sub_key] = rootgrp["Results"].dimensions[sub_key].size
-        self["dimensions"]["N_LOS"] = np.array(rootgrp["Results"]["dimensions" + "_" + "N_LOS"])
         for key in self.result_keys:
             if(key == "dimensions" or key == "ray"):
                 continue
@@ -659,25 +659,26 @@ class ECRadResults(dict):
                     elif(sub_key == "rhop" and self.Scenario["plasma"]["eq_dim"] == 3):
                         continue
                 self[key][sub_key] = np.array(rootgrp["Results"][key + "_" + sub_key])
-                    
-        key = "ray"
-        for sub_key in self.sub_keys["ray"]:
-            self["ray"][sub_key] = []
-            if(key + "_" + sub_key not in rootgrp["Results"].variables.keys()):
-                print("INFO: Cannot load " + key + "/" + sub_key)
-                self.failed_keys[key].append(sub_key)
-                continue
-            for i_time in range(self["dimensions"]["N_time"]):
-                self["ray"][sub_key].append([])
-                for i_ch in range(self["dimensions"]["N_ch"]):
-                    self["ray"][sub_key][i_time].append([])
-                    for i_mode in range(self["dimensions"]["N_mode"]):
-                        self["ray"][sub_key][i_time][i_ch].append([])
-                        for i_ray in range(self["dimensions"]["N_ray"]):
-                            self["ray"][sub_key][i_time][i_ch][i_mode].append( \
-                                      rootgrp["Results"][key+ "_" +sub_key][i_time,i_ch,i_mode,i_ray,\
-                                                                      :self["dimensions"]["N_LOS"][i_time,i_ch,i_mode,i_ray]])
-            self["ray"][sub_key] = np.array(self["ray"][sub_key], dtype=np.object)
+        if(self.Config["Execution"]["extra_output"]):
+            self["dimensions"]["N_LOS"] = np.array(rootgrp["Results"]["dimensions" + "_" + "N_LOS"])
+            key = "ray"
+            for sub_key in self.sub_keys["ray"]:
+                self["ray"][sub_key] = []
+                if(key + "_" + sub_key not in rootgrp["Results"].variables.keys()):
+                    print("INFO: Cannot load " + key + "/" + sub_key)
+                    self.failed_keys[key].append(sub_key)
+                    continue
+                for i_time in range(self["dimensions"]["N_time"]):
+                    self["ray"][sub_key].append([])
+                    for i_ch in range(self["dimensions"]["N_ch"]):
+                        self["ray"][sub_key][i_time].append([])
+                        for i_mode in range(self["dimensions"]["N_mode"]):
+                            self["ray"][sub_key][i_time][i_ch].append([])
+                            for i_ray in range(self["dimensions"]["N_ray"]):
+                                self["ray"][sub_key][i_time][i_ch][i_mode].append( \
+                                        rootgrp["Results"][key+ "_" +sub_key][i_time,i_ch,i_mode,i_ray,\
+                                                                        :self["dimensions"]["N_LOS"][i_time,i_ch,i_mode,i_ray]])
+                self["ray"][sub_key] = np.array(self["ray"][sub_key], dtype=np.object)
         # Get the shape information of the individual LOS length into the NETCDF file
         self.comment = rootgrp["Results"].comment 
         self.edition = rootgrp["Results"].edition
