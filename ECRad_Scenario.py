@@ -224,7 +224,7 @@ class ECRadScenario(dict):
             if(self["plasma"]["prof_reference"] == "rhop_prof"):
                 self["plasma"]["prof_reference"] = "rhot_prof"
                 print("rho_pol not viable here using rho_tor")
-                self.add_imas_time_slices(self, core_profiles, equilibrium, times)
+                self.add_imas_time_slices(core_profiles, equilibrium, times)
         self["plasma"]["Te"] = np.array(self["plasma"]["Te"])
         self["plasma"]["ne"] = np.array(self["plasma"]["ne"])
         if(self["plasma"]["prof_reference"] == "rhop_prof"):
