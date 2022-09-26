@@ -201,14 +201,14 @@ class ECRadScenario(dict):
                     self["plasma"]["rhop_prof"] = np.array(self["plasma"]["rhop_prof"])
                 except Exception:
                     self["plasma"]["rhop_prof"].append(
-                        equilibrium.time_slice[itime_equilibrium].global_quantities.rho_pol_norm)
+                        equilibrium.time_slice[itime_equilibrium].grid.rho_pol_norm)
                     if(np.any(np.isnan(self["plasma"]["rhop_prof"][-1]))):
                         raise ValueError("psi not properly set up")
                     if(len(self["plasma"]["rhop_prof"][-1]) != prof_size):
                         raise ValueError("Wrong size of grid")
             else:
                 self["plasma"]["rhot_prof"].append(
-                    equilibrium.time_slice[itime_equilibrium].global_quantities.rho_tor_norm)
+                    equilibrium.time_slice[itime_equilibrium].grid.rho_tor_norm)
                 if(np.any(np.isnan(self["plasma"]["rhot_prof"][-1]))):
                     raise ValueError("psi not properly set up")
                 if(len(self["plasma"]["rhot_prof"][-1]) != prof_size):
