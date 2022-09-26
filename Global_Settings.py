@@ -138,7 +138,7 @@ class GlobalSettingsITER:
         self.partition_function = partition_function_engaging
         self.account_fuction = account_function_current_user
         self.max_cores = 16
-        self.plot_mode = "Presentation"
+        self.plot_mode = "Software"
         self.mathrm = r"\mathrm"
         self.omas = True
         try:
