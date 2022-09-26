@@ -139,7 +139,7 @@ class GlobalSettingsITER:
         self.account_fuction = account_function_current_user
         self.max_cores = 16
         self.plot_mode = "Software"
-        self.mathrm = r"\mathrm"
+        self.mathrm = r""
         self.omas = True
         try:
             import omas
