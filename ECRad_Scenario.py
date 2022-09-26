@@ -178,25 +178,59 @@ class ECRadScenario(dict):
         self['diagnostic']["theta_pol"][:], self['diagnostic']["phi_tor"][:] = \
                 get_theta_pol_phi_tor_from_two_points(x1_vec, x2_vec)
 
-    def set_up_profiles_from_imas(self, core_profiles, equilibrium, times):
-        for key in self["plasma"]:
-            self["plasma"][key] = []
+    def add_imas_time_slices(self, core_profiles, equilibrium, times):
         for time in times:
             itime_profiles = np.argmin(np.abs(core_profiles.time - time))
             itime_equilibrium = np.argmin(np.abs(equilibrium.time - time))
-            self["plasma"]["rhop_prof"].append(
-                np.sqrt((equilibrium.time_slice[itime_equilibrium].global_quantities.psi_axis - \
-                         core_profiles.profiles_1d[itime_profiles].grid.psi) /\
-                        (equilibrium.time_slice[itime_equilibrium].global_quantities.psi_axis - \
-                         equilibrium.time_slice[itime_equilibrium].global_quantities.psi_boundary)))
             self["plasma"]["Te"].append(
                 core_profiles.profiles_1d[itime_profiles].electrons.temperature)
+            prof_size = len(self["plasma"]["Te"][-1])
             self["plasma"]["ne"].append(
                 core_profiles.profiles_1d[itime_profiles].electrons.density)
-        self["plasma"]["rhop_prof"] = np.array(self["plasma"]["rhop_prof"])
+            if( self["plasma"]["prof_reference"] == "rhop_prof"):
+                try:
+                    self["plasma"]["rhop_prof"].append(
+                        np.sqrt((equilibrium.time_slice[itime_equilibrium].global_quantities.psi_axis - \
+                                core_profiles.profiles_1d[itime_profiles].grid.psi) /\
+                                (equilibrium.time_slice[itime_equilibrium].global_quantities.psi_axis - \
+                                equilibrium.time_slice[itime_equilibrium].global_quantities.psi_boundary)))
+                    if(np.any(np.isnan(self["plasma"]["rhop_prof"][-1]))):
+                        raise ValueError("psi not properly set up")
+                    if(len(self["plasma"]["rhop_prof"][-1]) != prof_size):
+                        raise ValueError("Wrong size of grid")
+                    self["plasma"]["rhop_prof"] = np.array(self["plasma"]["rhop_prof"])
+                except Exception:
+                    self["plasma"]["rhop_prof"].append(
+                        equilibrium.time_slice[itime_equilibrium].global_quantities.rho_pol_norm)
+                    if(np.any(np.isnan(self["plasma"]["rhop_prof"][-1]))):
+                        raise ValueError("psi not properly set up")
+                    if(len(self["plasma"]["rhop_prof"][-1]) != prof_size):
+                        raise ValueError("Wrong size of grid")
+            else:
+                self["plasma"]["rhot_prof"].append(
+                    equilibrium.time_slice[itime_equilibrium].global_quantities.rho_tor_norm)
+                if(np.any(np.isnan(self["plasma"]["rhot_prof"][-1]))):
+                    raise ValueError("psi not properly set up")
+                if(len(self["plasma"]["rhot_prof"][-1]) != prof_size):
+                    raise ValueError("Wrong size of grid")
+
+    def set_up_profiles_from_imas(self, core_profiles, equilibrium, times):
+        for key in self["plasma"]:
+            self["plasma"][key] = []
         self["plasma"]["prof_reference"] = "rhop_prof"
+        try:
+            self.add_imas_time_slices(self, core_profiles, equilibrium, times)
+        except Exception:
+            if(self["plasma"]["prof_reference"] == "rhop_prof"):
+                self["plasma"]["prof_reference"] = "rhot_prof"
+                print("rho_pol not viable here using rho_tor")
+                self.add_imas_time_slices(self, core_profiles, equilibrium, times)
         self["plasma"]["Te"] = np.array(self["plasma"]["Te"])
         self["plasma"]["ne"] = np.array(self["plasma"]["ne"])
+        if(self["plasma"]["prof_reference"] == "rhop_prof"):
+            self["plasma"]["rhop_prof"] = np.array(self["plasma"]["rhop_prof"])
+        else:
+            self["plasma"]["rhot_prof"] = np.array(self["plasma"]["rhot_prof"])
 
 
     def set_up_equilibrium_from_imas(self, equilibrium, wall, times):

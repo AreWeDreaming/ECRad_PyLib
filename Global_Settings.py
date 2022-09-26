@@ -125,6 +125,8 @@ class GlobalSettingsITER:
     def __init__(self):
         self.AUG = False  # True  -> Start with True, set it to false if we run into problems
         self.root = os.path.expanduser("~/")
+        # Add plasma math tools without conda
+        sys.path.append(os.path.abspath("../plasma_math_tools"))
         self.ECRadRoot = os.path.abspath("../ECRad_core")
         self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot, "bin")
         self.ECRadPylibRoot = os.path.abspath("../ECRad_PyLib/")
