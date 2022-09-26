@@ -185,6 +185,8 @@ class ECRadScenario(dict):
             self["plasma"]["Te"].append(
                 core_profiles.profiles_1d[itime_profiles].electrons.temperature)
             prof_size = len(self["plasma"]["Te"][-1])
+            if(prof_size == 0):
+                raise ValueError("No profile data!")
             self["plasma"]["ne"].append(
                 core_profiles.profiles_1d[itime_profiles].electrons.density)
             if( self["plasma"]["prof_reference"] == "rhop_prof"):
@@ -222,15 +224,16 @@ class ECRadScenario(dict):
             self.add_imas_time_slices(core_profiles, equilibrium, times)
         except Exception:
             if(self["plasma"]["prof_reference"] == "rhop_prof"):
+                # Reset the plasma
+                for key in self["plasma"]:
+                    self["plasma"][key] = []
                 self["plasma"]["prof_reference"] = "rhot_prof"
                 print("rho_pol not viable here using rho_tor")
                 self.add_imas_time_slices(core_profiles, equilibrium, times)
         self["plasma"]["Te"] = np.array(self["plasma"]["Te"])
         self["plasma"]["ne"] = np.array(self["plasma"]["ne"])
-        if(self["plasma"]["prof_reference"] == "rhop_prof"):
-            self["plasma"]["rhop_prof"] = np.array(self["plasma"]["rhop_prof"])
-        else:
-            self["plasma"]["rhot_prof"] = np.array(self["plasma"]["rhot_prof"])
+        self["plasma"][self["plasma"]["prof_reference"]] = \
+                np.array(self["plasma"][self["plasma"]["prof_reference"]])
 
 
     def set_up_equilibrium_from_imas(self, equilibrium, wall, times):
