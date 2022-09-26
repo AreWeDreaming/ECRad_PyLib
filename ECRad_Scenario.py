@@ -217,8 +217,9 @@ class ECRadScenario(dict):
                     raise ValueError("psi not properly set up")
                 if(len(self["plasma"]["rhot_prof"][-1]) != prof_size):
                     raise ValueError("Wrong size of grid")
-                rhot_to_psi_spl = InterpolatedUnivariateSpline(equilibrium.time_slice[itime_equilibrium].profiles_1d.rho_tor_norm, \
-                        equilibrium.time_slice[itime_equilibrium].profiles_1d.psi)
+                mask = equilibrium.time_slice[itime_equilibrium].profiles_1d.rho_tor_norm < 1.0
+                rhot_to_psi_spl = InterpolatedUnivariateSpline(equilibrium.time_slice[itime_equilibrium].profiles_1d.rho_tor_norm[mask], \
+                        equilibrium.time_slice[itime_equilibrium].profiles_1d.psi[mask])
                 psi = rhot_to_psi_spl(self["plasma"]["rhot_prof"])
                 rhop = np.sqrt((equilibrium.time_slice[itime_equilibrium].global_quantities.psi_axis - 
                                 psi) /
