@@ -10,6 +10,7 @@ from Global_Settings import globalsettings, GlobalSettingsAUG
 import numpy as np
 np.set_printoptions(threshold=np.inf)
 from Equilibrium_Utils import EQDataExt, EQDataSlice
+from scipy.interpolate import InterpolatedUnivariateSpline
 from plasma_math_tools.geometry_utils import get_theta_pol_phi_tor_from_two_points
 from Diag_Types import CECE_diag, Diag, ECRH_diag, ECI_diag, EXT_diag, CECE_diag
 from Distribution_IO import load_f_from_mat
@@ -209,12 +210,22 @@ class ECRadScenario(dict):
                     if(len(self["plasma"]["rhop_prof"][-1]) != prof_size):
                         raise ValueError("Wrong size of grid")
             else:
+                
                 self["plasma"]["rhot_prof"].append(
                     core_profiles.profiles_1d[itime_profiles].grid.rho_tor_norm)
                 if(np.any(np.isnan(self["plasma"]["rhot_prof"][-1]))):
                     raise ValueError("psi not properly set up")
                 if(len(self["plasma"]["rhot_prof"][-1]) != prof_size):
                     raise ValueError("Wrong size of grid")
+                rhot_to_psi_spl = InterpolatedUnivariateSpline(equilibrium.time_slice[itime_equilibrium].profiles_1d.rho_tor_norm, \
+                        equilibrium.time_slice[itime_equilibrium].profiles_1d.psi)
+                psi = rhot_to_psi_spl(self["plasma"]["rhot_prof"])
+                rhop = np.sqrt((equilibrium.time_slice[itime_equilibrium].global_quantities.psi_axis - 
+                                psi) /
+                                (equilibrium.time_slice[itime_equilibrium].global_quantities.psi_axis - 
+                                equilibrium.time_slice[itime_equilibrium].global_quantities.psi_boundary))
+                self["plasma"]["rhop_prof"].append(
+                    core_profiles.profiles_1d[itime_profiles].grid.rho_tor_norm)
 
     def set_up_profiles_from_imas(self, core_profiles, equilibrium, times):
         for key in self["plasma"]:
@@ -230,6 +241,11 @@ class ECRadScenario(dict):
                 self["plasma"]["prof_reference"] = "rhot_prof"
                 print("rho_pol not viable here using rho_tor")
                 self.add_imas_time_slices(core_profiles, equilibrium, times)
+                self["plasma"][self["plasma"]["prof_reference"]] = \
+                        np.array(self["plasma"][self["plasma"]["prof_reference"]])
+                # ECRad cannot work with rho_tor for 2D equilbria
+                # Hence, we need to get rho_pol profiles
+                self["plasma"]["prof_reference"] = "rhop_prof"
         self["plasma"]["Te"] = np.array(self["plasma"]["Te"])
         self["plasma"]["ne"] = np.array(self["plasma"]["ne"])
         self["plasma"][self["plasma"]["prof_reference"]] = \
