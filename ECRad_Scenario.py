@@ -219,7 +219,7 @@ class ECRadScenario(dict):
             self["plasma"][key] = []
         self["plasma"]["prof_reference"] = "rhop_prof"
         try:
-            self.add_imas_time_slices(self, core_profiles, equilibrium, times)
+            self.add_imas_time_slices(core_profiles, equilibrium, times)
         except Exception:
             if(self["plasma"]["prof_reference"] == "rhop_prof"):
                 self["plasma"]["prof_reference"] = "rhot_prof"
