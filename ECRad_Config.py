@@ -23,7 +23,7 @@ class ECRadConfig(dict):
         self.sub_keys["Physics"] = ["dstf", "raytracing", "ripple", \
                                     "weak_rel", "considered_modes", \
                                     "N_freq", "N_ray", \
-                                    "ratio_for_3rd_harm", "tau_ignore", "mode_conv" ,\
+                                    "ratio_for_3rd_harm", "N_max", "tau_ignore", "mode_conv" ,\
                                     "reflec_X", "reflec_O", \
                                     "R_shift", "z_shift", \
                                     "use_ext_rays"]
@@ -40,6 +40,7 @@ class ECRadConfig(dict):
         self["Physics"]["N_freq"] = 1
         self["Physics"]["N_ray"] = 1
         self["Physics"]["ratio_for_3rd_harm"] = 0.4
+        self["Physics"]["N_max"] = 3
         self["Physics"]["tau_ignore"] = 1.e-8
         self["Physics"]["considered_modes"] = 1
         # 1 -> Only X
@@ -69,7 +70,7 @@ class ECRadConfig(dict):
                       "parallel_cores": "i8", "wall_time": "f8", 
                       "vmem": "i8", "raytracing": "b", "ripple": "b", 
                       "weak_rel": "b", "N_freq" : "i8",  "N_ray": "i8", 
-                      "ratio_for_3rd_harm": "f8", "tau_ignore" :"f8", "considered_modes" : "i8", 
+                      "ratio_for_3rd_harm": "f8", "N_max" : "i8","tau_ignore" :"f8", "considered_modes" : "i8", 
                       "mode_conv" : "f8", "reflec_X" : "f8","reflec_O" : "f8", 
                       "R_shift" : "f8","z_shift" : "f8","large_ds" : "f8",
                       "small_ds" : "f8","max_points_svec" : "i8","use_ext_rays" : "b", 
@@ -79,7 +80,7 @@ class ECRadConfig(dict):
                             "parallel_cores": "# cores", "wall_time": "wall time [h]", 
                             "vmem": "virtual memory [MB]", "raytracing": "Raytracing", "ripple": "Magn. field Ripple", 
                             "weak_rel": "Relativistic cor. for rt.", "N_freq" : "# frequencies",  "N_ray": "# rays", 
-                            "ratio_for_3rd_harm": "omega_c/omega w. 3rd", "tau_ignore": "tau threshhold for computation of alpha/j",
+                            "ratio_for_3rd_harm": "omega_c/omega for higher harmonics", "N_max": "Highest harmonic to include","tau_ignore": "tau threshhold for computation of alpha/j",
                             "considered_modes" : "Modes to consider", 
                             "mode_conv" : "mode conv. ratio", "reflec_X" : "Wall refl. coeff. X-mode", 
                             "reflec_O" : "Wall refl. coeff. O-mode", "use_ext_rays" : "Use ext rays", 

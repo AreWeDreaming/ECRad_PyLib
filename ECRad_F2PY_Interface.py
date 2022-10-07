@@ -95,6 +95,7 @@ class ECRadF2PYInterface:
                                             Config["Physics"]["raytracing"], \
                                             Config["Physics"]["ripple"], 1.20, Config["Physics"]["weak_rel"], \
                                             Config["Physics"]["ratio_for_3rd_harm"], \
+                                            Config["Physics"]["N_max"], \
                                             Config["Physics"]["tau_ignore"], \
                                             Config["Physics"]["considered_modes"], \
                                             Config["Physics"]["reflec_X"], Config["Physics"]["reflec_O"], False, \
