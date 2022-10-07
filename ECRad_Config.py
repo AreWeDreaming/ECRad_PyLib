@@ -35,7 +35,7 @@ class ECRadConfig(dict):
                                      "N_BPD"]
         self["Physics"]["dstf"] = "Th"
         self["Physics"]["raytracing"] = True
-        self["Physics"]["ripple"] = True
+        self["Physics"]["ripple"] = False
         self["Physics"]["weak_rel"] = True
         self["Physics"]["N_freq"] = 1
         self["Physics"]["N_ray"] = 1
