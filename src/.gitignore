@@ -1,0 +1,13 @@
+/__pycache__/
+/.pydevproject.bak
+/.pydevproject.bak0
+/__pycache/
+/id
+/test
+/whatever
+/ECRad_    0__ed1.nc
+/vessel_bd.txt
+dd.py
+map_equ.py
+.vscode/launch.json
+*.pyc
