@@ -1,7 +1,7 @@
 '''
 Created on Mar 23, 2016
 
-@author: sdenk
+@author: Severin Denk
 '''
 from Global_Settings import globalsettings
 from matplotlib import cm
@@ -901,22 +901,4 @@ def make_3DBDOP_cut(fig, Results, time, ch_list, mode_list, m_list, dist, includ
     return fig
     
 if(__name__ == "__main__"):
-#     x = np.linspace(0,1,30)
-#     distribute_points(x, 0.2 + 5 * np.exp(-(x-0.5)**2 / 0.05**2), 30)
-#     make_3DBDOP_cut_standalone("/tokp/work/sdenk/Backup_PhD_stuff/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat", \
-#                                4.40, [144], [2], "Re", \
-#                                include_ECRH=True, m_ECRH_list=[2], \
-#                                ECRH_freq=105.e9, wave_mat_filename="/tokp/work/sdenk/Backup_PhD_stuff/DRELAX_Results_2nd_batch/GRAY_rays_35662_4.40.mat", \
-#                                mat_for_distribution= "/tokp/work/sdenk/Backup_PhD_stuff/DRELAX_Results_2nd_batch/ECRad_35662_ECECTCCTA_run0006.mat",\
-#                                 rhop_range=[0,0.3]) #20 # 48  # 94 # 144 -> second last each
-    # make_3DBDOP_cut_standalone("/tokp/work/sdenk/DRELAX_final/DRELAX_run_3224.mat", \
-    #                                3.84, [], [2], "Re", \
-    #                                include_ECRH=True, m_ECRH_list=[2], \
-    #                                ECRH_freq=105.e9, wave_mat_filename="/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3224.mat", \
-    #                                mat_for_distribution= "/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3224.mat",\
-    #                                rhop_range=[0, 0.3], BPD_fac=1.0) #20 # 48  # 88 # 115 # 136 -> second last each
-    make_3DBDOP_cut_standalone("/mnt/c/Users/Severin/ECRad/HFS_LHCD/ECRad_147634_EXT_ed1.nc", \
-                               4.52, [25], [0], [2], "Re", \
-                               include_ECRH=False, m_ECRH_list=[2], \
-                               ECRH_freq=105.e9,\
-                               rhop_range=[0, 0.99]) #20 # 48  # 94 # 144 -> second last each
+    pass

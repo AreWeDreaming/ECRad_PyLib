@@ -1,13 +1,8 @@
-'''
-Created on Aug 29, 2016
-
-@author: sdenk
-'''
 # -*- coding: utf-8 -*-
 """
 Created on Tue Feb 11 11:51:28 2014
 
-@author: sdenk
+@author: Severin Denk
 """
 import wx
 Unbound_EVT_NEW_STATUS = wx.NewEventType()  # Call This

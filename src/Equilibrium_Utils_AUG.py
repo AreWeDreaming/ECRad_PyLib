@@ -1,7 +1,7 @@
 '''
 Created on Jan 29, 2017
 
-@author: sdenk
+@author: Severin Denk
 '''
 import sys
 import os

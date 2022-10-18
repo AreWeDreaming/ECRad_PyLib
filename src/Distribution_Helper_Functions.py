@@ -1,7 +1,7 @@
 '''
 Created on Jun 19, 2019
 
-@author: sdenk
+@author: Severin Denk
 '''
 # Collection of operations on distributions, like computing 1st moment ect.
 import numpy as np

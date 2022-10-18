@@ -1,7 +1,7 @@
 '''
 Created on Jun 19, 2019
 
-@author: sdenk
+@author: Severin Denk
 This module is outdated.
 '''
 

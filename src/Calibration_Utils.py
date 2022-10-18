@@ -1,7 +1,7 @@
 '''
 Created on Dec 29, 2015
 
-@author: sdenk
+@author: Severin Denk
 '''
 import numpy as np
 from plasma_math_tools.data_fitting import make_fit

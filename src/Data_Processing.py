@@ -1,7 +1,7 @@
 '''
 Created on Jun 19, 2019
 
-@author: sdenk
+@author: Severin Denk
 '''
 import numpy as np
 from scipy.signal import medfilt

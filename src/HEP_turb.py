@@ -1,7 +1,7 @@
 '''
 Created on Apr 26, 2020
 
-@author: sdenk
+@author: Severin Denk
 '''
 from plotting_configuration import plt
 from shotfile_handling_AUG import get_HEP_ne

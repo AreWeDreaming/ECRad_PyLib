@@ -1,7 +1,7 @@
 '''
 Created on 04.06.2019
 
-@author: sdenk
+@author: Severin Denk
 '''
 
 def ndarray_math_operation(ndarray, operation):

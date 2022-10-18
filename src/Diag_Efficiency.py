@@ -1,7 +1,7 @@
 '''
 Created on 11.06.2019
 
-@author: sdenk
+@author: Severin Denk
 '''
 from Global_Settings import globalsettings
 from BDOP_3D import make_3DBDOP_for_ray, make_f_inter, make_PowerDepo_3D_for_ray
@@ -229,27 +229,5 @@ def current_weight(DistWaveFile, shot, time, EQ_exp, EQ_diag, EQ_ed, fig=None, a
 #     plt.show()
 
 if(__name__ == "__main__"):
-    fig = plt.figure(figsize=(12.5,8.5))
-    ax = fig.add_subplot(111)
-    current_weight("/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3204.mat", 35662, 3.84, "AUGD", "IDE", 0,fig,ax)
-    diag_weight_stand_alone(fig, ax, "/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3204.mat", 3.84, 88, \
-                            "/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3204.mat")
-    diag_weight_stand_alone(fig, ax, "/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3204.mat", 3.84, 136, \
-                            "/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3204.mat")
-#     
-#     plt.pause(-1)
-    
-# #     plt.hold(True)
-#     current_weight("/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3224.mat", 35662, 3.84, "AUGD", "IDE", 0, fig, ax)
-#     ECRH_weight(fig, "/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3224.mat", 3.84, 0, \
-# #                 "/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3224.mat", beam_freq=105.e9, ax=ax)
-#     diag_weight_stand_alone(fig, ax, "/tokp/work/sdenk/DRELAX_final/DRELAX_run_3224.mat", 3.84, 88, \
-#                             "/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3224.mat")
-#     diag_weight_stand_alone(fig, ax, "/tokp/work/sdenk/DRELAX_final/DRELAX_run_3224.mat", 3.84, 136, \
-#                             "/tokp/work/sdenk/DRELAX_35662_rdiff_prof/ECRad_35662_ECECTCCTA_run3224.mat")
-    ax.set_xlim(0.0, 0.3)
-    ax.set_ylim(-0.3, 0.3)
-    plt.show()
-#     plt.hold(True)
-    
+    pass
     

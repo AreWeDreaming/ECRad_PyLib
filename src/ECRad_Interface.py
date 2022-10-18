@@ -1,6 +1,6 @@
 '''
 Created on Dec 9, 2015
-@author: sdenk
+@author: Severin Denk
 '''
 from Distribution_Classes import Distribution
 from Global_Settings import globalsettings
@@ -594,48 +594,6 @@ def make_reflec_launch(working_dir, shot, time, used_diag_dict, gy_dict=None, EC
         launch_file.close()
     return True
 
-def make_hedgehog_launch(working_dir, f, df, R, phi, z):
-    N = 15
-    theta_pols = np.linspace(-70, 70, N)
-    phi_tors = np.linspace(-70, 70, N)
-    diag_launch = {}
-    diag_launch["f"] = np.zeros(N * N)
-    diag_launch["df"] = np.zeros(len(diag_launch["f"]))
-    diag_launch["R"] = np.zeros(len(diag_launch["f"]))
-    diag_launch["phi"] = np.zeros(len(diag_launch["f"]))
-    diag_launch["z"] = np.zeros(len(diag_launch["f"]))
-    diag_launch["theta_pol"] = np.zeros(len(diag_launch["f"]))
-    diag_launch["phi_tor"] = np.zeros(len(diag_launch["f"]))
-    diag_launch["dist_focus"] = np.zeros(len(diag_launch["f"]))
-    diag_launch["width"] = np.zeros(len(diag_launch["f"]))
-    diag_launch["f"][:] = f
-    diag_launch["df"][:] = df
-    diag_launch["R"][:] = R
-    diag_launch["phi"][:] = phi
-    diag_launch["z"][:] = z
-    diag_launch["dist_focus"][:] = 0.e0  # No multiple rays!
-    diag_launch["width"][:] = 0.e0  # No multiple rays
-    i = 0
-    for theta_pol in theta_pols:
-        for phi_tor in phi_tors:
-            diag_launch["theta_pol"][i] = theta_pol
-            diag_launch["phi_tor"][i] = phi_tor
-            i += 1
-    launch_file = open(os.path.join(working_dir, 'Ext_launch.dat'), 'w')
-    launch_file.write("{0: 5d}\n".format(len(diag_launch["f"])))
-    for i in range(len(diag_launch["f"])):
-        launch_file.write("{0: 1.10E} ".format(diag_launch["f"][i]))
-        launch_file.write("{0: 1.10E} ".format(diag_launch["df"][i]))
-        launch_file.write("{0: 1.10E} ".format(diag_launch["R"][i]))
-        launch_file.write("{0: 1.10E} ".format(diag_launch["phi"][i]))
-        launch_file.write("{0: 1.10E} ".format(diag_launch["z"][i]))
-        launch_file.write("{0: 1.10E} ".format(diag_launch["phi_tor"][i]))
-        launch_file.write("{0: 1.10E} ".format(diag_launch["theta_pol"][i]))
-        launch_file.write("{0: 1.10E} ".format(diag_launch["width"][i]))
-        launch_file.write("{0: 1.10E}\n".format(diag_launch["dist_focus"][i]))
-    launch_file.flush()
-    launch_file.close()
-
 def load_plasma_from_mat(path):
     try:
         plasma_dict = {}
@@ -953,5 +911,4 @@ def read_ray_dict_from_file(folder, dist, ich, mode="X", iray=1):
 
 
 if(__name__ == "__main__"):
-    # print(get_ECE_launch_info(31539, Diag("ECE", "AUGD", "RMD", 0)))
-    make_hedgehog_launch("/tokp/work/sdenk/ECRad2/", 104.e9, 0.2e9, 2.206323000000e+00, 104.e0, 1.531469000000e-01)
+    pass

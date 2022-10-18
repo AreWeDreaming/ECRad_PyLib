@@ -1,6 +1,6 @@
 '''
 Created on Nov 22, 2019
-@author: g2sdenk
+@author: Severin Denk
 '''
 from Global_Settings import globalsettings
 from ECRad_Scenario import ECRadScenario
@@ -380,7 +380,6 @@ if(__name__ == "__main__"):
     os.chdir(globalsettings.ECRadLibDir)
     print(os.getcwd())
     ECRad_file = os.path.join(ECRad_folder, "ECRad_35662_EXT_ed1.mat")
-#     ECRad_file = "/gss_efgw_work/work/g2sdenk/ECRad_runs/ECRad_20180823016002_EXT_ed20.mat"
     Scenario = ECRadScenario(True)
     Config = ECRadConfig(True)
     Config.from_mat(path_in=ECRad_file)

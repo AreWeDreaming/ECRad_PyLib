@@ -1,6 +1,6 @@
 '''
 Created on June 18, 2019
-@author: sdenk
+@author: Severin Denk
 '''
 import numpy as np
 from scipy.optimize import root

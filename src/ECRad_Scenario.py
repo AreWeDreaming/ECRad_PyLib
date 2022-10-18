@@ -1,7 +1,7 @@
 '''
 Created on Mar 20, 2019
 
-@author: sdenk
+@author: Severin Denk
 '''
 from collections import OrderedDict as od
 import os

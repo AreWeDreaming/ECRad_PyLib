@@ -1,7 +1,7 @@
 '''
 Created on Dec 17, 2015
 
-@author: sdenk
+@author: Severin Denk
 '''
 import numpy as np
 np.set_printoptions(threshold=10)
@@ -835,8 +835,3 @@ class ECRadResults:
     
 if(__name__ == "__main__"):
     res = ECRadResults()
-    res.from_mat_file("/afs/ipp-garching.mpg.de/home/s/sdenk/Downloads/ECRad_179328_EXT_ed2.mat")
-    res.Scenario.profile_dimension = 2
-    res.to_mat_file("/tokp/work/sdenk/ECRad/ECRad_179328_EXT_ed2.mat")
-    
-    

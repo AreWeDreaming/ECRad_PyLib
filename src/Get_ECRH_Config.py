@@ -1,6 +1,6 @@
 '''
 Created on Dec 10, 2015
-@author: sdenk
+@author: Severin Denk
 '''
 import sys
 sys.path.append('/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib/')

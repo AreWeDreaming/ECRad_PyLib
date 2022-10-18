@@ -1,6 +1,6 @@
 '''
 Created on Jun 19, 2019
-@author: sdenk
+@author: Severin Denk
 '''
 # Tools to generate the ASCII distribution files required by ECRad and load the distribution class from .mat files or hdf5 files in case of GENE distributions
 # Also includes a function to generate a thermal distribution on a grid and a distribution  resulting form the force balance between collisions and the radiation reaction force

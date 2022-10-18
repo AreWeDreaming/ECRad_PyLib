@@ -1,7 +1,7 @@
 '''
 Created on Mar 22, 2016
 
-@author: sdenk
+@author: Severin Denk
 '''
 stand_alone = False
 import numpy as np

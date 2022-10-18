@@ -1,7 +1,7 @@
 '''
 Created on Dec 9, 2015
 
-@author: sdenk
+@author: Severin Denk
 '''
 import numpy as np
 import sys
@@ -11,7 +11,6 @@ import os
 sys.path.append('/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib')
 import dd
 from scipy.signal import medfilt
-root = "/afs/ipp-garching.mpg.de/home/s/sdenk/"
 from scipy.interpolate import RectBivariateSpline, InterpolatedUnivariateSpline, UnivariateSpline, interp1d
 from Equilibrium_Utils_AUG import EQData
 import scipy.constants as cnst
@@ -1831,23 +1830,4 @@ def compare_IDE_to_MBI(shot):
     
 
 if(__name__ == '__main__'):
-#     make_plasma_mat_for_testing("/tokp/work/sdenk/ECRad/32934.mat", 32934, [3.298], "AUGD", "EQH", 0, \
-#                                 bt_vac_correction=1.005, IDA_exp="AUGD", IDA_ed=0)
-#     print(get_RELAX_target_current(35662, 6.12, exp="AUGD", ed=0, smoothing=2.e-2))
     print(get_Vloop(35662, 3.84))
-#     compare_IDE_to_MBI(35662)
-#    pass
-#     print(get_RELAX_target_current(33697, 4.8, exp="AUGD", ed=0, smoothing=1.e-3))
-#     print(get_RELAX_target_current(33705, 4.9, exp="AUGD", ed=0, smoothing=1.e-3))
-#     print(get_RELAX_target_current(33697, 4.8, exp="AUGD", ed=0, smoothing=1.e-3))
-#    vloop1, uloop1 = get_IDE_Vloop(33697, 4.8, exp="AUGD", ed=0, smoothing=8.e-1)
-#    vloop2, uloop2 = get_IDE_Vloop(33705, 4.9, exp="AUGD", ed=0, smoothing=5.e-2)
-#    vloop3, uloop3 = get_IDE_Vloop(34663, 3.6, exp="AUGD", ed=0, smoothing=4.e-1)
-#    print("#33697 {0:1.3e} {1:1.3e}".format(vloop1, uloop1))
-#    print("#33705 {0:1.3e} {1:1.3e}".format(vloop2, uloop2))
-#    print("#34663 {0:1.3e} {1:1.3e}".format(vloop3, uloop3))
-    # make_ext_data_for_testing("/ptmp1/work/sdenk/ECRad_standalone/Ext_data/", 33697, [4.80], "AUGD", "IDE", 0, bt_vac_correction=1.005, IDA_exp="SDENK")
-#    make_ext_data_for_testing("/ptmp1/work/sdenk/ECRad7/Ext_data/", 33000, [7.00])
-#    export_ASDEX_Upgrade_grid("/afs/ipp/home/s/sdenk/Documentation/Data/32934_eq_ne/", 32934, [3.298], "AUGD", "IDE", 0, bt_vac_correction=1.005, IDA_exp="SDENK")
-#    export_ASDEX_Upgrade_grid("/tokp/work/sdenk/ECRad/Ext_data/", 32934, [3.298], "AUGD", "IDE", 0, bt_vac_correction=1.005, IDA_exp="SDENK", offset=True)
-#    print(get_ECE_launch_params(31539, Diag("ECE", "AUGD", "RMD", 0)))

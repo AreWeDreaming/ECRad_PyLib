@@ -2,7 +2,7 @@
 """
 Created on Tue Feb 25 18:31:50 2014
 
-@author: sdenk
+@author: Severin Denk
 """
 from threading import Thread
 class WorkerThread(Thread):

@@ -1,13 +1,10 @@
 '''
 Created on Apr 12, 2016
 
-@author: sdenk
+@author: Severin Denk
 '''
 from TB_Communication import read_topfile
-working_dir = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/Ecfm_Model/"
 import sys
-sys.path.append("/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib")
-sys.path.append("../ECRad_Pylib")
 # from kk_abock import kk as KKeqi
 # from kk_extra import kk_extra
 from Diag_Types import ECRH_diag
@@ -451,27 +448,6 @@ def debug_f_inter(path, shot, time, channelno, dstf, mode, rhop_in, HFS, beta, \
         return
 
 
-def check_Bi_max_spline():
-    mu = np.loadtxt("/ptmp1/work/sdenk/nssf/33585/3.00/OERT/ed_20/ecfm_data/fGB/mu.dat", skiprows=1)
-    vpar = np.loadtxt("/ptmp1/work/sdenk/nssf/33585/3.00/OERT/ed_20/ecfm_data/fGB/vpar.dat", skiprows=1)
-    b = np.loadtxt("/afs/ipp/u/sdenk/dumb_ecfm")
-    # a = np.loadtxt("/afs/ipp/u/sdenk/very_dumb_ecfm")
-    lines = np.zeros(len(mu))
-    for i in range(len(vpar)):
-        lines[:] = vpar[i]
-        plt.plot(lines, mu, "--b")
-    lines2 = np.zeros(len(vpar))
-    for i in range(len(mu)):
-        lines2[:] = mu[i]
-        plt.plot(vpar, lines2, "--b")
-    plt.plot(b.T[0], b.T[1], "*")
-    plt.figure()
-    plt.plot(b.T[0], b.T[2], "-")
-    plt.plot(b.T[0], b.T[3], "+")
-    plt.figure()
-    plt.plot(b.T[1], b.T[2], "-")
-    plt.plot(b.T[1], b.T[3], "+")
-    plt.show()
 
 def u_thermal(Te):
     return np.sqrt(1 - \
@@ -724,10 +700,9 @@ def compare_LOS_dev(working_dir, ida_working_dir, chno):
 #     plt.title(r"$\rho_\mathrm{pol}$ IDA vs ECRad")
     plt.show()
 
-def compare_topfiles(working_dir, ida_working_dir, shot=None, time=None, EQ_exp=None, EQ_diag=None, EQ_ed=None, btf_cor=None):
+def compare_topfiles(working_dir, ida_working_dir, ref_path, shot=None, time=None, EQ_exp=None, EQ_diag=None, EQ_ed=None, btf_cor=None):
     ECRad_topdata = read_topfile(working_dir)
     IDA_topdata = read_topfile(ida_working_dir)
-    ref_path = "/tokp/work/sdenk/"
     if(shot is not None):
         raise ValueError("This routine needs to be fixed before usage")
         make_topfile_from_ext_data(ref_path, shot, time, EQ_exp, EQ_diag, EQ_ed, copy_Te_ne=False)
@@ -749,10 +724,9 @@ def compare_topfiles(working_dir, ida_working_dir, shot=None, time=None, EQ_exp=
     plt.contour(ECRad_topdata["R"], ECRad_topdata["z"],ECRad_topdata[quant].T, levels=level_dict[quant], colors="k", linestyles="-")
     plt.show()
     
-def compare_topfiles_cut(working_dir, ida_working_dir, shot=None, time=None, EQ_exp=None, EQ_diag=None, EQ_ed=None, btf_cor=None):
+def compare_topfiles_cut(working_dir, ida_working_dir, ref_path, shot=None, time=None, EQ_exp=None, EQ_diag=None, EQ_ed=None, btf_cor=None):
     ECRad_topdata = read_topfile(working_dir)
     IDA_topdata = read_topfile(ida_working_dir)
-    ref_path = "/tokp/work/sdenk/"
     if(shot is not None):
         raise ValueError("This routine needs to be fixed before usage")
         make_topfile_from_ext_data(ref_path, shot, time, EQ_exp, EQ_diag, EQ_ed, copy_Te_ne=False)
@@ -859,46 +833,6 @@ def double_check_alpha_integration(folder, ch):
     plt.plot(ichdata.T[0], np.exp(-T), "--")
     plt.show()
 
-# def EFDA_CD_launch_angles(alpha, beta):
-#    x0 = np.zeros(3)
-#    R0 = 2.3637990608E+00
-#    phi0 = np.deg2rad(9.8461431060E+01)
-#    z0 = -3.2025000000E-01
-#    # Launcher 3
-#    x0[0] = R0 * np.cos(phi0)
-#    x0[1] = R0 * np.sin(phi0)
-#    x0[2] = z0
-#    ray = np.zeros((3, 100))
-#    ray[0] = x0[0]
-#    ray[1] = x0[1]
-#    ray[2] = x0[2]
-#    k = np.zeros(3)
-#    k[2] = -np.tan(alpha)
-#    k[1] = np.sin(beta + phi0)
-#    k[0] = np.sqrt(1.0 - k[1] ** 2 - k[2] ** 2)
-#    if(np.sum(k) > 0.0):
-#        print("Beam moving away from plasma center - reversing R and z")
-#        k[0] *= -1.0
-#        k[2] *= -1.0
-#    ray[0] += k[0] * np.linspace(0.0, 1.2, 100)
-#    ray[1] += k[1] * np.linspace(0.0, 1.2, 100)
-#    ray[2] += k[2] * np.linspace(0.0, 1.2, 100)
-#    plt.plot(np.sqrt(ray[0] ** 2 + ray[1] ** 2), ray[2])
-#    plt.gca().set_xlabel("R")
-#    plt.gca().set_ylabel("z")
-#    fig2 = plt.figure()
-#    plt.plot(ray[0], ray[1])
-#    plt.gca().set_xlabel("x")
-#    plt.gca().set_ylabel("y")
-#    plt.show()
-# EFDA_CD_launch_angles(np.deg2rad(25.0), np.deg2rad(19.8))
-
-# calculate_coupling("/ptmp1/work/sdenk/ECRad3/", 1)
-# validate_B_along_los("/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_working/", "/ptmp1/work/sdenk/ECRad4/ecfm_data/chdata001.dat", "/ptmp1/work/sdenk/ECRad4/ecfm_data/chdata001.dat")
-# copmare_Rz("/ptmp1/work/sdenk/ECRad4/ecfm_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_working/")
-# debug_f_inter(working_dir)
-# check_ray_bundle("/ptmp1/work/sdenk/ECRad2/", 32028, 2.14, 10, tor_view=False, mode="X")
-
 def test_get_diag_data(shot, times, diag):
     if(diag == "CTA"):
         N = 50
@@ -934,9 +868,7 @@ def test_get_diag_data(shot, times, diag):
     plt.plot(data[0][0], data[1][0])
     plt.show()
 
-def debug_EQ():
-    path = "/afs/ipp-garching.mpg.de/home/s/sdenk/Documentation/TCV_stuff/ECRad/49500_profiles_from_iluke.mat"
-    working_dir = "/tokp/work/sdenk/ECRad2/ecfm_data/"
+def debug_EQ(path, working_dir):
     time = 1.0
     at_least_1d_keys = ["t", "R", "z", "Psi_sep", "Psi_ax"]
     at_least_2d_keys = ["rhop", "Te", "ne"]
@@ -1037,43 +969,4 @@ def debug_fitpack(x_file=None, y_file=None, xy_file=None, log=False):
     plt.show()
 
 if(__name__ == "__main__"):
-#     compare_LOS_Rz("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/", 20)
-#     compare_EQData(35662, 2.0, "AUGD", "IDE", 0)
-#     compare_ECRad_Trad("/tokp/work/sdenk/ECRad/ECRad_35662_ECECTCCTA_ed2.mat","/tokp/work/sdenk/ECRad/ECRad_35662_ECECTCCTA_ed3.mat", 6.95)
-#     debug_EQ()
-#     compare_ds("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/", 15)
-#     compare_ds_rel("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/", 15)
-#     debug_calib("/tokp/work/sdenk/ECRad/ECRad_35662_CTCCTA_w_calib_ed8.mat")
-#     inspect_EQData(35186, 1.258, "AUGD", "EQH", 0)
-#     get_max_length_svec("/tokp/work/sdenk/ECRad_2/ECRad_data/")
-#     compare_rhop("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/", 15)
-#     compare_res_pos("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/")
-#     compare_topfiles("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/")\
-    plot_quant_on_LOS("/mnt/c/Users/Severin/ECRad/ECRad_33585_EXT_ed10.mat", \
-                      0, 1, 1, "rhopX", "BPDX")
-    plot_quant_on_LOS("/mnt/c/Users/Severin/ECRad/ECRad_33585_EXT_ed10.mat", \
-                      0, 1, 1, "rhopX", "BPD_secondX")
-    plt.show()
-#     debug_fitpack(xy_file='/mnt/c/Users/Severin/ECRad/ECRad_data/ne_file.dat',log=True)
-#     compare_quant_on_LOS_rel("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/", 20)
-#     compare_topfiles("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/", 35662, 1.5, "AUGD", "IDE", 1)
-#     compare_topfiles("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/", 35662, 1.5, "AUGD", "IDE", 1)
-#     compare_topfiles("/tokp/work/sdenk/ECRad_2/ECRad_data/", "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/IDA_55/ecfm_data/")
-#     debug_append_ECRadResults("/tokp/work/sdenk/ECRad_2/ECRad_35662_ECE_ed1.mat")
-#     compare_ECRad_results(["/tokp/work/sdenk/ECRad/ECRad_35662_ECECTCCTA_ed2.mat","/tokp/work/sdenk/ECRad/ECRad_35662_ECECTCCTA_ed7.mat"], 6.95,  100)
-#     debug_ray("/tokp/work/sdenk/ECRad/ECRad_35662_EXT_ed12.mat", 0, 0, 6)
-#     s1, R1, z1, val1, s2, R2, z2, val2 = compare_ECRad_results_diff("/tokp/work/sdenk/ECRad/ECRad_37473_ECE_ed8.mat", \
-#                                ["/tokp/work/sdenk/ECRad/ECRad_37473_ECE_ed9.mat"],\
-#                                2.3,  10, label="Ray " + "channel no. " + "{0:d}".format(50))
-#     compare_eq_Rz(s1, R1, z1, val1, s2, R2, z2, val2, 37473, 2.3, "EQH", "IDE")
-#     plt.legend()
-#     plt.show()
-#     inspect_svec("/tokp/work/sdenk/ECRad_2/ECRad_data/", 3)
-    # validate_theta_along_los("/ptmp1/work/sdenk/nssf/30406/1.38/", 1, 2)
-    # debug_f_inter("/afs/ipp-garching.mpg.de/home/s/sdenk/F90/Ecfm_Model_new")
-    # debug_f_inter("/ptmp1/work/sdenk/nssf/33585/3.00/OERT/ed_17/", 33585, 3.0, 7, "Ge", 1, 0.85, False, [])
-#    check_Bi_max_spline()
-#    R_wall_behavior("/ptmp1/work/sdenk/nssf/32934/3.30/OERT/ed_8/", 9.200000000000e-01)
-#    double_check_alpha_integration("/ptmp1/work/sdenk/nssf/32934/3.30/OERT/ed_8/", 40)
-# test_get_diag_data(33697, [3.2, 4.8], "ECN")
-# validate_B_along_los("", "/ptmp1/work/sdenk/nssf/33117/5.51/ecfm_data/chdata040.dat", "/ptmp1/work/sdenk/nssf/33117/5.51/OERT/ed_1/ecfm_data/chdata040.dat")
+    pass

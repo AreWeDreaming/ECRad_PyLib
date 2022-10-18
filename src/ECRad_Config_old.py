@@ -224,6 +224,3 @@ def provide_default_mdict():
     mdict["max_points_svec"] = 20000
     mdict["use_ext_rays"] = False
     return mdict
-
-# InvokeECRad = "/afs/ipp-garching.mpg.de/home/s/sdenk/F90/Ecfm_Model_new/ecfm_model"
-# test_config = ECRadConfig()

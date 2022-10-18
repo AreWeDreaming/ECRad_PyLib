@@ -1,6 +1,6 @@
 '''
 Created on Jun 19, 2019
-@author: sdenk
+@author: Severin Denk
 '''
 
 # Distribution (GENE, LUKE, RELAX) class, beam class and distribution interpolator class

@@ -1,7 +1,7 @@
 '''
 Created on Oct 11, 2016
 
-@author: sdenk
+@author: Severin Denk
 '''
 import os
 import numpy as np

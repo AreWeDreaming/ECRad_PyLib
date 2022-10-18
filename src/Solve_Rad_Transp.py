@@ -1,7 +1,7 @@
 '''
 Created on Nov 9, 2016
 
-@author: sdenk
+@author: Severin Denk
 '''
 import numpy as np
 import os
@@ -215,26 +215,5 @@ def compare_Ibb(folder_list, title_list, shot, time, channel_list, dist):
     plt.gca().set_ylabel(r"$T_\mathrm{rad}$")
     plt.show()
 
-#    fig = plt.figure(1)
-#    ax = fig.add_subplot(111)
-#    ax2 = ax.twinx()
-# #    ax.plot(svec.T[0][i_min:i_max], svec.T[4][i_min:i_max], "+")
-# #    ax.plot(s_aux, np.exp(ne_spl(s_aux)), "-")
-# #    ax2.plot(svec.T[0][i_min:i_max], svec.T[5][i_min:i_max], "*")
-# #    ax2.plot(s_aux, np.exp(Te_spl(s_aux)), "--")
-#    ax.plot(s_aux, np.array(rad_transp_obj.j) * cnst.c ** 2 / ((omega / 2.0 * np.pi) ** 2 * cnst.e), "-")
-#    ax2.plot(s_aux, np.array(rad_transp_obj.abs), "--")
-#    plt.show()
-
-
-# solve_rad_transp("/ptmp1/work/sdenk/nssf/33514/2.32/OERT/ed_1/ecfm_data/", 12)
-# solve_rad_transp("/ptmp1/work/sdenk/nssf/33697/1.68/OERT/ed_17/ecfm_data/", 12)
-# Trad = 967.07265419
-# tau = 5.567843432956883
-# From model:
-# Trad = 967.05347 -> 20 meV deviation -> 0.002 % error
-# tau = 5.5678735 -> 1.e-5 -> 0.0002 % error
-
-compare_Ibb(["/ptmp1/work/sdenk/nssf/33585/3.00/OERT/ed_4/", \
-             "/ptmp1/work/sdenk/nssf/33585/3.00/OERT/ed_13/"], \
-             ["GENE", "rel. BiMaxwellian"], 33585, 3.0, [4, 6, 7], "gene")
+if __name__ == "__main__":
+    pass

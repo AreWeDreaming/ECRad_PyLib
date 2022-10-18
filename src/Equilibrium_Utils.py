@@ -1,6 +1,6 @@
 '''
 Created on Jan 29, 2017
-@author: sdenk
+@author: Severin Denk
 '''
 import os
 import numpy as np

@@ -807,6 +807,7 @@ class PlottingCore:
             plot_Te = args[6]
         else:
             plot_Te = True
+        path_linear = args[7]
         if(not plot_Te):
             mode = r"QL_calc_small"
         else:
@@ -854,7 +855,7 @@ class PlottingCore:
             j_torbeams = []
             rho_torbeams = []
             PW_tot_tb = 0.0
-            path = "/pfs/work/g2sdenk/TB/{0:5d}_{1:1.3f}_rays/".format(shot, time)
+            path = os.path.join(path_linear + "{0:5d}_{1:1.3f}_rays/".format(shot, time))
             # print(path)
             if(os.path.isdir(path)):
                 i = 1
@@ -1005,7 +1006,7 @@ class PlottingCore:
         pw_torbeams = []
         j_torbeams = []
         rho_torbeams = []
-        path = "/marconi_work/eufus_gw/work/g2sdenk/TB/{0:5d}_{1:1.3f}_rays/".format(shot, time)
+        path = ""
         if(os.path.isdir(path)):
             i = 1
             filename = os.path.join(path, "pw_j_beam_{0:1n}.dat".format(i))
@@ -1634,7 +1635,7 @@ class PlottingCore:
         x_torbeams = []
         y_torbeams = []
         if(tb_path is None):
-            path = "/pfs/work/g2sdenk/TB/{0:5d}_{1:1.3f}_rays/".format(shot, time)
+            raise ValueError("tb_path is no longer optional")
         else:
             path = os.path.join(tb_path, "{0:5d}_{1:1.3f}_rays".format(shot, time)) + os.sep
         if(os.path.isdir(path)):

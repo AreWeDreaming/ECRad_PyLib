@@ -1,7 +1,7 @@
 '''
 Created on Mar 20, 2019
 
-@author: sdenk
+@author: Severin Denk
 '''
 from collections import OrderedDict as od
 import os
@@ -49,7 +49,7 @@ class ECRadScenario:
         self.profile_dimension = 1
         self.diags_set = False
         self.plasma_set = False
-        self.IDA_exp = "SDENK"
+        self.IDA_exp = "AUGD"
         self.IDA_ed = 0
         self.EQ_exp = "AUGD"
         self.EQ_diag = "EQH"
@@ -478,7 +478,7 @@ class Use3DScenario:
         self.fourier_coeff_trunc = 1.e-12
         self.h_mesh = 1.5e-2 # meters
         self.delta_phi_mesh = 2.0 # Degrees
-        self.vessel_filename = "/tokp/work/sdenk/ECRad/W7X_wall.dat"
+        self.vessel_filename = ""
     
     def load_from_mat(self, mdict):
         self.reset()
@@ -506,4 +506,3 @@ class Use3DScenario:
         
 if(__name__ == "__main__"):
     newScen = ECRadScenario(noLoad=True)
-    newScen.from_mat( path_in="/tokp/work/sdenk/ECRad/ECRad_35662_ECECTCCTA_ed2.mat")

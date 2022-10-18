@@ -1,7 +1,7 @@
 '''
 Created on 09.05.2019
 
-@author: sdenk
+@author: Severin Denk
 '''
 from Ndarray_Helper import ndarray_check_for_None
 from ECRad_Results import ECRadResults
@@ -39,7 +39,6 @@ def repair_ECRad_results(folder_in, folder_out=None):
     # Allows to make bulk modification of result files using glob
     # If folder_out is True it overwrites!
     filelist = glob.glob(os.path.join(folder_in, "*.mat"))
-#     filelist = ['/tokp/work/sdenk/DRELAX_Results/ECRad_35662_ECECTACTC_run0208.mat']
     cur_result = ECRadResults()
     for filename in filelist:
         cur_result.reset()
