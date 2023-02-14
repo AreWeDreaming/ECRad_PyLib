@@ -4,7 +4,7 @@ package:
 
 source:
   git_rev: 1.0.4
-  git_url: https://github.com/AreWeDreaming/ECRad_core
+  git_url: https://github.com/AreWeDreaming/ECRad_PyLib
 requirements:
     build:
       - python =>3.7
