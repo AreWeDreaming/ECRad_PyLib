@@ -3,8 +3,8 @@ Created on Apr 26, 2020
 
 @author: Severin Denk
 '''
-from plotting_configuration import plt
-from shotfile_handling_AUG import get_HEP_ne
+from ecrad_pylib.Plotting_Configuration import plt
+from ecrad_pylib.Shotfile_Handling_AUG import get_HEP_ne
 from scipy import fft, ifft
 import numpy as np
 

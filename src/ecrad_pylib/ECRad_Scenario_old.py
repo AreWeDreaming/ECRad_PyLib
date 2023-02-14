@@ -6,18 +6,18 @@ Created on Mar 20, 2019
 from collections import OrderedDict as od
 import os
 from scipy.io import loadmat, savemat
-from Global_Settings import globalsettings
+from ecrad_pylib.Global_Settings import globalsettings
 import numpy as np
-from Equilibrium_Utils import EQDataSlice
-from Diag_Types import Diag, ECRH_diag, ECI_diag, EXT_diag
-from Distribution_IO import load_f_from_mat
-from Distribution_Classes import Gene, GeneBiMax
+from ecrad_pylib.Equilibrium_Utils import EQDataSlice
+from ecrad_pylib.Diag_Types import Diag, ECRH_diag, ECI_diag, EXT_diag
+from ecrad_pylib.Distribution_IO import load_f_from_mat
+from ecrad_pylib.Distribution_Classes import Gene, GeneBiMax
 if(globalsettings.AUG):
-    from ECRad_DIAG_AUG import DefaultDiagDict
+    from ecrad_pylib.ECRad_DIAG_AUG import DefaultDiagDict
 elif(globalsettings.TCV):
-    from ECRad_DIAG_TCV import DefaultDiagDict
+    from ecrad_pylib.ECRad_DIAG_TCV import DefaultDiagDict
 else:
-    from Diag_Types import DefaultDiagDict
+    from ecrad_pylib.Diag_Types import DefaultDiagDict
 # THis class holds all the input data provided to ECRad with the exception of the ECRad configuration
 
 class ECRadScenario:

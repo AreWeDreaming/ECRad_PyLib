@@ -1,18 +1,17 @@
 
 from multiprocessing import Value
 from scipy.interpolate.fitpack2 import InterpolatedUnivariateSpline, RectBivariateSpline
-from Equilibrium_Utils_AUG import EQData
-from Shotfile_Handling_AUG import load_IDA_data
-from ece_optics_2019 import get_ECE_launch_v2
-from TB_Communication import launch, make_TORBEAM_no_data_load
-from ECRad_Scenario import ECRadScenario
-from ECRad_Results import ECRadResults
+from ecrad_pylib.Equilibrium_Utils_AUG import EQData
+from ecrad_pylib.Shotfile_Handling_AUG import load_IDA_data
+from ecrad_pylib.ece_optics_2019 import get_ECE_launch_v2, plot1DECE
+from ecrad_pylib.TB_Communication import launch, make_TORBEAM_no_data_load
+from ecrad_pylib.ECRad_Scenario import ECRadScenario
+from ecrad_pylib.ECRad_Results import ECRadResults
 import numpy as np
 import os
 from scipy import constants as cnst
 from plasma_math_tools.data_fitting import make_fit, gauss_fit_func
-from Plotting_Configuration import plt
-from ece_optics_2019 import plot1DECE
+from ecrad_pylib.Plotting_Configuration import plt
 
 def CECE_workflow(working_dir, Results_filename, time, diag_name="CEC"):
     Results = ECRadResults()

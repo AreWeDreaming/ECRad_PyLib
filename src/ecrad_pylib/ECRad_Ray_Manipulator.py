@@ -5,8 +5,8 @@ Created on Oct 21, 2020
 '''
 
 import numpy as np
-from ECRad_Results import ECRadResults
-from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
+from ecrad_pylib.ECRad_Results import ECRadResults
+from scipy.interpolate import RectBivariateSpline
 
 class ECRadRayManipulator(object):
     '''

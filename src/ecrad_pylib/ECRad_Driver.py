@@ -3,11 +3,11 @@ Created on Jan 27, 2021
 
 @author: denk
 '''
-from Global_Settings import globalsettings
-from ECRad_F2PY_Interface import ECRadF2PYInterface
-from ECRad_Results import ECRadResults
-from ECRad_Config import ECRadConfig
-from ECRad_Scenario import ECRadScenario
+from ecrad_pylib.Global_Settings import globalsettings
+from ecrad_pylib.ECRad_F2PY_Interface import ECRadF2PYInterface
+from ecrad_pylib.ECRad_Results import ECRadResults
+from ecrad_pylib.ECRad_Config import ECRadConfig
+from ecrad_pylib.ECRad_Scenario import ECRadScenario
 import sys
 import os
 import re

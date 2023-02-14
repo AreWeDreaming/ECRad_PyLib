@@ -1,8 +1,8 @@
 from matplotlib.pyplot import figure
 import numpy as np
-from ECRad_Results import ECRadResults
-from ece_optics_2019 import plot1DECE
-from Plotting_Configuration import plt
+from ecrad_pylib.ECRad_Results import ECRadResults
+from ecrad_pylib.ece_optics_2019 import plot1DECE
+from ecrad_pylib.Plotting_Configuration import plt
 
 def verify_CECE_LOS(ECRad_results_file):
     res = ECRadResults()

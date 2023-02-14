@@ -4,18 +4,18 @@ Created on Thu May 01 20:53:35 2014
 
 @author: Severin Denk
 """
-from Plotting_Configuration import plt, MaxNLocator, FixedLocator, \
+from ecrad_pylib.Plotting_Configuration import plt, MaxNLocator, FixedLocator, \
                                    MaxNLocator as NLocator, \
                                    pltCircle, plot_mode, \
                                    default_x1, default_x2, \
                                    default_y1, default_y2
 import numpy as np
 import os
-from Global_Settings import globalsettings
+from ecrad_pylib.Global_Settings import globalsettings
 from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
 from WX_Events import ThreadFinishedEvt, Unbound_EVT_DONE_PLOTTING
 import wx
-from Distribution_Functions import Juettner2D
+from ecrad_pylib.Distribution_Functions import Juettner2D
 non_therm_dist_Relax = True
 
 

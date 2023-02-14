@@ -8,10 +8,10 @@ import numpy as np
 import sys
 sys.path.append("../ECRad_Pylib")
 from subprocess import call
-from Global_Settings import globalsettings
+from ecrad_pylib.Global_Settings import globalsettings
 from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
 from scipy.optimize import minimize
-from Plotting_Configuration import plt
+from ecrad_pylib.Plotting_Configuration import plt
 from shutil import copyfile
 try:
     import f90nml

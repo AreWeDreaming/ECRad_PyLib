@@ -6,20 +6,20 @@ Created on Mar 20, 2019
 from collections import OrderedDict as od
 import os
 from scipy.io import loadmat, savemat
-from Global_Settings import globalsettings, GlobalSettingsAUG
+from ecrad_pylib.Global_Settings import globalsettings, GlobalSettingsAUG
 import numpy as np
 np.set_printoptions(threshold=np.inf)
-from Equilibrium_Utils import EQDataExt, EQDataSlice
+from ecrad_pylib.Equilibrium_Utils import EQDataExt, EQDataSlice
 from scipy.interpolate import InterpolatedUnivariateSpline
 from plasma_math_tools.geometry_utils import get_theta_pol_phi_tor_from_two_points
-from Diag_Types import CECE_diag, Diag, ECRH_diag, ECI_diag, EXT_diag, CECE_diag
-from Distribution_IO import load_f_from_mat
-from Distribution_Classes import Distribution, Gene, GeneBiMax
+from ecrad_pylib.Diag_Types import CECE_diag, Diag, ECRH_diag, ECI_diag, EXT_diag, CECE_diag
+from ecrad_pylib.Distribution_IO import load_f_from_mat
+from ecrad_pylib.Distribution_Classes import Distribution, Gene, GeneBiMax
 from netCDF4 import Dataset
 if(globalsettings.AUG):
-    from ECRad_DIAG_AUG import DefaultDiagDict
+    from ecrad_pylib.ECRad_DIAG_AUG import DefaultDiagDict
 else:
-    from Diag_Types import DefaultDiagDict
+    from ecrad_pylib.Diag_Types import DefaultDiagDict
 # THis class holds all the input data provided to ECRad with the exception of the ECRad configuration
 
 

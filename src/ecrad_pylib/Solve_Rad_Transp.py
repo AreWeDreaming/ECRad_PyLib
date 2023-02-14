@@ -6,14 +6,14 @@ Created on Nov 9, 2016
 import numpy as np
 import os
 from scipy.interpolate import InterpolatedUnivariateSpline
-from Em_Albajar import EmAbsAlb, SVec, DistributionInterpolator, \
+from ecrad_pylib.Em_Albajar import EmAbsAlb, SVec, DistributionInterpolator, \
                                        GeneDistributionInterpolator
 from scipy.integrate import ode, quad
 from scipy import constants as cnst
-from Plotting_Configuration import plt
-from Distribution_Classes import FInterpolator
-from Distribution_Helper_Functions import get_dist_moments_non_rel
-from Distribution_IO import load_f_from_ASCII
+from ecrad_pylib.Plotting_Configuration import plt
+from ecrad_pylib.Distribution_Classes import FInterpolator
+from ecrad_pylib.Distribution_Helper_Functions import get_dist_moments_non_rel
+from ecrad_pylib.Distribution_IO import load_f_from_ASCII
 
 class rad_transp_data:
     def __init__(self, rhop_spl, ne_spl, Te_spl, theta_spl, omega_c_spl, omega, dist="thermal", store_results=False, f_interpolator=None, B0=None, B_min_spline=None):

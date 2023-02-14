@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
-from scipy.io import loadmat, savemat
+from scipy.io import loadmat
 from netCDF4 import Dataset
 
 class ECRadConfig(dict):

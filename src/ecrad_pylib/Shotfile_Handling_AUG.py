@@ -12,12 +12,12 @@ sys.path.append('/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib')
 import dd
 from scipy.signal import medfilt
 from scipy.interpolate import RectBivariateSpline, InterpolatedUnivariateSpline, UnivariateSpline, interp1d
-from Equilibrium_Utils_AUG import EQData
+from ecrad_pylib.Equilibrium_Utils_AUG import EQData
 import scipy.constants as cnst
-from Diag_Types import Diag
-from Data_Processing import remove_mode
-from Get_ECRH_Config import get_ECRH_viewing_angles
-from Plotting_Configuration import plt
+from ecrad_pylib.Diag_Types import Diag
+from ecrad_pylib.Data_Processing import remove_mode
+from ecrad_pylib.Get_ECRH_Config import get_ECRH_viewing_angles
+from ecrad_pylib.Plotting_Configuration import plt
 AUG_profile_diags = ["IDA", "RMD", "CEC", "VTA", "CEZ", "COZ", "CUZ"]
 
 def get_HEP_ne(shot, exp="AUGD", ed=0):

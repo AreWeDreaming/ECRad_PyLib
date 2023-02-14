@@ -2,14 +2,13 @@
 Created on Nov 22, 2019
 @author: Severin Denk
 '''
-from Global_Settings import globalsettings
-from ECRad_Scenario import ECRadScenario
-from ECRad_Config import ECRadConfig
+from ecrad_pylib.Global_Settings import globalsettings
+from ecrad_pylib.ECRad_Scenario import ECRadScenario
+from ecrad_pylib.ECRad_Config import ECRadConfig
 import os
 import sys
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline
-sys.path.append(globalsettings.ECRadLibDir)
 from scipy import constants as cnst
 from time import sleep
 

@@ -6,12 +6,12 @@ Created on Dec 17, 2015
 import numpy as np
 np.set_printoptions(threshold=10)
 import os
-from Global_Settings import globalsettings
+from ecrad_pylib.Global_Settings import globalsettings
 from scipy.io import savemat, loadmat
 from scipy import constants as cnst
-from ECRad_Config import ECRadConfig
-from ECRad_Scenario import ECRadScenario
-from Ndarray_Helper import ndarray_math_operation, ndarray_check_for_None
+from ecrad_pylib.ECRad_Config import ECRadConfig
+from ecrad_pylib.ECRad_Scenario import ECRadScenario
+from ecrad_pylib.Ndarray_Helper import ndarray_math_operation, ndarray_check_for_None
 
 
 class ECRadResults:

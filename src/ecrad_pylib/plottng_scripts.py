@@ -1,8 +1,8 @@
 # Collections of plots that are too specific to be part of the GUI
 import numpy as np
-from ECRad_Results import ECRadResults
-from Plotting_Configuration import plt
-from Plotting_Core import PlottingCore
+from ecrad_pylib.ECRad_Results import ECRadResults
+from ecrad_pylib.Plotting_Configuration import plt
+from ecrad_pylib.Plotting_Core import PlottingCore
 from scipy.interpolate import InterpolatedUnivariateSpline
 
 

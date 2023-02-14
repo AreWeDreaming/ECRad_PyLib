@@ -13,7 +13,7 @@ from WX_Events import ThreadFinishedEvt, Unbound_EVT_FIT_FINISHED
 import wx
 from time import sleep
 from subprocess import Popen, call
-from Distribution_Functions import Gauss_norm
+from ecrad_pylib.Distribution_Functions import Gauss_norm
 from scipy.interpolate import InterpolatedUnivariateSpline
 # Basic routines to fit model distribution function data to measurements
 # Most likely outdated, has not been maintained since 2015

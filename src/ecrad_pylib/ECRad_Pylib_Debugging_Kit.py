@@ -3,8 +3,8 @@ Created on 09.05.2019
 
 @author: Severin Denk
 '''
-from Ndarray_Helper import ndarray_check_for_None
-from ECRad_Results import ECRadResults
+from ecrad_pylib.Ndarray_Helper import ndarray_check_for_None
+from ecrad_pylib.ECRad_Results import ECRadResults
 import glob
 import os
 # from kk_local import KK

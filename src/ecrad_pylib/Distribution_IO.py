@@ -10,12 +10,12 @@ from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
 from scipy.integrate import simps
 import os
 from scipy.io import loadmat
-from Distribution_Classes import Distribution, Beam, Gene
-from Distribution_Helper_Functions import fill_zeros_with_thermal,check_distribution, \
+from ecrad_pylib.Distribution_Classes import Distribution, Beam, Gene
+from ecrad_pylib.Distribution_Helper_Functions import fill_zeros_with_thermal,check_distribution, \
                                           get_dist_moments_non_rel, get_dist_moments
 from scipy import constants as cnst
 import h5py
-from Distribution_Functions import BiMaxwell2DV,Maxwell2D_beta,BiMaxwellJuettner2DV,Juettner2D,SynchrotonDistribution
+from ecrad_pylib.Distribution_Functions import BiMaxwell2DV,Maxwell2D_beta,BiMaxwellJuettner2DV,Juettner2D,SynchrotonDistribution
 
 
 def export_fortran_friendly(args):

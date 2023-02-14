@@ -18,7 +18,7 @@ except:
     print("Error! Failed to find ECRH library. CTA/CTC and IEC will not work")
     libECRH = None
 import datetime
-from ECRH_Launcher import ECRHLauncher
+from ecrad_pylib.ECRH_Launcher import ECRHLauncher
 # NOTE: Values not verified for ECRH III
 #       Swap of launcher 3 and 4 implemented in launcher class
 gy_pos_x = np.zeros(8, np.double)

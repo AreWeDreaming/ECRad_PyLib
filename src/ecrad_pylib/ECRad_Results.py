@@ -4,18 +4,16 @@ Created on Dec 7, 2020
 Restructuring of the old ECRadresults class. Uses the OMFit style approach where the parent class is a dictionary
 '''
 
-from Distribution_Classes import Distribution
+from ecrad_pylib.Distribution_Classes import Distribution
 import numpy as np
 np.set_printoptions(threshold=10)
 import os
-from Global_Settings import globalsettings
-from scipy.io import savemat, loadmat
+from ecrad_pylib.Global_Settings import globalsettings
+from scipy.io import loadmat
 from scipy import constants as cnst
-from ECRad_Config import ECRadConfig
-from ECRad_Scenario import ECRadScenario
-from Ndarray_Helper import ndarray_math_operation, ndarray_check_for_None
+from ecrad_pylib.ECRad_Config import ECRadConfig
+from ecrad_pylib.ECRad_Scenario import ECRadScenario
 from netCDF4 import Dataset
-import sys
 
 
 class ECRadResults(dict):

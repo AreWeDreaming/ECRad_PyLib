@@ -9,11 +9,11 @@ from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
 import scipy.constants as cnst
 import h5py
 import os
-from Distribution_Helper_Functions import get_dist_moments_non_rel, get_0th_and_2nd_moment
-from Distribution_Functions import Juettner1D
+from ecrad_pylib.Distribution_Helper_Functions import get_dist_moments_non_rel, get_0th_and_2nd_moment
+from ecrad_pylib.Distribution_Functions import Juettner1D
 from scipy.io import savemat, loadmat
 from netCDF4 import Dataset
-from Distribution_Functions import Juettner2D_cycl
+from ecrad_pylib.Distribution_Functions import Juettner2D_cycl
 class Beam:
     # For ECRH beams. Rays structure contains information on the individual rays forming the beam.
     def __init__(self, rhot, rhop, PW, j, PW_tot, j_tot, PW_beam=None, j_beam=None, rays=None):

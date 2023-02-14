@@ -3,18 +3,18 @@ Created on 11.06.2019
 
 @author: Severin Denk
 '''
-from Global_Settings import globalsettings
-from BDOP_3D import make_3DBDOP_for_ray, make_f_inter, make_PowerDepo_3D_for_ray
-from Equilibrium_Utils import EQDataExt
+from ecrad_pylib.Global_Settings import globalsettings
+from ecrad_pylib.BDOP_3D import make_3DBDOP_for_ray, make_f_inter, make_PowerDepo_3D_for_ray
+from ecrad_pylib.Equilibrium_Utils import EQDataExt
 if(globalsettings.AUG):
-    from Equilibrium_Utils_AUG import EQData
-from ECRad_Results import ECRadResults
-from Distribution_IO import load_f_from_mat, read_dist_mat_to_beam, read_waves_mat_to_beam
-from Distribution_Functions import Juettner2D, rel_thermal_beta
+    from ecrad_pylib.Equilibrium_Utils_AUG import EQData
+from ecrad_pylib.ECRad_Results import ECRadResults
+from ecrad_pylib.Distribution_IO import load_f_from_mat, read_dist_mat_to_beam, read_waves_mat_to_beam
+from ecrad_pylib.Distribution_Functions import Juettner2D, rel_thermal_beta
 from matplotlib import cm                                        
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline
-from Plotting_Configuration import plt
+from ecrad_pylib.Plotting_Configuration import plt
 from scipy.io import loadmat
 import scipy.constants as cnst
 

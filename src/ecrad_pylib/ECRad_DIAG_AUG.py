@@ -5,7 +5,7 @@ Created on Dec 16, 2015
 '''
 from collections import OrderedDict as od
 import numpy as np
-from Diag_Types import Diag, CECE_diag, ECI_diag, ECRH_diag, EXT_diag
+from ecrad_pylib.Diag_Types import Diag, CECE_diag, ECI_diag, ECRH_diag, EXT_diag
 import getpass
 
 DefaultDiagDict = od()

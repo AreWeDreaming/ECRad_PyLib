@@ -5,7 +5,7 @@ Created on Dec 16, 2015
 '''
 from collections import OrderedDict as od
 import numpy as np
-from Diag_Types import EXT_diag, TCV_diag
+from ecrad_pylib.Diag_Types import EXT_diag, TCV_diag
 
 DefaultDiagDict = od()
 for diag_name in ["UCE", "LCE", "VCE", "EXT"]:

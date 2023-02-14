@@ -3,32 +3,32 @@ Created on Apr 12, 2016
 
 @author: Severin Denk
 '''
-from TB_Communication import read_topfile
+from ecrad_pylib.TB_Communication import read_topfile
 import sys
 # from kk_abock import kk as KKeqi
 # from kk_extra import kk_extra
-from Diag_Types import ECRH_diag
-from Global_Settings import globalsettings
+from ecrad_pylib.Diag_Types import ECRH_diag
+from ecrad_pylib.Global_Settings import globalsettings
 if(globalsettings.AUG):
     import dd
     from Equilibrium_Utils_AUG import EQData
     from Shotfile_Handling_AUG import get_data_calib
-from Plotting_Configuration import plt
+from ecrad_pylib.Plotting_Configuration import plt
 import numpy as np
 import os
 from scipy import constants as cnst
-from Plotting_Core import PlottingCore
+from ecrad_pylib.Plotting_Core import PlottingCore
 from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
 from scipy.integrate import simps
-from Em_Albajar import EmAbsAlb, SVec, DistributionInterpolator, GeneDistributionInterpolator
-from ECRad_Interface import read_svec_dict_from_file
-from TB_Communication import make_topfile_from_ext_data
-from Equilibrium_Utils import EQDataExt
+from ecrad_pylib.Em_Albajar import EmAbsAlb, SVec, DistributionInterpolator, GeneDistributionInterpolator
+from ecrad_pylib.ECRad_Interface import read_svec_dict_from_file
+from ecrad_pylib.TB_Communication import make_topfile_from_ext_data
+from ecrad_pylib.Equilibrium_Utils import EQDataExt
 from scipy.io import loadmat
-from ECRad_Results import ECRadResults
-from Distribution_Functions import Juettner2D, Gauss_norm, Gauss_not_norm, \
+from ecrad_pylib.ECRad_Results import ECRadResults
+from ecrad_pylib.Distribution_Functions import Juettner2D, Gauss_norm, Gauss_not_norm, \
                                    Juettner2D_bidrift, multi_slope, RunAway2D
-from Distribution_IO import load_f_from_ASCII, read_LUKE_data
+from ecrad_pylib.Distribution_IO import load_f_from_ASCII, read_LUKE_data
 
 
 def debug_append_ECRadResults(filename):

@@ -3,7 +3,7 @@ Created on Jan 27, 2021
 
 @author: denk
 '''
-from Global_Settings import globalsettings
+from ecrad_pylib.Global_Settings import globalsettings
 import os 
 import numpy as np
 

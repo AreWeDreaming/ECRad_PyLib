@@ -3,7 +3,7 @@ from scipy.interpolate import griddata, RectBivariateSpline
     
 class IrregularGridAssist():
 
-    def __init__(self, R_points, z_points, quantities, grid_shape = (400,600), log_mask=[]]):
+    def __init__(self, R_points, z_points, quantities, grid_shape = (400,600), log_mask=[]):
         self.R =  R_points # List of all R from the irregular grid
         self.z =  z_points # List of all R from the irregular grid
         self.quantities = quantities # dictionary of grid quantities

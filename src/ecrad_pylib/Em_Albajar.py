@@ -16,7 +16,7 @@ except ImportError:
     print("Failed to import loggamma, log_gm_fun and woft some absorption routines might not work")
     print("If you are an ECRad_GUI user this error should not cause any issues!")
 if(not stand_alone):
-    from Plotting_Configuration import plt
+    from ecrad_pylib.Plotting_Configuration import plt
 mass_e = cnst.m_e
 e0 = cnst.e
 c0 = cnst.c

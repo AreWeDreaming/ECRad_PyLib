@@ -2,8 +2,8 @@
 Created on Dec 9, 2015
 @author: Severin Denk
 '''
-from Distribution_Classes import Distribution
-from Global_Settings import globalsettings
+from ecrad_pylib.Distribution_Classes import Distribution
+from ecrad_pylib.Global_Settings import globalsettings
 import os
 import numpy as np
 import sys
@@ -12,14 +12,14 @@ if(globalsettings.AUG):
     vessel_file = os.path.join(globalsettings.ECRadPylibRoot,'ASDEX_Upgrade_vessel.txt')
 from shutil import copyfile, rmtree
 from scipy.io import loadmat
-from Equilibrium_Utils import EQDataExt
-from Em_Albajar import SVec, EmAbsAlb
-from Distribution_IO import export_gene_fortran_friendly, \
+from ecrad_pylib.Equilibrium_Utils import EQDataExt
+from ecrad_pylib.Em_Albajar import SVec, EmAbsAlb
+from ecrad_pylib.Distribution_IO import export_gene_fortran_friendly, \
                             export_gene_bimax_fortran_friendly, export_fortran_friendly
 from scipy.interpolate import InterpolatedUnivariateSpline
-from TB_Communication import make_topfile_no_data_load, make_Te_ne_files
+from ecrad_pylib.TB_Communication import make_topfile_no_data_load, make_Te_ne_files
 from netCDF4 import Dataset
-from ece_optics_2019 import get_ECE_launch_v2
+from ecrad_pylib.ece_optics_2019 import get_ECE_launch_v2
 
 def GetECRadExec(Config, Scenario, time):
     # Determine OMP stacksize

@@ -3,24 +3,24 @@ Created on Mar 23, 2016
 
 @author: Severin Denk
 '''
-from Global_Settings import globalsettings
+from ecrad_pylib.Global_Settings import globalsettings
 from matplotlib import cm
-from Plotting_Configuration import plt, MaxNLocator
+from ecrad_pylib.Plotting_Configuration import plt, MaxNLocator
 import numpy as np
-from Distribution_Classes import FInterpolator
-from Distribution_IO import read_waves_mat_to_beam, read_dist_mat_to_beam, \
-                            load_f_from_mat
-from Distribution_Functions import Juettner2D
+from ecrad_pylib.Distribution_Classes import FInterpolator
+from ecrad_pylib.Distribution_IO import read_waves_mat_to_beam, read_dist_mat_to_beam, \
+                                        load_f_from_mat
+from ecrad_pylib.Distribution_Functions import Juettner2D
 if(globalsettings.AUG):
-    from Equilibrium_Utils_AUG import EQData
-from Equilibrium_Utils import EQDataExt
-from Em_Albajar import EmAbsAlb, DistributionInterpolator, SVec, N_with_pol_vec
+    from ecrad_pylib.Equilibrium_Utils_AUG import EQData
+from ecrad_pylib.Equilibrium_Utils import EQDataExt
+from ecrad_pylib.Em_Albajar import EmAbsAlb, DistributionInterpolator, SVec, N_with_pol_vec
 import scipy.constants as cnst
 from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
 from scipy.io import loadmat
 import scipy.odr as odr
-from ECRad_Results import ECRadResults
-from Distribution_Classes import Distribution
+from ecrad_pylib.ECRad_Results import ECRadResults
+from ecrad_pylib.Distribution_Classes import Distribution
 
 
 def func(beta, x):
