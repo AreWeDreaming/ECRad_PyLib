@@ -1,6 +1,12 @@
 *
 !src
-!src/*
+!src/ecrad_pylib
+!src/ecrad_pylib/*.py
+!src/ecrad_pylib/*.txt
+!src/ecrad_pylib/*.bsub
+!src/ecrad_pylib/*.dat
+!src/ecrad_pylib/*.data
+!src/ecrad_pylib/*.tcsh
 !*.toml
 !*.cfg
 !*.sh
