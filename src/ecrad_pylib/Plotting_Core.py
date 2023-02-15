@@ -13,7 +13,7 @@ import numpy as np
 import os
 from ecrad_pylib.Global_Settings import globalsettings
 from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
-from WX_Events import ThreadFinishedEvt, Unbound_EVT_DONE_PLOTTING
+from ecrad_pylib.WX_Events import ThreadFinishedEvt, Unbound_EVT_DONE_PLOTTING
 import wx
 from ecrad_pylib.Distribution_Functions import Juettner2D
 non_therm_dist_Relax = True
