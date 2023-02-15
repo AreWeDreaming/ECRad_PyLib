@@ -23,28 +23,28 @@ class ECRadF2PYInterface:
 #         ecrad_exec_dummy = GetECRadExec(Config, Scenario)
 #         print(os.environ["LDFLAGS"])
         try:
-            import ECRad_python
+            from ecrad_core import ECRad_python
         except Exception as e:
             ECRad_python = None
             print(e)
             print("Failed to load serial version of ECRad_Python")
             print("Currently set ECRad dir: " + globalsettings.ECRadLibDir)
         try:
-            import ECRad_pythonOMP as ECRad_pythonOMP
+            from ecrad_core import ECRad_pythonOMP
         except Exception as e:
             ECRad_pythonOMP = None
             print(e)
             print("Failed to load OPEN_MP version of ECRad_Python")
             print("Currently set ECRad dir: " + globalsettings.ECRadLibDir)
         try:
-            import ECRad_pythondb
+            from ecrad_core import ECRad_pythondb
         except Exception as e:
             ECRad_pythondb = None
             print(e)
             print("Failed to load debug version of ECRad_Python")
             print("Currently set ECRad dir: " + globalsettings.ECRadLibDir)
         try:
-            import ECRad_pythonOMPdb
+            from ecrad_core import ECRad_pythonOMPdb
         except Exception as e:
             ECRad_pythonOMPdb = None
             print(e)
