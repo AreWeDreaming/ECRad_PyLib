@@ -213,18 +213,4 @@ try:
 except KeyError:
     globalsettings = GlobalSettingsEXT()
 library_list = glob("../*pylib") + glob("../*PyLib")
-found_lib = False
 
-for folder in library_list:
-    if("ECRad" in folder or "ecrad" in folder ):
-        sys.path.append(os.path.abspath(folder))
-        found_lib = True
-        ECRadPylibFolder = folder
-        break
-if(not found_lib):
-    print("Could not find pylib")
-    print("Important: ECRad_GUI must be launched with its home directory as the current working directory")
-    print("Additionally, the ECRad_Pylib must be in the parent directory of the GUI and must contain one of ECRad, ecrad and Pylib or pylib")
-    exit(-1)
-#
-#globalsettings = GlobalSettingsITM()
