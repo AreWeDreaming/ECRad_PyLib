@@ -225,7 +225,7 @@ class EXT_diag(BasicDiag):  #  Makes no sense to inherit properties we do not wa
         if(set_only_EXT):
             mask = ray_launch[itime]["diag_name"] == "EXT"
         else:
-            mask = np.ones(len(ray_launch[itime]["diag_name"]), dtype=np.bool)
+            mask = np.ones(len(ray_launch[itime]["diag_name"]), dtype=bool)
         self.f = ray_launch[itime]["f"][mask]
         self.N_ch = len(self.f)
         self.df = ray_launch[itime]["df"][mask]
@@ -242,7 +242,7 @@ class EXT_diag(BasicDiag):  #  Makes no sense to inherit properties we do not wa
         if(set_only_EXT):
             mask = ray_launch["diag_name"][itime] == "EXT"
         else:
-            mask = np.ones(len(ray_launch["diag_name"][itime]), dtype=np.bool)
+            mask = np.ones(len(ray_launch["diag_name"][itime]), dtype=bool)
         self.f = ray_launch["f"][itime][mask]
         self.N_ch = len(self.f)
         self.df = ray_launch["df"][itime][mask]

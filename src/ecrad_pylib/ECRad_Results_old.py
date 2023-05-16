@@ -511,10 +511,10 @@ class ECRadResults:
                         print("No systematic errors in .mat file")
                         self.sys_dev[mdict["calib_diags"][0]] = np.zeros(self.rel_dev[mdict["calib_diags"][0]].shape)
                     try:
-                        self.masked_time_points[mdict["calib_diags"][0]] = np.bool8(mdict["masked_time_points"][0])
+                        self.masked_time_points[mdict["calib_diags"][0]] = bool(mdict["masked_time_points"][0])
                     except KeyError:
                         print("Masked time points for calibration not specified")
-                        self.masked_time_points[mdict["calib_diags"][0]] = np.zeros(self.time.shape, dtype=np.bool8)
+                        self.masked_time_points[mdict["calib_diags"][0]] = np.zeros(self.time.shape, dtype=bool)
                         self.masked_time_points[mdict["calib_diags"][0]][:] = True
                 else:
                     for i in range(len(mdict["calib_diags"])):
@@ -528,10 +528,10 @@ class ECRadResults:
                             print("No systematic errors in .mat file")
                             self.sys_dev[mdict["calib_diags"][i]] = np.zeros(self.rel_dev[mdict["calib_diags"][i]].shape)
                         try:
-                            self.masked_time_points[mdict["calib_diags"][i]] = np.bool8(mdict["masked_time_points"][i])
+                            self.masked_time_points[mdict["calib_diags"][i]] = bool(mdict["masked_time_points"][i])
                         except KeyError:
                             print("Masked time points for calibration not specified")
-                            self.masked_time_points[mdict["calib_diags"][i]] = np.zeros(self.time.shape, dtype=np.bool8)
+                            self.masked_time_points[mdict["calib_diags"][i]] = np.zeros(self.time.shape, dtype=bool)
                             self.masked_time_points[mdict["calib_diags"][i]][:] = True
         except TypeError:
             print("Error loading calibration factors - please recalculate")

@@ -549,9 +549,9 @@ def compare_quant_on_LOS(working_dir, ida_working_dir, chno):
             mask_ECRad = svec_ECRad["rhop"] >= 0
             mask_IDA = svec_IDA["rhop"] >= 0
         else:
-            mask_ECRad = np.zeros(len(svec_ECRad["s"]), dtype=np.bool)
+            mask_ECRad = np.zeros(len(svec_ECRad["s"]), dtype=bool)
             mask_ECRad[:] = True
-            mask_IDA = np.zeros(len(svec_IDA["s"]), dtype=np.bool)
+            mask_IDA = np.zeros(len(svec_IDA["s"]), dtype=bool)
             mask_IDA[:] = True
         ECRadx = svec_ECRad["R"][mask_ECRad]
         ECRadquant = svec_ECRad[quant][mask_ECRad]
@@ -583,9 +583,9 @@ def compare_quant_on_LOS_rel(working_dir, ida_working_dir, chno):
             mask_ECRad = svec_ECRad["rhop"] >= 0
             mask_IDA = svec_IDA["rhop"] >= 0
         else:
-            mask_ECRad = np.zeros(len(svec_ECRad["s"]), dtype=np.bool)
+            mask_ECRad = np.zeros(len(svec_ECRad["s"]), dtype=bool)
             mask_ECRad[:] = True
-            mask_IDA = np.zeros(len(svec_IDA["s"]), dtype=np.bool)
+            mask_IDA = np.zeros(len(svec_IDA["s"]), dtype=bool)
             mask_IDA[:] = True
         ECRadx = svec_ECRad[x_quant][mask_ECRad]
         ECRadquant = svec_ECRad[quant][mask_ECRad]
@@ -669,9 +669,9 @@ def compare_rhop(working_dir, ida_working_dir, chno):
         mask_ECRad = svec_ECRad["rhop"] >= 0
         mask_IDA = svec_IDA["rhop"] >= 0
     else:
-        mask_ECRad = np.zeros(len(svec_ECRad["s"]), dtype=np.bool)
+        mask_ECRad = np.zeros(len(svec_ECRad["s"]), dtype=bool)
         mask_ECRad[:] = True
-        mask_IDA = np.zeros(len(svec_IDA["s"]), dtype=np.bool)
+        mask_IDA = np.zeros(len(svec_IDA["s"]), dtype=bool)
         mask_IDA[:] = True
     plt.plot(svec_ECRad["s"][mask_ECRad], svec_ECRad[quant][mask_ECRad] - \
              rhop_spl( svec_ECRad["R"][mask_ECRad],svec_ECRad["z"][mask_ECRad], grid=False), "-k", label="ECRad")

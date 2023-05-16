@@ -358,7 +358,7 @@ def get_ECE_launch_info(shot, diag):
 
 
 def get_diag_launch(shot, time, used_diag_dict, gy_dict=None, ECI_dict=None):
-    print("ECRad data will be written for diags ", used_diag_dict)
+    # print("ECRad data will be written for diags ", used_diag_dict)
     launch_array = []
     for diag in used_diag_dict:
         launch = {}

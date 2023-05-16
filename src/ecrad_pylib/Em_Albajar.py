@@ -154,7 +154,7 @@ class Bornatici_abs:
     def Dnestrovskii_serios(self, z, q):
         # This implmentation uses the series 2.3.70 and 2.3.71 - the series does not seem to be converging
         # THIS ROUTINE DOES NOT WORK
-        nu = np.linspace(0, 100, 101, dtype=np.int)
+        nu = np.linspace(0, 100, 101, dtype=int)
         if(np.real(np.sqrt(np.complex(z))) == 0.0):
             sigma = 1.0
         elif(np.real(np.sqrt(np.complex(z))) <= 0.0):

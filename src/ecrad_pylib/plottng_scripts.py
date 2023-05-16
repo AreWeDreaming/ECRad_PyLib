@@ -11,9 +11,9 @@ def plot_harmonics_and_frequencies(res_file):
     Results.load(res_file)
     fig = plt.figure()
     pc_obj = PlottingCore(fig=fig)
-    ich_list = np.arange(0, len(Results.Scenario["diagnostic"]["f"][0]), 3, dtype = np.int)
-    imode_list = np.zeros(ich_list.shape, dtype = np.int)
-    ir_list = np.zeros(ich_list.shape, dtype = np.int)
+    ich_list = np.arange(0, len(Results.Scenario["diagnostic"]["f"][0]), 3, dtype = int)
+    imode_list = np.zeros(ich_list.shape, dtype = bool)
+    ir_list = np.zeros(ich_list.shape, dtype = bool)
     pc_obj.B_plot(Results, 0,ich_list, imode_list, ir_list)
     plt.show()
 

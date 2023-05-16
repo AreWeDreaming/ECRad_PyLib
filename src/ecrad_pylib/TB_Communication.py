@@ -566,11 +566,11 @@ def make_mdict_from_TB_files(path, eq_only=False):
     mdict = {}
     tb_file = open(path)
     tb_file.readline()
-    cur_line = np.fromstring(tb_file.readline(), dtype=np.int, sep=" ")
+    cur_line = np.fromstring(tb_file.readline(), dtype=int, sep=" ")
     m = cur_line[0]
     n = cur_line[1]
     cur_line = tb_file.readline()
-    cur_line = np.fromstring(tb_file.readline(), dtype=np.float, sep=" ")
+    cur_line = np.fromstring(tb_file.readline(), dtype=float, sep=" ")
     mdict["Psi_sep"] = cur_line[-1]
     mdict["R"] = []
     mdict["z"] = []
@@ -619,12 +619,12 @@ def make_mdict_from_TB_files(path, eq_only=False):
 #     plt.plot(R_ax, z_ax, "x")
 #     plt.show()
     if(not eq_only):
-        n_prof = np.fromstring(tb_file.readline(), dtype=np.int, sep=" ")[0]
+        n_prof = np.fromstring(tb_file.readline(), dtype=int, sep=" ")[0]
         mdict["rhop_prof"] = []
         mdict["Te"] = []
         mdict["ne"] = []
         for i in range(n_prof):
-            cur_line = np.fromstring(tb_file.readline(), dtype=np.float, sep=" ")
+            cur_line = np.fromstring(tb_file.readline(), dtype=float, sep=" ")
             mdict["rhop_prof"].append(cur_line[0])
             mdict["Te"].append(cur_line[1])
             mdict["ne"].append(cur_line[2])

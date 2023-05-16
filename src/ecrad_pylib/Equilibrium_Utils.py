@@ -108,7 +108,7 @@ class EQDataExt:
         self.loaded = True
                 
     def insert_slices_from_ext(self, times, slices, transpose=False):
-        new_slices = copy.deepcopy(slices)
+        new_slices = copy.deepcopy(self.slices)
         # Convert to list to allow append
         self.times = list(self.times)
         for time, eq_slice in zip(times, slices):
@@ -245,7 +245,7 @@ class EQDataExt:
     def RemoveSlice(self, time):
         itime = np.argmin(np.abs(self.times - time))
         del(self.slices[itime])
-        np.delete(self.times, itime)
+        self.times = np.delete(self.times, itime)
 
     def get_axis(self, time, get_Psi=False):
         cur_slice = self.GetSlice(time)

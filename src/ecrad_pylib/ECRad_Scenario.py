@@ -252,7 +252,6 @@ class ECRadScenario(dict):
         self["plasma"][self["plasma"]["prof_reference"]] = \
                 np.array(self["plasma"][self["plasma"]["prof_reference"]])
 
-
     def set_up_equilibrium_from_imas(self, equilibrium, wall, times):
         self["plasma"]["eq_dim"] = True
         self["plasma"]["eq_data_2D"] = EQDataExt(self["shot"], Ext_data=True)
@@ -286,20 +285,14 @@ class ECRadScenario(dict):
         self.set_up_profiles_from_imas(profile_ids, equilibrium_ids, times)
         self.set_up_dimensions()
 
-
-
-    def set_up_launch_from_omas(self, ods, times=None):
+    def set_up_launch_from_omas(self, ods):
         for key in self['diagnostic']:
             self['diagnostic'][key] = []
-        if(times is None):
-            times = ods['ece']['channel[0]']['time']
-        for time in times:
-            self['diagnostic']["f"].append([])
-            for ch in ods['ece']['channel'].values():
-                itime = np.argmin(np.abs(time - ch['time']))
-                self['diagnostic']["f"][-1].append(ch['frequency.data'][itime])
-        self['diagnostic']["f"] = np.array(self['diagnostic']["f"])
-        self["dimensions"]["N_ch"] = len(self["diagnostic"]["f"][0])
+        self["dimensions"]["N_ch"] = len(ods['ece']['channel'])
+        N_time = len(ods['ece.channel.0.time'])
+        self['diagnostic']["f"] = np.zeros((N_time, self["dimensions"]["N_ch"]))
+        for ich, ch in enumerate(ods['ece']['channel'].values()):
+            self['diagnostic']["f"][...,ich] = ch['frequency.data']
         for key in self['diagnostic']:
             if(key == "f"):
                 continue
@@ -335,21 +328,40 @@ class ECRadScenario(dict):
     def set_up_profiles_from_omas(self, ods, times):
         for key in self["plasma"]:
             self["plasma"][key] = []
+        self["plasma"]["prof_reference"] = "rhop_prof"
         for time in times:
             itime_profiles = np.argmin(np.abs(ods['core_profiles']['time'] - time))
             itime_equilibrium = np.argmin(np.abs(ods['equilibrium']['time'] - time))
-            self["plasma"]["rhop_prof"].append(
-                np.sqrt((ods['equilibrium']['time_slice'][itime_equilibrium]['global_quantities']['psi_axis'] - \
-                         ods['core_profiles']['profiles_1d'][itime_profiles]['grid']['psi']) /\
-                        (ods['equilibrium']['time_slice'][itime_equilibrium]['global_quantities']['psi_axis'] - \
-                         ods['equilibrium']['time_slice'][itime_equilibrium]['global_quantities']['psi_boundary'])))
+            try:
+                rhp_pol = ods['core_profiles']['profiles_1d'][itime_profiles]['grid']['rho_pol_norm']
+            except ValueError:
+                try:
+                    rhp_pol = np.sqrt((ods['equilibrium']['time_slice'][itime_equilibrium]['global_quantities']['psi_axis'] - \
+                                ods['core_profiles']['profiles_1d'][itime_profiles]['grid']['psi']) /\
+                                (ods['equilibrium']['time_slice'][itime_equilibrium]['global_quantities']['psi_axis'] - \
+                                ods['equilibrium']['time_slice'][itime_equilibrium]['global_quantities']['psi_boundary']))
+                except ValueError:
+                    rhp_pol = ods.physics_remap_flux_coordinates(itime_equilibrium, "rho_tor_norm", 
+                                                       "rho_pol_norm", ods['core_profiles']['profiles_1d'][itime_profiles]['grid']['rho_tor_norm'])
+            mask = np.logical_not(np.isnan(rhp_pol))
+            self["plasma"]["rhop_prof"].append(rhp_pol[mask])
             self["plasma"]["Te"].append(
-                ods['core_profiles']['profiles_1d'][itime_profiles]['electrons']['temperature'])
-            self["plasma"]["ne"].append(
-                ods['core_profiles']['profiles_1d'][itime_profiles]['electrons']['density'])
+                ods['core_profiles']['profiles_1d'][itime_profiles]['electrons']['temperature'][mask])
+            try:
+                self["plasma"]["ne"].append(
+                    ods['core_profiles']['profiles_1d'][itime_profiles]['electrons']['density'][mask])
+            except ValueError:
+                self["plasma"]["ne"].append(
+                    ods['core_profiles']['profiles_1d'][itime_profiles]['electrons']['density_thermal'][mask])
         self["plasma"]["rhop_prof"] = np.array(self["plasma"]["rhop_prof"])
         self["plasma"]["Te"] = np.array(self["plasma"]["Te"])
         self["plasma"]["ne"] = np.array(self["plasma"]["ne"])
+        confined = self["plasma"]["rhop_prof"] < 1.0
+        if np.any(np.logical_or(np.isnan(self["plasma"]["Te"][confined]),
+                  np.isnan(self["plasma"]["ne"][confined]))):
+            raise ValueError("There are NaNs in the profile data inside the confined region")
+        self["plasma"]["Te"][np.isnan(self["plasma"]["Te"])] = 20.e-3
+        self["plasma"]["ne"][np.isnan(self["plasma"]["ne"])] = 1.e15
 
     def set_up_equilibrium_from_omas(self, ods, times):
         self["plasma"]["eq_dim"] = True
@@ -392,7 +404,7 @@ class ECRadScenario(dict):
     def drop_time_point(self, itime):
         time = self["time"][itime]
         self["time"] = np.delete(self["time"], itime)
-        for sub_key in ["rhop_prof", "rhot_prof", "rhop_prof", "Te", "ne"]:
+        for sub_key in ["rhop_prof", "rhot_prof", "Te", "ne"]:
             if(len(self["plasma"][sub_key]) == 0):
                 continue
             self["plasma"][sub_key] = np.delete(self["plasma"][sub_key], itime, 0)
