@@ -83,8 +83,8 @@ def get_elm_times(shot):
         time = np.array([])
         elm = np.array([])
         for i in range(len(elm_beg)):
-            no_elms = np.zeros(20, dtype=np.int)
-            elms = np.zeros(20, dtype=np.int)
+            no_elms = np.zeros(20, dtype=bool)
+            elms = np.zeros(20, dtype=bool)
             elms[:] = 1
             time = np.concatenate([time, np.linspace(time_last, elm_beg[i], 20)])
             elm = np.concatenate([elm, no_elms])
@@ -151,7 +151,7 @@ def smooth(y_arr, median=False, use_std_err=False):
 
 def moving_average(time, signal, window):
     step = np.mean(np.gradient(time))
-    N = np.int(np.floor(window / step))
+    N = int(np.floor(window / step))
     if(N < 4):
         print("Window too small for resolution of signal - returning original signal")
         return time, signal
@@ -705,7 +705,7 @@ def get_CTA_no_pinswitch(shot, diag, exp, ed, ch_in=None, t_shift_back=175.e-6, 
     filtered_sig_list = []
     index_shift_back = np.argmin(np.abs(t - t_shift_back)) - np.argmin(np.abs(t))
     index_shift_fwd = np.argmin(np.abs(t - t_shift_fwd)) - np.argmin(np.abs(t))
-    t_mask = np.zeros(len(t), dtype=np.bool)
+    t_mask = np.zeros(len(t), dtype=bool)
     t_mask[0:index_shift_back] = True
     t_mask[len(t) - 1 - index_shift_fwd:len(t)] = True
     print("Indentifying time points with Pin switch attenuation!")
@@ -841,9 +841,9 @@ def get_ECE_launch_params(shot, diag):
     try:
         ECE_launch_dict = {}
         ECE_launch_dict["f"] = np.array(CEC.getParameter('parms-A', 'f').data)
-        available = np.array(CEC.getParameter('parms-A', 'AVAILABL').data, dtype=np.int)
+        available = np.array(CEC.getParameter('parms-A', 'AVAILABL').data, dtype=int)
         ECE_launch_dict["df"] = np.array(CEC.getParameter('parms-A', 'df').data)
-        ECE_launch_dict["waveguide"] = np.zeros(len(ECE_launch_dict["f"]), dtype=np.int)
+        ECE_launch_dict["waveguide"] = np.zeros(len(ECE_launch_dict["f"]), dtype=int)
         ifgroup = np.array(CEC.getParameter('parms-A', 'IFGROUP').data)
         wg = np.array(CEC.getParameter('METHODS', 'WAVEGUID').data)
         ECE_launch_dict["z_lens"] = float(CEC.getParameter('METHODS', 'ZLENS').data) * 1.e-2  # cm -> m
@@ -909,7 +909,7 @@ def get_freqs(shot, diag):
         CEC = dd.shotfile(diag.diag, int(shot), \
                            experiment=diag.exp, edition=diag.ed)
         f = np.array(CEC.getParameter('parms-A', 'f').data)
-        f = f[np.array(CEC.getParameter('parms-A', 'AVAILABL').data, dtype=np.int) == 1]
+        f = f[np.array(CEC.getParameter('parms-A', 'AVAILABL').data, dtype=int) == 1]
     elif(diag.name == "ECN" or diag.name == "ECO"):
         ECI = dd.shotfile(diag.Rz_diag, int(shot), \
                            experiment=diag.Rz_exp, edition=diag.Rz_ed)

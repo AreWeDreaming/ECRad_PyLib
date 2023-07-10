@@ -92,27 +92,33 @@ class ECRadF2PYInterface:
         self.cur_ECRad.pre_initialize_ecrad(Config["Execution"]["extra_output"], \
                                             Config["Physics"]["dstf"], \
                                             Config["Physics"]["raytracing"], \
-                                            Config["Physics"]["ripple"], 1.20, Config["Physics"]["weak_rel"], \
+                                            Config["Physics"]["ripple"], 1.20,
+                                            Config["Physics"]["weak_rel"], \
                                             Config["Physics"]["ratio_for_3rd_harm"], \
                                             Config["Physics"]["N_max"], \
                                             Config["Physics"]["tau_ignore"], \
                                             Config["Physics"]["considered_modes"], \
-                                            Config["Physics"]["reflec_X"], Config["Physics"]["reflec_O"], False, \
-                                           Config["Numerics"]["max_points_svec"], \
-                                           Config["Numerics"]["N_BPD"], \
-                                           Config["Physics"]["mode_conv"], \
-                                           Scenario["scaling"]["Te_rhop_scale"], Scenario["scaling"]["ne_rhop_scale"], \
-                                           Config["Numerics"]["large_ds"], Config["Numerics"]["small_ds"], \
-                                           Config["Physics"]["R_shift"], Config["Physics"]["z_shift"], \
-                                           Config["Physics"]["N_ray"], Config["Physics"]["N_freq"], True, \
-                                           Scenario["dimensions"]["N_vessel_bd"], \
-                                           Scenario["plasma"]["vessel_bd"].T[0], \
-                                           Scenario["plasma"]["vessel_bd"].T[1], \
-                                           Scenario["diagnostic"]["f"][itime], Scenario["diagnostic"]["df"][itime], \
-                                           Scenario["diagnostic"]["R"][itime], np.deg2rad(Scenario["diagnostic"]["phi"][itime]), \
-                                           Scenario["diagnostic"]["z"][itime], np.deg2rad(Scenario["diagnostic"]["phi_tor"][itime]),\
-                                           np.deg2rad(Scenario["diagnostic"]["theta_pol"][itime]), Scenario["diagnostic"]["dist_focus"][itime], \
-                                           Scenario["diagnostic"]["width"][itime], Scenario["diagnostic"]["pol_coeff_X"][itime])
+                                            Config["Physics"]["reflec_X"], 
+                                            Config["Physics"]["reflec_O"], False, \
+                                            Config["Numerics"]["max_points_svec"], \
+                                            Config["Numerics"]["N_BPD"], \
+                                            Config["Physics"]["mode_conv"], \
+                                            Scenario["scaling"]["Te_rhop_scale"], 
+                                            Scenario["scaling"]["ne_rhop_scale"], \
+                                            Config["Numerics"]["large_ds"], 
+                                            Config["Numerics"]["small_ds"], \
+                                            Config["Physics"]["R_shift"], 
+                                            Config["Physics"]["z_shift"], \
+                                            Config["Physics"]["N_ray"], 
+                                            Config["Physics"]["N_freq"], True, \
+                                            Scenario["dimensions"]["N_vessel_bd"], \
+                                            Scenario["plasma"]["vessel_bd"].T[0], \
+                                            Scenario["plasma"]["vessel_bd"].T[1], \
+                                            Scenario["diagnostic"]["f"][itime], Scenario["diagnostic"]["df"][itime], \
+                                            Scenario["diagnostic"]["R"][itime], np.deg2rad(Scenario["diagnostic"]["phi"][itime]), \
+                                            Scenario["diagnostic"]["z"][itime], np.deg2rad(Scenario["diagnostic"]["phi_tor"][itime]),\
+                                            np.deg2rad(Scenario["diagnostic"]["theta_pol"][itime]), Scenario["diagnostic"]["dist_focus"][itime], \
+                                            Scenario["diagnostic"]["width"][itime], Scenario["diagnostic"]["pol_coeff_X"][itime])
         if(Config["Execution"]["parallel"]):
             self.cur_ECRad.set_ecrad_thread_count(Config["Execution"]["parallel_cores"])
         
@@ -394,7 +400,7 @@ if(__name__ == "__main__"):
     ne = Scenario.plasma_dict["ne"][0]
     Te = Scenario.plasma_dict["Te"][0]
     rhop_out = ecrad_f2py_interface.make_rays(Scenario, 0)
-    fm_flag = np.zeros(ecrad_f2py_interface.N_ch, dtype=np.bool)
+    fm_flag = np.zeros(ecrad_f2py_interface.N_ch, dtype=bool)
     fm_flag[:] = True
     ecrad_f2py_interface.set_fm_flag(fm_flag)
     Trad, tau = ecrad_f2py_interface.eval_Trad(Scenario, Config, 0)

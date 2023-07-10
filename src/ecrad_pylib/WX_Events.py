@@ -17,6 +17,9 @@ EVT_OTHER_RESULTS_LOADED = wx.PyEventBinder(Unbound_EVT_OTHER_RESULTS_LOADED, 1)
 Unbound_EVT_UPDATE = wx.NewEventType()  # Call This
 EVT_UPDATE = wx.PyEventBinder(Unbound_EVT_UPDATE, 1)  # Bind that
 
+Unbound_OMAS_LOAD_FINISHED = wx.NewEventType()  # Call This
+OMAS_LOAD_FINISHED = wx.PyEventBinder(Unbound_OMAS_LOAD_FINISHED, 1)  # Bind that
+
 Unbound_EVT_NEXT_TIME_STEP = wx.NewEventType()  # Call This
 EVT_NEXT_TIME_STEP = wx.PyEventBinder(Unbound_EVT_NEXT_TIME_STEP, 1)  # Bind that
 
@@ -123,8 +126,8 @@ class GenerticEvt(wx.PyCommandEvent):
     def __init__(self, evtType, id):
         wx.PyCommandEvent.__init__(self, evtType, id)
         
-    def insertData(self, DiagData):
-        self.Data = DiagData
+    def insertData(self, Data):
+        self.Data = Data
 
 
 class UpdateDataEvt(wx.PyCommandEvent):

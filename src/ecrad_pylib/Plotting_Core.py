@@ -176,9 +176,9 @@ class PlottingCore:
         rhop_max = 0.0
         use_diag_rhop = False
         if(multiple_models):
-            mask = np.zeros(len(Trad[0]), dtype=np.bool)
+            mask = np.zeros(len(Trad[0]), dtype=bool)
         else:
-            mask = np.zeros(len(Trad), dtype=np.bool)
+            mask = np.zeros(len(Trad), dtype=bool)
         if(len(diags) > 0):
             mask[:] = False
             for key in diags:
@@ -259,7 +259,7 @@ class PlottingCore:
             primary = True
             for rhop_entry, Trad_entry, diag_name_entry, label, rhop_prof, Te_entry in zip(rhop, Trad, diag_names, label_list, rhop_Te, Te):
                 try:
-                    cur_mask = np.zeros(len(Trad_entry), dtype=np.bool)
+                    cur_mask = np.zeros(len(Trad_entry), dtype=bool)
                     cur_mask[:] = False
                     nice_label = str(label)
                     nice_label = nice_label.replace("_max", r"$_\mathrm{max}$")
@@ -1572,9 +1572,9 @@ class PlottingCore:
         pw_stop = args[5]
         self.setup_axes("twinx", r"Suggested grid points for RELAX")
         self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
-                    self.y_range_list[0] , data=[y, np.array(range(len(y)), dtype=np.int)], marker="+", color="black", ax_flag="Grid")
+                    self.y_range_list[0] , data=[y, np.array(range(len(y)), dtype=bool)], marker="+", color="black", ax_flag="Grid")
         self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \
-                    self.y_range_list[0] , data=[y[[pw_start, pw_stop]], np.array(range(len(y)), dtype=np.int)[[pw_start, pw_stop]]], marker="^", color="red", ax_flag="Grid")
+                    self.y_range_list[0] , data=[y[[pw_start, pw_stop]], np.array(range(len(y)), dtype=bool)[[pw_start, pw_stop]]], marker="^", color="red", ax_flag="Grid")
         self.axlist[1], self.y_range_list[1] = self.add_plot(self.axlist[1], \
                     self.y_range_list[1] , data=[rho, pw], marker="-", color="blue", ax_flag="P_ecrh_tor")
         evt_out = ThreadFinishedEvt(Unbound_EVT_DONE_PLOTTING, Callee.GetId())
@@ -2272,18 +2272,18 @@ class PlottingCore:
             self.grid_locations = [[0, 0]]
             single = True
             self.twinx_array = [False]
-        self.model_marker_index = np.zeros(self.layout[0], dtype=np.int)
-        self.model_color_index = np.zeros(self.layout[0], dtype=np.int)
-        self.diag_marker_index = np.zeros(self.layout[0], dtype=np.int)
-        self.diag_color_index = np.zeros(self.layout[0], dtype=np.int)
-        self.line_marker_index = np.zeros(self.layout[0], dtype=np.int)
-        self.line_color_index = np.zeros(self.layout[0], dtype=np.int)
-        self.model_marker_index_2 = np.zeros(self.layout_2[0], dtype=np.int)
-        self.model_color_index_2 = np.zeros(self.layout_2[0], dtype=np.int)
-        self.diag_marker_index_2 = np.zeros(self.layout_2[0], dtype=np.int)
-        self.diag_color_index_2 = np.zeros(self.layout_2[0], dtype=np.int)
-        self.line_marker_index_2 = np.zeros(self.layout_2[0], dtype=np.int)
-        self.line_color_index_2 = np.zeros(self.layout_2[0], dtype=np.int)
+        self.model_marker_index = np.zeros(self.layout[0], dtype=bool)
+        self.model_color_index = np.zeros(self.layout[0], dtype=bool)
+        self.diag_marker_index = np.zeros(self.layout[0], dtype=bool)
+        self.diag_color_index = np.zeros(self.layout[0], dtype=bool)
+        self.line_marker_index = np.zeros(self.layout[0], dtype=bool)
+        self.line_color_index = np.zeros(self.layout[0], dtype=bool)
+        self.model_marker_index_2 = np.zeros(self.layout_2[0], dtype=bool)
+        self.model_color_index_2 = np.zeros(self.layout_2[0], dtype=bool)
+        self.diag_marker_index_2 = np.zeros(self.layout_2[0], dtype=bool)
+        self.diag_color_index_2 = np.zeros(self.layout_2[0], dtype=bool)
+        self.line_marker_index_2 = np.zeros(self.layout_2[0], dtype=bool)
+        self.line_color_index_2 = np.zeros(self.layout_2[0], dtype=bool)
         for i in range(self.layout[0]):
             grid_loc = self.gridspec[self.grid_locations[i][0], self.grid_locations[i][1]]
             if(self.x_share_list[i] is None and \

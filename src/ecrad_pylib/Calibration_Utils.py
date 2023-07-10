@@ -12,7 +12,7 @@ if(globalsettings.AUG):
 
 def calibrate(shot, timepoints, Trad_matrix, calib_diag, aux_diag, masked_channels=None):
     if(masked_channels is None):
-        masked_channels = np.zeros(len(Trad_matrix[0]), dtype=np.bool)
+        masked_channels = np.zeros(len(Trad_matrix[0]), dtype=bool)
     median = True
     calib_mat = []
     std_dev_mat = []

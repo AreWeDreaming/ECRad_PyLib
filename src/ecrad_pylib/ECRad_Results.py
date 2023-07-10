@@ -14,7 +14,9 @@ from scipy import constants as cnst
 from ecrad_pylib.ECRad_Config import ECRadConfig
 from ecrad_pylib.ECRad_Scenario import ECRadScenario
 from netCDF4 import Dataset
-
+from ecrad_core import __version__ as ecrad_core_version
+from ecrad_pylib import __version__ as ecrad_pylib_version
+from ecrad_gui import __version__ as ecrad_gui_version
 
 class ECRadResults(dict):
     def __init__(self, lastused=False):
@@ -257,9 +259,9 @@ class ECRadResults(dict):
             for sub_key in self.sub_keys[key]:
                 self[key][sub_key] = np.array(self[key][sub_key])
         # Autosave results
-        self["git"]["ECRad"] = np.genfromtxt(os.path.join(globalsettings.ECRadRoot, "id"), dtype=str).item()
-        self["git"]["GUI"] = np.genfromtxt(os.path.join(globalsettings.ECRadGUIRoot, "id"), dtype=str).item()
-        self["git"]["Pylib"] = np.genfromtxt(os.path.join(globalsettings.ECRadPylibRoot, "id"), dtype=str).item()
+        self["git"]["ECRad"] = ecrad_core_version
+        self["git"]["GUI"] = ecrad_gui_version
+        self["git"]["Pylib"] = ecrad_pylib_version
         self.data_origin = "ECRad"
         if(autosave):
             self.autosave()
@@ -428,7 +430,7 @@ class ECRadResults(dict):
                         self[key][sub_key] = mdict[formatted_key].reshape(self.get_shape(key))
                     except KeyError:
                         print("INFO: Couldn't load " + sub_key + " from result file")
-        self["dimensions"]["N_LOS"] = np.zeros(self.get_shape("ray", 0, -1),dtype=np.int)      
+        self["dimensions"]["N_LOS"] = np.zeros(self.get_shape("ray", 0, -1),dtype=bool)      
         # We need to fix the shape of the mdict ray info
         key = "ray"
         for sub_key in self.sub_keys[key]:
@@ -565,10 +567,10 @@ class ECRadResults(dict):
             diag_str += key
         if(ed is None):
             ed = 1
-            filename = os.path.join(dir, "ECRad_{0:5d}_{1:s}_ed{2:d}.nc".format(self.Scenario["shot"], diag_str, ed))
+            filename = os.path.join(dir, "ECRad_{0:05d}_{1:s}_ed{2:d}.nc".format(self.Scenario["shot"], diag_str, ed))
             while(os.path.exists(filename)):
                 ed += 1
-                filename = os.path.join(dir, "ECRad_{0:5d}_{1:s}_ed{2:d}.nc".format(self.Scenario["shot"], diag_str, ed))
+                filename = os.path.join(dir, "ECRad_{0:05d}_{1:s}_ed{2:d}.nc".format(self.Scenario["shot"], diag_str, ed))
             return filename, ed
         else:
             filename = os.path.join(dir, "ECRad_Results_{0:d}.nc".format(ed))
@@ -676,7 +678,7 @@ class ECRadResults(dict):
                                 self["ray"][sub_key][i_time][i_ch][i_mode].append( \
                                         rootgrp["Results"][key+ "_" +sub_key][i_time,i_ch,i_mode,i_ray,\
                                                                         :self["dimensions"]["N_LOS"][i_time,i_ch,i_mode,i_ray]])
-                self["ray"][sub_key] = np.array(self["ray"][sub_key], dtype=np.object)
+                self["ray"][sub_key] = np.array(self["ray"][sub_key], dtype=object)
         # Get the shape information of the individual LOS length into the NETCDF file
         self.comment = rootgrp["Results"].comment 
         self.edition = rootgrp["Results"].edition
