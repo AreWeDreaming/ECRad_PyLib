@@ -168,7 +168,6 @@ class ECRadF2PYInterface:
         return rho_res
     
     def run_and_get_output(self, Result, itime):
-        self.set_fm_flag
         self.cur_ECRad.make_trad_direct()
         key = "Trad"
         if(Result.Scenario["plasma"]["eq_dim"] == 3):
@@ -365,8 +364,6 @@ class ECRadF2PYInterface:
                     Scenario["plasma"]["dist_obj"].mu_norm,
                     Scenario["plasma"]["dist_obj"].f0_log,
                     Scenario["plasma"]["dist_obj"].f_log[itime])
-
-
         
     def process_single_timepoint(self, Result, itime):
         self.reset()
