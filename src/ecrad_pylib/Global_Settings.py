@@ -168,7 +168,29 @@ class GlobalSettingsIRIS:
             import omas
         except ImportError:
             self.omas = False
-        
+
+class GlobalSettingsOmega:
+    def __init__(self):
+        self.AUG = False
+        self.root = os.path.expanduser("~/")
+        self.ECRadRoot = os.path.abspath("../ECRad_core")
+        self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot, "bin")
+        self.ECRadPylibRoot = os.path.abspath("../ECRad_PyLib/")
+        self.ECRadGUIRoot = os.path.abspath("../ECRad_GUI/")
+        self.ECRadPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRad")
+        self.ECRadPathBSUB = os.path.join(self.ECRadPylibRoot,"ECRad_Driver_submit.bsub")
+        self.batch_submission_cmd = "sbatch"
+        self.qos_function = qos_function_iris
+        self.partition_function = partition_function_iris
+        self.account_fuction = account_function_current_user
+        self.max_cores = 16
+        self.plot_mode = "Software"
+        self.mathrm = r"\mathrm"
+        self.omas = True
+        try:
+            import omas
+        except ImportError:
+            self.omas = False       
         
 class GlobalSettingsEXT:
     def __init__(self):
@@ -204,6 +226,8 @@ try:
         globalsettings = GlobalSettingsITM()
     elif("iris" in socket.getfqdn()):
         globalsettings = GlobalSettingsIRIS()
+    elif("omega" in socket.getfqdn()):
+        globalsettings = GlobalSettingsOmega()
     elif("cm.cluster" in socket.getfqdn()):
         globalsettings = GlobalSettingsMIT()
     elif("iter" in socket.getfqdn()):
