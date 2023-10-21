@@ -5,5 +5,10 @@ numpy:
   - 1.24
 
 pin_run_as_build:
-  - python
-  - numpy
+  python: 
+    min_pin: x.x
+    max_pin: x.x
+
+  numpy:
+    min_pin: x.x
+    max_pin: x.x
