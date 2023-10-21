@@ -2,6 +2,7 @@
 import os
 from scipy.io import loadmat
 from netCDF4 import Dataset
+import psutil
 
 class ECRadConfig(dict):
     def __init__(self, noLoad = False):
@@ -42,7 +43,7 @@ class ECRadConfig(dict):
         self["Physics"]["ratio_for_3rd_harm"] = 0.4
         self["Physics"]["N_max"] = 3
         self["Physics"]["tau_ignore"] = 1.e-8
-        self["Physics"]["considered_modes"] = 1
+        self["Physics"]["considered_modes"] = 3
         # 1 -> Only X
         # 2 -> Only O
         # 3 -> Both
@@ -56,9 +57,9 @@ class ECRadConfig(dict):
         self["Execution"]["scratch_dir"] = ""
         self["Execution"]["extra_output"] = True
         self["Execution"]["debug"] = False
-        self["Execution"]["batch"] = True
+        self["Execution"]["batch"] = False
         self["Execution"]["parallel"] = True
-        self["Execution"]["parallel_cores"] = 32
+        self["Execution"]["parallel_cores"] = psutil.cpu_count(logical = False)
         self["Execution"]["wall_time"] = 2.0
         self["Execution"]["vmem"] = 32000
         self["Numerics"]["large_ds"] = 2.5e-3
