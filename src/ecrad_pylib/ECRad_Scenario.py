@@ -278,9 +278,19 @@ class ECRadScenario(dict):
                 equilibrium.time_slice[itime].global_quantities.magnetic_axis.r,\
                 equilibrium.time_slice[itime].global_quantities.magnetic_axis.z))
         self["plasma"]["eq_data_2D"].set_slices_from_ext(times, EQ_slices)
-        self["plasma"]["vessel_bd"] = np.array([ \
-            wall.description_2d[0].limiter.unit[0].outline.r,
-            wall.description_2d[0].limiter.unit[0].outline.z]).T
+        r = np.array(wall.description_2d[0].limiter.unit[0].outline.r)
+        z = np.array(wall.description_2d[0].limiter.unit[0].outline.z)
+        for i in range(1, len(wall.description_2d[0].limiter.unit)):
+            r_append = wall.description_2d[0].limiter.unit[i].outline.r
+            z_append = wall.description_2d[0].limiter.unit[i].outline.z
+            if (( r[-1] - r_append[0])**2 + (z[-1] - z_append[0])**2
+                < (r[-1] - r_append[-1])**2 + (z[-1] - z_append[-1])**2):
+                r = np.concatenate([r, r_append])
+                z = np.concatenate([z, z_append])
+            else:
+                r = np.concatenate([r, r_append[::-1]])
+                z = np.concatenate([z, z_append[::-1]])
+        self["plasma"]["vessel_bd"] = np.array([r,z]).T
             
 
     def set_up_from_imas(self, equilibrium_ids, profile_ids, ece_ids, wall_ids, times):
