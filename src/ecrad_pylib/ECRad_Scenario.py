@@ -264,7 +264,11 @@ class ECRadScenario(dict):
                     rect_index = grid_index
                     break
             if(rect_index == -1):
-                raise ValueError("No rectangular grid defined for selected IDS. Choose different IDS!")
+                print("Failed to find a rectangular psi grid. The following grids are available:")
+                for grid_index in range(len(equilibrium.time_slice[itime].profiles_2d)):
+                    print(f"Grid type of grid {grid_index} is {equilibrium.time_slice[itime].profiles_2d[grid_index].grid_type.index}")
+                print("Trying the first one and praying")
+                grid_index = 0
             prof_2D = equilibrium.time_slice[itime].profiles_2d[0]
             EQ_slices.append(EQDataSlice(\
                 time, prof_2D.grid.dim1,prof_2D.grid.dim2,\
