@@ -5,8 +5,8 @@ Created on Mar 20, 2019
 '''
 from collections import OrderedDict as od
 import os
-from scipy.io import loadmat, savemat
-from ecrad_pylib.Global_Settings import globalsettings, GlobalSettingsAUG
+from scipy.io import loadmat
+from ecrad_pylib.Global_Settings import globalsettings
 import numpy as np
 np.set_printoptions(threshold=np.inf)
 from ecrad_pylib.Equilibrium_Utils import EQDataExt, EQDataSlice
@@ -289,7 +289,7 @@ class ECRadScenario(dict):
         for key in self['diagnostic']:
             self['diagnostic'][key] = []
         self["dimensions"]["N_ch"] = len(ods['ece']['channel'])
-        N_time = len(ods['ece.channel.0.time'])
+        N_time = len(ods['ece.time'])
         self['diagnostic']["f"] = np.zeros((N_time, self["dimensions"]["N_ch"]))
         for ich, ch in enumerate(ods['ece']['channel'].values()):
             self['diagnostic']["f"][...,ich] = ch['frequency.data']
@@ -956,34 +956,24 @@ class ECRadScenario(dict):
             print(e)
             return False
         
-    def duplicate_time_point(self, it, new_times):
+    def duplicate_time_point(self, time_index, new_times):
         # Copies the time index it len(new_times) times using the times in new_times.
-        first_time = True
-        plasma_dict_0 = self["plasma"].copy()
-        new_plasma_dict = {}
-        new_ray_launch = []
-        ray_launch_0 = self.ray_launch[0]
-        new_plasma_dict["vessel_bd"] = plasma_dict_0["vessel_bd"]
-        new_plasma_dict["prof_reference"] = plasma_dict_0["prof_reference"]
-        for time in new_times:
-            for key in self["plasma"]:
-                if(plasma_dict_0[key] is None or np.isscalar(plasma_dict_0[key])):
-                    continue
-                elif(key == "vessel_bd" or key == "prof_reference" or len(plasma_dict_0[key]) == 0):
-                    continue
-                if(first_time):
-                    new_plasma_dict[key] = []
-                if(key != "time"):
-                    new_plasma_dict[key].append(plasma_dict_0[key][it])
-                elif(key == "time" ):
-                    new_plasma_dict[key].append(time)
-            first_time = False
-            new_ray_launch.append({})
-            for key in ray_launch_0:
-                new_ray_launch[-1][key] = ray_launch_0[key]
-        self["time"] = np.array(new_plasma_dict["time"])
-        self["plasma"] = new_plasma_dict
-        self["diagnostic"] = new_ray_launch
+        self["dimensions"]["N_time"] = len(new_times)
+        self["time"] = new_times
+        for key in self["plasma"]:
+            if key in ["rhop_prof", "Te", "ne"]:
+                plasma_ref = np.copy(self["plasma"][key][time_index])
+                self["plasma"][key] = np.zeros((self["dimensions"]["N_time"], plasma_ref.size))
+                self["plasma"][key][:] = plasma_ref
+        slice_ref = self["plasma"]["eq_data_2D"].slices[time_index]
+        self["plasma"]["eq_data_2D"].slices = []
+        for _ in new_times:
+            self["plasma"]["eq_data_2D"].slices.append(slice_ref)
+        for key in self["diagnostic"]:
+            diagnsotic_ref = np.copy(self["diagnostic"][key][time_index])
+            if key != "diag_name":
+                self["diagnostic"][key] = np.zeros((self["dimensions"]["N_time"], diagnsotic_ref.size))
+                self["diagnostic"][key][:] = diagnsotic_ref
         
     def integrate_GeneData(self, used_times):
         # We need this to hack in extra time points for the GENE computation

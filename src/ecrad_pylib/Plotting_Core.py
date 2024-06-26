@@ -1317,9 +1317,9 @@ class PlottingCore:
         if polygon:
             from matplotlib.patches import Polygon
         if pol:
-            f = open(os.path.join(globalsettings.ECRadPylibRoot, "pol_vessel.data"), 'r')
+            f = open(os.path.join(globalsettings.ECRadPylibRoot, "src", "ecrad_pylib", "pol_vessel.data"), 'r')
         else:
-            f = open(os.path.join(globalsettings.ECRadPylibRoot, "tor_vessel.data"), 'r')
+            f = open(os.path.join(globalsettings.ECRadPylibRoot, "src", "ecrad_pylib", "tor_vessel.data"), 'r')
 
         lines = f.readlines()
         f.close()
