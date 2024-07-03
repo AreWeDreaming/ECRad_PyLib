@@ -2,8 +2,6 @@ python:
   - 3.8
   - 3.10
   - 3.11
-numpy:
-  - 1.24
 
 pin_run_as_build:
   python: 
@@ -12,4 +10,4 @@ pin_run_as_build:
 
   numpy:
     min_pin: x.x
-    max_pin: x.x
+    max_pin: 1.26

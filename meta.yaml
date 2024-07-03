@@ -9,13 +9,13 @@ source:
 requirements:
     build:
       - python
-      - numpy >=1.21
+      - numpy <=1.26
       - pip >=21.0
       - setuptools >=57.4
       - build >=0.7
     run:
       - python
-      - numpy >=1.21
+      - numpy <=1.26
       - scipy >=1.7.3
       - matplotlib
       - hdf5
