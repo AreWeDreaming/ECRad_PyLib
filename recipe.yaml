@@ -32,5 +32,6 @@ requirements:
     - ecrad_core
     - psutil
     - cython
+    - mdsplus
     - omas
 
