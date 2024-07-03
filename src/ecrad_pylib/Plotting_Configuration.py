@@ -25,22 +25,22 @@ if(plot_mode != "Software"):
 # font = {'size'   : 18}
 #
 if(plot_mode == "Article"):
-    plt.rc('font', **{'family':'serif', 'serif':['Computer Modern Roman'], 'size' : 30})  # 24
-    plt.rcParams["legend.fontsize"] = 18 # 18 #20
-    plt.rcParams['axes.titlesize'] = 24  # 24 #36
-    plt.rcParams['axes.labelsize'] = 24  # 24 #36
+    plt.rc('font', **{'family':'serif', 'serif':['Computer Modern Roman'], 'size' : 16})  # 24
+    plt.rcParams["legend.fontsize"] = 14 # 18 #20
+    plt.rcParams['axes.titlesize'] = 14  # 24 #36
+    plt.rcParams['axes.labelsize'] = 16  # 24 #36
     plt.rc('text', usetex=True)
 elif(plot_mode == "Presentation"):
-    plt.rc('font', **{'family':'serif', 'serif':['Computer Modern Roman'], 'size' : 30})  # 24
-    plt.rcParams["legend.fontsize"] = 18  # 18 #20
-    plt.rcParams['axes.titlesize'] = 24  #  # 24 #36
-    plt.rcParams['axes.labelsize'] = 24  # 24 #36
+    plt.rc('font', **{'family':'serif', 'serif':['Computer Modern Roman'], 'size' : 16})  # 24
+    plt.rcParams["legend.fontsize"] = 14  # 18 #20
+    plt.rcParams['axes.titlesize'] = 14  #  # 24 #36
+    plt.rcParams['axes.labelsize'] = 16  # 24 #36
     plt.rc('text', usetex=True)
 elif(plot_mode == "Software"):
-    plt.rc('font', **{'family':'sans-serif', 'sans-serif':['Computer Modern Sans serif'], 'size' : 14})  # 24
+    plt.rc('font', **{'family':'sans-serif', 'sans-serif':['Computer Modern Sans serif'], 'size' : 16})  # 24
     plt.rcParams["legend.fontsize"] = 18  # 14  # 18 #20
     plt.rcParams['axes.titlesize'] = 24  # 14  # 24 #36
-    plt.rcParams['axes.labelsize'] = 24  # 14  # 24 #36
+    plt.rcParams['axes.labelsize'] = 16  # 14  # 24 #36
     plt.rc('text', usetex=False)
 
 plt.rcParams['pdf.fonttype'] = 42

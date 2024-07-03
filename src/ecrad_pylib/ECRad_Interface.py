@@ -9,7 +9,7 @@ import numpy as np
 import sys
 sys.path.append("../ECRad_Pylib")
 if(globalsettings.AUG):
-    vessel_file = os.path.join(globalsettings.ECRadPylibRoot,'ASDEX_Upgrade_vessel.txt')
+    vessel_file = os.path.join(globalsettings.ECRadPylibRoot, "src", "ecrad_pylib", 'ASDEX_Upgrade_vessel.txt')
 from shutil import copyfile, rmtree
 from scipy.io import loadmat
 from ecrad_pylib.Equilibrium_Utils import EQDataExt
