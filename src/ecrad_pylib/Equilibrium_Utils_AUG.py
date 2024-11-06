@@ -79,7 +79,9 @@ def make_rhop_signed_axis(shot, time, R, rhop, f, f2=None, eq_exp='AUGD', eq_dia
 
 class EQData(EQDataExt):
     def __init__(self, shot, external_folder='', EQ_exp="AUGD", EQ_diag="EQH", EQ_ed=0, Ext_data=False):
-        EQDataExt.__init__(self, shot, external_folder, EQ_exp, EQ_diag, EQ_ed, Ext_data)        
+        self.shot = shot
+        self.shotfile_ready = False
+        EQDataExt.__init__(self, external_folder, EQ_exp, EQ_diag, EQ_ed, Ext_data)        
 
     def init_read_from_shotfile(self):
         self.equ = equ_map()

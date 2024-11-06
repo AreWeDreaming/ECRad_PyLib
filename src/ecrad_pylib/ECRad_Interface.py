@@ -667,7 +667,7 @@ def load_plasma_from_mat(path):
         plasma_dict["eq_data"] = []
         # TODO remove this place holder by a routine that does this for external equilibriae
         plasma_dict["ECE_mod"] = []  
-        EQ_obj = EQDataExt(mdict["shot"], external_folder=os.path.dirname(path), Ext_data=True)
+        EQ_obj = EQDataExt(external_folder=os.path.dirname(path), Ext_data=True)
         if("Bt" in mdict):
             EQ_obj.load_slices_from_mat(plasma_dict["time"], mdict)
         else:
@@ -730,7 +730,7 @@ def load_from_plasma(filename):
         plasma_dict["eq_data_3D"]["equilibrium_files"] = np.array(rootgrp["Plasma"]["eq_data_3D" + "_" + \
                                                                                     "equilibrium_files"])
     else:
-        plasma_dict['eq_data_2D'] = EQDataExt(plasma_dict["shot"], Ext_data=True)
+        plasma_dict['eq_data_2D'] = EQDataExt(Ext_data=True)
         eq_slice_data = {}
         for sub_key in ["R", "z", "Psi", "rhop", "Br", "Bt", "Bz",\
                         "R_ax", "z_ax", "Psi_ax", "Psi_sep"]:

@@ -912,7 +912,7 @@ def debug_EQ(path, working_dir):
         mdict[key] = np.swapaxes(mdict[key], 1, 2)
     for key in at_least_2d_keys:
         mdict[key] = np.swapaxes(mdict[key], 0, 1)
-    EQ_obj = EQDataExt(0, external_folder=os.path.dirname(path), Ext_data=True)
+    EQ_obj = EQDataExt(external_folder=os.path.dirname(path), Ext_data=True)
     shot = int(mdict["shotnum"])
     EQ_obj.load_slices_from_mat(times, mdict)
     itime = np.argmin(np.abs(times - time))

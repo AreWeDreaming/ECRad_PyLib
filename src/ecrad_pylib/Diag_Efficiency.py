@@ -50,7 +50,7 @@ def diag_weight(fig, Results, time_point, ch, DistWaveFile=None, ax=None):
     harmonic_n = 2
     itime = np.argmin(np.abs(time_point - Results.Scenario.plasma_dict["time"]))
     time_cor = Results.Scenario.plasma_dict["time"][itime]
-    EQObj= EQDataExt(Results.Scenario.shot)
+    EQObj= EQDataExt()
     EQObj.set_slices_from_ext(Results.Scenario.plasma_dict["time"], Results.Scenario.plasma_dict["eq_data"])
     B_ax = EQObj.get_B_on_axis(time_cor)
     if(DistWaveFile is not None):
@@ -133,7 +133,7 @@ def ECRH_weight(fig, Result_file, time_point, ibeam, DistWaveFile, beam_freq=105
     Results.from_mat_file(Result_file)
     itime = np.argmin(np.abs(time_point - Results.Scenario.plasma_dict["time"]))
     time_cor = Results.Scenario.plasma_dict["time"][itime]
-    EQObj= EQDataExt(Results.Scenario.shot)
+    EQObj= EQDataExt()
     EQObj.set_slices_from_ext(Results.Scenario.plasma_dict["time"], Results.Scenario.plasma_dict["eq_data"])
     B_ax = EQObj.get_B_on_axis(time_cor)
     EqSlice = EQObj.GetSlice(time_point)

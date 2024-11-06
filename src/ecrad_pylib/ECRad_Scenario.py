@@ -42,7 +42,7 @@ class Plasma(dict):
         self["Te"] = []
         self["ne"] = []
         self["Bt_vac_scale"] = 1.0
-        self["eq_data_2D"] = EQDataExt(self["shot"], Ext_data=True)
+        self["eq_data_2D"] = EQDataExt( Ext_data=True)
         self["eq_data_3D"] = {}
         self["eq_data_3D"]["equilibrium_file"] = ""
         self["eq_data_3D"]["equilibrium_type"] = ''
@@ -260,7 +260,7 @@ class ECRadScenario(dict):
 
     def set_up_equilibrium_from_imas(self, equilibrium, wall, times):
         self["plasma"]["eq_dim"] = True
-        self["plasma"]["eq_data_2D"] = EQDataExt(self["shot"], Ext_data=True)
+        self["plasma"]["eq_data_2D"] = EQDataExt(Ext_data=True)
         EQ_slices = []
         for time in times:
             itime = np.argmin(np.abs(equilibrium.time - time))
@@ -384,7 +384,7 @@ class ECRadScenario(dict):
 
     def set_up_equilibrium_from_omas(self, ods, times):
         self["plasma"]["eq_dim"] = True
-        self["plasma"]["eq_data_2D"] = EQDataExt(self["shot"], Ext_data=True)
+        self["plasma"]["eq_data_2D"] = EQDataExt(Ext_data=True)
         EQ_slices = []
         for time in times:
             itime = np.argmin(np.abs(ods['equilibrium']['time'] - time))
@@ -601,8 +601,7 @@ class ECRadScenario(dict):
         self["plasma"]["Te"] = mdict["Te"]
         self["plasma"]["ne"] = mdict["ne"]
         if(self["plasma"]["eq_dim"] == 2):
-            self["plasma"]["eq_data_2D"] = EQDataExt(self["shot"], \
-                                                  Ext_data=True)
+            self["plasma"]["eq_data_2D"] = EQDataExt(Ext_data=True)
             slices = []
             for i in range(len(self["time"])):
                 if("eq_special_complete" in mdict):
@@ -625,7 +624,7 @@ class ECRadScenario(dict):
                 # The old .mat file store the scaled Bt not the original Bt
                 # In the new netcdf files the original Bt is stored
                 # The scaled Bt is only used directly in ECRad
-                EQobj = EQDataExt(self["shot"], Ext_data=True)
+                EQobj = EQDataExt(Ext_data=True)
                 EQobj.set_slices_from_ext([self["time"][i]], [slices[-1]])
                 slices[-1].R_ax, slices[-1].z_ax = EQobj.get_axis(self["time"][i])
                 slices[-1].Bt = self["plasma"]["eq_data_2D"].adjust_external_Bt_vac(slices[-1].Bt, slices[-1].R, \
@@ -856,7 +855,7 @@ class ECRadScenario(dict):
                                                                                      "eq_data_3D" + "_" + \
                                                                                      "equilibrium_files"])
         else:
-            self["plasma"]['eq_data_2D'] = EQDataExt(self["shot"], Ext_data=True)
+            self["plasma"]['eq_data_2D'] = EQDataExt(Ext_data=True)
             eq_slice_data = {}
             for sub_key in ["R", "z", "Psi", "rhop", "Br", "Bt", "Bz",\
                             "R_ax", "z_ax", "Psi_ax", "Psi_sep"]:
