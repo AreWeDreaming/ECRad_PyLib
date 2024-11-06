@@ -371,7 +371,7 @@ class ECRadScenario(dict):
                     ods['core_profiles']['profiles_1d'][itime_profiles]['electrons']['density'][mask])
             except ValueError:
                 self["plasma"]["ne"].append(
-                    ods['core_profiles']['profiles_1d'][itime_profiles]['electrons']['density'][mask])
+                    ods['core_profiles']['profiles_1d'][itime_profiles]['electrons']['density_thermal'][mask])
         self["plasma"]["rhop_prof"] = np.array(self["plasma"]["rhop_prof"])
         self["plasma"]["Te"] = np.array(self["plasma"]["Te"])
         self["plasma"]["ne"] = np.array(self["plasma"]["ne"])
