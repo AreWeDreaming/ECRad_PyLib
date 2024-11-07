@@ -19,7 +19,7 @@ import os
 from scipy import constants as cnst
 from ecrad_pylib.Plotting_Core import PlottingCore
 from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
-from scipy.integrate import simps
+from scipy.integrate import simpson
 from ecrad_pylib.Em_Albajar import EmAbsAlb, SVec, DistributionInterpolator, GeneDistributionInterpolator
 from ecrad_pylib.ECRad_Interface import read_svec_dict_from_file
 from ecrad_pylib.TB_Communication import make_topfile_from_ext_data
@@ -795,7 +795,7 @@ def calculate_coupling(path, channel):
     s = np.linspace(np.max([np.min(svec_X["s"][svec_X["rhop"] != -1]), np.min(svec_O["s"][svec_O["rhop"] != -1])]), \
                     np.min([np.max(svec_X["s"][svec_X["rhop"] != -1]), np.max(svec_O["s"][svec_O["rhop"] != -1])]), 1000)
     N_diff = np.abs(N_X_spl(s) - N_O_spl(s))
-    Psi = simps(N_diff, s) * freq * 2.0 * np.pi / cnst.c
+    Psi = simpson(N_diff, s) * freq * 2.0 * np.pi / cnst.c
     print("Psi", Psi)
     plt.plot(s, N_diff * 1.e6)
     plt.show()
@@ -912,7 +912,7 @@ def debug_EQ(path, working_dir):
         mdict[key] = np.swapaxes(mdict[key], 1, 2)
     for key in at_least_2d_keys:
         mdict[key] = np.swapaxes(mdict[key], 0, 1)
-    EQ_obj = EQDataExt(0, external_folder=os.path.dirname(path), Ext_data=True)
+    EQ_obj = EQDataExt(external_folder=os.path.dirname(path), Ext_data=True)
     shot = int(mdict["shotnum"])
     EQ_obj.load_slices_from_mat(times, mdict)
     itime = np.argmin(np.abs(times - time))

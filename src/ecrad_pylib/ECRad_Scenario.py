@@ -5,8 +5,8 @@ Created on Mar 20, 2019
 '''
 from collections import OrderedDict as od
 import os
-from scipy.io import loadmat, savemat
-from ecrad_pylib.Global_Settings import globalsettings, GlobalSettingsAUG
+from scipy.io import loadmat
+from ecrad_pylib.Global_Settings import globalsettings
 import numpy as np
 np.set_printoptions(threshold=np.inf)
 from ecrad_pylib.Equilibrium_Utils import EQDataExt, EQDataSlice
@@ -22,6 +22,40 @@ else:
     from ecrad_pylib.Diag_Types import DefaultDiagDict
 # THis class holds all the input data provided to ECRad with the exception of the ECRad configuration
 
+
+class Plasma(dict):
+
+    def __init__(self):
+        super().__init__()
+        self.clear()
+
+    def clear(self) -> None:
+        super().clear()
+        self["eq_dim"] = 2
+        self["dist_obj"] = None
+        self["GENE_obj"] = None
+        self["rhop_prof"] = []
+        self["rhot_prof"] = []
+        self["prof_reference"] = "rhop_prof"
+        self["2D_prof"] = False
+        self["vessel_bd"] = None
+        self["Te"] = []
+        self["ne"] = []
+        self["Bt_vac_scale"] = 1.0
+        self["eq_data_2D"] = EQDataExt( Ext_data=True)
+        self["eq_data_3D"] = {}
+        self["eq_data_3D"]["equilibrium_file"] = ""
+        self["eq_data_3D"]["equilibrium_type"] = ''
+        self["eq_data_3D"]["use_mesh"] = False
+        self["eq_data_3D"]["use_symmetry"] = True
+        self["eq_data_3D"]["B_ref"] = 1.0
+        self["eq_data_3D"]["s_plus"] = 1.0
+        self["eq_data_3D"]["s_max"] = 1.2
+        self["eq_data_3D"]["interpolation_acc"] = 1.e-12
+        self["eq_data_3D"]["fourier_coeff_trunc"] = 1.e-12
+        self["eq_data_3D"]["h_mesh"] = 1.5e-2 # meters
+        self["eq_data_3D"]["delta_phi_mesh"] = 2.0 # Degrees
+        self["eq_data_3D"]["vessel_filename"] = ""
 
 class ECRadScenario(dict):
     def __init__(self, noLoad=False):
@@ -48,23 +82,13 @@ class ECRadScenario(dict):
         self["dimensions"]["N_used_diags"] = 0
         self["time"] = []
         self["shot"] = 0
-        self["plasma"] = {}
-        self["plasma"]["rhop_prof"] = []
-        self["plasma"]["rhot_prof"] = []
-        self["plasma"]["prof_reference"] = "rhop_prof"
-        self["plasma"]["2D_prof"] = False
-        self["plasma"]["vessel_bd"] = None
-        self["plasma"]["Te"] = []
-        self["plasma"]["ne"] = []
         self["scaling"] = {}
         self["scaling"]["Bt_vac_scale"] = 1.0
         self["scaling"]["Te_rhop_scale"] = 1.0
         self["scaling"]["ne_rhop_scale"] = 1.0
         self["scaling"]["Te_scale"] = 1.0
         self["scaling"]["ne_scale"] = 1.0
-        self["plasma"]["eq_dim"] = 2
-        self["plasma"]["dist_obj"] = None
-        self["plasma"]["GENE_obj"] = None
+        self["plasma"] = Plasma()
         self["diagnostic"] = {}
         self['diagnostic']["f"] = []
         self['diagnostic']["df"] = []
@@ -89,23 +113,7 @@ class ECRadScenario(dict):
             self["plasma"]["Bt_vac_scale"] = 1.005
             self.default_diag = "ECE"
         self.data_source = "Unknown"
-        self["plasma"]["Bt_vac_scale"] = 1.0
         self.default_diag = "EXT"
-        self["plasma"]["eq_data_2D"] = EQDataExt(self["shot"], \
-                                                 Ext_data=True)
-        self["plasma"]["eq_data_3D"] = {}
-        self["plasma"]["eq_data_3D"]["equilibrium_file"] = ""
-        self["plasma"]["eq_data_3D"]["equilibrium_type"] = ''
-        self["plasma"]["eq_data_3D"]["use_mesh"] = False
-        self["plasma"]["eq_data_3D"]["use_symmetry"] = True
-        self["plasma"]["eq_data_3D"]["B_ref"] = 1.0
-        self["plasma"]["eq_data_3D"]["s_plus"] = 1.0
-        self["plasma"]["eq_data_3D"]["s_max"] = 1.2
-        self["plasma"]["eq_data_3D"]["interpolation_acc"] = 1.e-12
-        self["plasma"]["eq_data_3D"]["fourier_coeff_trunc"] = 1.e-12
-        self["plasma"]["eq_data_3D"]["h_mesh"] = 1.5e-2 # meters
-        self["plasma"]["eq_data_3D"]["delta_phi_mesh"] = 2.0 # Degrees
-        self["plasma"]["eq_data_3D"]["vessel_filename"] = ""
         # Define a couple of lables used in plotting
         self.labels = {}
         self.labels["Te"] = r"$T_" + globalsettings.mathrm + r"{e}$"
@@ -229,16 +237,14 @@ class ECRadScenario(dict):
                     core_profiles.profiles_1d[itime_profiles].grid.rho_tor_norm)
 
     def set_up_profiles_from_imas(self, core_profiles, equilibrium, times):
-        for key in self["plasma"]:
-            self["plasma"][key] = []
-        self["plasma"]["prof_reference"] = "rhop_prof"
+        # Restore initial state
+        self["plasma"].clear()
         try:
             self.add_imas_time_slices(core_profiles, equilibrium, times)
         except Exception:
             if(self["plasma"]["prof_reference"] == "rhop_prof"):
                 # Reset the plasma
-                for key in self["plasma"]:
-                    self["plasma"][key] = []
+                self["plasma"].clear()
                 self["plasma"]["prof_reference"] = "rhot_prof"
                 print("rho_pol not viable here using rho_tor")
                 self.add_imas_time_slices(core_profiles, equilibrium, times)
@@ -254,7 +260,7 @@ class ECRadScenario(dict):
 
     def set_up_equilibrium_from_imas(self, equilibrium, wall, times):
         self["plasma"]["eq_dim"] = True
-        self["plasma"]["eq_data_2D"] = EQDataExt(self["shot"], Ext_data=True)
+        self["plasma"]["eq_data_2D"] = EQDataExt(Ext_data=True)
         EQ_slices = []
         for time in times:
             itime = np.argmin(np.abs(equilibrium.time - time))
@@ -303,7 +309,7 @@ class ECRadScenario(dict):
         for key in self['diagnostic']:
             self['diagnostic'][key] = []
         self["dimensions"]["N_ch"] = len(ods['ece']['channel'])
-        N_time = len(ods['ece.channel.0.time'])
+        N_time = len(ods['ece.time'])
         self['diagnostic']["f"] = np.zeros((N_time, self["dimensions"]["N_ch"]))
         for ich, ch in enumerate(ods['ece']['channel'].values()):
             self['diagnostic']["f"][...,ich] = ch['frequency.data']
@@ -340,8 +346,7 @@ class ECRadScenario(dict):
                 get_theta_pol_phi_tor_from_two_points(x1_vec, x2_vec)
 
     def set_up_profiles_from_omas(self, ods, times):
-        for key in self["plasma"]:
-            self["plasma"][key] = []
+        self["plasma"].clear()
         self["plasma"]["prof_reference"] = "rhop_prof"
         for time in times:
             itime_profiles = np.argmin(np.abs(ods['core_profiles']['time'] - time))
@@ -366,7 +371,7 @@ class ECRadScenario(dict):
                     ods['core_profiles']['profiles_1d'][itime_profiles]['electrons']['density'][mask])
             except ValueError:
                 self["plasma"]["ne"].append(
-                    ods['core_profiles']['profiles_1d'][itime_profiles]['electrons']['density'][mask])
+                    ods['core_profiles']['profiles_1d'][itime_profiles]['electrons']['density_thermal'][mask])
         self["plasma"]["rhop_prof"] = np.array(self["plasma"]["rhop_prof"])
         self["plasma"]["Te"] = np.array(self["plasma"]["Te"])
         self["plasma"]["ne"] = np.array(self["plasma"]["ne"])
@@ -379,7 +384,7 @@ class ECRadScenario(dict):
 
     def set_up_equilibrium_from_omas(self, ods, times):
         self["plasma"]["eq_dim"] = True
-        self["plasma"]["eq_data_2D"] = EQDataExt(self["shot"], Ext_data=True)
+        self["plasma"]["eq_data_2D"] = EQDataExt(Ext_data=True)
         EQ_slices = []
         for time in times:
             itime = np.argmin(np.abs(ods['equilibrium']['time'] - time))
@@ -602,8 +607,7 @@ class ECRadScenario(dict):
         self["plasma"]["Te"] = mdict["Te"]
         self["plasma"]["ne"] = mdict["ne"]
         if(self["plasma"]["eq_dim"] == 2):
-            self["plasma"]["eq_data_2D"] = EQDataExt(self["shot"], \
-                                                  Ext_data=True)
+            self["plasma"]["eq_data_2D"] = EQDataExt(Ext_data=True)
             slices = []
             for i in range(len(self["time"])):
                 if("eq_special_complete" in mdict):
@@ -626,7 +630,7 @@ class ECRadScenario(dict):
                 # The old .mat file store the scaled Bt not the original Bt
                 # In the new netcdf files the original Bt is stored
                 # The scaled Bt is only used directly in ECRad
-                EQobj = EQDataExt(self["shot"], Ext_data=True)
+                EQobj = EQDataExt(Ext_data=True)
                 EQobj.set_slices_from_ext([self["time"][i]], [slices[-1]])
                 slices[-1].R_ax, slices[-1].z_ax = EQobj.get_axis(self["time"][i])
                 slices[-1].Bt = self["plasma"]["eq_data_2D"].adjust_external_Bt_vac(slices[-1].Bt, slices[-1].R, \
@@ -857,7 +861,7 @@ class ECRadScenario(dict):
                                                                                      "eq_data_3D" + "_" + \
                                                                                      "equilibrium_files"])
         else:
-            self["plasma"]['eq_data_2D'] = EQDataExt(self["shot"], Ext_data=True)
+            self["plasma"]['eq_data_2D'] = EQDataExt(Ext_data=True)
             eq_slice_data = {}
             for sub_key in ["R", "z", "Psi", "rhop", "Br", "Bt", "Bz",\
                             "R_ax", "z_ax", "Psi_ax", "Psi_sep"]:
@@ -976,34 +980,23 @@ class ECRadScenario(dict):
             print(e)
             return False
         
-    def duplicate_time_point(self, it, new_times):
+    def duplicate_time_point(self, time_index, new_times):
         # Copies the time index it len(new_times) times using the times in new_times.
-        first_time = True
-        plasma_dict_0 = self["plasma"].copy()
-        new_plasma_dict = {}
-        new_ray_launch = []
-        ray_launch_0 = self.ray_launch[0]
-        new_plasma_dict["vessel_bd"] = plasma_dict_0["vessel_bd"]
-        new_plasma_dict["prof_reference"] = plasma_dict_0["prof_reference"]
-        for time in new_times:
-            for key in self["plasma"]:
-                if(plasma_dict_0[key] is None or np.isscalar(plasma_dict_0[key])):
-                    continue
-                elif(key == "vessel_bd" or key == "prof_reference" or len(plasma_dict_0[key]) == 0):
-                    continue
-                if(first_time):
-                    new_plasma_dict[key] = []
-                if(key != "time"):
-                    new_plasma_dict[key].append(plasma_dict_0[key][it])
-                elif(key == "time" ):
-                    new_plasma_dict[key].append(time)
-            first_time = False
-            new_ray_launch.append({})
-            for key in ray_launch_0:
-                new_ray_launch[-1][key] = ray_launch_0[key]
-        self["time"] = np.array(new_plasma_dict["time"])
-        self["plasma"] = new_plasma_dict
-        self["diagnostic"] = new_ray_launch
+        self["dimensions"]["N_time"] = len(new_times)
+        self["time"] = new_times
+        for key in ["rhop_prof", "Te", "ne"]:
+            plasma_ref = np.copy(self["plasma"][key][time_index])
+            self["plasma"][key] = np.zeros((self["dimensions"]["N_time"], plasma_ref.size))
+            self["plasma"][key][:] = plasma_ref
+        slice_ref = self["plasma"]["eq_data_2D"].slices[time_index]
+        self["plasma"]["eq_data_2D"].slices = []
+        for _ in new_times:
+            self["plasma"]["eq_data_2D"].slices.append(slice_ref)
+        for key in self["diagnostic"]:
+            diagnsotic_ref = np.copy(self["diagnostic"][key][time_index])
+            if key != "diag_name":
+                self["diagnostic"][key] = np.zeros((self["dimensions"]["N_time"], diagnsotic_ref.size))
+                self["diagnostic"][key][:] = diagnsotic_ref
         
     def integrate_GeneData(self, used_times):
         # We need this to hack in extra time points for the GENE computation

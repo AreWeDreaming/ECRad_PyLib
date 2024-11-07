@@ -114,7 +114,7 @@ def make_topfile_no_data_load(working_dir, shot, time, R, z, Psi, Br, Bt, Bz, Ps
             cnt = 0
         else:
             cnt += 1
-    if(cnt is not columns and cnt is not 0):
+    if(cnt != columns and cnt != 0):
         topfile.write('\n')
     topfile.write('Vertical grid coordinates\n')
     cnt = 0
@@ -125,7 +125,7 @@ def make_topfile_no_data_load(working_dir, shot, time, R, z, Psi, Br, Bt, Bz, Ps
             cnt = 0
         else:
             cnt += 1
-    if(cnt is not columns and cnt is not 0):
+    if(cnt != columns and cnt != 0):
         topfile.write('\n')
     # ivR = np.argmin(np.abs(pfm_dict["Ri"] - rv))
     # jvz = np.argmin(np.abs(pfm_dict["zj"] - vz))
@@ -147,7 +147,7 @@ def make_topfile_no_data_load(working_dir, shot, time, R, z, Psi, Br, Bt, Bz, Ps
                 cnt = 0
             else:
                 cnt += 1
-    if(cnt is not columns and cnt is not 0):
+    if(cnt != columns and cnt != 0):
         topfile.write('\n')
     topfile.write('B_t on grid\n')
     cnt = 0
@@ -159,7 +159,7 @@ def make_topfile_no_data_load(working_dir, shot, time, R, z, Psi, Br, Bt, Bz, Ps
                 cnt = 0
             else:
                 cnt += 1
-    if(cnt is not columns and cnt is not 0):
+    if(cnt != columns and cnt != 0):
         topfile.write('\n')
     cnt = 0
     topfile.write('B_z on grid\n')
@@ -171,7 +171,7 @@ def make_topfile_no_data_load(working_dir, shot, time, R, z, Psi, Br, Bt, Bz, Ps
                 cnt = 0
             else:
                 cnt += 1
-    if(cnt is not columns and cnt is not 0):
+    if(cnt != columns and cnt != 0):
         topfile.write('\n')
     cnt = 0
     topfile.write('Normalised psi on grid\n')
@@ -244,7 +244,7 @@ def make_topfile_from_ext_data(working_dir, shot, time, EQ, rhop, Te, ne, grid=F
             cnt = 0
         else:
             cnt += 1
-    if(cnt is not 0):
+    if(cnt != 0):
         topfile.write('\n')
     topfile.write('Vertical grid coordinates\n')
     cnt = 0
@@ -255,7 +255,7 @@ def make_topfile_from_ext_data(working_dir, shot, time, EQ, rhop, Te, ne, grid=F
             cnt = 0
         else:
             cnt += 1
-    if(cnt is not 0):
+    if(cnt != 0):
         topfile.write('\n')
     topfile.write('B_r on grid\n')
     cnt = 0
@@ -267,7 +267,7 @@ def make_topfile_from_ext_data(working_dir, shot, time, EQ, rhop, Te, ne, grid=F
                 cnt = 0
             else:
                 cnt += 1
-    if(cnt is not 0):
+    if(cnt != 0):
         topfile.write('\n')
     topfile.write('B_t on grid\n')
     cnt = 0
@@ -279,7 +279,7 @@ def make_topfile_from_ext_data(working_dir, shot, time, EQ, rhop, Te, ne, grid=F
                 cnt = 0
             else:
                 cnt += 1
-    if(cnt is not 0):
+    if(cnt != 0):
         topfile.write('\n')
     cnt = 0
     topfile.write('B_z on grid\n')
@@ -291,7 +291,7 @@ def make_topfile_from_ext_data(working_dir, shot, time, EQ, rhop, Te, ne, grid=F
                 cnt = 0
             else:
                 cnt += 1
-    if(cnt is not 0):
+    if(cnt != 0):
         topfile.write('\n')
     cnt = 0
     topfile.write('Normalised psi on grid\n')
@@ -354,7 +354,7 @@ def make_topfile_from_ext_data(working_dir, shot, time, EQ, rhop, Te, ne, grid=F
                 cnt = 0
             else:
                 cnt += 1
-        if(cnt is not 0):
+        if(cnt != 0):
             Te_ne_matfile.write('\n')
         Te_ne_matfile.write('Vertical grid coordinates\n')
         cnt = 0
@@ -365,7 +365,7 @@ def make_topfile_from_ext_data(working_dir, shot, time, EQ, rhop, Te, ne, grid=F
                 cnt = 0
             else:
                 cnt += 1
-        if(cnt is not 0):
+        if(cnt != 0):
             Te_ne_matfile.write('\n')
         Te_ne_matfile.write('Te on grid\n')
         cnt = 0
@@ -379,7 +379,7 @@ def make_topfile_from_ext_data(working_dir, shot, time, EQ, rhop, Te, ne, grid=F
                     cnt = 0
                 else:
                     cnt += 1
-        if(cnt is not 0):
+        if(cnt != 0):
             Te_ne_matfile.write('\n')
         Te_ne_matfile.write('ne on grid\n')
         cnt = 0
@@ -447,7 +447,7 @@ def make_TORBEAM_no_data_load(working_dir, shot, time, rho_prof, Te_prof, ne_pro
     os.chdir(org_path)
 
 def prepare_TB_data_no_data_load(working_dir, shot, time, rho_prof, Te_prof, ne_prof, R, z, psi, Br, Bt, Bz, psi_ax, psi_sep, ITM=False):
-    if(make_topfile_no_data_load(working_dir, shot, time, R, z, psi, Br, Bt, Bz, psi_ax, psi_sep, ITM) is not 0):
+    if(make_topfile_no_data_load(working_dir, shot, time, R, z, psi, Br, Bt, Bz, psi_ax, psi_sep, ITM) != 0):
         return
     Te_file = open(os.path.join(working_dir, "Te.dat"), "w")
     if(len(rho_prof) > 150):
@@ -472,7 +472,7 @@ def prepare_TB_data_no_data_load(working_dir, shot, time, rho_prof, Te_prof, ne_
 
 def make_inbeam(working_dir, launch, mode, time, inbeam_no=0, cyl=False, ITM=False, ITER=False):
     parser =  f90nml.parser.Parser()
-    inbeam = parser.read(os.path.join(globalsettings.ECRadPylibRoot, "inbeam.dat"))
+    inbeam = parser.read(os.path.join(globalsettings.ECRadPylibRoot, "src", "ecrad_pylib", "inbeam.dat"))
     inbeam["edata"]["xf"] = launch.f
     inbeam["edata"]["nmod"] = mode
     # inbeam["edata"]["nrel"] = 1
@@ -485,7 +485,7 @@ def make_inbeam(working_dir, launch, mode, time, inbeam_no=0, cyl=False, ITM=Fal
             inbeam["edata"]["xtordeg"] = launch.phi_tor + launch.phi
     elif(launch.alpha is not None and launch.beta is not None):
         if(cyl):
-            inbeam["edata"]["xtordeg"] =  np.rad2deg(launch.beta)
+            inbeam["edata"]["xtordeg"] = np.rad2deg(launch.beta)
         else:
             inbeam["edata"]["xtordeg"] = np.rad2deg(launch.beta)
     else:
@@ -581,10 +581,10 @@ def make_mdict_from_TB_files(path, eq_only=False):
     for key in ["R", "z", "Br", "Bt", "Bz", "Psi"]:
         # Descriptor
         line = tb_file.readline()
-        if(key is "R"):
+        if(key == "R"):
             elemt_cnt = m
             reshape = m
-        elif(key is "z"):
+        elif(key == "z"):
             elemt_cnt = n
             reshape = n
         else:

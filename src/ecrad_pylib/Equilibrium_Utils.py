@@ -72,12 +72,10 @@ class EQDataSlice:
         self.ripple = ripple
 
 class EQDataExt:
-    def __init__(self, shot, external_folder='', EQ_exp="AUGD", EQ_diag="EQH", EQ_ed=0, Ext_data=False):
-        self.shot = shot
+    def __init__(self, external_folder='', EQ_exp="AUGD", EQ_diag="EQH", EQ_ed=0, Ext_data=False):
         self.EQ_exp = EQ_exp
         self.EQ_diag = EQ_diag
         self.EQ_ed = EQ_ed
-        self.shotfile_ready = False
         self.loaded = False
         self.external_folder = external_folder
         self.Ext_data = Ext_data

@@ -7,7 +7,7 @@ Created on Jun 19, 2019
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
 import scipy.constants as cnst
-from scipy.integrate import simps 
+from scipy.integrate import simpson 
 from scipy.integrate import nquad
 from ecrad_pylib.Distribution_Functions import Juettner2D, Juettner1D, rel_thermal_beta
 
@@ -80,17 +80,17 @@ def get_thermal_av_cyc_freq(Te, f_c):
     f_2th_moment = np.zeros(len(ull))
     for i in range(len(ull)):
         f[i] = Juettner2D(ull[i], uxx, Te)
-        f_0th_moment[i] = simps(uxx * f[i, :] * np.pi * 2.e0, uxx)
-        f_1th_moment[i] = simps(uxx * f[i, :] * np.pi * 2.e0 * ull[i], uxx)
-    zeros_mom = simps(f_0th_moment, ull)
-    first_mom = simps(f_1th_moment, ull)
+        f_0th_moment[i] = simpson(uxx * f[i, :] * np.pi * 2.e0, uxx)
+        f_1th_moment[i] = simpson(uxx * f[i, :] * np.pi * 2.e0 * ull[i], uxx)
+    zeros_mom = simpson(f_0th_moment, ull)
+    first_mom = simpson(f_1th_moment, ull)
     for i in range(len(ull)):
         u_sq = uxx ** 2 + (ull[i] - first_mom / zeros_mom) ** 2
         gamma_sq = (1 + u_sq)
-        f_2th_moment[i] = simps(uxx * f[i, :] * np.pi * 2.e0 * 1.0 / np.sqrt(gamma_sq), uxx)
-        # f_mean_gamma[i] = simps(uxx * f[i, :] * np.pi * 2.e0 * gamma, uxx)
+        f_2th_moment[i] = simpson(uxx * f[i, :] * np.pi * 2.e0 * 1.0 / np.sqrt(gamma_sq), uxx)
+        # f_mean_gamma[i] = simpson(uxx * f[i, :] * np.pi * 2.e0 * gamma, uxx)
     # print(zeros_mom, second_mom)
-    av_cyc_freq = f_c * simps(f_2th_moment, ull)
+    av_cyc_freq = f_c * simpson(f_2th_moment, ull)
     return av_cyc_freq
 
 def get_bimaxwellian_moments(betall_min, betall_max, betaxx_min, betaxx_max, f_spl, ne_out=False):
@@ -199,18 +199,18 @@ def get_0th_and_2nd_moment(ull, uxx, f):
     f_1th_moment = np.zeros(len(ull))
     f_2th_moment = np.zeros(len(ull))
     for i in range(len(ull)):
-        f_0th_moment[i] = simps(uxx * f[i, :] * np.pi * 2.e0, uxx)
-        f_1th_moment[i] = simps(uxx * f[i, :] * np.pi * 2.e0 * ull[i], uxx)
-    zeros_mom = simps(f_0th_moment, ull)
-    first_mom = simps(f_1th_moment, ull)
+        f_0th_moment[i] = simpson(uxx * f[i, :] * np.pi * 2.e0, uxx)
+        f_1th_moment[i] = simpson(uxx * f[i, :] * np.pi * 2.e0 * ull[i], uxx)
+    zeros_mom = simpson(f_0th_moment, ull)
+    first_mom = simpson(f_1th_moment, ull)
     for i in range(len(ull)):
         u_sq = uxx ** 2 + (ull[i] - first_mom / zeros_mom) ** 2
         gamma_sq = (1 + u_sq)
-        f_2th_moment[i] = simps(uxx * f[i, :] * np.pi * 2.e0 * u_sq / np.sqrt(gamma_sq), uxx)
-        # f_mean_gamma[i] = simps(uxx * f[i, :] * np.pi * 2.e0 * gamma, uxx)
+        f_2th_moment[i] = simpson(uxx * f[i, :] * np.pi * 2.e0 * u_sq / np.sqrt(gamma_sq), uxx)
+        # f_mean_gamma[i] = simpson(uxx * f[i, :] * np.pi * 2.e0 * gamma, uxx)
     # print(zeros_mom, second_mom)
-    second_mom = simps(f_2th_moment, ull)
-    # gamma_mean = simps(f_mean_gamma, ull)
+    second_mom = simpson(f_2th_moment, ull)
+    # gamma_mean = simpson(f_mean_gamma, ull)
     Te = cnst.c ** 2 * cnst.m_e / cnst.e * second_mom / zeros_mom / 3.0
     return zeros_mom, Te
 

@@ -4,9 +4,6 @@ Created on Jan 29, 2017
 '''
 import os
 import multiprocessing
-import sys
-from glob import glob
-import socket
 
 def qos_function_tok(cores, wall_time):
     if(cores == 1):
@@ -62,143 +59,14 @@ def qos_function_engaging(cores, wall_time):
 def account_function_current_user():
     return ""
 
-class GlobalSettingsITM:
-    def __init__(self):
-        self.AUG = True  # True  -> Start with True, set it to false if we run into problems
-        self.root = os.path.expanduser("~/")
-        self.ECRadRoot = os.path.abspath("../ECRad_core")
-        self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot, os.environ['SYS'])
-        self.ECRadPylibRoot = os.path.abspath("../ECRad_PyLib/")
-        self.ECRadGUIRoot = os.path.abspath("../ECRad_GUI/")
-        self.ECRadPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRad")
-        self.ECRadPathBSUB = os.path.join(self.ECRadRoot,"ECRad_submit.bsub")
-        self.batch_submission_cmd = "sbatch"
-        self.qos_function = qos_function_itm
-        self.partition_function = partition_function_itm
-        self.account_fuction = account_function_current_user
-        self.max_cores = 48
-        self.pylib_folder = "../ECRad_Pylib"
-        self.GUI_folder = "../ECRad_GUI"
-        self.plot_mode = "Presentation"
-        self.mathrm = r"\mathrm"
-        self.omas = False
-                
-class GlobalSettingsAUG:
-    def __init__(self):
-        self.AUG = True  # True  -> Start with True, set it to false if we run into problems
-        self.root = os.path.expanduser("~/")
-        self.ECRadRoot = "../ECRad_core/"
-        self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot, os.environ['SYS'])
-        self.ECRadPylibRoot = os.path.abspath("../ECRad_PyLib/")
-        self.ECRadGUIRoot = os.path.abspath("../ECRad_GUI/")
-        self.ECRadPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRad")
-        self.ECRadPathBSUB = os.path.join(self.ECRadPylibRoot,"ECRad_Driver_submit_IPP.bsub")
-        self.batch_submission_cmd = "sbatch"
-        self.qos_function = qos_function_tok
-        self.partition_function = partition_function_tok
-        self.account_fuction = account_function_current_user
-        self.max_cores = 32
-        self.plot_mode = "Software"
-        self.mathrm = r""
-        self.omas = False
-
-class GlobalSettingsMIT:
+class GlobalSettings:
     def __init__(self):
         self.AUG = False  # True  -> Start with True, set it to false if we run into problems
         self.root = os.path.expanduser("~/")
-        self.ECRadRoot = os.path.abspath("../ECRad_core")
-        self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot, "bin")
-        self.ECRadPylibRoot = os.path.abspath("../ECRad_PyLib/")
-        self.ECRadGUIRoot = os.path.abspath("../ECRad_GUI/")
-        self.ECRadPath = os.path.join(self.ECRadRoot,"bin","ECRad")
-        self.batch_submission_cmd = "sbatch"
-        self.ECRadPathBSUB = os.path.join(self.ECRadPylibRoot,"ECRad_Driver_submit.bsub")
-        self.qos_function = qos_function_engaging
-        self.partition_function = partition_function_engaging
-        self.account_fuction = account_function_current_user
-        self.max_cores = 32
-        self.plot_mode = "Software"
-        self.mathrm = r""
-        self.omas = False
-
-class GlobalSettingsITER:
-    def __init__(self):
-        self.AUG = False  # True  -> Start with True, set it to false if we run into problems
-        self.root = os.path.expanduser("~/")
-        # Add plasma math tools without conda
-        sys.path.append(os.path.abspath("../plasma_math_tools"))
-        self.ECRadRoot = os.path.abspath("../ECRad_core")
-        self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot, "bin")
-        self.ECRadPylibRoot = os.path.abspath("../ECRad_PyLib/")
-        self.ECRadGUIRoot = os.path.abspath("../ECRad_GUI/")
-        self.ECRadPath = os.path.join(self.ECRadRoot,"bin","ECRad")
-        self.ECRadPathBSUB = os.path.join(self.ECRadPylibRoot,"ECRad_Driver_submit.bsub")
-        self.batch_submission_cmd = "sbatch"
-        self.qos_function = qos_function_engaging
-        self.partition_function = partition_function_engaging
-        self.account_fuction = account_function_current_user
-        self.max_cores = 16
-        self.plot_mode = "Software"
-        self.mathrm = r""
-        self.omas = True
-        try:
-            import omas
-        except ImportError:
-            self.omas = False
-        
-class GlobalSettingsIRIS:
-    def __init__(self):
-        self.AUG = False
-        self.root = os.path.expanduser("~/")
-        self.ECRadRoot = os.path.abspath("../ECRad_core")
-        self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot, "bin")
-        self.ECRadPylibRoot = os.path.abspath("../ECRad_PyLib/")
-        self.ECRadGUIRoot = os.path.abspath("../ECRad_GUI/")
-        self.ECRadPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRad")
-        self.ECRadPathBSUB = os.path.join(self.ECRadPylibRoot,"ECRad_Driver_submit.bsub")
-        self.batch_submission_cmd = "sbatch"
-        self.qos_function = qos_function_iris
-        self.partition_function = partition_function_iris
-        self.account_fuction = account_function_current_user
-        self.max_cores = 16
-        self.plot_mode = "Presentation"
-        self.mathrm = r"\mathrm"
-        self.omas = True
-        try:
-            import omas
-        except ImportError:
-            self.omas = False
-
-class GlobalSettingsOmega:
-    def __init__(self):
-        self.AUG = False
-        self.root = os.path.expanduser("~/")
-        self.ECRadRoot = os.path.abspath("../ECRad_core")
-        self.ECRadLibDir = os.path.join(self.ECRadRoot, self.ECRadRoot, "bin")
-        self.ECRadPylibRoot = os.path.abspath("../ECRad_PyLib/")
-        self.ECRadGUIRoot = os.path.abspath("../ECRad_GUI/")
-        self.ECRadPath = os.path.join(self.ECRadRoot,os.environ['SYS'],"ECRad")
-        self.ECRadPathBSUB = os.path.join(self.ECRadPylibRoot,"ECRad_Driver_submit.bsub")
-        self.batch_submission_cmd = "sbatch"
-        self.qos_function = qos_function_iris
-        self.partition_function = partition_function_iris
-        self.account_fuction = account_function_current_user
-        self.max_cores = 16
-        self.plot_mode = "Software"
-        self.mathrm = r"\mathrm"
-        self.omas = True
-        try:
-            import omas
-        except ImportError:
-            self.omas = False       
-        
-class GlobalSettingsEXT:
-    def __init__(self):
-        self.AUG = False  # True  -> Start with True, set it to false if we run into problems
-        self.root = os.path.expanduser("~/")
-        self.ECRadRoot = os.path.abspath("../ECRad_core")
-        self.ECRadPylibRoot = os.path.abspath("../ECRad_PyLib/")
-        self.ECRadGUIRoot = os.path.abspath("../ECRad_GUI/")
+        self.ECRadRoot = os.path.join(os.path.dirname(__file__), os.pardir)
+        self.ECRadCoreRoot = os.path.join(self.ECRadRoot, "ECRad_core")
+        self.ECRadPylibRoot = os.path.join(self.ECRadRoot, "ECRad_PyLib")
+        self.ECRadGUIRoot = os.path.join(self.ECRadRoot, "ECRad_GUI")
         if "SYS" in os.environ:
             self.ECRadLibDir = os.path.join(self.ECRadRoot, os.environ["SYS"])
         else:
@@ -210,8 +78,6 @@ class GlobalSettingsEXT:
         self.partition_function = partition_function_tok
         self.account_fuction = account_function_current_user
         self.max_cores = multiprocessing.cpu_count() / 2
-        self.pylib_folder = "../ECRad_PyLib"
-        self.GUI_folder = "../ECRad_GUI"
         self.plot_mode = "Presentation"
         self.mathrm = r"\mathrm"
         self.omas = True
@@ -219,22 +85,6 @@ class GlobalSettingsEXT:
             import omas
         except ImportError:
             self.omas = False
-try:        
-    if("mpg.de" in socket.getfqdn()):
-        globalsettings = GlobalSettingsAUG()
-    elif("eufus" in socket.getfqdn()):
-        globalsettings = GlobalSettingsITM()
-    elif("iris" in socket.getfqdn()):
-        globalsettings = GlobalSettingsIRIS()
-    elif("omega" in socket.getfqdn()):
-        globalsettings = GlobalSettingsOmega()
-    elif("cm.cluster" in socket.getfqdn()):
-        globalsettings = GlobalSettingsMIT()
-    elif("iter" in socket.getfqdn()):
-        globalsettings = GlobalSettingsITER()
-    else:
-        globalsettings = GlobalSettingsEXT()
-except KeyError:
-    globalsettings = GlobalSettingsEXT()
-library_list = glob("../*pylib") + glob("../*PyLib")
+
+globalsettings = GlobalSettings()
 

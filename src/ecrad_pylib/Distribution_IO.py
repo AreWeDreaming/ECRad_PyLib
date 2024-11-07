@@ -7,7 +7,7 @@ Created on Jun 19, 2019
 
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
-from scipy.integrate import simps
+from scipy.integrate import simpson
 import os
 from scipy.io import loadmat
 from ecrad_pylib.Distribution_Classes import Distribution, Beam, Gene
@@ -363,11 +363,11 @@ def make_dist_from_Gene_input(path, shot, time, EQObj, debug=False):
             f_test_int[:] = 0.e0
             for j in range(len(beta_par)):
                 gamma = np.sqrt(1.e0 / (1.e0 - beta_par[j] ** 2 - beta_perp ** 2))
-                f_int[j] = simps(gamma ** 5 * beta_perp * 2 * np.pi * f[i, j, :], beta_perp)
-                f_test_int[j] = simps(gamma ** 5 * beta_perp * 2 * np.pi * g_test[i, j, :], beta_perp)
+                f_int[j] = simpson(gamma ** 5 * beta_perp * 2 * np.pi * f[i, j, :], beta_perp)
+                f_test_int[j] = simpson(gamma ** 5 * beta_perp * 2 * np.pi * g_test[i, j, :], beta_perp)
                 if(plot and np.all(np.abs(g_test[i, j, :]) > 0.0) and j % 5 == 0 and i == int(len(rhop) / 2)):
                     plt.plot(beta_perp, f[i, j, :] / g_test[i, j, :] , label=r"$\beta_\parallel = " + "{0:1.2f}".format(beta_par[j]) + "$")
-            print("Rho {0:1.3f} ne_ref {1:1.4e} ne GENE {2:1.4e} ne test {3:1.4e} ne_Gene/ne_test {4:1.4e}".format(rhop[i], ne, simps(f_int, beta_par), simps(f_test_int, beta_par), simps(f_int, beta_par) / simps(f_test_int, beta_par)))
+            print("Rho {0:1.3f} ne_ref {1:1.4e} ne GENE {2:1.4e} ne test {3:1.4e} ne_Gene/ne_test {4:1.4e}".format(rhop[i], ne, simpson(f_int, beta_par), simpson(f_test_int, beta_par), simpson(f_int, beta_par) / simpson(f_test_int, beta_par)))
                     #  * 2.e0 * B / (np.sqrt(beta_perp) * cnst.c ** 3 * cnst.m_e)
         plt.gca().set_xlabel(r"$\beta_\perp$")
         plt.gca().set_ylabel(r"$f_\mathrm{GENE}/f_\mathrm{thermal}$")
