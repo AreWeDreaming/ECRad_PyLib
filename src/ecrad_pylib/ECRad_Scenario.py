@@ -384,13 +384,19 @@ class ECRadScenario(dict):
         for time in times:
             itime = np.argmin(np.abs(ods['equilibrium']['time'] - time))
             prof_2D = ods['equilibrium']['time_slice'][itime]['profiles_2d.0']
+            try:
+                r_ax = ods['equilibrium']['time_slice'][itime]['global_quantities']['magnetic_axis']['r']
+                z_ax = ods['equilibrium']['time_slice'][itime]['global_quantities']['magnetic_axis']['z']
+            except ValueError:
+                r_ax = None
+                z_ax = None
             EQ_slices.append(EQDataSlice(\
                 time, prof_2D["grid"]["dim1"],prof_2D["grid"]["dim2"],\
                 prof_2D["psi"], prof_2D["b_field_r"], prof_2D["b_field_tor"], prof_2D["b_field_z"],
                 ods['equilibrium']['time_slice'][itime]['global_quantities']['psi_axis'],\
                 ods['equilibrium']['time_slice'][itime]['global_quantities']['psi_boundary'],\
-                ods['equilibrium']['time_slice'][itime]['global_quantities']['magnetic_axis']['r'],\
-                ods['equilibrium']['time_slice'][itime]['global_quantities']['magnetic_axis']['z']))
+                r_ax,\
+                z_ax))
         self["plasma"]["eq_data_2D"].set_slices_from_ext(times, EQ_slices)
         self["plasma"]["vessel_bd"] = np.array([ \
             ods['wall.description_2d.0.limiter.unit.0.outline.r'],

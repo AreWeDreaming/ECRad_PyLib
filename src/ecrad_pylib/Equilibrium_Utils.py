@@ -104,8 +104,8 @@ class EQDataExt:
         if(transpose):
             for eq_slice in self.slices:
                 eq_slice.transpose_matrices()
-        self.post_process_slices()
         self.loaded = True
+        self.post_process_slices()
                 
     def insert_slices_from_ext(self, times, slices, transpose=False):
         new_slices = copy.deepcopy(self.slices)
@@ -161,8 +161,6 @@ class EQDataExt:
             if(self.slices[itime].R_ax is None):
                 self.slices[itime].R_ax, self.slices[itime].z_ax = \
                     self.get_axis(time)
-            
-            
 
     def load_slices_from_mat(self, time, mdict, eq_prefix = False):
         self.times = copy.deepcopy(time)
