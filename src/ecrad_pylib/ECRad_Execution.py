@@ -35,8 +35,8 @@ def SetupECRadBatch(Config, Scenario):
     launch_options_dict = {}
     if(globalsettings.batch_submission_cmd == "sbatch"):
         launch_options_dict["jobname"] = "-J " + "E{0:06d}".format(Scenario["shot"])
-        launch_options_dict["stdout"] = "-o {0:s}".format(os.path.join(Config["Execution"]["scratch_dir"], "ECRad.stdout"))
-        launch_options_dict["stderr"] = "-e {0:s}".format(os.path.join(Config["Execution"]["scratch_dir"], "ECRad.stderr"))
+        launch_options_dict["stdout"] = f"--output={os.path.join(Config['Execution']['scratch_dir'], 'ECRad.stdout')}"
+        launch_options_dict["stderr"] = f"--error={os.path.join(Config['Execution']['scratch_dir'], 'ECRad.stderr')}"
         launch_options_dict["partition"] = globalsettings.partition_function(parallel_cores, Config["Execution"]["wall_time"])
         launch_options_dict["qos"] = globalsettings.qos_function(parallel_cores, Config["Execution"]["wall_time"])
         launch_options_dict["account"] = globalsettings.account_fuction()
