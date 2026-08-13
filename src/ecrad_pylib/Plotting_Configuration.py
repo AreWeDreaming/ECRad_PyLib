@@ -37,7 +37,7 @@ elif(plot_mode == "Presentation"):
     plt.rcParams['axes.labelsize'] = 16  # 24 #36
     plt.rc('text', usetex=True)
 elif(plot_mode == "Software"):
-    plt.rc('font', **{'family':'sans-serif', 'sans-serif':['Computer Modern Sans serif'], 'size' : 16})  # 24
+    plt.rc('font', **{'family':'sans-serif', 'sans-serif':['DejaVu Sans'], 'size' : 16})  # 24
     plt.rcParams["legend.fontsize"] = 18  # 14  # 18 #20
     plt.rcParams['axes.titlesize'] = 24  # 14  # 24 #36
     plt.rcParams['axes.labelsize'] = 16  # 14  # 24 #36

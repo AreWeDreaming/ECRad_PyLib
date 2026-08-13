@@ -4,7 +4,7 @@ Created on Dec 10, 2015
 '''
 import sys
 sys.path.append('/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib/')
-import dd
+import aug_sfutils as sf
 import os
 import ctypes as ct
 import numpy as np

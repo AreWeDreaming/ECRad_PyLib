@@ -478,13 +478,13 @@ class PlottingCore:
 
     def time_trace_for_calib(self, fig, shot, time, diag_time, IDA, IDA_labels, ECE, ECE_labels, ECRad, ECRad_labels, diag=None, diag_labels=None, divertor_cur=None):
         if(divertor_cur is not None and diag is not None):
-            self.setup_axes("stacked_large", r"Timetraces for \#" + str(shot))
+            self.setup_axes("stacked_large", r"Timetraces for #" + str(shot))
         elif(diag is not None or divertor_cur is not None):
-            self.setup_axes("stacked_small", r"Timetraces for \#" + str(shot))
+            self.setup_axes("stacked_small", r"Timetraces for #" + str(shot))
         elif(len(ECE) > 0):
-            self.setup_axes("stacked_very_small", r"Timetraces for \#" + str(shot))
+            self.setup_axes("stacked_very_small", r"Timetraces for #" + str(shot))
         else:
-            self.setup_axes("single", r"Timetraces for \#" + str(shot))
+            self.setup_axes("single", r"Timetraces for #" + str(shot))
         for i in range(len(IDA)):
             if(len(IDA[i]) == 1):
                 self.axlist[0], self.y_range_list[0] = self.add_plot(self.axlist[0], \

@@ -52,8 +52,10 @@ class EQDataSlice:
         if(rhop is not None):
             self.rhop = rhop
         else:
-            self.rhop = np.sqrt((self.Psi_ax - self.Psi)/ \
-                                 (self.Psi_ax - self.Psi_sep))
+            rhop_squared = (self.Psi_ax - self.Psi)/ (self.Psi_ax - self.Psi_sep)
+            # Fix rhop_squared < 0 for approx errors
+            rhop_squared[rhop_squared < 0] = 0
+            self.rhop = np.sqrt(rhop_squared)
         self.ripple = ripple
 
 #        if(self.Psi_sep < self.Psi[self.Psi.shape[0] / 2][self.Psi.shape[1] / 2]):

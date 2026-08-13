@@ -15,7 +15,7 @@ __version__ = '2.0'
 
 
 import matplotlib.pylab as plt
-import dd
+import aug_sfutils as sf
 import numpy as np
 # import IPython
 defaultSetting = {'dt_elm':2.2e-3, 't_start':-1.e-3, 't_end':-2.25e-3, 'max_dt_elm_cycle':20.e-4}
