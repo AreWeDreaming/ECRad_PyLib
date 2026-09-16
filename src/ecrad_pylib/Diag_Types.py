@@ -7,6 +7,7 @@ import numpy as np
 from collections import OrderedDict as od
 from scipy.io import loadmat
 from netCDF4 import Dataset
+import pandas as pd
 
 class BasicDiag:
     def __init__(self, name):
@@ -289,6 +290,72 @@ class EXT_diag(BasicDiag):  #  Makes no sense to inherit properties we do not wa
             self.pol_coeff_X = mdict["launch_pol_coeff_X"][0]
         self.N_ch = len(self.f)
         
+    def set_from_csv(self, ray_launch_file):
+        data = pd.read_csv(ray_launch_file, sep="[\t;,\\ ]+",comment="#", index_col=False).to_dict(orient="list")
+
+        # Frequency
+        if( "f" in data.keys() ):
+            self.f = np.array(data["f"]).astype(float)
+        elif( "freq" in data.keys() ):
+            self.f = np.array(data["freq"]).astype(float)
+        elif( "frequency" in data.keys() ):
+            self.f = np.array(data["frequency"]).astype(float)
+        else:
+            raise Exception("No frequency data found in " + ray_launch_file)
+
+        # df
+        if( "df" in data.keys() ):
+            self.df = np.array(data["df"]).astype(float)
+        elif( "if_bw" in data.keys() ):
+            self.df = np.array(data["if_bw"]).astype(float)
+        else:
+            self.df = self.f * 0 + 3e8
+            print("Warning: no bandwidth provided, using 0.3 GHz as default")
+
+        # R1, z1, R2, z2
+        assert "R1" in data.keys(), "No R1 data found in " + ray_launch_file
+        assert "z1" in data.keys(), "No z1 data found in " + ray_launch_file
+        assert "R2" in data.keys(), "No R2 data found in " + ray_launch_file
+        assert "z2" in data.keys(), "No z2 data found in " + ray_launch_file
+        R1 = np.array(data["R1"]).astype(float)
+        z1 = np.array(data["z1"]).astype(float)
+        R2 = np.array(data["R2"]).astype(float)
+        z2 = np.array(data["z2"]).astype(float)
+
+        # R, z, theta_pol, phi_tor
+        self.R = R1 * 0 + 3.90
+        self.z = ( self.R - R1 ) / ( R2 - R1 ) * ( z2 - z1 ) + z1
+        self.theta_pol = np.rad2deg( np.pi - np.arctan2( z2 - z1, R2 - R1 ))
+        if( "phi_tor" in data.keys() ):
+            self.phi_tor = np.rad2deg( np.array(data["phi_tor"]).astype(float) )
+        else:
+            self.phi_tor = self.theta_pol * 0
+            print("Warning: no toroidal launch angle (phi_tor) provided, assuming beam straigth towards the toroidal axis (phi_tor = 0)")
+
+        # Phi (position in the vessel)
+        if( "phi" in data.keys() ):
+            self.phi = np.rad2deg( np.array(data["phi"]).astype(float) )
+        else:
+            self.phi = (8.5e0) * 22.5
+            print("Warning: no antenna toroidal position (phi) provided, using center as section 9 as default")
+
+        # Dist focus
+        if( "dist_focus" in data.keys() ):
+            self.dist_focus = np.array(data["dist_focus"]).astype(float)
+        elif( "focus" in data.keys() ):
+            self.dist_focus = np.array(data["focus"]).astype(float)
+        else:
+            self.dist_focus = self.f * 0 + 2.131
+            print("Warning: no focus position provided, using 2.131 m as default")
+
+        # Width
+        if( "width" in data.keys() ):
+            self.width = np.array(data["width"]).astype(float)
+        else:
+            self.width = self.f * 0 + 17.17e-2
+            print("Warning: no beam width provided, using 17.17e-2 m as default")
+
+        self.N_ch = len(self.f)
 
     def set_from_launch_geo(self, launch_geo, pol_coeff_X, append=False):
         if(append):
