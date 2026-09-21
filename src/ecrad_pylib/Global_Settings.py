@@ -86,7 +86,7 @@ class GlobalSettings:
         self.ECRadPathBSUB = os.path.join(self.ECRadPylibRoot,"ECRad_Driver_submit.bsub")
         self.TB_path = os.path.abspath("../libtorbeam")
         self.batch_submission_cmd = "sbatch"
-        if "omega" in os.environ["HOSTNAME"]:
+        if "omega" in os.environ.get("HOSTNAME",""):
             self.qos_function = qos_function_omega
             self.partition_function = partition_function_omega
             self.account_fuction = account_function_current_user
