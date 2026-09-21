@@ -73,7 +73,7 @@ def account_function_current_user():
 
 class GlobalSettings:
     def __init__(self):
-        self.AUG = False  # True  -> Start with True, set it to false if we run into problems
+        self.AUG = True
         self.root = os.path.expanduser("~/")
         self.ECRadRoot = os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir)
         self.ECRadCoreRoot = os.path.join(self.ECRadRoot, "ECRad_core/src/ecrad_core")
@@ -86,7 +86,7 @@ class GlobalSettings:
         self.ECRadPathBSUB = os.path.join(self.ECRadPylibRoot,"ECRad_Driver_submit.bsub")
         self.TB_path = os.path.abspath("../libtorbeam")
         self.batch_submission_cmd = "sbatch"
-        if "omega" in os.environ["HOSTNAME"]:
+        if "HOSTNAME" in os.environ and "omega" in os.environ["HOSTNAME"]:
             self.qos_function = qos_function_omega
             self.partition_function = partition_function_omega
             self.account_fuction = account_function_current_user

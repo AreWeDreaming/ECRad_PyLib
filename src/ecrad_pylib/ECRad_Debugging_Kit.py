@@ -10,9 +10,9 @@ import sys
 from ecrad_pylib.Diag_Types import ECRH_diag
 from ecrad_pylib.Global_Settings import globalsettings
 if(globalsettings.AUG):
-    import dd
-    from Equilibrium_Utils_AUG import EQData
-    from Shotfile_Handling_AUG import get_data_calib
+    import aug_sfutils as sf
+    from ecrad_pylib.Equilibrium_Utils_AUG import EQData
+    from ecrad_pylib.Shotfile_Handling_AUG import get_data_calib
 from ecrad_pylib.Plotting_Configuration import plt
 import numpy as np
 import os

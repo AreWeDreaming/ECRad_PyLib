@@ -288,9 +288,7 @@ def write_ext_ray_input(ECRad_data_path, Config, Scenario, index, ext_results):
                     
 
 def get_ECE_launch_info(shot, diag):
-    from Shotfile_Handling_AUG import get_ECE_launch_params
-    import Geo_Los
-    N = 200
+    from ecrad_pylib.Shotfile_Handling_AUG import get_ECE_launch_params
     ECE_launch = get_ECE_launch_params(shot, diag)
     ECE_launch["phi"] = np.zeros(len(ECE_launch["f"]))
     ECE_launch["phi_tor"] = np.zeros(len(ECE_launch["f"]))
@@ -301,9 +299,20 @@ def get_ECE_launch_info(shot, diag):
     ECE_launch["R"][:] = 3.90
     ECE_launch["z"] = np.zeros(len(ECE_launch["f"]))
     ECE_launch["pol_coeff_X"] = -np.ones(len(ECE_launch["f"]))
-    wg_last = 0
-    R = np.zeros(N)
-    z = np.zeros(N)
+
+    # Try to load RMZ to get the LOS geometry from there
+    wg_dict = None
+    if( shot > 43695 ): # Only from the 2026 campaign
+        print("Using LOS from RMZ")
+        from ecrad_pylib.Shotfile_Handling_AUG import get_RMZ_waveguides_dict
+        # Load the geometry parameters from the waveguides
+        wg_dict = get_RMZ_waveguides_dict(shot)
+    else:
+        print("Using LOS from GeoLos")
+        from ecrad_pylib.Shotfile_Handling_AUG import get_GeoLos_waveguides_dict
+        # For older shots use Geo_Los
+        wg_dict = get_GeoLos_waveguides_dict(shot, np.unique(ECE_launch["waveguide"]), ECE_launch["z_lens"])
+
     for ich in range(len(ECE_launch["f"])):
         if(shot <= 24202):
             print("LOS geometry of discharges with shotno. <= 24202 is not yet implemented")
@@ -320,8 +329,7 @@ def get_ECE_launch_info(shot, diag):
                 ECE_launch["phi_tor"][ich] = +0.7265
                 ECE_launch["phi"][ich] = 0.04
             else:
-                print("subroutine make_theta_los: something wrong with wg(ich) for 24202 < shotno. <= 33724!")
-                print("wg", ECE_launch["waveguide"][ich])
+                print(f"subroutine make_theta_los: something wrong with wg {ECE_launch['waveguide'][ich]} for 24202 < shotno. <= 33724!")
                 raise ValueError
         else:
             if (ECE_launch["waveguide"][ich] == 4 or ECE_launch["waveguide"][ich] == 12):
@@ -334,26 +342,16 @@ def get_ECE_launch_info(shot, diag):
                 ECE_launch["phi_tor"][ich] = -0.7265
                 ECE_launch["phi"][ich] = 0.04
             else:
-                print("subroutine make_theta_los: something wrong with wg(ich) for shotno. > 33724!")
-                print("wg", ECE_launch["waveguide"][ich])
+                print(f"subroutine make_theta_los: something wrong with wg {ECE_launch['waveguide'][ich]} for shotno. > 33724!")
                 raise ValueError
-        if(ECE_launch["waveguide"][ich] != wg_last):
-            R, z = Geo_Los.geo_los(shot, ECE_launch["waveguide"][ich], ECE_launch["z_lens"], R, z)
-            R1 = R[0]
-            R2 = R[-1]
-            z1 = z[0]
-            z2 = z[-1]
-            dRds = (R1 - R2) / np.sqrt((R1 - R2) ** 2 + (z1 - z2) ** 2)
-            dzds = (z1 - z2) / np.sqrt((R1 - R2) ** 2 + (z1 - z2) ** 2)
-            wg_last = ECE_launch["waveguide"][ich]
-        ECE_launch["z"][ich] = (ECE_launch["R"][ich] - R1) / dRds * dzds + z1
-        ECE_launch["theta_pol"][ich] = np.rad2deg(np.arccos((z2 - ECE_launch["z"][ich]) / \
-                                                            np.sqrt((R2 - ECE_launch["R"][ich]) ** 2 + \
-                                                                    (z2 - ECE_launch["z"][ich]) ** 2)) - np.pi / 2.e0)
+        wg_info = wg_dict[ECE_launch["waveguide"][ich]]
+        ECE_launch["z"][ich] = (ECE_launch["R"][ich] - wg_info["R1"]) / wg_info["dRds"] * wg_info["dzds"] + wg_info["z1"]
+        ECE_launch["theta_pol"][ich] = np.rad2deg(np.arccos((wg_info["z2"] - ECE_launch["z"][ich]) / \
+                                                            np.sqrt((wg_info["R2"] - ECE_launch["R"][ich]) ** 2 + \
+                                                                    (wg_info["z2"] - ECE_launch["z"][ich]) ** 2)) - np.pi / 2.e0)
     ECE_launch["phi"][:] += (8.5e0) * 22.5
     ECE_launch["dist_focus"][:] = 2.131
     ECE_launch["width"][:] = 17.17e-2
-    del(Geo_Los) # Delete to avoid problems with conflicting libraries
     return ECE_launch
 
 

@@ -9,7 +9,7 @@ import os
 # sys.path.append('/afs/ipp/home/g/git/python/repository/py_rep2.0/')
 # import kk
 sys.path.append('/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib')
-import dd
+import aug_sfutils as sf
 from scipy.signal import medfilt
 from scipy.interpolate import RectBivariateSpline, InterpolatedUnivariateSpline, UnivariateSpline, interp1d
 from ecrad_pylib.Equilibrium_Utils_AUG import EQData
@@ -30,13 +30,13 @@ def get_HEP_ne(shot, exp="AUGD", ed=0):
 def shotfile_exists(shot, diag):
     if(hasattr(diag, "diag")):
         try:
-            dd.shotfile(diagnostic=diag.diag, pulseNumber=shot, experiment=diag.exp, edition=diag.ed)
+            shf = sf.SFREAD(int(shot), diag.diag, exp=diag.exp, ed=diag.ed)
             return True
-        except dd.PyddError:
+        except :
             return False
     else:
-        return False
-
+        return bool( shf.status )
+    
 def get_prof(shot, time, diag, sig, exp="AUGD", edition=0):
     DIAG = dd.shotfile(diag, int(shot), experiment=exp, edition=edition)
     prof = DIAG.getSignalGroup(\
@@ -100,9 +100,11 @@ def get_elm_times(shot):
 
 def get_divertor_currents(shot):
     try:
-        diag_shotfile = dd.shotfile("MAC", int(shot))
-        signal = diag_shotfile.getSignalCalibrated("Ipolsola")[0]
-        time = diag_shotfile.getTimeBase("Ipolsola")
+        diag_shotfile = sf.SFREAD("MAC", int(shot))
+        if( not diag_shotfile.status ):
+            raise FileNotFoundError("Could not open shotfile MAC for", shot)
+        signal = diag_shotfile.getobject("Ipolsola")
+        time = diag_shotfile.gettimebase("Ipolsola")
         return time, signal
     except Exception as e:
         print("Could not open shotfile MAC for", shot)
@@ -836,28 +838,71 @@ def get_ECRH_PW(shot, diag, exp, ed):
     return t_ECRH, signal
 
 def get_ECE_launch_params(shot, diag):
-    CEC = dd.shotfile(diag.diag, int(shot), \
-                       experiment=diag.exp, edition=diag.ed)
+    CEC = sf.SFREAD(diag.diag, int(shot), \
+                       experiment=diag.exp, edition=diag.ed) # type: ignore
+    if( not CEC.status ):
+        print(f"Failed to open {diag.diag}:{shot} shotfile.")
+        raise IOError("Shofile read failed")
     try:
         ECE_launch_dict = {}
-        ECE_launch_dict["f"] = np.array(CEC.getParameter('parms-A', 'f').data)
-        available = np.array(CEC.getParameter('parms-A', 'AVAILABL').data, dtype=int)
-        ECE_launch_dict["df"] = np.array(CEC.getParameter('parms-A', 'df').data)
+        parmsA = CEC.getparset("parms-A")
+        METHODS = CEC.getparset("METHODS")
+        ECE_launch_dict["f"] = np.array(parmsA['f'])
+        available = np.array(parmsA['AVAILABL'], dtype=int)
+        ECE_launch_dict["df"] = np.array(parmsA['df'])
         ECE_launch_dict["waveguide"] = np.zeros(len(ECE_launch_dict["f"]), dtype=int)
-        ifgroup = np.array(CEC.getParameter('parms-A', 'IFGROUP').data)
-        wg = np.array(CEC.getParameter('METHODS', 'WAVEGUID').data)
-        ECE_launch_dict["z_lens"] = float(CEC.getParameter('METHODS', 'ZLENS').data) * 1.e-2  # cm -> m
+        ifgroup = np.array(parmsA['IFGROUP'])
+        wg = np.array(METHODS['WAVEGUID'])
         for i in range(len(ifgroup)):
             ECE_launch_dict["waveguide"][i] = wg[ifgroup[i] - 1]
+        ECE_launch_dict["z_lens"] = float(METHODS['ZLENS']) * 1.e-2  # cm -> m
         ECE_launch_dict["f"] = ECE_launch_dict["f"][available == 1]
         ECE_launch_dict["df"] = ECE_launch_dict["df"][available == 1]
         ECE_launch_dict["waveguide"] = ECE_launch_dict["waveguide"][available == 1]
-    except dd.PyddError:
-        print("Failed to read " + diag.diag + " shotfile.")
+    except Exception as e:
+        print(f"Failed to open {diag.diag}:{shot} shotfile.")
         print("Is this an old shotfile?")
         raise IOError("Shofile read failed")
     return ECE_launch_dict
 
+def get_RMZ_waveguides_dict(shot):
+    RMZ = sf.SFREAD('RMZ', int(shot)) # type: ignore
+    if( not RMZ.status ):
+        print(f"Failed to open RMZ:{shot} shotfile for loading the geometry.")
+        raise IOError("Shofile read failed")
+    METHODS = RMZ.getparset("METHODS")
+    ALLGEOM = np.array(METHODS['ALLGEOM'])
+    geoms = {}
+    for i in range(0,len(ALLGEOM),5):
+        wg = int(ALLGEOM[i])
+        geoms[wg] = {
+            "R1": ALLGEOM[i+1],
+            "z1": ALLGEOM[i+2],
+            "R2": ALLGEOM[i+3],
+            "z2": ALLGEOM[i+4]
+        }
+        geoms[wg]["dRds"] = (geoms[wg]["R1"] - geoms[wg]["R2"]) / np.sqrt((geoms[wg]["R1"] - geoms[wg]["R2"]) ** 2 + (geoms[wg]["z1"] - geoms[wg]["z2"]) ** 2)
+        geoms[wg]["dzds"] = (geoms[wg]["z1"] - geoms[wg]["z2"]) / np.sqrt((geoms[wg]["R1"] - geoms[wg]["R2"]) ** 2 + (geoms[wg]["z1"] - geoms[wg]["z2"]) ** 2)
+    return geoms
+
+def get_GeoLos_waveguides_dict(shot, wgs_list, z_lens):
+    from ecrad_pylib import Geo_Los
+    N = 200
+    R = np.zeros(N)
+    z = np.zeros(N)
+
+    geoms = {}
+    for wg in wgs_list:
+        R, z = Geo_Los.geo_los(shot, wg, z_lens, R, z)
+        geoms[wg]["R1"] = R[0]
+        geoms[wg]["R2"] = R[-1]
+        geoms[wg]["z1"] = z[0]
+        geoms[wg]["z2"] = z[-1]
+        geoms[wg]["dRds"] = (geoms[wg]["R1"] - geoms[wg]["R2"]) / np.sqrt((geoms[wg]["R1"] - geoms[wg]["R2"]) ** 2 + (geoms[wg]["z1"] - geoms[wg]["z2"]) ** 2)
+        geoms[wg]["dzds"] = (geoms[wg]["z1"] - geoms[wg]["z2"]) / np.sqrt((geoms[wg]["R1"] - geoms[wg]["R2"]) ** 2 + (geoms[wg]["z1"] - geoms[wg]["z2"]) ** 2)
+
+    del(Geo_Los) # Delete to avoid problems with conflicting libraries
+    return geoms
 
 def get_freqs(shot, diag):
     if(diag.name == "IEC"):
@@ -935,7 +980,7 @@ def get_ECI_launch(diag, shot):
     ECI_launch_dict = {}
     for key in ['freq', 'x', "y", "z", "tor_ang", "pol_ang", "dist_foc", "w"]:
     # Load shotfile data
-        if(key is not "freq"):
+        if(key != "freq"):
             ECEI_data[key] = np.array(ECI.getParameter('BEAMS', key).data)
         else:
             ECEI_data[key] = np.array(ECI.getParameter('PAR', key).data) * 1.e9
@@ -944,7 +989,7 @@ def get_ECI_launch(diag, shot):
         ECI_launch_dict[key] = []
         for i_LOS in range(len(ECEI_data["x"])):
             for i_FREQ in range(len(enumerate(ECEI_data["freq"]))):
-                if(key is "freq"):
+                if(key == "freq"):
                     ECI_launch_dict[key].append(ECEI_data[key][i_FREQ])
                 else:
                     ECI_launch_dict[key].append(ECEI_data[key][i_LOS])
@@ -1023,7 +1068,7 @@ def get_Thomson_data(shot, times, diag, Te=False, ne=False, edge=False, core=Fal
     if(np.isscalar(times)):
         scalar_times = True
         times = np.array([times])
-    VTA_shotfile = dd.shotfile(diag.diag, int(shot), experiment=diag.exp, edition=diag.ed)
+    VTA_shotfile = sf.SFREAD(diag.diag, int(shot), exp=diag.exp, ed=diag.ed)
     if(edge and core):
         print("Please select either core or edge and not both")
         return None, None
@@ -1198,24 +1243,19 @@ def get_last_edition_number(shot, exp, diag):
 
 def load_IDA_data(shot, timepoints=None, exp="AUGD", ed=0, double_entries_allowed=False):
     IDA_dict = { }
-    IDA = dd.shotfile("IDA", pulseNumber=int(shot), experiment=exp, edition=ed)
-    IDA_dict["ed"] = IDA.edition
-    IDA_time = IDA.getTimeBase(\
-                    "time", dtype=np.double)
-    IDA_Te_mat = IDA.getSignalGroup(\
-                    "Te", dtype=np.double)
-    IDA_Te_low_mat = IDA.getSignalGroup(\
-                    "Te_lo", dtype=np.double)
-    IDA_Te_up_mat = IDA.getSignalGroup(\
-                    "Te_up", dtype=np.double)
-    IDA_ne_mat = IDA.getSignalGroup(\
-                    "ne", dtype=np.double)
-    IDA_rhop_mat = IDA.getAreaBase(\
-                    "rhop".encode("utf-8"), dtype=np.double).data
+    IDA = sf.SFREAD("IDA", int(shot), exp=exp, ed=ed)
+    if( not IDA.status ):
+        raise FileNotFoundError(f"IDA:{shot} is not available")
+    IDA_dict["ed"] = IDA.ed
+    IDA_time = IDA.gettimebase("time")
+    IDA_Te_mat = IDA.getobject("Te")
+    IDA_Te_low_mat = IDA.getobject("Te_lo")
+    IDA_Te_up_mat = IDA.getobject("Te_up")
+    IDA_ne_mat = IDA.getobject("ne")
+    IDA_rhop_mat = IDA.getareabase("rhop")
     rhot_available=True
     try:
-        IDA_rhot_mat = IDA.getSignalGroup(\
-                                          "rhot", dtype=np.double)
+        IDA_rhot_mat = IDA.getobject("rhot")
     except Exception as e:
         rhot_available=False
         print("No rho toroIDAl profile in IDA shotfile")
@@ -1224,12 +1264,10 @@ def load_IDA_data(shot, timepoints=None, exp="AUGD", ed=0, double_entries_allowe
     # IDA_ne_rhop_scal_mat = IDA.getSignal(\
     #                "ecenrpsc", dtype=np.double)
     try:
-        if(sys.version_info.major == 3):
-            raise Exception("Cannot load IDA ECE data in python 3")
-        IDA_ECE_rhop_mat = IDA.getSignalGroup("ece_rhop", dtype=np.double)
-        IDA_ECE_dat_mat = IDA.getSignalGroup("ece_dat", dtype=np.double)
-        IDA_ECE_unc_mat = IDA.getSignalGroup("ece_unc", dtype=np.double)
-        IDA_ECE_mod_mat = IDA.getSignalGroup("ece_mod", dtype=np.double)
+        IDA_ECE_rhop_mat = IDA.getobject("ece_rhop")
+        IDA_ECE_dat_mat = IDA.getobject("ece_dat")
+        IDA_ECE_unc_mat = IDA.getobject("ece_unc")
+        IDA_ECE_mod_mat = IDA.getobject("ece_mod")
         IDA_ECE_data = True
     except Exception as e:
         print("Could not find any ECE data in the IDA shotfile")
@@ -1272,21 +1310,22 @@ def load_IDA_data(shot, timepoints=None, exp="AUGD", ed=0, double_entries_allowe
         for index in range(len(IDA_time)):
             if(IDA_time[index] not in IDA_dict["time"]):  # No double entries unless specifically requested!
                 IDA_dict["time"].append(IDA_time[index])
-                Te_mat.append(IDA_Te_mat[index])
-                Te_up_mat.append(IDA_Te_up_mat[index])
-                Te_low_mat.append(IDA_Te_low_mat[index])
-                ne_mat.append(IDA_ne_mat[index])
-                rhop_mat.append(IDA_rhop_mat[index])
+                Te_mat.append(IDA_Te_mat[:,index])
+                Te_up_mat.append(IDA_Te_up_mat[:,index])
+                Te_low_mat.append(IDA_Te_low_mat[:,index])
+                ne_mat.append(IDA_ne_mat[:,index])
+                rhop_mat.append(IDA_rhop_mat[:,index])
                 if(rhot_available):
-                    rhot_mat.append(IDA_rhot_mat[index])
+                    rhot_mat.append(IDA_rhot_mat[:,index])
                 if(IDA_ECE_data):
                 # ne_rhop_scale_mat.append(IDA_ne_rhop_scal_mat[index])
-                    ECE_rhop_mat.append(IDA_ECE_rhop_mat[index])
-                    ECE_dat_rhop_mat.append(IDA_ECE_dat_rhop_mat[index])
-                    ECE_dat_mat.append(IDA_ECE_dat_mat[index])
-                    ECE_unc_mat.append(IDA_ECE_unc_mat[index])
-                    ECE_mod_mat.append(IDA_ECE_mod_mat[index])
+                    ECE_rhop_mat.append(IDA_ECE_rhop_mat[:,index])
+                    ECE_dat_rhop_mat.append(IDA_ECE_dat_rhop_mat[:,index,:])
+                    ECE_dat_mat.append(IDA_ECE_dat_mat[:,index,:])
+                    ECE_unc_mat.append(IDA_ECE_unc_mat[:,index,:])
+                    ECE_mod_mat.append(IDA_ECE_mod_mat[:,index])
     else:
+        # This part has still not been readapted!
         for t in timepoints:  # Finds closest - NO interpolation
             index = np.argmin(np.abs(IDA_time - t))
             if(IDA_time[index] not in IDA_dict["time"]  or double_entries_allowed):  # No double entries !
@@ -1813,12 +1852,18 @@ def test_FPC():
 
 
 def compare_IDE_to_MBI(shot):
-    IDF = dd.shotfile("IDF", int(shot), experiment="AUGD", edition=0)
-    MBI = dd.shotfile('MBI', int(shot))
-    B_IDE = IDF.getSignal("Btor")
-    time_IDE = IDF.getTimeBase("Btor")
-    B_MBI = MBI.getSignal("BTFABB")
-    time_MBI = MBI.getTimeBase("BTFABB")
+    IDF = sf.SFREAD("IDF", int(shot), experiment="AUGD", edition=0)
+    MBI = sf.SFREAD('MBI', int(shot))
+    if( not IDF.status ):
+        print("No IDF shotfile.")
+        return
+    if( not MBI.status ):
+        print("No MBI shotfile.")
+        return
+    B_IDE = IDF.getobject("Btor")
+    time_IDE = IDF.gettimebase("Btor")
+    B_MBI = MBI.getobject("BTFABB")
+    time_MBI = MBI.getobject("BTFABB")
     IDE_spl = InterpolatedUnivariateSpline(time_IDE, B_IDE)
     MBI_spl = InterpolatedUnivariateSpline(time_MBI, B_MBI)
     t = np.linspace(max(np.min(time_IDE),np.min(time_MBI)), min(np.max(time_IDE),np.max(time_MBI)), 1000)

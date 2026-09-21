@@ -6,13 +6,13 @@ Created on Jan 29, 2017
 import sys
 import os
 sys.path.append('/afs/ipp-garching.mpg.de/aug/ads-diags/common/python/lib')
-import dd
-from map_equ import equ_map
+import aug_sfutils as sf
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline
 from ecrad_pylib.Equilibrium_Utils import EQDataExt, EQDataSlice
 from scipy import __version__ as scivers
 from scipy import constants as cnst
+from ecrad_pylib import Utils
 
 vessel_bd_file = "ASDEX_Upgrade_vessel.txt"
 from datetime import datetime
@@ -28,12 +28,11 @@ def eval_rhop(x, spl, rhop_target):
 
 def check_Bt_vac_source(shot):
     try:
-        MBI_shot = dd.shotfile('MBI', int(shot))
-    except:
-        print("No MBI shotfile. No Bt source!")
-        return False, 1.0
-    try:
-        MBI_shot.getSignal("BTFABB")
+        MBI_shf = sf.SFREAD('MBI', int(shot)) # type: ignore
+        if( not MBI_shf.status ):
+            print("No MBI shotfile. No Bt source!")
+            return False, 1.0
+        MBI_shf.getobject("BTFABB")
         return True, 1.005
     except:
         return True, 1.01
@@ -84,23 +83,15 @@ class EQData(EQDataExt):
         EQDataExt.__init__(self, external_folder, EQ_exp, EQ_diag, EQ_ed, Ext_data)        
 
     def init_read_from_shotfile(self):
-        self.equ = equ_map()
-        self.state = 0
-        if(not self.equ.Open(self.shot, diag=self.EQ_diag, exp=self.EQ_exp, ed=self.EQ_ed)):
+
+        self.equ = sf.EQU(self.shot, diag=self.EQ_diag, exp=self.EQ_exp, ed=self.EQ_ed)
+        self.state = self.equ.sf.status
+        if(not self.state):
             print("Failed to open shotfile")
             self.state = -1
             return
-        self.EQ_ed = self.equ.ed
-        if(self.EQ_diag == "EQH"):
-            self.GQH = dd.shotfile("GQH", int(self.shot), experiment=self.EQ_exp, edition=self.EQ_ed)
-            self.FPC = dd.shotfile("FPC", int(self.shot))
-        elif(self.EQ_diag == "IDE"):
-            self.GQH = dd.shotfile("IDG", int(self.shot), experiment=self.EQ_exp, edition=self.EQ_ed)
-            self.IDF = dd.shotfile("IDF", int(self.shot), experiment=self.EQ_exp, edition=self.EQ_ed)
-            self.FPC = None
-        else:
-            print("EQ diagnostic {0:s} not supported - only EQH and IDE are currently supported!".format(self.EQ_diag))
-        self.MBI_shot = dd.shotfile('MBI', int(self.shot))
+        self.EQ_ed = self.equ.sf.ed
+        self.MBI_shot = sf.SFREAD('MBI', int(self.shot))
         self.equ.read_scalars()
         self.shotfile_ready = True
 
@@ -109,14 +100,13 @@ class EQData(EQDataExt):
         # Adapted from mod_eqi.f90 by R. Fischer
         rv = 2.40
         vz = 0.e0
-        Bt_out = self.equ.rz2brzt(np.array([rv]), np.array([vz]), \
-                                  EQSlice.time)[2]
-        Bt_out = np.asscalar(Bt_out)
+        Bt_out = np.squeeze(self.equ.rz2brzt(np.array([rv]), np.array([vz]), \
+                                  EQSlice.time))[2]
         Btf0_eq = Bt_out
         Btf0_eq = Btf0_eq * rv / self.R0
         try:
-            signal = self.MBI_shot.getSignal("BTFABB", \
-                          tBegin=EQSlice.time - 5.e-5, tEnd=EQSlice.time + 5.e-5)
+            signal = self.MBI_shot.getobject("BTFABB", \
+                          tbeg=EQSlice.time - 5.e-5, tend=EQSlice.time + 5.e-5)
             if(not np.isscalar(signal)):
                 signal = np.mean(signal)
             Btf0 = signal
@@ -141,22 +131,21 @@ class EQData(EQDataExt):
             self.init_read_from_shotfile()
         R = self.equ.Rmesh
         z = self.equ.Zmesh
-        dummy, time_index = self.equ._get_nearest_index(time)
-        time_index = time_index[0]
+        time_index = Utils.get_nearest_index(self.equ, time)[0]
         self.equ.read_pfm()
         Psi = self.equ.pfm[:, :, time_index]
-        B_r, B_z, B_t = self.equ.Bmesh(time) 
+        B_r, B_z, B_t = np.squeeze(self.equ.Bmesh(time) )
         if(B_vac_correction):
             EQ_slice = self.ApplyBVacCorrectionToSlice(EQDataSlice(time, R, z, \
                                                                    Psi, B_r, B_t, \
                                                                    B_z, Psi_ax=self.equ.psi0[time_index], \
                                                                    Psi_sep=self.equ.psix[time_index], \
-                                                                   R_ax=self.equ.ssq['Rmag'][time_index], \
-                                                                   z_ax=self.equ.ssq['Zmag'][time_index]))
+                                                                   R_ax=self.equ.Rmag[time_index], \
+                                                                   z_ax=self.equ.Zmag[time_index]))
         else:
             EQ_slice = EQDataSlice(time, R, z, Psi, B_r, B_t, B_z, Psi_ax=self.equ.psi0[time_index], \
-                                   Psi_sep=self.equ.psix[time_index], R_ax=self.equ.ssq['Rmag'][time_index], \
-                                   z_ax=self.equ.ssq['Zmag'][time_index])
+                                   Psi_sep=self.equ.psix[time_index], R_ax=self.equ.Rmag[time_index], \
+                                   z_ax=self.equ.Zmag[time_index])
         if(bt_vac_correction != 1.0):
             if(EQ_slice.R_ax is None):
                 R_ax, z_ax = self.get_axis(time)
@@ -216,8 +205,7 @@ class EQData(EQDataExt):
         
         
     def getQuantity(self, rhop, quant_name, time):
-        dummy, time_index = self.equ._get_nearest_index(time)
-        time_index=time_index[0]
+        time_index = Utils.get_nearest_index(self.equ, time)[0]
         pfl = self.equ.get_profile("PFL")[time_index]
         psi_in = self.rhop_to_Psi(time, rhop)
         if(quant_name not in ['Vol', 'Area', 'Pres', 'Jpol', 'dVol', 'dArea', 'dPres', 'dJpol']):
